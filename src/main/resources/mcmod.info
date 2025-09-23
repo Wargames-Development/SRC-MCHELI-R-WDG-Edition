@@ -1,10 +1,10 @@
 [
 {
-  "modid": "examplemod",
-  "name": "Example Mod",
+  "modId": "examplemod",
+  "modName": "Example Mod",
   "description": "Example placeholder mod.",
-  "version": "${version}",
-  "mcversion": "${mcversion}",
+  "modVersion": "0.1",
+  "minecraftVersion": "1.7.10",
   "url": "",
   "updateUrl": "",
   "authorList": ["ExampleDude"],
