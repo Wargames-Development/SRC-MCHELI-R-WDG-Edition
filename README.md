@@ -7,7 +7,6 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-GPL--3.0-blue.svg"></a>
   <img alt="Build with Gradle" src="https://img.shields.io/badge/build-Gradle-success">
   <img alt="Game" src="https://img.shields.io/badge/Minecraft-Forge-000?logo=minecraft">
-  <!-- 如已确定版本，可改为具体版本：1.12.2 / 1.20.1 等 -->
   <img alt="Status" src="https://img.shields.io/badge/status-Experimental-orange">
 </p>
 
