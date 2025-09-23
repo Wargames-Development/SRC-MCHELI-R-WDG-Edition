@@ -142,7 +142,7 @@ public class MCH_DraftingTableGui extends W_GuiContainer {
          list = (List)this.screenButtonList.get(i);
 
          for(j = 0; j < list.size(); ++j) {
-            super.buttonList.add(list.get(j));
+            super.buttonList.add((GuiButton) list.get(j));
          }
       }
 
