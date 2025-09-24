@@ -1,8 +1,9 @@
 package mcheli;
 
-import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
-import org.jetbrains.annotations.Nullable;
+import com.falsepattern.gasstation.IEarlyMixinLoader;
+import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class MCH_FMLCore implements IEarlyMixinLoader, IFMLLoadingPlugin {
 
     @Override
     public List<String> getMixinConfigs() {
-        String[] configs = {"mixins.mcheli.early.json"};
+        String[] configs = {"mixins.mcheli.json"};
         return Arrays.asList(configs);
     }
 }
