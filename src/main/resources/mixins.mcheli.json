@@ -1,0 +1,11 @@
+{
+"required": true,
+"minVersion": "0.1.23",
+"package": "mcheli.mixin",
+"refmap": "mixins.mcheli.refmap.json",
+"target": "@env(DEFAULT)",
+"compatibilityLevel": "JAVA_8",
+"mixins": [
+  "MixinNetHandlerPlayServer"
+]
+}
