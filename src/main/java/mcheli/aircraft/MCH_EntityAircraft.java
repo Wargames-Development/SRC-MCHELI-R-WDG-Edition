@@ -165,8 +165,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public int brightnessLow = 240;
     public float thirdPersonDist = 4.0F;
     public Entity lastAttackedEntity = null;
-    public EntityPlayer storedRider;
-    public String newUavPlayerUUID;
     public MCH_Chaff chaff;
     public MCH_Maintenance maintenance;
     public MCH_APS aps;
