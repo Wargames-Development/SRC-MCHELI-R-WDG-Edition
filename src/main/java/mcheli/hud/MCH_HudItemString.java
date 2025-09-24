@@ -187,8 +187,11 @@ public class MCH_HudItemString extends MCH_HudItem {
                    break;
                 case 39:
                     prm[i] = MCH_HudItem.airburstDist;
-                   break;
+                    break;
                 case 40:
+                    prm[i] = MCH_HudItem.ac.currentSpeed;
+                    break;
+                case 41:
             }
         }
 
@@ -440,9 +443,13 @@ public class MCH_HudItemString extends MCH_HudItem {
            } catch (NoSuchFieldError var2) {
               ;
            }
-
             try {
-                $SwitchMap$mcheli$hud$MCH_HudItemStringArgs[MCH_HudItemStringArgs.NONE.ordinal()] = 40;
+                $SwitchMap$mcheli$hud$MCH_HudItemStringArgs[MCH_HudItemStringArgs.SPEED.ordinal()] = 40;
+            } catch (NoSuchFieldError var2) {
+                ;
+            }
+            try {
+                $SwitchMap$mcheli$hud$MCH_HudItemStringArgs[MCH_HudItemStringArgs.NONE.ordinal()] = 41;
             } catch (NoSuchFieldError var1) {
                 ;
             }

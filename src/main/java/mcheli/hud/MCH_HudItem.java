@@ -7,6 +7,7 @@ import mcheli.eval.eval.Expression;
 import mcheli.eval.eval.var.MapVariable;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.plane.MCP_EntityPlane;
+import mcheli.plane.MCP_PlaneInfo;
 import mcheli.weapon.*;
 import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_OpenGlHelper;
@@ -139,7 +140,6 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("width", width);
         updateVarMapItem("height", height);
         updateVarMapItem("time", (double) (player.worldObj.getWorldTime() % 24000L));
-        MCH_Config var10001 = MCH_MOD.config;
         updateVarMapItem("test_mode", MCH_Config.TestMode.prmBool ? 1.0D : 0.0D);
         updateVarMapItem("plyr_yaw", MathHelper.wrapAngleTo180_float(player.rotationYaw));
         updateVarMapItem("plyr_pitch", player.rotationPitch);
@@ -189,6 +189,11 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("weapon_group_type", ac.getAcInfo().weaponGroupType);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
         updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
+        if(ac instanceof MCP_EntityPlane) {
+            MCP_PlaneInfo info = ((MCP_EntityPlane) ac).getPlaneInfo();
+            updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);
+            updateVarMapItem("is_sweepwing_fold", ac.currentSpeed <= info.sweepWingSpeed ? 1.0D : 0.0D);
+        }
     }
 
     public static void updateVarMapItem(String key, double value) {
