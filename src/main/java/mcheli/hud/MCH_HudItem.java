@@ -158,8 +158,7 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("pos_y", ac.posY);
         updateVarMapItem("pos_z", ac.posZ);
         updateVarMapItem("motion_x", ac.motionX);
-        updateVarMapItem("motion_y", ac.motionY);
-        updateVarMapItem("motion_z", ac.motionZ);
+        updateVarMapItem("motion_y", ac.motionY);        updateVarMapItem("motion_z", ac.motionZ);
         updateVarMapItem("speed", Math.sqrt(ac.motionX * ac.motionX + ac.motionY * ac.motionY + ac.motionZ * ac.motionZ));
         updateVarMapItem("fuel", ac.getFuelP());
         updateVarMapItem("low_fuel", isLowFuel(ac));

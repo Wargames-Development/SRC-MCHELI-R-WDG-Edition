@@ -173,6 +173,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public float ironCurtainCurrentFactor = 0.5f;
     public int ironCurtainWaveTimer = 0;
     public int chaffUseTime = 0;
+    private Vec3 prevVelocity = null; // 记录上次更新时的速度向量
+    public float gForce;
+    private float smoothedGForce = 1.0F;
     protected double velocityX;
     protected double velocityY;
     protected double velocityZ;
@@ -408,7 +411,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public float getServerRoll() {
-        return (float) this.getDataWatcher().getWatchableObjectShort(26);
+        return this.getDataWatcher().getWatchableObjectShort(26);
     }
 
     public float getRotYaw() {
@@ -1741,6 +1744,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.onUpdate_CollisionGroundDamage();
         this.onUpdate_UnmountCrew();
         this.onUpdate_Repelling();
+        this.onUpdate_GForce();
         this.checkRideRack();
         if (this.lastRidingEntity == null && this.getRidingEntity() != null) {
             this.onRideEntity(this.getRidingEntity());
@@ -6318,6 +6322,35 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
         return "?";
+    }
+
+
+    private void onUpdate_GForce() {
+        Vec3 currentVel = Vec3.createVectorHelper(this.motionX, this.motionY, this.motionZ);
+        if (this.prevVelocity != null) {
+            Vec3 dv = currentVel.subtract(this.prevVelocity);
+            Vec3 acc = Vec3.createVectorHelper(dv.xCoord * 20.0D, dv.yCoord * 20.0D, dv.zCoord * 20.0D);
+            Vec3 upVec = MCH_Lib.RotVec3(0.0D, 1.0D, 0.0D,
+                -this.getRotYaw(),
+                -this.getRotPitch(),
+                -this.getRotRoll());
+            double verticalAcc = acc.dotProduct(upVec);
+
+            // 计算瞬时 g 值：垂直加速度除以重力加上 1g:contentReference[oaicite:0]{index=0}
+            float instantG = (float)(verticalAcc / getAcInfo().gravity + 1.0D);
+
+            // 指数平滑：用之前的 smoothedGForce 和当前瞬时 g 按权重混合
+            float smoothing = 0.2F; // 平滑因子，可根据需要调整，越小越稳定
+            this.smoothedGForce = this.smoothedGForce * (1.0F - smoothing) + instantG * smoothing;
+
+            // 将平滑后的结果赋给 gForce 用于 HUD 显示
+            this.gForce = this.smoothedGForce;
+        } else {
+            // 没有前一帧速度，默认 1g
+            this.gForce = 1.0F;
+            this.smoothedGForce = 1.0F;
+        }
+        this.prevVelocity = currentVel;
     }
 
     public class WeaponBay {

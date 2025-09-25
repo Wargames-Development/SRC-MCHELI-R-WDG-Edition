@@ -116,6 +116,7 @@ public class MCH_HudItemString extends MCH_HudItem {
             case COOLDOWN_CHAFF: return MCH_HudItem.ac.chaff.tick / 20f;
             case COOLDOWN_APS: return MCH_HudItem.ac.aps.tick / 20f;
             case COOLDOWN_MAINTENANCE: return MCH_HudItem.ac.maintenance.tick / 20f;
+            case G_FORCE: return String.format("%.1fG", MCH_HudItem.ac.gForce);
             default: return null;
         }
     }
