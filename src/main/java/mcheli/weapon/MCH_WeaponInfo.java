@@ -303,6 +303,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int markerRocketSpawnHeight = 200;
     public int markerRocketSpawnSpeed = 5;
 
+    /**
+     * 是否有尾焰
+     */
+    public boolean enableExhaustFlare = false;
+
     public MCH_WeaponInfo(String name) {
         this.name = name;
         this.displayName = name;
@@ -621,6 +626,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.markerRocketSpawnHeight = this.toInt(data);
             } else if(item.equalsIgnoreCase("MarkerRocketSpawnSpeed")) {
                 this.markerRocketSpawnSpeed = this.toInt(data);
+            } else if(item.equalsIgnoreCase("EnableExhaustFlare")) {
+                this.enableExhaustFlare = this.toBool(data);
             }
 
             else if (item.compareTo("reloadtime") == 0) {

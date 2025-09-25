@@ -123,6 +123,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
         registerPacket(PacketLaserGuidanceTargeting.class);
         registerPacket(PacketLockTarget.class);
         registerPacket(PacketLockTargetBVR.class);
+        registerPacket(PacketMissileLockType.class);
         registerPacket(PacketPlaySound.class);
     }
 

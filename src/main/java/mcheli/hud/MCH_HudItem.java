@@ -188,6 +188,11 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("weapon_group_type", ac.getAcInfo().weaponGroupType);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
         updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
+        updateVarMapItem("missile_lock_type", ac.missileDetector != null ? ac.missileDetector.missileLockType : 0.0D);
+        updateVarMapItem("vehicle_lock_type", ac.missileDetector != null ? ac.missileDetector.vehicleLockType : 0.0D);
+        updateVarMapItem("missile_lock_dist", ac.missileDetector != null ? ac.missileDetector.missileLockDist : 0.0D);
+        updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
+        updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
         if(ac instanceof MCP_EntityPlane) {
             MCP_PlaneInfo info = ((MCP_EntityPlane) ac).getPlaneInfo();
             updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);
