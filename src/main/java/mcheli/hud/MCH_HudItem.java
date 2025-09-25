@@ -192,7 +192,7 @@ public abstract class MCH_HudItem extends Gui {
         if(ac instanceof MCP_EntityPlane) {
             MCP_PlaneInfo info = ((MCP_EntityPlane) ac).getPlaneInfo();
             updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);
-            updateVarMapItem("is_sweepwing_fold", ac.currentSpeed <= info.sweepWingSpeed ? 1.0D : 0.0D);
+            updateVarMapItem("is_sweepwing_fold", Math.sqrt(ac.motionX * ac.motionX + ac.motionY * ac.motionY + ac.motionZ * ac.motionZ) <= info.sweepWingSpeed ? 1.0D : 0.0D);
         }
     }
 
