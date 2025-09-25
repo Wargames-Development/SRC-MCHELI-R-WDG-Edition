@@ -189,7 +189,9 @@ public class MCH_HudItemString extends MCH_HudItem {
                     prm[i] = MCH_HudItem.airburstDist;
                     break;
                 case 40:
-                    prm[i] = MCH_HudItem.ac.currentSpeed;
+                    prm[i] = Math.sqrt(
+                        MCH_HudItem.ac.motionX * MCH_HudItem.ac.motionX + MCH_HudItem.ac.motionY * MCH_HudItem.ac.motionY + MCH_HudItem.ac.motionZ * MCH_HudItem.ac.motionZ
+                    );
                     break;
                 case 41:
             }
