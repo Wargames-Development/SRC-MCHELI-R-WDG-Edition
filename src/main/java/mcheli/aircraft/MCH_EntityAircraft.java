@@ -6340,7 +6340,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             float instantG = (float)(verticalAcc / getAcInfo().gravity + 1.0D);
 
             // 指数平滑：用之前的 smoothedGForce 和当前瞬时 g 按权重混合
-            float smoothing = 0.2F; // 平滑因子，可根据需要调整，越小越稳定
+            float smoothing = 0.05F; // 平滑因子，可根据需要调整，越小越稳定
             this.smoothedGForce = this.smoothedGForce * (1.0F - smoothing) + instantG * smoothing;
 
             // 将平滑后的结果赋给 gForce 用于 HUD 显示
