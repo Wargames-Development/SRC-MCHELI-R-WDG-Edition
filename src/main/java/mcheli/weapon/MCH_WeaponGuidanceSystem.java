@@ -180,9 +180,9 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             }
 
             // 检查目标是否在水中，如果不能锁定水中目标，则设为false
-            if(!this.canLockInWater && this.targetEntity.isInWater()) {
-               canLockTarget = false;
-            }
+//            if(!this.canLockInWater && this.targetEntity.isInWater()) {
+//               canLockTarget = false;
+//            }
 
             boolean isTargetOnGround = isEntityOnGround(this.targetEntity, lockMinHeight);  // 判断目标是否在地面上
             // 检查目标是否可以锁定在地面
@@ -378,9 +378,9 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             return false;
          }
          // 如果实体在水中，而不能锁定水中的实体，则返回false
-         else if(!this.canLockInWater && entity.isInWater()) {
-            return false;
-         }
+//         else if(!this.canLockInWater && entity.isInWater()) {
+//            return false;
+//         }
          // 如果有自定义的实体锁定检查器，并且检查器返回false，则返回false
          else if(this.checker != null && !this.checker.canLockEntity(entity)) {
             return false;
