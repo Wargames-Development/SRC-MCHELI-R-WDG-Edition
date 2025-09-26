@@ -2,8 +2,9 @@ package mcheli.aircraft;
 
 import mcheli.MCH_MOD;
 import mcheli.MCH_PacketNotifyLock;
-import mcheli.network.PacketBase;
+import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.network.packets.PacketMissileLockType;
+import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.weapon.MCH_EntityBaseBullet;
@@ -19,13 +20,12 @@ import java.util.List;
 public class MCH_MissileDetector {
 
     public static final int SEARCH_RANGE = 60;
+    public byte missileLockType; // 0-未锁定 1-半主动 2-红外 3-主动 4-未知
+    public byte vehicleLockType; // 0-未锁定 1-扫描 2-锁定-地面载具 3-锁定-空中载具 4-锁定-未知
+    public byte missileLockDist; // 0-未锁定 1-50m内 2-150m内 3-600m内
     private MCH_EntityAircraft ac;
     private World world;
     private int alertCount;
-
-    public byte missileLockType; // 0-未锁定 1-半主动 2-红外 3-主动 4-未知
-    public byte vehicleLockType; // 0-未锁定 1-扫描 2-锁定
-    public byte missileLockDist; // 0-未锁定 1-50m内 2-150m内 3-600m内
 
     public MCH_MissileDetector(MCH_EntityAircraft aircraft, World w) {
         this.world = w;
@@ -45,7 +45,6 @@ public class MCH_MissileDetector {
             boolean isLocked = this.ac.getEntityData().getBoolean("Tracking");
             if (isLocked) {
                 this.ac.getEntityData().setBoolean("Tracking", false);
-                vehicleLockType = 1;
             }
 
             if (this.ac.getEntityData().getBoolean("LockOn")) {
@@ -60,9 +59,8 @@ public class MCH_MissileDetector {
                         }
                     }
                 }
-
+                vehicleLockType = 1;
                 this.ac.getEntityData().setBoolean("LockOn", false);
-                vehicleLockType = 2;
             }
 
             if (!this.ac.isDestroyed()) {
@@ -78,13 +76,14 @@ public class MCH_MissileDetector {
                         LockResult result = isLockedByMissile();
                         if (this.alertCount == 0 && (isLocked || result.isLock)) {
                             this.alertCount = 20;
-                            if(result.isRadarMissile) {
+                            if (result.isRadarMissile) {
                                 W_WorldFunc.MOD_playSoundAtEntity(var4, "alert_radar", 3.0F, 1.0F);
                             } else {
                                 W_WorldFunc.MOD_playSoundAtEntity(var4, "alert", 3.0F, 1.0F);
                             }
                         }
-                        if(result.isLock) {
+                        if (result.isLock) {
+
                             if (result.dist < 50) {
                                 missileLockDist = 1;
                             } else if (result.dist < 150) {
@@ -93,8 +92,8 @@ public class MCH_MissileDetector {
                                 missileLockDist = 3;
                             }
                             MCH_EntityBaseBullet bullet = result.entity;
-                            if(bullet != null && bullet.getInfo() != null) {
-                                if(bullet.getInfo().passiveRadar) {
+                            if (bullet != null && bullet.getInfo() != null) {
+                                if (bullet.getInfo().passiveRadar) {
                                     missileLockType = 1;
                                 } else if (bullet.getInfo().isHeatSeekerMissile) {
                                     missileLockType = 2;
@@ -103,9 +102,20 @@ public class MCH_MissileDetector {
                                 } else {
                                     missileLockType = 4;
                                 }
+                                if (bullet.shootingAircraft instanceof MCH_EntityAircraft) {
+                                    if (bullet.shootingAircraft instanceof MCH_EntityTank || bullet.shootingAircraft instanceof MCH_EntityVehicle) {
+                                        vehicleLockType = 2;
+                                    } else if (bullet.shootingAircraft instanceof MCP_EntityPlane || bullet.shootingAircraft instanceof MCH_EntityHeli) {
+                                        vehicleLockType = 3;
+                                    } else {
+                                        vehicleLockType = 4;
+                                    }
+                                } else {
+                                    vehicleLockType = 4;
+                                }
                             }
                         }
-                        if(ac.ticksExisted % 5 == 0) {
+                        if (ac.ticksExisted % 5 == 0) {
                             for (int rider = 0; rider < 2; ++rider) {
                                 Entity entity = this.ac.getEntityBySeatId(rider);
                                 if (entity instanceof EntityPlayerMP) {
@@ -148,7 +158,7 @@ public class MCH_MissileDetector {
                 }
                 //雷达弹不做处理
                 else if (msl.getInfo().isRadarMissile) {
-                    if(ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
+                    if (ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
                         msl.setTargetEntity(null);
                     }
                 }
@@ -192,13 +202,13 @@ public class MCH_MissileDetector {
     }
 
 
-
     static class LockResult {
         boolean isLock;
         boolean isRadarMissile;
         boolean isHeetseeker;
         int dist;
         MCH_EntityBaseBullet entity;
+
         public LockResult(boolean isLock, boolean isRadarMissile, boolean isHeetseeker, int dist, MCH_EntityBaseBullet entity) {
             this.isLock = isLock;
             this.isRadarMissile = isRadarMissile;
