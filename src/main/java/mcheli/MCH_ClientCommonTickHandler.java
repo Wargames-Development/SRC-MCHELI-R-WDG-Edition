@@ -45,6 +45,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.opengl.Display;
 
@@ -235,6 +236,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
          if (hitTotalDamageClearCountdown == 0) {
             hitTotalDamage = 0;
          }
+      }
+
+      if (var7 != null && var7.ridingEntity == null) {
+          MCH_Camera.currentCameraMode = 0;
       }
    }
 
@@ -659,5 +664,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
          return false;
       }
    }
+
 
 }
