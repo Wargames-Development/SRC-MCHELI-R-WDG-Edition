@@ -3,11 +3,7 @@ package mcheli.aircraft;
 import java.util.Iterator;
 import java.util.Random;
 
-import mcheli.MCH_ClientCommonTickHandler;
-import mcheli.MCH_ClientEventHook;
-import mcheli.MCH_Config;
-import mcheli.MCH_Lib;
-import mcheli.MCH_MOD;
+import mcheli.*;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.flare.MCH_EntityFlare;
 import mcheli.gui.MCH_Gui;
@@ -73,6 +69,14 @@ public abstract class MCH_RenderAircraft extends W_Render {
                GL11.glColor4f(0.15F, 0.15F, 0.15F, 1.0F);
             } else {
                GL11.glColor4f(0.75F, 0.75F, 0.75F, 1.0F);
+            }
+
+            if(MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+                RenderHelper.disableStandardItemLighting();
+                GL11.glColor4f(10F, 10F, 10F, 1.0F);
+            }
+            if(MCH_Camera.currentCameraMode == MCH_Camera.MODE_NIGHTVISION) {
+                GL11.glColor4f(10F, 10F, 0.2F, 1.0F);
             }
 
             if (ac.ironCurtainRunningTick > 0) {

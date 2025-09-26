@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  com.google.gson.JsonSyntaxException
  *  net.minecraft.client.Minecraft
@@ -58,7 +58,7 @@ public class W_EntityRenderer {
             ioexception.printStackTrace();
         }
         catch (JsonSyntaxException jsonsyntaxexception) {
-            MCH_Lib.Log("Failed to load shader: " + (Object)r, new Object[0]);
+            MCH_Lib.Log("Failed to load shader: " + r);
             jsonsyntaxexception.printStackTrace();
         }
     }
