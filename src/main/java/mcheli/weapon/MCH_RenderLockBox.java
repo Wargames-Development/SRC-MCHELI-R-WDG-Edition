@@ -1,5 +1,6 @@
 package mcheli.weapon;
 
+import mcheli.MCH_Camera;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.gui.MCH_Gui;
@@ -9,6 +10,8 @@ import mcheli.wrapper.W_Render;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
@@ -77,7 +80,11 @@ public class MCH_RenderLockBox extends W_Render {
             GL11.glBlendFunc(770, 771); // 设置混合模式
             GL11.glDisable(3553); // 禁用纹理
             GL11.glDisable(2929 /* GL_DEPTH_TEST */);
-
+            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+                RenderHelper.disableStandardItemLighting();
+                OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
+                GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
+            }
             // 获取绘制前的屏幕宽度
             int prevWidth = GL11.glGetInteger(2849);
             // 设置目标实体大小 50-20, 1000-1000
