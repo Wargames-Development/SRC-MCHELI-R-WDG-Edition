@@ -110,7 +110,7 @@ public class MCH_Camera {
         if (this.isValidUid(uid) && viewer != null) {
             if (W_Lib.isEntityLivingBase(viewer) && !viewer.isDead) {
                 PotionEffect pe;
-                if (this.getMode(uid) == 0 && this.lastMode[uid] != 0) {
+                if ((this.getMode(uid) == 0 || this.getMode(uid) == 2) && this.lastMode[uid] != 0) {
                     pe = W_Entity.getActivePotionEffect(viewer, Potion.nightVision);
                     if (pe != null && pe.getDuration() > 0 && pe.getDuration() < 500) {
                         if (viewer.worldObj.isRemote) {
@@ -121,7 +121,7 @@ public class MCH_Camera {
                     }
                 }
 
-                if (this.getMode(uid) == 1  || this.getMode(uid) == 2) {
+                if (this.getMode(uid) == 1) {
                     pe = W_Entity.getActivePotionEffect(viewer, Potion.nightVision);
                     if ((pe == null || pe.getDuration() < 500) && !viewer.worldObj.isRemote) {
                         W_Entity.addPotionEffect(viewer, new PotionEffect(Potion.nightVision.id, 250, 0, true));
