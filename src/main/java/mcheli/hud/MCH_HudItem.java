@@ -198,6 +198,8 @@ public abstract class MCH_HudItem extends Gui {
             updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);
             if(((MCP_EntityPlane) ac).partWing != null) {
                 updateVarMapItem("is_sweepwing_fold", ((MCP_EntityPlane) ac).partWing.isOFF() ? 1.0D : 0.0D);
+            } else {
+                updateVarMapItem("is_sweepwing_fold", 0.0D);
             }
         }
     }
