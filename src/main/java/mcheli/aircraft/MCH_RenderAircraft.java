@@ -1268,10 +1268,10 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 // 绘制包围盒模型
                 bindTexture("textures/bounding_box.png");
                 debugModel.renderAll();
-                GL11.glPopMatrix();
 
                 // 可选：绘制包围盒的坐标轴辅助线或文字
                 drawHitBoxDetail(bb);
+                GL11.glPopMatrix();
             }
             GL11.glPopMatrix();
         }
@@ -1281,54 +1281,38 @@ public abstract class MCH_RenderAircraft extends W_Render {
      * 在调试视图中绘制包围盒的伤害系数文本。
      */
     public void drawHitBoxDetail(MCH_BoundingBox bb) {
-        // 字符串显示，保留两位小数
         String s = String.format("%.2f", bb.damageFactor);
-        // 文本缩放比例，值越小，字体越大
         float scale = 0.08F;
-
         GL11.glPushMatrix();
-        try {
-            // 平移到包围盒中心（相对实体位置）
+        if (bb.rotatedOffset != null) {
             GL11.glTranslated(bb.rotatedOffset.xCoord, bb.rotatedOffset.yCoord, bb.rotatedOffset.zCoord);
-            // 再沿 Y 轴抬高：0.5F + bb.height 相当于包围盒正上方留出一定空间
-            GL11.glTranslatef(0.0F, 0.5F + bb.height, 0.0F);
-
-            // billboard：始终面向玩家视角
-            GL11.glRotatef(-super.renderManager.playerViewY, 0.0F, 1.0F, 0.0F);
-            GL11.glRotatef(super.renderManager.playerViewX, 1.0F, 0.0F, 0.0F);
-            // 缩放文本，使其大小适中
-            GL11.glScalef(-scale, -scale, scale);
-
-            // 保存之前的深度测试状态并关闭，使文本不被遮挡
-            boolean depthTest = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
-            GL11.glDisable(GL11.GL_DEPTH_TEST);
-
-            // 渲染背景方块
-            FontRenderer fontRenderer = this.getFontRendererFromRenderManager();
-            int strWidth = fontRenderer.getStringWidth(s) / 2;
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
-            Tessellator tess = Tessellator.instance;
-            tess.startDrawingQuads();
-            tess.setColorRGBA_F(0.0F, 0.0F, 0.0F, 0.4F); // 半透明黑色背景
-            tess.addVertex(-strWidth - 1, -1.0D, 0.0D);
-            tess.addVertex(-strWidth - 1, 8.0D, 0.0D);
-            tess.addVertex(strWidth + 1, 8.0D, 0.0D);
-            tess.addVertex(strWidth + 1, -1.0D, 0.0D);
-            tess.draw();
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
-
-            // 根据伤害系数选择字体颜色：<1.0 为白色，>1.0 为红色
-            int color = bb.damageFactor < 1.0F ? 0xFFFFFFFF : (bb.damageFactor > 1.0F ? 0xFFFF0000 : 0xFFFFFF);
-            // 绘制文本，位置居中
-            fontRenderer.drawString(s, -fontRenderer.getStringWidth(s) / 2, 0, color);
-
-            // 恢复深度测试
-            if (depthTest) {
-                GL11.glEnable(GL11.GL_DEPTH_TEST);
-            }
-        } finally {
-            GL11.glPopMatrix();
         }
+        GL11.glTranslatef(0.0F, 0.5F + bb.height, 0.0F);
+
+        GL11.glRotatef(-super.renderManager.playerViewY, 0.0F, 1.0F, 0.0F);
+        GL11.glRotatef(super.renderManager.playerViewX, 1.0F, 0.0F, 0.0F);
+        GL11.glScalef(-scale, -scale, scale);
+
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+
+        FontRenderer fontRenderer = this.getFontRendererFromRenderManager();
+        int strWidth = fontRenderer.getStringWidth(s) / 2;
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        Tessellator tess = Tessellator.instance;
+        tess.startDrawingQuads();
+        tess.setColorRGBA_F(0.0F, 0.0F, 0.0F, 0.4F); // 半透明黑色背景
+        tess.addVertex(-strWidth - 1, -1.0D, 0.0D);
+        tess.addVertex(-strWidth - 1, 8.0D, 0.0D);
+        tess.addVertex(strWidth + 1, 8.0D, 0.0D);
+        tess.addVertex(strWidth + 1, -1.0D, 0.0D);
+        tess.draw();
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+
+        int color = bb.damageFactor < 1.0F ? 0xFFFFFFFF : (bb.damageFactor > 1.0F ? 0xFFFF0000 : 0xFFFFFF);
+        fontRenderer.drawString(s, -fontRenderer.getStringWidth(s) / 2, 0, color);
+
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glPopMatrix();
     }
 
     public void renderDebugPilotSeat(MCH_EntityAircraft e, double x, double y, double z, float yaw, float pitch, float roll) {
