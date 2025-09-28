@@ -811,14 +811,15 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                     GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
                                     GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
                                     GL11.glScalef(-0.02666667F, -0.02666667F, 0.02666667F);
-                                    GL11.glDisable(2896); // 禁用深度测试
                                     GL11.glTranslatef(0.0F, 9.374999F, 0.0F); // 上移一些偏移量
+
+                                    GL11.glDisable(2896); // 禁用深度测试
                                     GL11.glDepthMask(false); // 禁用深度写入
                                     GL11.glEnable(3042); // 启用混合
                                     GL11.glBlendFunc(770, 771); // 设置混合模式
                                     GL11.glDisable(3553); // 禁用纹理
                                     GL11.glDisable(2929 /* GL_DEPTH_TEST */);
-                                    RenderHelper.disableStandardItemLighting();
+
                                     // 获取绘制前的屏幕宽度
                                     int prevWidth = GL11.glGetInteger(2849);
                                     // 设置目标实体大小（根据实体的宽度和高度进行调整）
@@ -928,10 +929,6 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
                                         GL11.glPopMatrix();
                                     }
-
-                                    GL11.glPopMatrix();
-
-
                                     // 如果实体是无人机且当前视角是第一人称视角，并且目标实体被锁定，则绘制连接线
                                     if (!ac.isUAV() && isLockEntity && Minecraft.getMinecraft().gameSettings.thirdPersonView == 0) {
                                         GL11.glPushMatrix();
@@ -954,6 +951,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                     GL11.glDisable(3042);
                                     GL11.glEnable(2929 /* GL_DEPTH_TEST */);
                                     GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F); // 恢复默认颜色
+                                    GL11.glPopMatrix();
                                 }
                             }
                         }
