@@ -293,7 +293,7 @@ public class MCH_Command extends CommandBase {
          List list = sender.getEntityWorld().loadedEntityList;
 
          for(int i = 0; i < list.size(); ++i) {
-            if(list.get(i) != null && !(list.get(i) instanceof EntityPlayer) && list.get(i).getClass().getName().toLowerCase().indexOf(className) >= 0) {
+            if(list.get(i) != null && !(list.get(i) instanceof EntityPlayer) && list.get(i).getClass().getName().toLowerCase().contains(className)) {
                ((Entity)list.get(i)).attackEntityFrom(ds, damage);
                ++attacked;
             }
@@ -312,7 +312,7 @@ public class MCH_Command extends CommandBase {
          List list = sender.getEntityWorld().loadedEntityList;
 
          for(int i = 0; i < list.size(); ++i) {
-            if(list.get(i) != null && !(list.get(i) instanceof EntityPlayer) && list.get(i).getClass().getName().toLowerCase().indexOf(className) >= 0) {
+            if(list.get(i) != null && !(list.get(i) instanceof EntityPlayer) && list.get(i).getClass().getName().toLowerCase().contains(className)) {
                ((Entity)list.get(i)).setDead();
                ++killed;
             }

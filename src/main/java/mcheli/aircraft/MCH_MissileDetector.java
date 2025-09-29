@@ -202,7 +202,7 @@ public class MCH_MissileDetector {
     }
 
 
-    static class LockResult {
+    public static class LockResult {
         boolean isLock;
         boolean isRadarMissile;
         boolean isHeetseeker;

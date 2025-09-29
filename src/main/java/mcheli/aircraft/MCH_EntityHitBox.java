@@ -59,10 +59,6 @@ public class MCH_EntityHitBox extends W_Entity {
       return -0.3D;
    }
 
-   public boolean attackEntityFrom(DamageSource par1DamageSource, float par2) {
-      return this.parent != null && this.parent.attackEntityFrom(par1DamageSource, par2);
-   }
-
    public boolean canBeCollidedWith() {
       return !super.isDead;
    }
