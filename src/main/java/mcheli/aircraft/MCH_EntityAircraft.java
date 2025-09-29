@@ -984,7 +984,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 }
                             }
                             if (lastAttackedEntity instanceof EntityPlayer) {
-                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "超压", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
+                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), MCH_I18n.format("message.mcheli.overpressure"), damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
                             }
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
                         }

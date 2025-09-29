@@ -1229,7 +1229,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             MCH_Lib.DbgLog(super.worldObj, "MCH_EntityBaseBullet.onImpactEntity:Damage=%d:" + entity.getClass(), this.getPower());
             MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
             DamageSource ds = DamageSource.causeThrownDamage(this, this.shootingEntity);
-            MCH_Config var10000 = MCH_MOD.config;
             float damage = MCH_Config.applyDamageVsEntity(entity, ds, (float) this.getPower() * damageFactor);
             damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
             entity.attackEntityFrom(ds, damage);

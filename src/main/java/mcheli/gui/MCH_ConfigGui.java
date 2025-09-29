@@ -1,9 +1,7 @@
 package mcheli.gui;
 
-import mcheli.MCH_ClientCommonTickHandler;
-import mcheli.MCH_Config;
-import mcheli.MCH_Lib;
-import mcheli.MCH_MOD;
+import mcheli.*;
+import mcheli.MCH_I18n;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_PacketNotifyInfoReloaded;
@@ -94,19 +92,19 @@ public class MCH_ConfigGui extends W_GuiContainer {
         int y = super.guiTop;
         boolean DY = true;
         this.listControlButtons = new ArrayList();
-        this.buttonMouseInv = new MCH_GuiOnOffButton(0, x1, y + 25, 150, 20, "Invert Mouse : ");
-        this.sliderSensitivity = new MCH_GuiSlider(0, x1, y + 50, 150, 20, "Sensitivity : %.1f", 0.0F, 0.0F, 30.0F, 0.1F);
-        this.buttonFlightSimMode = new MCH_GuiOnOffButton(0, x1, y + 75, 150, 20, "Mouse Flight Sim Mode : ");
-        this.buttonSwitchWeaponWheel = new MCH_GuiOnOffButton(0, x1, y + 100, 150, 20, "Switch Weapon Wheel : ");
-        this.listControlButtons.add(new W_GuiButton(50, x1, y + 125, 150, 20, "Render Settings >>"));
-        this.listControlButtons.add(new W_GuiButton(51, x1, y + 150, 150, 20, "Key Binding >>"));
-        this.listControlButtons.add(new W_GuiButton(55, x2, y + 150, 150, 20, "Development >>"));
-        this.buttonTestMode = new MCH_GuiOnOffButton(0, x1, y + 175, 150, 20, "Test Mode : ");
-        this.buttonStickModeHeli = new MCH_GuiOnOffButton(0, x2, y + 25, 150, 20, "Stick Mode Heli : ");
-        this.buttonStickModePlane = new MCH_GuiOnOffButton(0, x2, y + 50, 150, 20, "Stick Mode Plane : ");
-        this.buttonThrottleHeli = new MCH_GuiOnOffButton(0, x2, y + 75, 150, 20, "Throttle Down Heli : ");
-        this.buttonThrottlePlane = new MCH_GuiOnOffButton(0, x2, y + 100, 150, 20, "Throttle Down Plane : ");
-        this.buttonThrottleTank = new MCH_GuiOnOffButton(0, x2, y + 125, 150, 20, "Throttle Down Tank : ");
+        this.buttonMouseInv = new MCH_GuiOnOffButton(0, x1, y + 25, 150, 20, MCH_I18n.format("gui.mcheli.invert_mouse"));
+        this.sliderSensitivity = new MCH_GuiSlider(0, x1, y + 50, 150, 20, MCH_I18n.format("gui.mcheli.sensitivity.format"), 0.0F, 0.0F, 30.0F, 0.1F);
+        this.buttonFlightSimMode = new MCH_GuiOnOffButton(0, x1, y + 75, 150, 20, MCH_I18n.format("gui.mcheli.mouse_flight_sim_mode"));
+        this.buttonSwitchWeaponWheel = new MCH_GuiOnOffButton(0, x1, y + 100, 150, 20, MCH_I18n.format("gui.mcheli.switch_weapon_wheel"));
+        this.listControlButtons.add(new W_GuiButton(50, x1, y + 125, 150, 20, MCH_I18n.format("gui.mcheli.render_settings")));
+        this.listControlButtons.add(new W_GuiButton(51, x1, y + 150, 150, 20, MCH_I18n.format("gui.mcheli.key_binding_forward")));
+        this.listControlButtons.add(new W_GuiButton(55, x2, y + 150, 150, 20, MCH_I18n.format("gui.mcheli.development_forward")));
+        this.buttonTestMode = new MCH_GuiOnOffButton(0, x1, y + 175, 150, 20, MCH_I18n.format("gui.mcheli.test_mode"));
+        this.buttonStickModeHeli = new MCH_GuiOnOffButton(0, x2, y + 25, 150, 20, MCH_I18n.format("gui.mcheli.stick_mode_heli"));
+        this.buttonStickModePlane = new MCH_GuiOnOffButton(0, x2, y + 50, 150, 20, MCH_I18n.format("gui.mcheli.stick_mode_plane"));
+        this.buttonThrottleHeli = new MCH_GuiOnOffButton(0, x2, y + 75, 150, 20, MCH_I18n.format("gui.mcheli.throttle_down_heli"));
+        this.buttonThrottlePlane = new MCH_GuiOnOffButton(0, x2, y + 100, 150, 20, MCH_I18n.format("gui.mcheli.throttle_down_plane"));
+        this.buttonThrottleTank = new MCH_GuiOnOffButton(0, x2, y + 125, 150, 20, MCH_I18n.format("gui.mcheli.throttle_down_tank"));
         this.listControlButtons.add(this.buttonMouseInv);
         this.listControlButtons.add(this.buttonStickModeHeli);
         this.listControlButtons.add(this.buttonStickModePlane);
@@ -126,17 +124,22 @@ public class MCH_ConfigGui extends W_GuiContainer {
         }
 
         this.listRenderButtons = new ArrayList<W_GuiButton>();
-        this.buttonShowHUDTP = new MCH_GuiOnOffButton(0, x1, y + 25, 150, 20, "Show HUD Third Person : ");
-        this.buttonHideKeyBind = new MCH_GuiOnOffButton(0, x1, y + 50, 150, 20, "Hide Key Binding : ");
-        this.sliderHitMark = new MCH_GuiSlider[]{new MCH_GuiSlider(0, x1 + 0, y + 125, 75, 20, "Alpha:%.0f", 0.0F, 0.0F, 255.0F, 16.0F), new MCH_GuiSlider(0, x1 + 75, y + 75, 75, 20, "Red:%.0f", 0.0F, 0.0F, 255.0F, 16.0F), new MCH_GuiSlider(0, x1 + 75, y + 100, 75, 20, "Green:%.0f", 0.0F, 0.0F, 255.0F, 16.0F), new MCH_GuiSlider(0, x1 + 75, y + 125, 75, 20, "Blue:%.0f", 0.0F, 0.0F, 255.0F, 16.0F)};
-        this.buttonReplaceCamera = new MCH_GuiOnOffButton(0, x1, y + 150, 150, 20, "Change Camera Pos : ");
-        this.listRenderButtons.add(new W_GuiButton(52, x1, y + 175, 90, 20, "Controls <<"));
-        this.buttonSmoothShading = new MCH_GuiOnOffButton(0, x2, y + 25, 150, 20, "Smooth Shading : ");
-        this.buttonShowEntityMarker = new MCH_GuiOnOffButton(0, x2, y + 50, 150, 20, "Show Entity Maker : ");
-        this.sliderEntityMarkerSize = new MCH_GuiSlider(0, x2 + 30, y + 75, 120, 20, "Entity Marker Size:%.0f", 10.0F, 0.0F, 30.0F, 1.0F);
-        this.sliderBlockMarkerSize = new MCH_GuiSlider(0, x2 + 60, y + 100, 90, 20, "Block Marker Size:%.0f", 10.0F, 0.0F, 20.0F, 1.0F);
-        this.buttonMarkThroughWall = new MCH_GuiOnOffButton(0, x2 + 30, y + 100, 120, 20, "Mark Through Wall : ");
-        this.buttonNewExplosion = new MCH_GuiOnOffButton(0, x2, y + 150, 150, 20, "Default Explosion : ");
+        this.buttonShowHUDTP = new MCH_GuiOnOffButton(0, x1, y + 25, 150, 20, MCH_I18n.format("gui.mcheli.show_hud_third_person"));
+        this.buttonHideKeyBind = new MCH_GuiOnOffButton(0, x1, y + 50, 150, 20, MCH_I18n.format("gui.mcheli.hide_key_binding"));
+        this.sliderHitMark = new MCH_GuiSlider[]{
+            new MCH_GuiSlider(0, x1 + 0, y + 125, 75, 20, MCH_I18n.format("gui.mcheli.alpha.format"), 0.0F, 0.0F, 255.0F, 16.0F),
+            new MCH_GuiSlider(0, x1 + 75, y + 75, 75, 20, MCH_I18n.format("gui.mcheli.red.format"), 0.0F, 0.0F, 255.0F, 16.0F),
+            new MCH_GuiSlider(0, x1 + 75, y + 100, 75, 20, MCH_I18n.format("gui.mcheli.green.format"), 0.0F, 0.0F, 255.0F, 16.0F),
+            new MCH_GuiSlider(0, x1 + 75, y + 125, 75, 20, MCH_I18n.format("gui.mcheli.blue.format"), 0.0F, 0.0F, 255.0F, 16.0F)
+        };
+        this.buttonReplaceCamera = new MCH_GuiOnOffButton(0, x1, y + 150, 150, 20, MCH_I18n.format("gui.mcheli.replace_camera"));
+        this.listRenderButtons.add(new W_GuiButton(52, x1, y + 175, 90, 20, MCH_I18n.format("gui.mcheli.controls_back")));
+        this.buttonSmoothShading = new MCH_GuiOnOffButton(0, x2, y + 25, 150, 20, MCH_I18n.format("gui.mcheli.smooth_shading"));
+        this.buttonShowEntityMarker = new MCH_GuiOnOffButton(0, x2, y + 50, 150, 20, MCH_I18n.format("gui.mcheli.show_entity_marker"));
+        this.sliderEntityMarkerSize = new MCH_GuiSlider(0, x2 + 30, y + 75, 120, 20, MCH_I18n.format("gui.mcheli.entity_marker_size.format"), 10.0F, 0.0F, 30.0F, 1.0F);
+        this.sliderBlockMarkerSize = new MCH_GuiSlider(0, x2 + 60, y + 100, 90, 20, MCH_I18n.format("gui.mcheli.block_marker_size.format"), 10.0F, 0.0F, 20.0F, 1.0F);
+        this.buttonMarkThroughWall = new MCH_GuiOnOffButton(0, x2 + 30, y + 100, 120, 20, MCH_I18n.format("gui.mcheli.mark_through_wall"));
+        this.buttonNewExplosion = new MCH_GuiOnOffButton(0, x2, y + 150, 150, 20, MCH_I18n.format("gui.mcheli.new_explosion"));
         this.listRenderButtons.add(this.buttonShowHUDTP);
 
         for (int var12 = 0; var12 < this.sliderHitMark.length; ++var12) {
@@ -162,106 +165,45 @@ public class MCH_ConfigGui extends W_GuiContainer {
         this.waitKeyAcceptCount = 0;
         this.keyBindingList = new MCH_GuiList(53, 7, x1, y + 25 - 2, 310, 150, "");
         this.listKeyBindingButtons.add(this.keyBindingList);
-        this.listKeyBindingButtons.add(new W_GuiButton(52, x1, y + 175, 90, 20, "Controls <<"));
-        this.listKeyBindingButtons.add(new W_GuiButton(54, x1 + 90, y + 175, 60, 20, "Reset All"));
+        this.listKeyBindingButtons.add(new W_GuiButton(52, x1, y + 175, 90, 20, MCH_I18n.format("gui.mcheli.controls_back")));
+        this.listKeyBindingButtons.add(new W_GuiButton(54, x1 + 90, y + 175, 60, 20, MCH_I18n.format("gui.mcheli.reset_all")));
         boolean var13 = true;
         boolean var14 = true;
-        MCH_GuiListItemKeyBind[] var10000 = new MCH_GuiListItemKeyBind[28];
-        MCH_GuiListItemKeyBind var10003 = new MCH_GuiListItemKeyBind(200, 300, x1, "Up", MCH_Config.KeyUp);
-        MCH_Config var10009 = MCH_MOD.config;
-        var10000[0] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(201, 301, x1, "Down", MCH_Config.KeyDown);
-        var10009 = MCH_MOD.config;
-        var10000[1] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(202, 302, x1, "Right", MCH_Config.KeyRight);
-        var10009 = MCH_MOD.config;
-        var10000[2] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(203, 303, x1, "Left", MCH_Config.KeyLeft);
-        var10009 = MCH_MOD.config;
-        var10000[3] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(204, 304, x1, "Switch Gunner", MCH_Config.KeySwitchMode);
-        var10009 = MCH_MOD.config;
-        var10000[4] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(205, 305, x1, "Switch Hovering", MCH_Config.KeySwitchHovering);
-        var10009 = MCH_MOD.config;
-        var10000[5] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(206, 306, x1, "Switch Weapon1", MCH_Config.KeySwitchWeapon1);
-        var10009 = MCH_MOD.config;
-        var10000[6] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(207, 307, x1, "Switch Weapon2", MCH_Config.KeySwitchWeapon2);
-        var10009 = MCH_MOD.config;
-        var10000[7] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(208, 308, x1, "Switch Weapon Mode", MCH_Config.KeySwWeaponMode);
-        var10009 = MCH_MOD.config;
-        var10000[8] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(209, 309, x1, "Zoom / Fold Wing", MCH_Config.KeyZoom);
-        var10009 = MCH_MOD.config;
-        var10000[9] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(210, 310, x1, "Camera Mode", MCH_Config.KeyCameraMode);
-        var10009 = MCH_MOD.config;
-        var10000[10] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(211, 311, x1, "Unmount Mobs", MCH_Config.KeyUnmount);
-        var10009 = MCH_MOD.config;
-        var10000[11] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(212, 312, x1, "Flare", MCH_Config.KeyFlare);
-        var10009 = MCH_MOD.config;
-        var10000[12] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(213, 313, x1, "Vtol / Drop / Fold Blade", MCH_Config.KeyExtra);
-        var10009 = MCH_MOD.config;
-        var10000[13] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(214, 314, x1, "Third Person Distance Up", MCH_Config.KeyCameraDistUp);
-        var10009 = MCH_MOD.config;
-        var10000[14] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(215, 315, x1, "Third Person Distance Down", MCH_Config.KeyCameraDistDown);
-        var10009 = MCH_MOD.config;
-        var10000[15] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(216, 316, x1, "Switch Free Look", MCH_Config.KeyFreeLook);
-        var10009 = MCH_MOD.config;
-        var10000[16] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(217, 317, x1, "Open GUI", MCH_Config.KeyGUI);
-        var10009 = MCH_MOD.config;
-        var10000[17] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(218, 318, x1, "Gear Up Down", MCH_Config.KeyGearUpDown);
-        var10009 = MCH_MOD.config;
-        var10000[18] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(219, 319, x1, "Put entity in the rack", MCH_Config.KeyPutToRack);
-        var10009 = MCH_MOD.config;
-        var10000[19] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(220, 320, x1, "Drop entity from the rack", MCH_Config.KeyDownFromRack);
-        var10009 = MCH_MOD.config;
-        var10000[20] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(221, 321, x1, "[MP]Score board", MCH_Config.KeyScoreboard);
-        var10009 = MCH_MOD.config;
-        var10000[21] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(222, 322, x1, "[MP][OP]Multiplay manager", MCH_Config.KeyMultiplayManager);
-        var10009 = MCH_MOD.config;
-        var10000[22] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(223, 323, x1, "Eject Seat Heli", MCH_Config.KeyEjectHeli);
-        var10009 = MCH_MOD.config;
-        var10000[23] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(224, 324, x1, "Chaff", MCH_Config.KeyChaff);
-        var10009 = MCH_MOD.config;
-        var10000[24] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(225, 325, x1, "Maintenance", MCH_Config.KeyMaintenance);
-        var10009 = MCH_MOD.config;
-        var10000[25] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(226, 326, x1, "APS", MCH_Config.KeyAPS);
-        var10009 = MCH_MOD.config;
-        var10000[26] = var10003;
-        var10003 = new MCH_GuiListItemKeyBind(227, 327, x1, "Reset Airburst Dist", MCH_Config.KeyAirburstDistReset);
-        var10009 = MCH_MOD.config;
-        var10000[27] = var10003;
-        MCH_GuiListItemKeyBind[] listKeyBindItems = var10000;
-        MCH_GuiListItemKeyBind[] i$ = listKeyBindItems;
-        int b = listKeyBindItems.length;
-
-        for (int i$1 = 0; i$1 < b; ++i$1) {
-            MCH_GuiListItemKeyBind item = i$[i$1];
+        MCH_GuiListItemKeyBind[] listKeyBindItems = new MCH_GuiListItemKeyBind[28];
+        listKeyBindItems[0] = new MCH_GuiListItemKeyBind(200, 300, x1, MCH_I18n.format("gui.mcheli.key.up"), MCH_Config.KeyUp);
+        listKeyBindItems[1] = new MCH_GuiListItemKeyBind(201, 301, x1, MCH_I18n.format("gui.mcheli.key.down"), MCH_Config.KeyDown);
+        listKeyBindItems[2] = new MCH_GuiListItemKeyBind(202, 302, x1, MCH_I18n.format("gui.mcheli.key.right"), MCH_Config.KeyRight);
+        listKeyBindItems[3] = new MCH_GuiListItemKeyBind(203, 303, x1, MCH_I18n.format("gui.mcheli.key.left"), MCH_Config.KeyLeft);
+        listKeyBindItems[4] = new MCH_GuiListItemKeyBind(204, 304, x1, MCH_I18n.format("gui.mcheli.key.switch_gunner"), MCH_Config.KeySwitchMode);
+        listKeyBindItems[5] = new MCH_GuiListItemKeyBind(205, 305, x1, MCH_I18n.format("gui.mcheli.key.switch_hovering"), MCH_Config.KeySwitchHovering);
+        listKeyBindItems[6] = new MCH_GuiListItemKeyBind(206, 306, x1, MCH_I18n.format("gui.mcheli.key.switch_weapon1"), MCH_Config.KeySwitchWeapon1);
+        listKeyBindItems[7] = new MCH_GuiListItemKeyBind(207, 307, x1, MCH_I18n.format("gui.mcheli.key.switch_weapon2"), MCH_Config.KeySwitchWeapon2);
+        listKeyBindItems[8] = new MCH_GuiListItemKeyBind(208, 308, x1, MCH_I18n.format("gui.mcheli.key.switch_weapon_mode"), MCH_Config.KeySwWeaponMode);
+        listKeyBindItems[9] = new MCH_GuiListItemKeyBind(209, 309, x1, MCH_I18n.format("gui.mcheli.key.zoom_fold_wing"), MCH_Config.KeyZoom);
+        listKeyBindItems[10] = new MCH_GuiListItemKeyBind(210, 310, x1, MCH_I18n.format("gui.mcheli.key.camera_mode"), MCH_Config.KeyCameraMode);
+        listKeyBindItems[11] = new MCH_GuiListItemKeyBind(211, 311, x1, MCH_I18n.format("gui.mcheli.key.unmount_mobs"), MCH_Config.KeyUnmount);
+        listKeyBindItems[12] = new MCH_GuiListItemKeyBind(212, 312, x1, MCH_I18n.format("gui.mcheli.key.flare"), MCH_Config.KeyFlare);
+        listKeyBindItems[13] = new MCH_GuiListItemKeyBind(213, 313, x1, MCH_I18n.format("gui.mcheli.key.vtol_drop_fold_blade"), MCH_Config.KeyExtra);
+        listKeyBindItems[14] = new MCH_GuiListItemKeyBind(214, 314, x1, MCH_I18n.format("gui.mcheli.key.third_person_distance_up"), MCH_Config.KeyCameraDistUp);
+        listKeyBindItems[15] = new MCH_GuiListItemKeyBind(215, 315, x1, MCH_I18n.format("gui.mcheli.key.third_person_distance_down"), MCH_Config.KeyCameraDistDown);
+        listKeyBindItems[16] = new MCH_GuiListItemKeyBind(216, 316, x1, MCH_I18n.format("gui.mcheli.key.switch_free_look"), MCH_Config.KeyFreeLook);
+        listKeyBindItems[17] = new MCH_GuiListItemKeyBind(217, 317, x1, MCH_I18n.format("gui.mcheli.key.open_gui"), MCH_Config.KeyGUI);
+        listKeyBindItems[18] = new MCH_GuiListItemKeyBind(218, 318, x1, MCH_I18n.format("gui.mcheli.key.gear_up_down"), MCH_Config.KeyGearUpDown);
+        listKeyBindItems[19] = new MCH_GuiListItemKeyBind(219, 319, x1, MCH_I18n.format("gui.mcheli.key.put_entity_rack"), MCH_Config.KeyPutToRack);
+        listKeyBindItems[20] = new MCH_GuiListItemKeyBind(220, 320, x1, MCH_I18n.format("gui.mcheli.key.drop_entity_rack"), MCH_Config.KeyDownFromRack);
+        listKeyBindItems[21] = new MCH_GuiListItemKeyBind(221, 321, x1, MCH_I18n.format("gui.mcheli.key.mp_score_board"), MCH_Config.KeyScoreboard);
+        listKeyBindItems[22] = new MCH_GuiListItemKeyBind(222, 322, x1, MCH_I18n.format("gui.mcheli.key.mp_op_multiplay_manager"), MCH_Config.KeyMultiplayManager);
+        listKeyBindItems[23] = new MCH_GuiListItemKeyBind(223, 323, x1, MCH_I18n.format("gui.mcheli.key.eject_seat_heli"), MCH_Config.KeyEjectHeli);
+        listKeyBindItems[24] = new MCH_GuiListItemKeyBind(224, 324, x1, MCH_I18n.format("gui.mcheli.key.chaff"), MCH_Config.KeyChaff);
+        listKeyBindItems[25] = new MCH_GuiListItemKeyBind(225, 325, x1, MCH_I18n.format("gui.mcheli.key.maintenance"), MCH_Config.KeyMaintenance);
+        listKeyBindItems[26] = new MCH_GuiListItemKeyBind(226, 326, x1, MCH_I18n.format("gui.mcheli.key.aps"), MCH_Config.KeyAPS);
+        listKeyBindItems[27] = new MCH_GuiListItemKeyBind(227, 327, x1, MCH_I18n.format("gui.mcheli.key.reset_airburst_dist"), MCH_Config.KeyAirburstDistReset);
+        for (int i$1 = 0; i$1 < listKeyBindItems.length; ++i$1) {
+            MCH_GuiListItemKeyBind item = listKeyBindItems[i$1];
             this.keyBindingList.addItem(item);
         }
 
         Iterator var15 = this.listKeyBindingButtons.iterator();
-
         W_GuiButton var16;
         while (var15.hasNext()) {
             var16 = (W_GuiButton) var15.next();
@@ -270,24 +212,22 @@ public class MCH_ConfigGui extends W_GuiContainer {
 
         this.listDevelopButtons = new ArrayList();
         if (Minecraft.getMinecraft().isSingleplayer()) {
-            this.buttonReloadAircraftInfo = new W_GuiButton(400, x1, y + 50, 150, 20, "Reload aircraft setting");
-            this.buttonReloadWeaponInfo = new W_GuiButton(401, x1, y + 75, 150, 20, "Reload All Weapons");
-            this.buttonReloadAllHUD = new W_GuiButton(402, x1, y + 100, 150, 20, "Reload All HUD");
+            this.buttonReloadAircraftInfo = new W_GuiButton(400, x1, y + 50, 150, 20, MCH_I18n.format("gui.mcheli.reload_aircraft_setting"));
+            this.buttonReloadWeaponInfo = new W_GuiButton(401, x1, y + 75, 150, 20, MCH_I18n.format("gui.mcheli.reload_all_weapons"));
+            this.buttonReloadAllHUD = new W_GuiButton(402, x1, y + 100, 150, 20, MCH_I18n.format("gui.mcheli.reload_all_hud"));
             this.listDevelopButtons.add(this.buttonReloadAircraftInfo);
             this.listDevelopButtons.add(this.buttonReloadWeaponInfo);
             this.listDevelopButtons.add(this.buttonReloadAllHUD);
         }
-
-        this.listDevelopButtons.add(new W_GuiButton(52, x1, y + 175, 90, 20, "Controls <<"));
+        this.listDevelopButtons.add(new W_GuiButton(52, x1, y + 175, 90, 20, MCH_I18n.format("gui.mcheli.controls_back")));
         var15 = this.listDevelopButtons.iterator();
-
         while (var15.hasNext()) {
             var16 = (W_GuiButton) var15.next();
             super.buttonList.add(var16);
         }
-
-        super.buttonList.add(new GuiButton(100, x2, y + 175, 80, 20, "Save & Close"));
-        super.buttonList.add(new GuiButton(101, x2 + 90, y + 175, 60, 20, "Cancel"));
+        // Save & close and cancel buttons
+        super.buttonList.add(new GuiButton(100, x2, y + 175, 80, 20, MCH_I18n.format("gui.mcheli.save_close")));
+        super.buttonList.add(new GuiButton(101, x2 + 90, y + 175, 60, 20, MCH_I18n.format("gui.mcheli.cancel")));
         this.switchScreen(0);
         this.applySwitchScreen();
         this.getAllStatusFromConfig();
@@ -365,7 +305,7 @@ public class MCH_ConfigGui extends W_GuiContainer {
         int b = (int) sliderHitMark[3].getSliderValue();
         config.hitMarkColorAlpha = a / 255.0F;
         config.hitMarkColorRGB = (r << 16) | (g << 8) | b;
-        MCH_Config.HitMarkColor.setPrm(String.format("%d, %d, %d, %d", new Object[]{Integer.valueOf((int) a), Integer.valueOf(r), Integer.valueOf(g), Integer.valueOf(b)}));
+        MCH_Config.HitMarkColor.setPrm(String.format("%d, %d, %d, %d", Integer.valueOf((int) a), Integer.valueOf(r), Integer.valueOf(g), Integer.valueOf(b)));
 
         // Set throttle parameters
         boolean b1 = config.AutoThrottleDownHeli.prmBool;
@@ -690,12 +630,12 @@ public class MCH_ConfigGui extends W_GuiContainer {
 
     protected void drawGuiContainerForegroundLayer(int par1, int par2) {
         super.drawGuiContainerForegroundLayer(par1, par2);
-        this.drawString("MC Helicopter MOD Options", 10, 10, 16777215);
+        this.drawString(MCH_I18n.format("gui.mcheli.title_mod_options"), 10, 10, 16777215);
         if (this.currentScreenId == 0) {
-            this.drawString("< Controls >", 170, 10, 16777215);
+            this.drawString(MCH_I18n.format("gui.mcheli.controls"), 170, 10, 16777215);
         } else if (this.currentScreenId == 1) {
-            this.drawString("< Render >", 170, 10, 16777215);
-            this.drawString("Hit Mark", 10, 75, 16777215);
+            this.drawString(MCH_I18n.format("gui.mcheli.render"), 170, 10, 16777215);
+            this.drawString(MCH_I18n.format("gui.mcheli.hit_mark"), 10, 75, 16777215);
             byte ignoreItems = 0;
             int var11 = ignoreItems | (int) this.sliderHitMark[0].getSliderValue() << 24;
             var11 |= (int) this.sliderHitMark[1].getSliderValue() << 16;
@@ -726,18 +666,18 @@ public class MCH_ConfigGui extends W_GuiContainer {
         } else {
             int var12;
             if (this.currentScreenId == 2) {
-                this.drawString("< Key Binding >", 170, 10, 16777215);
+                this.drawString(MCH_I18n.format("gui.mcheli.key_binding"), 170, 10, 16777215);
                 if (this.waitKeyButtonId != 0) {
                     drawRect(30, 30, super.xSize - 30, super.ySize - 30, -533712848);
-                    String var13 = "Press any key or mouse button.";
+                    String var13 = MCH_I18n.format("gui.mcheli.press_any_key");
                     var12 = this.getStringWidth(var13);
                     this.drawString(var13, (super.xSize - var12) / 2, super.ySize / 2 - 4, 16777215);
                 }
             } else if (this.currentScreenId == 3) {
-                this.drawString("< Development >", 170, 10, 16777215);
-                this.drawString("Single player only!", 10, 30, 16711680);
+                this.drawString(MCH_I18n.format("gui.mcheli.development"), 170, 10, 16777215);
+                this.drawString(MCH_I18n.format("gui.mcheli.single_player_only"), 10, 30, 16711680);
                 if (this.buttonReloadAircraftInfo != null && this.buttonReloadAircraftInfo.isOnMouseOver()) {
-                    this.drawString("The following items are not reload.", 170, 30, 16777215);
+                    this.drawString(MCH_I18n.format("gui.mcheli.items_not_reload"), 170, 30, 16777215);
                     String[] var14 = MCH_AircraftInfo.getCannotReloadItem();
                     var12 = 10;
                     String[] arr$ = var14;

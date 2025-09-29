@@ -710,7 +710,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static void addTotalDamage(float damage) {
         if(damage < 5) {
-            hitTotalDamageScale = 2.0f;
         } else if(damage < 12) {
             hitTotalDamageScale = 2.2f;
         } else if(damage < 35) {

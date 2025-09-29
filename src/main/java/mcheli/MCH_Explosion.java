@@ -310,13 +310,13 @@ public class MCH_Explosion extends Explosion {
                 if (explosionSize <= 1.0F || spawnCount % modInterval == 0) {
                     // 随机调整粒子的速度方向以增加多样性
                     if (world.rand.nextBoolean()) {
-                        dirY *= 3.0D;
+                        dirY *= 4.0D;
                         dirX *= 0.1D;
                         dirZ *= 0.1D;
                     } else {
                         dirY *= 0.2D;
-                        dirX *= 3.0D;
-                        dirZ *= 3.0D;
+                        dirX *= 2.0D;
+                        dirZ *= 2.0D;
                     }
 
                     // 创建爆炸粒子参数对象
@@ -329,19 +329,22 @@ public class MCH_Explosion extends Explosion {
                             dirX,
                             dirY,
                             dirZ,
-                            explosionSize < 8.0F ? (explosionSize < 2.0F ? 2.0F : explosionSize * 2.0F) : 16.0F
+                            explosionSize < 8.0F ? (explosionSize < 2.0F ? 1.5F : explosionSize * 1.5F) : 12.0F
                     );
                     // 为粒子随机设置颜色值（RGB通道）
                     particle.r = particle.g = particle.b =
                             0.3F + world.rand.nextFloat() * 0.4F;
                     particle.r += 0.1F;
                     particle.g += 0.05F;
+                    particle.a = 0.4F + world.rand.nextFloat() * 0.4F;
 
                     // 随机设置粒子的生命周期
                     particle.age = 5 + world.rand.nextInt(10);
                     particle.age = (int) ((float) particle.age *
-                            (Math.max(explosionSize, 4.0F)));
+                            (Math.max(explosionSize / 2, 6.0F)));
+                    particle.gravity = 0.001f;
                     particle.diffusible = true;
+
 
                     // 发射爆炸粒子
                     MCH_ParticlesUtil.spawnParticle(particle);
