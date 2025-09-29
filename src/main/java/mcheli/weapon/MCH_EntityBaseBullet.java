@@ -1035,6 +1035,12 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     protected void onImpact(MovingObjectPosition m, float damageFactor) {
         float p;
+        double hitX = 0;
+        double hitY = 0;
+        double hitZ = 0;
+        double dx = 0.00001D;
+        double dy = 0.00001D;
+        double dz = 0.00001D;
         if (!super.worldObj.isRemote) {
             if (m.entityHit != null) {
                 if (m.entityHit instanceof MCH_EntityBaseBullet && !this.getInfo().canBeIntercepted) {
@@ -1045,6 +1051,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
                 this.onImpactEntity(m.entityHit, damageFactor);
                 this.piercing--;
+                hitX = m.entityHit.posX + dx;
+                hitY = m.entityHit.posY + dy;
+                hitZ = m.entityHit.posZ + dz;
             }
 
             if (m.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
@@ -1053,36 +1062,35 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 if (mat == Material.leaves || mat == Material.plants || d0 == Blocks.iron_bars || d0 instanceof BlockDoublePlant) {
                     return;
                 }
+                hitX = m.hitVec.xCoord + dx;
+                hitY = m.hitVec.yCoord + dy;
+                hitZ = m.hitVec.zCoord + dz;
             }
-
             p = (float) this.explosionPower * damageFactor;
             float i = (float) this.explosionPowerInWater * damageFactor;
-            double dx = 0.0D;
-            double dy = 0.0D;
-            double dz = 0.0D;
             if (this.piercing > 0) {
                 --this.piercing;
                 if (p > 0.0F) {
-                    this.newExplosion(m.hitVec.xCoord + dx, m.hitVec.yCoord + dy, m.hitVec.zCoord + dz, 1.0F, 1.0F, false);
+                    this.newExplosion(hitX, hitY, hitZ, 1.0F, 1.0F, false);
                 }
             } else {
                 if (i == 0.0F) {
                     if (this.getInfo().isFAE) {
                         this.newFAExplosion(super.posX, super.posY, super.posZ, p, (float) this.getInfo().explosionBlock);
                     } else if (p > 0.0F) {
-                        this.newExplosion(m.hitVec.xCoord + dx, m.hitVec.yCoord + dy, m.hitVec.zCoord + dz, p, (float) this.getInfo().explosionBlock, false);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false);
                     } else if (p < 0.0F) {
                         this.playExplosionSound();
                     }
                 } else if (m.entityHit != null) {
                     if (this.isInWater()) {
-                        this.newExplosion(m.hitVec.xCoord + dx, m.hitVec.yCoord + dy, m.hitVec.zCoord + dz, i, i, true);
+                        this.newExplosion(hitX, hitY, hitZ, i, i, true);
                     } else {
-                        this.newExplosion(m.hitVec.xCoord + dx, m.hitVec.yCoord + dy, m.hitVec.zCoord + dz, p, (float) this.getInfo().explosionBlock, false);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false);
                     }
                 } else if (!this.isInWater() && !MCH_Lib.isBlockInWater(super.worldObj, m.blockX, m.blockY, m.blockZ)) {
                     if (p > 0.0F) {
-                        this.newExplosion(m.hitVec.xCoord + dx, m.hitVec.yCoord + dy, m.hitVec.zCoord + dz, p, (float) this.getInfo().explosionBlock, false);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false);
                     } else if (p < 0.0F) {
                         this.playExplosionSound();
                     }

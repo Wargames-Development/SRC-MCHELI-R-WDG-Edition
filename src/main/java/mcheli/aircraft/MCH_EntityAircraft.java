@@ -931,6 +931,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean attackEntityFrom(DamageSource damageSource, float org_damage) {
+        System.out.println("受到伤害" + org_damage + " " + damageSource.getDamageType());
         if (ironCurtainRunningTick > 0) {
             return false;
         }
@@ -938,6 +939,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         lastBBDamageFactor = 1.0F;
         String bbName = this.lastBBName;
         lastBBName = null;
+        boolean damageExplosion = false;
         if (this.isEntityInvulnerable()) {
             return false;
         } else if (super.isDead) {
@@ -958,28 +960,44 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 if (!MCH_Multiplay.canAttackEntity(damageSource, this)) {
                     return false;
                 } else {
+                    Entity entity = damageSource.getEntity();
+                    if (entity instanceof EntityLivingBase)
+                        this.lastAttackedEntity = entity;
                     if (dmt.equalsIgnoreCase("lava")) {
                         if (!damageSource.isProjectile()) {
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
                         }
-                        this.timeSinceHit = 1;
+                        this.timeSinceHit = 0;
                     }
                     if (dmt.startsWith("explosion")) {
-                        this.timeSinceHit = 1;
-                        this.setDamageTaken(this.getDamageTaken() + (int) damage);
+                        if (!this.isDestroyed()) {
+                            damageExplosion = true;
+                            this.timeSinceHit = 0;
+                            //触发载具伤害事件
+                            damage *= getAcInfo().armorExplosionDamageMultiplier;
+                            String name = (String) getAcInfo().displayNameLang.get("en_US");
+                            if (lastRiddenByEntity instanceof EntityPlayer && lastAttackedEntity instanceof EntityLivingBase) {
+                                EntityPlayer player = (EntityPlayer) lastRiddenByEntity;
+                                if (!player.isOnSameTeam((EntityLivingBase) lastAttackedEntity)) {
+                                    AircraftDamageEvent e = new AircraftDamageEvent(lastAttackedEntity.getCommandSenderName(), name, damage, getMaxHP());
+                                    MinecraftForge.EVENT_BUS.post(e);
+                                }
+                            }
+                            if (lastAttackedEntity instanceof EntityPlayer) {
+                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "超压", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
+                            }
+                            this.setDamageTaken(this.getDamageTaken() + (int) damage);
+                        }
                     } else if (this.isMountedEntity(damageSource.getEntity())) {
                         return false;
                     }
                     if (dmt.equalsIgnoreCase("onFire")) {
                         this.setDamageTaken(this.getDamageTaken() + (int) damage);
-                        this.timeSinceHit = 1;
+                        this.timeSinceHit = 0;
                     }
                     boolean isCreative = false;
                     boolean isSneaking = false;
-                    Entity entity = damageSource.getEntity();
-                    if (entity instanceof EntityLivingBase)
-                        this.lastAttackedEntity = entity;
-                    boolean isDamegeSourcePlayer = false;
+                    boolean isDamageSourcePlayer = false;
                     boolean playDamageSound = false;
                     if (entity instanceof EntityPlayer) {
                         EntityPlayer cmd = (EntityPlayer) entity;
@@ -987,17 +1005,17 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         isSneaking = cmd.isSneaking();
                         if (dmt.equalsIgnoreCase("player")) {
                             if (isCreative) {
-                                isDamegeSourcePlayer = true;
+                                isDamageSourcePlayer = true;
                             } else if (getAcInfo() != null) {
                                 var10000 = MCH_MOD.config;
                                 if (!MCH_Config.PreventingBroken.prmBool) {
                                     var10000 = MCH_MOD.config;
                                     if (MCH_Config.BreakableOnlyPickaxe.prmBool) {
                                         if (cmd.getCurrentEquippedItem() != null && cmd.getCurrentEquippedItem().getItem() instanceof ItemPickaxe) {
-                                            isDamegeSourcePlayer = true;
+                                            isDamageSourcePlayer = true;
                                         }
                                     } else {
-                                        isDamegeSourcePlayer = !this.isRidePlayer();
+                                        isDamageSourcePlayer = !this.isRidePlayer();
                                     }
                                 }
                             }
@@ -1009,7 +1027,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     }
 
                     if (!this.isDestroyed()) {
-                        if (!isDamegeSourcePlayer) {
+                        if (!isDamageSourcePlayer && !damageExplosion) {
                             MCH_AircraftInfo acInfo = this.getAcInfo();
                             if (acInfo != null) {
                                 if (!dmt.equalsIgnoreCase("lava") && !dmt.equalsIgnoreCase("onFire")) {
@@ -1041,13 +1059,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 }
                             }
                             if(bbName != null && lastAttackedEntity instanceof EntityPlayer) {
-                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId() , bbName, damage * 100 / getMaxHP()), (EntityPlayerMP) lastAttackedEntity);
+                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId() , bbName, damage * 100 / getMaxHP(), (byte) 0), (EntityPlayerMP) lastAttackedEntity);
                             }
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
                         }
                         this.setBeenAttacked();
-                        if (this.getDamageTaken() >= this.getMaxHP() || isDamegeSourcePlayer) {
-                            if (!isDamegeSourcePlayer) {
+                        if (this.getDamageTaken() >= this.getMaxHP() || isDamageSourcePlayer) {
+                            if (!isDamageSourcePlayer) {
                                 this.setDamageTaken(this.getMaxHP());
                                 //触发载具击杀事件
                                 String name = (String) getAcInfo().displayNameLang.get("en_US");
@@ -1091,7 +1109,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 this.setDead(true);
                             }
                         }
-                    } else if (isDamegeSourcePlayer && isCreative) {
+                    } else if (isDamageSourcePlayer && isCreative) {
                         this.setDead(true);
                     }
                     if (playDamageSound) {

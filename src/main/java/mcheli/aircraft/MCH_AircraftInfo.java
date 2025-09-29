@@ -217,6 +217,11 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * hud自定义字段，用于指示载具weaponGroupType
      */
     public int weaponGroupType = 0;
+    /**
+     * 载具爆炸倍率，最终的爆炸伤害=爆炸伤害*爆炸倍率
+     */
+    public float armorExplosionDamageMultiplier = 1.0f;
+
     private List textureNameList;
     private String lastWeaponType = "";
     private int lastWeaponIndex = -1;
@@ -617,7 +622,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 hudType = this.toInt(data);
             } else if (item.equalsIgnoreCase("WeaponGroupType")) {
                 weaponGroupType = this.toInt(data);
-            } else if (item.equalsIgnoreCase("RWRType")) {
+            } else if (item.equalsIgnoreCase("ArmorExplosionDamageMultiplier")) {
+                armorExplosionDamageMultiplier = this.toFloat(data);
+            }else if (item.equalsIgnoreCase("RWRType")) {
                 try {
                     this.rwrType = EnumRWRType.valueOf(data);
                 } catch (Exception e) {

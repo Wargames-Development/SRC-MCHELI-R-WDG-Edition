@@ -56,15 +56,15 @@ public class MCH_EntitySeat extends W_Entity {
    }
 
    public boolean canBePushed() {
-      return false;
+       return super.canBePushed();
    }
 
    public double getMountedYOffset() {
       return -0.3D;
    }
 
-   public boolean attackEntityFrom(DamageSource damageSource, float amount) {
-      return false;
+   public boolean attackEntityFrom(DamageSource par1DamageSource, float par2) {
+       return super.attackEntityFrom(par1DamageSource, par2);
    }
 
    public boolean canBeCollidedWith() {

@@ -10,18 +10,22 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.Objects;
+
 public class PacketBoundingBoxHit extends PacketBase {
     public int targetID;
     public String name;
     public float damage;
+    public byte damageType; // 0正常 1爆炸
 
     public PacketBoundingBoxHit() {
     }
 
-    public PacketBoundingBoxHit(int targetID, String name, float damage) {
+    public PacketBoundingBoxHit(int targetID, String name, float damage, byte damageType) {
         this.targetID = targetID;
         this.name = name;
         this.damage = damage;
+        this.damageType = damageType;
     }
 
     @Override
@@ -29,6 +33,7 @@ public class PacketBoundingBoxHit extends PacketBase {
         data.writeInt(targetID);
         writeUTF(data, name);
         data.writeFloat(damage);
+        data.writeByte(damageType);
     }
 
     @Override
@@ -36,6 +41,7 @@ public class PacketBoundingBoxHit extends PacketBase {
         targetID = data.readInt();
         name = readUTF(data);
         damage = data.readFloat();
+        damageType = data.readByte();
     }
 
     @Override
@@ -44,9 +50,13 @@ public class PacketBoundingBoxHit extends PacketBase {
 
     @Override
     public void handleClientSide(EntityPlayer clientPlayer) {
-        MCH_ClientCommonTickHandler.hitDisplayCountdown = 20;
+        MCH_ClientCommonTickHandler.hitDisplayCountdown = 40;
         MCH_ClientCommonTickHandler.hitTotalDamageClearCountdown = 60;
-        MCH_ClientCommonTickHandler.hitTotalDamage += damage;
-        MCH_ClientCommonTickHandler.hitDisplay = name;
+        MCH_ClientCommonTickHandler.HitMessage hitMessage = new MCH_ClientCommonTickHandler.HitMessage();
+        hitMessage.hitDisplay = name;
+        hitMessage.hitDamage = damage;
+        hitMessage.hitDamageType = damageType;
+        MCH_ClientCommonTickHandler.addHitMessage(hitMessage);
+        MCH_ClientCommonTickHandler.addTotalDamage(damage);
     }
 }

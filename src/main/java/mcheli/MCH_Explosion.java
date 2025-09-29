@@ -494,24 +494,24 @@ public class MCH_Explosion extends Explosion {
                 int l1 = MathHelper.floor_double(super.explosionY + (double) super.explosionSize + 1.0D);
                 int var34 = MathHelper.floor_double(super.explosionZ - (double) super.explosionSize - 1.0D);
                 int j2 = MathHelper.floor_double(super.explosionZ + (double) super.explosionSize + 1.0D);
-                List var35 = this.world.getEntitiesWithinAABBExcludingEntity(super.exploder, W_AxisAlignedBB.getAABB((double) i, (double) k, (double) var34, (double) j, (double) l1, (double) j2));
+                List list = this.world.getEntitiesWithinAABBExcludingEntity(super.exploder, W_AxisAlignedBB.getAABB(i, k, var34, j, l1, j2));
                 Vec3 vec3 = W_WorldFunc.getWorldVec3(this.world, super.explosionX, super.explosionY, super.explosionZ);
                 super.exploder = this.explodedPlayer;
 
-                for (int var37 = 0; var37 < var35.size(); ++var37) {
-                    Entity entity = (Entity) var35.get(var37);
-                    double var38 = entity.getDistance(super.explosionX, super.explosionY, super.explosionZ) / (double) super.explosionSize;
-                    if (var38 <= 1.0D) {
+                for (int i1 = 0; i1 < list.size(); ++i1) {
+                    Entity entity = (Entity) list.get(i1);
+                    double rDist = entity.getDistance(super.explosionX, super.explosionY, super.explosionZ) / (double) super.explosionSize;
+                    if (rDist <= 1.0D) {
                         d0 = entity.posX - super.explosionX;
                         d1 = entity.posY + (double) entity.getEyeHeight() - super.explosionY;
                         d2 = entity.posZ - super.explosionZ;
-                        double var39 = (double) MathHelper.sqrt_double(d0 * d0 + d1 * d1 + d2 * d2);
-                        if (var39 != 0.0D) {
-                            d0 /= var39;
-                            d1 /= var39;
-                            d2 /= var39;
+                        double dist = MathHelper.sqrt_double(d0 * d0 + d1 * d1 + d2 * d2);
+                        if (dist != 0.0D) {
+                            d0 /= dist;
+                            d1 /= dist;
+                            d2 /= dist;
                             double var40 = this.getBlockDensity(vec3, entity.boundingBox);
-                            double var41 = (1.0D - var38) * var40;
+                            double var41 = (1.0D - rDist) * var40;
                             float damage = (float) ((int) ((var41 * var41 + var41) / 2.0D * 8.0D * (double) super.explosionSize + 1.0D));
                             if (damage > 0.0F && this.result != null && !(entity instanceof EntityItem) && !(entity instanceof EntityExpBottle) && !(entity instanceof EntityXPOrb) && !W_Entity.isEntityFallingBlock(entity)) {
                                 if (entity instanceof MCH_EntityBaseBullet && super.exploder instanceof EntityPlayer) {
@@ -527,18 +527,16 @@ public class MCH_Explosion extends Explosion {
 
                             MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
                             DamageSource ds = DamageSource.setExplosionSource(this);
-                            MCH_Config var36 = MCH_MOD.config;
                             damage = MCH_Config.applyDamageVsEntity(entity, ds, damage);
-                            damage *= this.damageFactor != null ? this.damageFactor.getDamageFactor(entity) : 1.0F;
                             if (entity instanceof EntityPlayer) damage *= damageVsPlayer;
                             else if (entity instanceof EntityLivingBase) damage *= damageVsLiving;
                             else if (entity instanceof MCP_EntityPlane) damage *= damageVsPlane;
                             else if (entity instanceof MCH_EntityHeli) damage *= damageVsHeli;
                             else if (entity instanceof MCH_EntityTank) damage *= damageVsTank;
                             else if (entity instanceof MCH_EntityVehicle) damage *= damageVsVehicle;
-                            W_Entity.attackEntityFrom(entity, ds, damage);
+                            entity.attackEntityFrom(ds, damage);
                             double d11 = EnchantmentProtection.func_92092_a(entity, var41);
-                            if (!(entity instanceof MCH_EntityBaseBullet)) {
+                            if (entity instanceof EntityLivingBase) {
                                 entity.motionX += d0 * d11 * 0.4D;
                                 entity.motionY += d1 * d11 * 0.1D;
                                 entity.motionZ += d2 * d11 * 0.4D;
@@ -549,7 +547,7 @@ public class MCH_Explosion extends Explosion {
                             }
 
                             if (damage > 0.0F && this.countSetFireEntity > 0) {
-                                double fireFactor = 1.0D - var39 / (double) super.explosionSize;
+                                double fireFactor = 1.0D - dist / (double) super.explosionSize;
                                 if (fireFactor > 0.0D) {
                                     entity.setFire((int) (fireFactor * (double) this.countSetFireEntity));
                                 }
