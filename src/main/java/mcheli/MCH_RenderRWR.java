@@ -28,6 +28,7 @@ public class MCH_RenderRWR {
     private static final ResourceLocation RWR = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR.png");
     private static final ResourceLocation RWR_HELI = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_HELI.png");
     private static final ResourceLocation RWR_TANK = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_TANK.png");
+    private static final ResourceLocation RWR_FAC = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_FAC.png");
     private static final int _RWR_SIZE = 180;
     private static final int _RWR_CENTER_X = 100;
     private static final int _RWR_CENTER_Y = 280;
@@ -78,6 +79,15 @@ public class MCH_RenderRWR {
             ResourceLocation rwr;
             if(ac instanceof MCP_EntityPlane) {
                 rwr = RWR;
+                if(ac.getAcInfo().isFloat) {
+                    rwr = RWR_FAC;
+                    RWR_SIZE = 160;
+                    RWR_CENTER_X = 220;
+                    RWR_CENTER_Y = 370;
+                    MIN_DISTANCE = 15;
+                    MAX_DISTANCE = 800;
+                    MIN_RADIUS = 30;
+                }
             } else if (ac instanceof MCH_EntityHeli) {
                 rwr = RWR_HELI;
             } else if (ac instanceof MCH_EntityTank) {

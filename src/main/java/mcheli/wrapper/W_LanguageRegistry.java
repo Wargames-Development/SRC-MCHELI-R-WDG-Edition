@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.block.Block
  *  net.minecraft.item.Item
@@ -12,14 +12,18 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+
+import mcheli.MCH_I18n;
 import mcheli.MCH_Lib;
 import mcheli.MCH_OutputFile;
 import net.minecraft.block.Block;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.item.Item;
 import net.minecraft.stats.Achievement;
 
 public class W_LanguageRegistry {
-    private static HashMap<String, ArrayList<String>> map = new HashMap();
+
+    private static HashMap<String, ArrayList<String>> map = new HashMap<>();
 
     public static void addName(Object objectToName, String name) {
         W_LanguageRegistry.addNameForObject(objectToName, "en_US", name);
@@ -34,7 +38,10 @@ public class W_LanguageRegistry {
             return;
         }
         if (!map.containsKey(lang)) {
-            map.put(lang, new ArrayList());
+            map.put(lang, new ArrayList<>());
+        }
+        if (o instanceof String) {
+            map.get(lang).add(o + "=" + name);
         }
         if (o instanceof Item) {
             map.get(lang).add(((Item)o).getUnlocalizedName() + ".name=" + name);
@@ -48,6 +55,7 @@ public class W_LanguageRegistry {
     }
 
     public static void updateLang(String filePath) {
+        MCH_I18n.register();
         for (String key : map.keySet()) {
             ArrayList<String> list = map.get(key);
             MCH_OutputFile file = new MCH_OutputFile();
@@ -55,10 +63,10 @@ public class W_LanguageRegistry {
             for (String s : list) {
                 file.writeLine(s);
             }
-            MCH_Lib.Log("[mcheli] Update lang:" + file.file.getAbsolutePath(), new Object[0]);
+            MCH_Lib.Log("[mcheli] Update lang:" + file.file.getAbsolutePath());
             file.close();
         }
-        map = null;
+        map.clear();
     }
 }
 

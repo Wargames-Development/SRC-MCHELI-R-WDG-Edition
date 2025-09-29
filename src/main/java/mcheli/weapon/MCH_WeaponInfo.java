@@ -784,28 +784,29 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                         } else if (item.equalsIgnoreCase("DamageFactor")) {
                             s = this.splitParam(data);
                             if (s.length >= 2) {
-                                Class var13 = null;
-                                String var14 = s[0].toLowerCase();
-                                if (var14.equals("player")) {
-                                    var13 = EntityPlayer.class;
-                                } else if (!var14.equals("heli") && !var14.equals("helicopter")) {
-                                    if (var14.equals("plane")) {
-                                        var13 = MCP_EntityPlane.class;
-                                    } else if (var14.equals("tank")) {
-                                        var13 = MCH_EntityTank.class;
-                                    } else if (var14.equals("vehicle")) {
-                                        var13 = MCH_EntityVehicle.class;
-                                    }
-                                } else {
-                                    var13 = MCH_EntityHeli.class;
-                                }
-
-                                if (var13 != null) {
-                                    if (this.damageFactor == null) {
-                                        this.damageFactor = new MCH_DamageFactor();
-                                    }
-
-                                    this.damageFactor.add(var13, this.toFloat(s[1], 0.0F, 1000000.0F));
+                                this.damageFactor = new MCH_DamageFactor();
+                                String eType = s[0].toLowerCase();
+                                float damage = toFloat(s[1]);
+                                switch (eType) {
+                                    case "living":
+                                        damageFactor.damageVsLiving = damage;
+                                        break;
+                                    case "player":
+                                        damageFactor.damageVsPlayer = damage;
+                                        break;
+                                    case "plane":
+                                        damageFactor.damageVsPlane = damage;
+                                        break;
+                                    case "tank":
+                                        damageFactor.damageVsTank = damage;
+                                        break;
+                                    case "vehicle":
+                                        damageFactor.damageVsVehicle = damage;
+                                        break;
+                                    case "heli":
+                                    case "helicopter":
+                                        damageFactor.damageVsHeli = damage;
+                                        break;
                                 }
                             }
                         }
@@ -836,6 +837,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             case "machinegun1":
             case "machinegun2":
             case "railgun":
+            case "laser":
                 return "MachineGun";
             case "torpedo":
                 return "Torpedo";
