@@ -9,8 +9,6 @@ import mcheli.aircraft.MCH_AircraftGuiContainer;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.block.MCH_DraftingTableGui;
 import mcheli.block.MCH_DraftingTableGuiContainer;
-import mcheli.gui.MCH_ConfigGui;
-import mcheli.gui.MCH_ConfigGuiContainer;
 import mcheli.multiplay.MCH_ContainerScoreboard;
 import mcheli.multiplay.MCH_GuiScoreboard;
 import mcheli.uav.MCH_ContainerUavStation;

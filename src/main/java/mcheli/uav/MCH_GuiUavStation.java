@@ -1,5 +1,6 @@
 package mcheli.uav;
 
+import mcheli.MCH_I18n;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.helicopter.MCH_ItemHeli;
@@ -47,13 +48,13 @@ public class MCH_GuiUavStation extends W_GuiContainer {
             }
 
             if (item != null && (info == null || !info.isUAV)) {
-                this.drawString("Not UAV", 8, 6, 16711680);
+                this.drawString(MCH_I18n.format("gui.mcheli.uav_not"), 8, 6, 16711680);
             } else if (this.uavStation.getKind() <= 1) {
-                this.drawString("UAV Station", 8, 6, 16777215);
+                this.drawString(MCH_I18n.format("gui.mcheli.uav_station"), 8, 6, 16777215);
             } else if (item != null && !info.isSmallUAV) {
-                this.drawString("Small UAV only", 8, 6, 16711680);
+                this.drawString(MCH_I18n.format("gui.mcheli.uav_small_only"), 8, 6, 16711680);
             } else {
-                this.drawString("UAV Controller", 8, 6, 16777215);
+                this.drawString(MCH_I18n.format("gui.mcheli.uav_controller"), 8, 6, 16777215);
             }
 
             this.drawString(StatCollector.translateToLocal("container.inventory"), 8, super.ySize - 96 + 2, 16777215);
@@ -141,7 +142,7 @@ public class MCH_GuiUavStation extends W_GuiContainer {
             }
         }
 
-        this.buttonContinue = new GuiButton(256, x - 80 + 3, y + 44, 50, 20, "Continue");
+        this.buttonContinue = new GuiButton(256, x - 80 + 3, y + 44, 50, 20, MCH_I18n.format("gui.mcheli.uav_connect"));
         this.buttonContinue.enabled = false;
         if (this.uavStation != null && !this.uavStation.isDead && this.uavStation.getAndSearchLastControlAircraft() != null) {
             this.buttonContinue.enabled = true;
