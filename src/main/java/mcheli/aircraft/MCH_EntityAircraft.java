@@ -1006,9 +1006,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                             if (isCreative) {
                                 isDamageSourcePlayer = true;
                             } else if (getAcInfo() != null) {
-                                var10000 = MCH_MOD.config;
                                 if (!MCH_Config.PreventingBroken.prmBool) {
-                                    var10000 = MCH_MOD.config;
                                     if (MCH_Config.BreakableOnlyPickaxe.prmBool) {
                                         if (cmd.getCurrentEquippedItem() != null && cmd.getCurrentEquippedItem().getItem() instanceof ItemPickaxe) {
                                             isDamageSourcePlayer = true;
