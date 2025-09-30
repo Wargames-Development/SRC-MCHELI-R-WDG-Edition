@@ -931,7 +931,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean attackEntityFrom(DamageSource damageSource, float org_damage) {
-        System.out.println("受到伤害" + org_damage + " " + damageSource.getDamageType());
         if (ironCurtainRunningTick > 0) {
             return false;
         }
@@ -984,7 +983,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 }
                             }
                             if (lastAttackedEntity instanceof EntityPlayer) {
-                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), MCH_I18n.format("message.mcheli.overpressure"), damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
+                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "message.mcheli.overpressure", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
                             }
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
                         }

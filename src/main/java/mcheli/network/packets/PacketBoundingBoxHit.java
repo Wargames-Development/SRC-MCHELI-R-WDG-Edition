@@ -3,6 +3,7 @@ package mcheli.network.packets;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import mcheli.MCH_ClientCommonTickHandler;
+import mcheli.MCH_I18n;
 import mcheli.network.PacketBase;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.wrapper.W_Entity;
@@ -53,7 +54,11 @@ public class PacketBoundingBoxHit extends PacketBase {
         MCH_ClientCommonTickHandler.hitDisplayCountdown = 40;
         MCH_ClientCommonTickHandler.hitTotalDamageClearCountdown = 60;
         MCH_ClientCommonTickHandler.HitMessage hitMessage = new MCH_ClientCommonTickHandler.HitMessage();
-        hitMessage.hitDisplay = name;
+        if(damageType == 0) {
+            hitMessage.hitDisplay = name;
+        } else if(damageType == 1) {
+            hitMessage.hitDisplay = MCH_I18n.format("message.mcheli.overpressure");
+        }
         hitMessage.hitDamage = damage;
         hitMessage.hitDamageType = damageType;
         MCH_ClientCommonTickHandler.addHitMessage(hitMessage);

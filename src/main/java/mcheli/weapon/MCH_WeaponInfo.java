@@ -628,6 +628,36 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.markerRocketSpawnSpeed = this.toInt(data);
             } else if(item.equalsIgnoreCase("EnableExhaustFlare")) {
                 this.enableExhaustFlare = this.toBool(data);
+            } else if (item.equalsIgnoreCase("DamageFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 2) {
+                    if(this.damageFactor == null) {
+                        this.damageFactor = new MCH_DamageFactor();
+                    }
+                    String eType = s[0].toLowerCase();
+                    float damage = toFloat(s[1]);
+                    switch (eType) {
+                        case "living":
+                            damageFactor.damageVsLiving = damage;
+                            break;
+                        case "player":
+                            damageFactor.damageVsPlayer = damage;
+                            break;
+                        case "plane":
+                            damageFactor.damageVsPlane = damage;
+                            break;
+                        case "tank":
+                            damageFactor.damageVsTank = damage;
+                            break;
+                        case "vehicle":
+                            damageFactor.damageVsVehicle = damage;
+                            break;
+                        case "heli":
+                        case "helicopter":
+                            damageFactor.damageVsHeli = damage;
+                            break;
+                    }
+                }
             }
 
             else if (item.compareTo("reloadtime") == 0) {
@@ -781,34 +811,6 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                             this.markTime = this.toInt(data, 1, 30000) + 1;
                         } else if (item.equalsIgnoreCase("Recoil")) {
                             this.recoil = this.toFloat(data, 0.0F, 100.0F);
-                        } else if (item.equalsIgnoreCase("DamageFactor")) {
-                            s = this.splitParam(data);
-                            if (s.length >= 2) {
-                                this.damageFactor = new MCH_DamageFactor();
-                                String eType = s[0].toLowerCase();
-                                float damage = toFloat(s[1]);
-                                switch (eType) {
-                                    case "living":
-                                        damageFactor.damageVsLiving = damage;
-                                        break;
-                                    case "player":
-                                        damageFactor.damageVsPlayer = damage;
-                                        break;
-                                    case "plane":
-                                        damageFactor.damageVsPlane = damage;
-                                        break;
-                                    case "tank":
-                                        damageFactor.damageVsTank = damage;
-                                        break;
-                                    case "vehicle":
-                                        damageFactor.damageVsVehicle = damage;
-                                        break;
-                                    case "heli":
-                                    case "helicopter":
-                                        damageFactor.damageVsHeli = damage;
-                                        break;
-                                }
-                            }
                         }
                     } else {
                         s = data.split("\\s*,\\s*");
