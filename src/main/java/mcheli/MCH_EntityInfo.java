@@ -54,4 +54,8 @@ public class MCH_EntityInfo {
     public double getDistanceSqToEntity(Entity e) {
         return (e.posX - posX) * (e.posX - posX) + (e.posY - posY) * (e.posY - posY) + (e.posZ - posZ) * (e.posZ - posZ);
     }
+
+    public double getHorizonalDistanceSqToEntity(Entity e) {
+        return (e.posX - posX) * (e.posX - posX) + (e.posZ - posZ) * (e.posZ - posZ);
+    }
 }
