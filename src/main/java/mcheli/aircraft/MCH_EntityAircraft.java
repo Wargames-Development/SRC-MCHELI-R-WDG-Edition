@@ -968,7 +968,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         }
                         this.timeSinceHit = 0;
                     }
-                    if (dmt.startsWith("explosion")) {
+                    if (dmt.startsWith("explosion") || MCH_FMURUtil.isFMURExplosion(damageSource)) {
                         if (!this.isDestroyed()) {
                             damageExplosion = true;
                             this.timeSinceHit = 0;

@@ -1,5 +1,6 @@
 package mcheli;
 
+import com.flansmod.common.guns.EntityDamageSourceFlans;
 import com.flansmod.common.mob.EntitySoldier;
 import com.flansmod.common.mob.api.SoldierAPI;
 import net.minecraft.entity.Entity;
@@ -7,6 +8,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAILeapAtTarget;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.scoreboard.Team;
+import net.minecraft.util.DamageSource;
 
 import java.lang.reflect.Method;
 
@@ -72,9 +74,9 @@ public class MCH_FMURUtil {
 //            e.printStackTrace();
 //        }
 //        return false;
-//        return isSoldier_Fast(entity);
+//
         if(isFMURLoaded) {
-            return entity instanceof EntitySoldier;
+            return isSoldier_Fast(entity);
         } else {
             return false;
         }
@@ -92,35 +94,43 @@ public class MCH_FMURUtil {
 //        return null;
 //        return getSoldierTeam_Fast(entity);
         if(isFMURLoaded) {
-            if (entity instanceof EntitySoldier) {
-                EntitySoldier s = (EntitySoldier) entity;
-                if (s.team == null) {
-                    return s.owner == null ? null : s.owner.getTeam();
-                } else {
-                    return s.team;
-                }
-            } else {
-                return null;
-            }
+            return getSoldierTeam_Fast(entity);
         } else {
             return null;
         }
     }
 
     public static boolean isSoldier_Fast(Entity entity) {
-        if(isFMURLoaded) {
-            return SoldierAPI.isSoldier(entity);
+        return entity instanceof EntitySoldier;
+    }
+
+    public static Team getSoldierTeam_Fast(Entity entity) {
+        if (entity instanceof EntitySoldier) {
+            EntitySoldier s = (EntitySoldier) entity;
+            if (s.team == null) {
+                return s.owner == null ? null : s.owner.getTeam();
+            } else {
+                return s.team;
+            }
         } else {
+            return null;
+        }
+    }
+
+    public static boolean isFMURExplosion(DamageSource damageSource) {
+        if(isFMURLoaded) {
+            return isFMURExplosion_Fast(damageSource);
+        } else  {
             return false;
         }
     }
 
-    public static Team getSoldierTeam_Fast(Entity entity) {
-        if(isFMURLoaded) {
-            return SoldierAPI.getSoldierTeam(entity);
-        } else {
-            return null;
+    public static boolean isFMURExplosion_Fast(DamageSource damageSource) {
+        if(damageSource instanceof EntityDamageSourceFlans) {
+            EntityDamageSourceFlans source = (EntityDamageSourceFlans) damageSource;
+            return source.explosion;
         }
+        return false;
     }
 
 
