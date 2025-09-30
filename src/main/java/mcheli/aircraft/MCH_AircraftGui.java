@@ -1,6 +1,8 @@
 package mcheli.aircraft;
 
 import java.util.Iterator;
+
+import mcheli.MCH_I18n;
 import mcheli.MCH_PacketIndOpenScreen;
 import mcheli.aircraft.MCH_AircraftGuiContainer;
 import mcheli.aircraft.MCH_EntityAircraft;
@@ -51,15 +53,15 @@ public class MCH_AircraftGui extends W_GuiContainer {
    public void initGui() {
       super.initGui();
       super.buttonList.clear();
-      this.buttonReload = new GuiButton(1, super.guiLeft + 85, super.guiTop + 40, 50, 20, "Reload");
+      this.buttonReload = new GuiButton(1, super.guiLeft + 85, super.guiTop + 40, 50, 20, MCH_I18n.format("gui.mcheli.reload"));
       this.buttonNext = new GuiButton(3, super.guiLeft + 140, super.guiTop + 40, 20, 20, "<<");
       this.buttonPrev = new GuiButton(2, super.guiLeft + 160, super.guiTop + 40, 20, 20, ">>");
       this.buttonReload.enabled = this.canReload(this.thePlayer);
       this.buttonNext.enabled = this.aircraft.getWeaponNum() >= 2;
       this.buttonPrev.enabled = this.aircraft.getWeaponNum() >= 2;
-      this.buttonInventory = new GuiButton(6, super.guiLeft + 210 - 30 - 60, super.guiTop + 90, 80, 20, "Inventory");
-      super.buttonList.add(new GuiButton(5, super.guiLeft + 210 - 30 - 60, super.guiTop + 110, 80, 20, "MOD Options"));
-      super.buttonList.add(new GuiButton(4, super.guiLeft + 210 - 30 - 20, super.guiTop + 10, 40, 20, "Close"));
+      this.buttonInventory = new GuiButton(6, super.guiLeft + 210 - 30 - 60, super.guiTop + 90, 80, 20, MCH_I18n.format("gui.mcheli.inventory"));
+      super.buttonList.add(new GuiButton(5, super.guiLeft + 210 - 30 - 60, super.guiTop + 110, 80, 20, MCH_I18n.format("gui.mcheli.mod_options")));
+      super.buttonList.add(new GuiButton(4, super.guiLeft + 210 - 30 - 20, super.guiTop + 10, 40, 20, MCH_I18n.format("gui.mcheli.close")));
       super.buttonList.add(this.buttonReload);
       super.buttonList.add(this.buttonNext);
       super.buttonList.add(this.buttonPrev);
@@ -153,7 +155,7 @@ public class MCH_AircraftGui extends W_GuiContainer {
       MCH_EntityAircraft ac = this.aircraft;
       this.drawString(ac.getGuiInventory().getInventoryName(), 10, 10, 16777215);
       if(this.aircraft.getNumEjectionSeat() > 0) {
-         this.drawString("Parachute", 9, 95, 16777215);
+         this.drawString(MCH_I18n.format("gui.mcheli.parachute"), 9, 95, 16777215);
       }
 
       if(this.aircraft.getWeaponNum() > 0) {
@@ -162,7 +164,7 @@ public class MCH_AircraftGui extends W_GuiContainer {
             this.drawString(ws.getName(), 79, 30, 16777215);
             int rest = ws.getRestAllAmmoNum() + ws.getAmmoNum();
             int color = rest == 0?16711680:(rest == ws.getAllAmmoNum()?2675784:16777215);
-            String s = String.format("%4d/%4d", new Object[]{Integer.valueOf(rest), Integer.valueOf(ws.getAllAmmoNum())});
+            String s = String.format("%4d/%4d", Integer.valueOf(rest), Integer.valueOf(ws.getAllAmmoNum()));
             this.drawString(s, 145, 70, color);
             int itemPosX = 90;
 
@@ -226,7 +228,7 @@ public class MCH_AircraftGui extends W_GuiContainer {
       this.drawTexturedModalRect(x + 57, y + 30 + 50 - ff, 215, 0, 12, ff);
       ff = (int)((double)(this.aircraft.getFuelP() * 100.0F) + 0.5D);
       int color = ff > 20?-14101432:16711680;
-      this.drawString(String.format("%3d", new Object[]{Integer.valueOf(ff)}) + "%", x + 30, y + 65, color);
+      this.drawString(String.format("%3d", ff) + "%", x + 30, y + 65, color);
       //this.editCommand.drawTextBox();
    }
 }
