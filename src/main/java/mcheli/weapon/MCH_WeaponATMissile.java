@@ -109,16 +109,22 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                   pitch = prm.entity.rotationPitch + super.fixRotationPitch;
                }
                if(prm.entity instanceof MCH_EntityTank) {
-                  MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                  float playerYaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() - yaw);
-                  float playerPitch = tank.getRotPitch() * MathHelper.cos((float) (playerYaw * Math.PI / 180.0D))
-                          + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
-                  pitch = MCH_Lib.RNG(pitch, playerPitch + tank.getAcInfo().minRotationPitch, playerPitch + tank.getAcInfo().maxRotationPitch);
-                  pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
+                   MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
+                   yaw = prm.user.rotationYaw ;
+                   pitch = prm.user.rotationPitch ;
+                   yaw += prm.randYaw;
+                   pitch += prm.randPitch;
+                   float minPitch = tank.getSeatInfo(prm.entity) == null ? tank.getAcInfo().minRotationPitch : tank.getSeatInfo(prm.entity).minPitch;
+                   float maxPitch = tank.getSeatInfo(prm.entity) == null ? tank.getAcInfo().maxRotationPitch : tank.getSeatInfo(prm.entity).maxPitch;
+                   float playerYaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() - yaw);
+                   float playerPitch = tank.getRotPitch() * MathHelper.cos((float) (playerYaw * Math.PI / 180.0D))
+                       + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
+                   pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+                   pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
                }
-               double tX = (double) (-MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F));
-               double tZ = (double) (MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F));
-               double tY = (double) (-MathHelper.sin(pitch / 180.0F * 3.1415927F));
+               double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+               double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+               double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
                MCH_EntityATMissile e = new MCH_EntityATMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) super.acceleration);
                if (yaw > 180.0F) {//so we are just basically defining yaw to like not go 360 mlg mode right hopefully pray to god it works okay
                   yaw -= 360.0F;

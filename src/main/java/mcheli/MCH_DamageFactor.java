@@ -28,4 +28,5 @@ public class MCH_DamageFactor {
         else if (entity instanceof MCH_EntityVehicle) return damageVsVehicle;
         return 1.0f;
     }
+
 }
