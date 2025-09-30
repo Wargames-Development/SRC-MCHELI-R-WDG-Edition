@@ -18,11 +18,17 @@ public class MCH_DamageFactor {
     public float damageVsVehicle = 1f;
     public float damageVsTank = 1f;
     public float damageVsHeli = 1f;
+    public float damageVsShip = 1f;
 
     public float getDamageFactor(Entity entity) {
         if (entity instanceof EntityPlayer) return damageVsPlayer;
         else if (entity instanceof EntityLivingBase) return damageVsLiving;
-        else if (entity instanceof MCP_EntityPlane) return damageVsPlane;
+        else if (entity instanceof MCP_EntityPlane) {
+            MCP_EntityPlane plane = (MCP_EntityPlane) entity;
+            if(plane.getAcInfo() != null && plane.getAcInfo().isFloat) {
+                return damageVsShip;
+            } else return damageVsPlane;
+        }
         else if (entity instanceof MCH_EntityHeli) return damageVsHeli;
         else if (entity instanceof MCH_EntityTank) return damageVsTank;
         else if (entity instanceof MCH_EntityVehicle) return damageVsVehicle;

@@ -278,6 +278,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float explosionDamageVsVehicle = 1f;
     public float explosionDamageVsTank = 1f;
     public float explosionDamageVsHeli = 1f;
+    public float explosionDamageVsShip = 1f;
     public boolean disableDestroyBlock = true;
     public boolean canBeIntercepted = false;
     public boolean canAirburst = false;
@@ -602,6 +603,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.explosionDamageVsTank = this.toFloat(data);
             }else if (item.equalsIgnoreCase("ExplosionDamageVsHeli")) {
                 this.explosionDamageVsHeli = this.toFloat(data);
+            } else if (item.equalsIgnoreCase("ExplosionDamageVsShip")) {
+                this.explosionDamageVsShip = this.toFloat(data);
             } else if (item.equalsIgnoreCase("DisableDestroyBlock")) {
                 this.disableDestroyBlock = this.toBool(data);
             } else if (item.equalsIgnoreCase("RailgunSound")) {
@@ -655,6 +658,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                         case "heli":
                         case "helicopter":
                             damageFactor.damageVsHeli = damage;
+                            break;
+                        case "ship":
+                            damageFactor.damageVsShip = damage;
                             break;
                     }
                 }

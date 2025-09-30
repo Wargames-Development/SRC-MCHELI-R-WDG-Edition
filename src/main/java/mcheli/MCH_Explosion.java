@@ -48,6 +48,7 @@ public class MCH_Explosion extends Explosion {
     private float damageVsVehicle = 1f;
     private float damageVsTank = 1f;
     private float damageVsHeli = 1f;
+    private float damageVsShip = 1f;
 
     public MCH_Explosion(World par1World, Entity exploder, Entity player, double x, double y, double z, float size) {
         super(par1World, exploder, x, y, z, size);
@@ -68,13 +69,13 @@ public class MCH_Explosion extends Explosion {
     public static MCH_Explosion.ExplosionResult newExplosion(World w, Entity entityExploded, Entity player, double x, double y, double z,
                                                              float size, float sizeBlock, boolean playSound, boolean isSmoking, boolean isFlaming,
                                                              boolean isDestroyBlock, int countSetFireEntity, MCH_DamageFactor df) {
-        return newExplosion(w, entityExploded, player, x, y, z, size, sizeBlock, playSound, isSmoking, isFlaming, isDestroyBlock, countSetFireEntity, df, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+        return newExplosion(w, entityExploded, player, x, y, z, size, sizeBlock, playSound, isSmoking, isFlaming, isDestroyBlock, countSetFireEntity, df, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     public static MCH_Explosion.ExplosionResult newExplosion(World w, Entity entityExploded, Entity player, double x, double y, double z,
                                                              float size, float sizeBlock, boolean playSound, boolean isSmoking, boolean isFlaming,
                                                              boolean isDestroyBlock, int countSetFireEntity, MCH_DamageFactor df,
-                                                             float damageVsPlayer, float damageVsLiving, float damageVsPlane, float damageVsHeli, float damageVsTank, float damageVsVehicle) {
+                                                             float damageVsPlayer, float damageVsLiving, float damageVsPlane, float damageVsHeli, float damageVsTank, float damageVsVehicle, float damageVsShip) {
         if (w.isRemote) {
             return null;
         } else {
@@ -94,6 +95,7 @@ public class MCH_Explosion extends Explosion {
             exp.damageVsHeli = damageVsHeli;
             exp.damageVsTank = damageVsTank;
             exp.damageVsVehicle = damageVsVehicle;
+            exp.damageVsShip = damageVsShip;
             exp.doExplosionA();
             exp.doExplosionB(true);
             MCH_PacketEffectExplosion.ExplosionParam param = MCH_PacketEffectExplosion.create();
@@ -111,7 +113,7 @@ public class MCH_Explosion extends Explosion {
 
     public static MCH_Explosion.ExplosionResult newExplosionInWater(World w, Entity entityExploded, Entity player, double x, double y, double z, float size, float sizeBlock,
                                                                     boolean playSound, boolean isSmoking, boolean isFlaming, boolean isDestroyBlock, int countSetFireEntity, MCH_DamageFactor df,
-                                                                    float damageVsPlayer, float damageVsLiving, float damageVsPlane, float damageVsHeli, float damageVsTank, float damageVsVehicle) {
+                                                                    float damageVsPlayer, float damageVsLiving, float damageVsPlane, float damageVsHeli, float damageVsTank, float damageVsVehicle, float damageVsShip) {
         if (w.isRemote) {
             return null;
         } else {
@@ -131,6 +133,7 @@ public class MCH_Explosion extends Explosion {
             exp.damageVsHeli = damageVsHeli;
             exp.damageVsTank = damageVsTank;
             exp.damageVsVehicle = damageVsVehicle;
+            exp.damageVsShip = damageVsShip;
             exp.doExplosionA();
             exp.doExplosionB(true);
             MCH_PacketEffectExplosion.ExplosionParam param = MCH_PacketEffectExplosion.create();
@@ -533,7 +536,12 @@ public class MCH_Explosion extends Explosion {
                             damage = MCH_Config.applyDamageVsEntity(entity, ds, damage);
                             if (entity instanceof EntityPlayer) damage *= damageVsPlayer;
                             else if (entity instanceof EntityLivingBase) damage *= damageVsLiving;
-                            else if (entity instanceof MCP_EntityPlane) damage *= damageVsPlane;
+                            else if (entity instanceof MCP_EntityPlane) {
+                                MCP_EntityPlane plane = (MCP_EntityPlane) entity;
+                                if(plane.getAcInfo() != null && plane.getAcInfo().isFloat) {
+                                    damage *= damageVsShip;
+                                } else damage *= damageVsPlane;
+                            }
                             else if (entity instanceof MCH_EntityHeli) damage *= damageVsHeli;
                             else if (entity instanceof MCH_EntityTank) damage *= damageVsTank;
                             else if (entity instanceof MCH_EntityVehicle) damage *= damageVsVehicle;

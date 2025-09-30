@@ -1240,7 +1240,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void newFAExplosion(double x, double y, double z, float exp, float expBlock) {
-        MCH_Explosion.ExplosionResult result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, true, true, this.getInfo().flaming, false, 15, null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle);
+        MCH_Explosion.ExplosionResult result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, true, true, this.getInfo().flaming, false, 15, null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
         if (result != null && result.hitEntity) {
             this.notifyHitBullet();
         }
@@ -1263,12 +1263,12 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 } else if (this.getInfo().explosionType.equals("hbmNT_Shell")) {
                     MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
                 }
-                result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, false, this.getInfo().flaming, false, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle);
+                result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, false, this.getInfo().flaming, false, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
             } else {
-                result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, true, this.getInfo().flaming, getInfo().explosionBlock > 0, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle);
+                result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, true, this.getInfo().flaming, getInfo().explosionBlock > 0, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
             }
         } else {
-            result = MCH_Explosion.newExplosionInWater(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, true, this.getInfo().flaming, getInfo().explosionBlock > 0, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle);
+            result = MCH_Explosion.newExplosionInWater(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, true, this.getInfo().flaming, getInfo().explosionBlock > 0, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
         }
 
         if (this.getInfo().nukeYield > 0) {
