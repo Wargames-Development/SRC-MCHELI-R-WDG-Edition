@@ -12,6 +12,7 @@ import mcheli.aircraft.*;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.throwable.MCH_EntityThrowable;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_Block;
@@ -32,6 +33,7 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
+import net.minecraft.entity.projectile.EntityThrowable;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.nbt.NBTTagCompound;
@@ -1065,7 +1067,7 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
                   }
 
                   // Adjust damage based on distance
-                  damage += (5.0D - dist);
+                  damage += (float) (5.0D - dist);
 
                   // Determine the damage source
                   DamageSource ds = (rider instanceof EntityLivingBase)
@@ -1088,6 +1090,8 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
                   } else if (e instanceof EntityArrow) {
                      // Destroy arrows on impact
                      e.setDead();
+                  } else if (e instanceof MCH_EntityThrowable){
+
                   } else {
                      // Apply strong pushback for other entities
                      e.motionX += super.motionX * 1.5D;

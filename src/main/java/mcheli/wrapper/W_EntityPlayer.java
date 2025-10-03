@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  com.mojang.authlib.GameProfile
  *  net.minecraft.entity.Entity
@@ -54,7 +54,7 @@ extends EntityPlayer {
     }
 
     public static void addChatMessage(EntityPlayer player, String s) {
-        player.addChatMessage((IChatComponent)new ChatComponentText(s));
+        player.addChatMessage(new ChatComponentText(s));
     }
 
     public static EntityItem dropPlayerItemWithRandomChoice(EntityPlayer player, ItemStack item, boolean b1, boolean b2) {

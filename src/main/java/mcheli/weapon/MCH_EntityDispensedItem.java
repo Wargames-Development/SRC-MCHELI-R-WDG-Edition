@@ -9,6 +9,7 @@ import mcheli.wrapper.W_Item;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
@@ -165,4 +166,5 @@ public class MCH_EntityDispensedItem extends MCH_EntityBaseBullet {
     public MCH_BulletModel getDefaultBulletModel() {
         return MCH_DefaultBulletModels.Bomb;
     }
+
 }

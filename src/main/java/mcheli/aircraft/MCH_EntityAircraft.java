@@ -982,7 +982,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     MinecraftForge.EVENT_BUS.post(e);
                                 }
                             }
-                            if (lastAttackedEntity instanceof EntityPlayer) {
+                            if (lastAttackedEntity instanceof EntityPlayerMP) {
                                 MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "message.mcheli.overpressure", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
                             }
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
