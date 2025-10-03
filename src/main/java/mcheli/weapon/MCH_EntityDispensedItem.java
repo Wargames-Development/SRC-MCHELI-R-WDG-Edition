@@ -66,7 +66,7 @@ public class MCH_EntityDispensedItem extends MCH_EntityBaseBullet {
                 if (super.shootingEntity instanceof EntityPlayer) {
                     player = (EntityPlayer) super.shootingEntity;
                 }
-                item = this.getInfo().dispenseItem;
+                item = W_Item.getItemByName(this.getInfo().dispenseItem);
                 itemDamage = this.getInfo().dispenseDamege;
             }
 

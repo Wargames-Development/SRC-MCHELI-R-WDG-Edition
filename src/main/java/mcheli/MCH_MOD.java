@@ -419,7 +419,7 @@ public class MCH_MOD {
         EntityRegistry.registerModEntity(MCH_EntityUavStation.class, "MCH.E.UavStation", 109, this, 200, 10, true);
         EntityRegistry.registerModEntity(MCH_EntityHitBox.class, "MCH.E.HitBox", 110, this, 200, 10, true);
         EntityRegistry.registerModEntity(MCH_EntityHide.class, "MCH.E.Hide", 111, this, 200, 10, true);
-        EntityRegistry.registerModEntity(MCH_EntityTank.class, "MCH.E.Tank", 112, this, 500, 10, true);
+        EntityRegistry.registerModEntity(MCH_EntityTank.class, "MCH.E.Tank", 112, this, 500, 5, true);
         EntityRegistry.registerModEntity(MCH_EntityRocket.class, "MCH.E.Rocket", 200, this, 530, 3, true);
         EntityRegistry.registerModEntity(MCH_EntityTvMissile.class, "MCH.E.TvMissle", 201, this, 530, 2, true);
         EntityRegistry.registerModEntity(MCH_EntityBullet.class, "MCH.E.Bullet", 202, this, 530, 5, true);
