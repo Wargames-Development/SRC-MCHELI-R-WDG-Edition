@@ -304,7 +304,7 @@ public class MCH_Config {
       AutoThrottleDownTank = new MCH_ConfigPrm("AutoThrottleDownTank", true);
       DisableItemRender = new MCH_ConfigPrm("DisableItemRender", 1);
       DisableItemRender.desc = ";DisableItemRender = 0 ~ 3 (1 = Recommended)";
-      RenderDistanceWeight = new MCH_ConfigPrm("RenderDistanceWeight", 200.0D);
+      RenderDistanceWeight = new MCH_ConfigPrm("RenderDistanceWeight", 1000.0D);
       MobRenderDistanceWeight = new MCH_ConfigPrm("MobRenderDistanceWeight", 10.0D);
       CreativeTabIcon = new MCH_ConfigPrm("CreativeTabIconItem", "fuel");
       CreativeTabIconHeli = new MCH_ConfigPrm("CreativeTabIconHeli", "ah-64");

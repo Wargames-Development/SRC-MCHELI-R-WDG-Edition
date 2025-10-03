@@ -75,7 +75,7 @@ public class MCH_EntityChaff extends W_Entity implements MCH_IEntityLockChecker 
       }
    }
 
-   @SideOnly(Side.CLIENT)
+    @SideOnly(Side.CLIENT)
    public boolean isInRangeToRenderDist(double par1) {
       double d1 = super.boundingBox.getAverageEdgeLength() * 4.0D;
       d1 *= 64.0D;

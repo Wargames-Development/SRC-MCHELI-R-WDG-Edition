@@ -18,9 +18,6 @@ public class MCH_RenderFlare extends W_Render {
    public void doRender(Entity entity, double posX, double posY, double posZ, float yaw, float partialTickTime) {
       GL11.glPushMatrix();
       GL11.glEnable(2884);
-      double var10000 = entity.prevPosX + entity.motionX * (double)partialTickTime;
-      var10000 = entity.prevPosY + entity.motionY * (double)partialTickTime;
-      var10000 = entity.prevPosZ + entity.motionZ * (double)partialTickTime;
       GL11.glTranslated(posX, posY, posZ);
       GL11.glRotatef(-entity.rotationYaw, 0.0F, 1.0F, 0.0F);
       GL11.glRotatef(entity.rotationPitch, 1.0F, 0.0F, 0.0F);
@@ -28,6 +25,7 @@ public class MCH_RenderFlare extends W_Render {
       GL11.glColor4f(1.0F, 1.0F, 0.5F, 1.0F);
       this.bindTexture("textures/flare.png");
       this.model.renderModel(0.0D, 0.0D, 0.0625F);
+      GL11.glDisable(2884);
       GL11.glPopMatrix();
       MCH_RenderAircraft.renderEntityMarker(entity);
    }

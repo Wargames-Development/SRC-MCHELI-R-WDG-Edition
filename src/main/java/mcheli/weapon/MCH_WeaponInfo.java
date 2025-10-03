@@ -80,7 +80,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float smokeSize;
     public int smokeNum;
     public int smokeMaxAge;
-    public Item dispenseItem;
+    public String dispenseItem;
     public int dispenseDamege;
     public int dispenseRange;
     public int recoilBufCount;
@@ -793,7 +793,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                                 this.dispenseDamege = this.toInt(s[1], 0, 100000000);
                             }
 
-                            this.dispenseItem = W_Item.getItemByName(s[0]);
+                            this.dispenseItem = s[0];
                         } else if (item.equalsIgnoreCase("DispenseRange")) {
                             this.dispenseRange = this.toInt(data, 1, 100);
                         } else if (item.equalsIgnoreCase("Length")) {

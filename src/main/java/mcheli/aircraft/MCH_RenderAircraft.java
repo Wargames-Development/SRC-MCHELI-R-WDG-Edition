@@ -1269,9 +1269,9 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 bindTexture("textures/bounding_box.png");
                 debugModel.renderAll();
 
+                GL11.glPopMatrix();
                 // 可选：绘制包围盒的坐标轴辅助线或文字
                 drawHitBoxDetail(bb);
-                GL11.glPopMatrix();
             }
             GL11.glPopMatrix();
         }
@@ -1308,7 +1308,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
         tess.draw();
         GL11.glEnable(GL11.GL_TEXTURE_2D);
 
-        int color = bb.damageFactor < 1.0F ? 0xFFFFFFFF : (bb.damageFactor > 1.0F ? 0xFFFF0000 : 0xFFFFFF);
+        int color = 0xFFFFFFFF;
         fontRenderer.drawString(s, -fontRenderer.getStringWidth(s) / 2, 0, color);
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);

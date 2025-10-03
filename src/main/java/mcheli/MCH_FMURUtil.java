@@ -128,7 +128,7 @@ public class MCH_FMURUtil {
     public static boolean isFMURExplosion_Fast(DamageSource damageSource) {
         if(damageSource instanceof EntityDamageSourceFlans) {
             EntityDamageSourceFlans source = (EntityDamageSourceFlans) damageSource;
-            return source.explosion;
+            return source.flansExplosion;
         }
         return false;
     }

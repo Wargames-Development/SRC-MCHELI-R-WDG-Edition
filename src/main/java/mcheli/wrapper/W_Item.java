@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.block.Block
  *  net.minecraft.item.Item
@@ -22,7 +22,7 @@ extends Item {
     }
 
     public static int getIdFromItem(Item i) {
-        return i == null ? 0 : Item.itemRegistry.getIDForObject((Object)i);
+        return i == null ? 0 : Item.itemRegistry.getIDForObject(i);
     }
 
     public Item setTexture(String par1Str) {
@@ -31,7 +31,7 @@ extends Item {
     }
 
     public static Item getItemById(int i) {
-        return Item.getItemById((int)i);
+        return Item.getItemById(i);
     }
 
     public static Item getItemByName(String nm) {
@@ -42,11 +42,11 @@ extends Item {
     }
 
     public static String getNameForItem(Item item) {
-        return Item.itemRegistry.getNameForObject((Object)item);
+        return Item.itemRegistry.getNameForObject(item);
     }
 
     public static Item getItemFromBlock(Block block) {
-        return Item.getItemFromBlock((Block)block);
+        return Item.getItemFromBlock(block);
     }
 }
 
