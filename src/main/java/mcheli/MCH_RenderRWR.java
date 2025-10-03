@@ -185,7 +185,7 @@ public class MCH_RenderRWR {
     // 新增实体校验方法
     private boolean isValidEntity(MCH_EntityInfo entity, EntityPlayer player, double minDist) {
         if (entity.entityClassName.contains("MCH_EntityChaff") || entity.entityClassName.contains("MCH_EntityFlare")
-                || entity.entityClassName.contains("EntityPlayer")) {
+                || entity.entityClassName.contains("EntityPlayer") || entity.entityClassName.contains("EntitySolider")) {
             return false;
         }
         if(entity.getDistanceSqToEntity(player) < minDist * minDist) {
