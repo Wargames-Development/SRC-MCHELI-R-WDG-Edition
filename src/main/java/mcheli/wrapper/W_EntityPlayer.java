@@ -31,6 +31,7 @@ import net.minecraft.world.World;
 
 public abstract class W_EntityPlayer
 extends EntityPlayer {
+
     public W_EntityPlayer(World par1World, EntityPlayer player) {
         super(par1World, player.getGameProfile());
     }
