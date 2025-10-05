@@ -185,7 +185,7 @@ public class MCH_RenderRWR {
     // 新增实体校验方法
     private boolean isValidEntity(MCH_EntityInfo entity, EntityPlayer player, double minDist) {
         if (entity.entityClassName.contains("MCH_EntityChaff") || entity.entityClassName.contains("MCH_EntityFlare")
-                || entity.entityClassName.contains("EntityPlayer") || entity.entityClassName.contains("EntitySolider")) {
+                || entity.entityClassName.contains("EntityPlayer") || entity.entityClassName.contains("EntitySoldier")) {
             return false;
         }
         if(entity.getDistanceSqToEntity(player) < minDist * minDist) {
@@ -196,7 +196,8 @@ public class MCH_RenderRWR {
 
     private MCH_RWRResult getTargetTypeOnRadar(MCH_EntityInfo entity, MCH_EntityAircraft ac) {
         int color = 0x00FF00;
-        if(ac instanceof MCH_EntityTank) {
+        if(ac instanceof MCH_EntityTank
+            || (ac instanceof MCP_EntityPlane && ac.getAcInfo().isFloat)) {
             color = 0xFFCC00;
         }
         switch (ac.getAcInfo().rwrType) {
