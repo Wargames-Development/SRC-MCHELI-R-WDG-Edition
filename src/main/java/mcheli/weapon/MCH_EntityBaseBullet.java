@@ -280,7 +280,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public void setBomblet() {
         this.isBomblet = 1;
         this.sprinkleTime = 0;
-        super.dataWatcher.updateObject(31, Byte.valueOf((byte) 1));
+        super.dataWatcher.updateObject(31, (byte) 1);
     }
 
     public byte getBomblet() {
