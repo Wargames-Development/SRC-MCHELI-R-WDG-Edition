@@ -152,19 +152,19 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     /**
      * 当前载具在现代对空雷达中显示的名字
      */
-    public String nameOnModernAARadar = "?";
+    public String nameOnModernAARadar = "";
     /**
      * 当前载具在早期对空雷达中显示的名字
      */
-    public String nameOnEarlyAARadar = "?";
+    public String nameOnEarlyAARadar = "";
     /**
      * 当前载具在现代对地雷达中显示的名字
      */
-    public String nameOnModernASRadar = "?";
+    public String nameOnModernASRadar = "";
     /**
      * 当前载具在早期对地雷达中显示的名字
      */
-    public String nameOnEarlyASRadar = "?";
+    public String nameOnEarlyASRadar = "";
     /**
      * 载具被摧毁时爆炸范围
      */

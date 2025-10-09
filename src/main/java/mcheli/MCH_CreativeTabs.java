@@ -98,6 +98,6 @@ public class MCH_CreativeTabs extends CreativeTabs {
    }
 
    public String getTranslatedTabLabel() {
-      return "MC Heli";
+      return "MCH-Reforged";
    }
 }

@@ -267,13 +267,13 @@ public class MCH_MOD {
 
         VER = Loader.instance().activeModContainer().getVersion();
         MCH_Lib.init();
-        MCH_Lib.Log("MC Ver:1.7.10 MOD Ver:" + VER + "", new Object[0]);
-        MCH_Lib.Log("Start load...", new Object[0]);
+        MCH_Lib.Log("MC Ver:1.7.10 MOD Ver:" + VER);
+        MCH_Lib.Log("Start load...");
         sourcePath = Loader.instance().activeModContainer().getSource().getPath();
         ///sourcePath = "D:\\软件\\GitHub\\MCHeli-Reforged\\src\\main\\resources";
         //new File(evt.getModConfigurationDirectory().getParentFile(), "/mods").getPath();
-        MCH_Lib.Log("SourcePath: " + sourcePath, new Object[0]);
-        MCH_Lib.Log("CurrentDirectory:" + (new File(".")).getAbsolutePath(), new Object[0]);
+        MCH_Lib.Log("SourcePath: " + sourcePath);
+        MCH_Lib.Log("CurrentDirectory:" + (new File(".")).getAbsolutePath());
 
         proxy.init();
         creativeTabs = new MCH_CreativeTabs("MCH-Reforged Item");
@@ -317,7 +317,7 @@ public class MCH_MOD {
         GameRegistry.registerBlock(blockDraftingTable, "drafting_table");
         GameRegistry.registerBlock(blockDraftingTableLit, "lit_drafting_table");
         W_LanguageRegistry.addName(blockDraftingTable, "Drafting Table");
-        W_LanguageRegistry.addNameForObject(blockDraftingTable, "ja_JP", "製図台");
+        W_LanguageRegistry.addNameForObject(blockDraftingTable, "zh_CN", "蓝图制作台");
         MCH_Achievement.PreInit();
         MCH_Lib.Log("Register system");
         W_NetworkRegistry.registerChannel(packetHandler, "MCHeli_CH");
@@ -450,8 +450,8 @@ public class MCH_MOD {
         MCH_ItemRangeFinder item = var10000;
         itemRangeFinder = item;
         registerItem(item, "rangefinder", creativeTabs);
-        W_LanguageRegistry.addName(item, "PLD单兵光电指示器");
-        W_LanguageRegistry.addNameForObject(item, "ja_JP", "レーザー レンジ ファインダー");
+        W_LanguageRegistry.addName(item, "Portable Laser Designator");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "PLD单兵光电指示器");
     }
 
     private void registerItemWrench() {
@@ -461,7 +461,8 @@ public class MCH_MOD {
         MCH_ItemWrench item = var10000;
         itemWrench = item;
         registerItem(item, "wrench", creativeTabs);
-        W_LanguageRegistry.addName(item, "扳手");
+        W_LanguageRegistry.addName(item, "WRENCH");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "扳手");
     }
 
     public void registerItemInvisible() {
@@ -474,7 +475,7 @@ public class MCH_MOD {
     }
 
     public void registerItemUavStation() {
-        String[] dispName = new String[]{"UAV Station", "便携式无人机控制台"};
+        String[] dispName = new String[]{"UAV Station", "Portable UAV Station"};
         itemUavStation = new MCH_ItemUavStation[MCH_ItemUavStation.UAV_STATION_KIND_NUM];
         String name = "uav_station";
 
@@ -497,7 +498,8 @@ public class MCH_MOD {
         MCH_ItemParachute item = var10000;
         itemParachute = item;
         registerItem(item, "parachute", creativeTabs);
-        W_LanguageRegistry.addName(item, "降落伞");
+        W_LanguageRegistry.addName(item, "Parachute");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "降落伞");
     }
 
     public void registerItemContainer() {
@@ -508,6 +510,7 @@ public class MCH_MOD {
         itemContainer = item;
         registerItem(item, "container", creativeTabs);
         W_LanguageRegistry.addName(item, "Container");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "空投箱");
     }
 
     public void registerItemLightWeapon() {
@@ -517,14 +520,16 @@ public class MCH_MOD {
         MCH_ItemLightWeaponBase item = var10000;
         itemStinger = item;
         registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FIM-92 刺针飞弹");
+        W_LanguageRegistry.addName(item, "FIM-92 Stringer");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 刺针飞弹");
         name = "fgm148";
         var10000 = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemJavelinBullet);
         var10002 = config;
         item = var10000;
         itemJavelin = item;
         registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FGM-148 标枪飞弹");
+        W_LanguageRegistry.addName(item, "FGM-148 Javelin");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 标枪飞弹");
     }
 
     public void registerItemLightWeaponBullet() {
@@ -534,14 +539,16 @@ public class MCH_MOD {
         MCH_ItemLightWeaponBullet item = var10000;
         itemStingerBullet = item;
         registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FIM-92 弹药");
+        W_LanguageRegistry.addName(item, "FIM-92 Stringer Ammo");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 弹药");
         name = "fgm148_bullet";
         var10000 = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
         var10002 = config;
         item = var10000;
         itemJavelinBullet = item;
         registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FGM-148 弹药");
+        W_LanguageRegistry.addName(item, "FGM-148 Javelin Ammo");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 弹药");
     }
 
     public void registerItemChain() {
@@ -552,6 +559,7 @@ public class MCH_MOD {
         itemChain = item;
         registerItem(item, "chain", creativeTabs);
         W_LanguageRegistry.addName(item, "Chain");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "锁链");
     }
 
     public void registerItemFuel() {
@@ -562,6 +570,7 @@ public class MCH_MOD {
         itemFuel = item;
         registerItem(item, "fuel", creativeTabs);
         W_LanguageRegistry.addName(item, "Fuel");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "燃料");
     }
 
     public void registerItemGLTD() {
@@ -571,7 +580,8 @@ public class MCH_MOD {
         MCH_ItemGLTD item = var10000;
         itemGLTD = item;
         registerItem(item, "gltd", creativeTabs);
-        W_LanguageRegistry.addName(item, "SOFLAM 空袭指示器");
+        W_LanguageRegistry.addName(item, "SOFLAM");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "SOFLAM 空袭指示器");
     }
 
 }
