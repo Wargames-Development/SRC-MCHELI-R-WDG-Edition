@@ -321,7 +321,9 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
             if (w.turret) {
                 var22 = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
-                var22 -= ws.rotationTurretYaw;
+                if (ws != null) {
+                    var22 -= ws.rotationTurretYaw;
+                }
                 GL11.glRotatef(-var22, 0.0F, -1.0F, 0.0F);
             }
 
