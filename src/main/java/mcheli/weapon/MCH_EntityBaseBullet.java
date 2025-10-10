@@ -1250,7 +1250,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater) {
         MCH_Explosion.ExplosionResult result;
         if (!inWater) {
-            if (this.getInfo().explosionType.contains("hbmNT")) {
+            if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
                 int hbmExplosionPower = this.explosionPower;
 
                 Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, null, x, y, z, getInfo().effectYield);
@@ -1271,14 +1271,14 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             result = MCH_Explosion.newExplosionInWater(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, true, this.getInfo().flaming, getInfo().explosionBlock > 0, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
         }
 
-        if (this.getInfo().nukeYield > 0) {
+        if (this.getInfo().nukeYield > 0 && MCH_HBMUtil.isHBMLoaded) {
             if (!this.getInfo().nukeEffectOnly) {
                 worldObj.spawnEntityInWorld((Entity) MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5));
             }
             MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield);
         }
 
-        if (this.getInfo().chemYield > 0) {
+        if (this.getInfo().chemYield > 0 && MCH_HBMUtil.isHBMLoaded) {
             MCH_HBMUtil.ExplosionChaos_spawnClorine(super.worldObj, posX, posY + 0.5, posZ, this.getInfo().chemYield);
         }
 
