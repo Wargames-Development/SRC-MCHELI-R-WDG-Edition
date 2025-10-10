@@ -58,6 +58,13 @@ public abstract class MCH_RenderBulletBase extends W_Render {
 
     }
 
+    public void renderModel(MCH_BulletModel model) {
+        if (model != null) {
+            this.bindTexture("textures/bullets/" + model.name + ".png");
+            model.model.renderAll();
+        }
+    }
+
     public abstract void renderBullet(Entity var1, double var2, double var4, double var6, float var8, float var9);
 
     public void postRender(Entity var1, double var2, double var4, double var6, float var8, float var9) {

@@ -7,6 +7,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 public class MCH_HBMUtil {
+
+    public static boolean isHBMLoaded = false;
+
     private static Class<?> nukeExplosionMK5Class;
     private static Class<?> nukeTorexClass;
     private static Class<?> explosionChaosClass;
@@ -23,12 +26,17 @@ public class MCH_HBMUtil {
             explosionCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionCreator");
             explosionSmallCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionSmallCreator");
             explosionNTClass = Class.forName("com.hbm.explosion.ExplosionNT");
+            isHBMLoaded = true;
         } catch (ClassNotFoundException e) {
+            isHBMLoaded = false;
             e.printStackTrace();
         }
     }
 
     public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ) {
+        if(!isHBMLoaded) {
+            return null;
+        }
         try {
             if (nukeExplosionMK5Class != null) {
                 Method statFacMethod = nukeExplosionMK5Class.getMethod("statFac", World.class, int.class, double.class, double.class, double.class);
@@ -41,6 +49,9 @@ public class MCH_HBMUtil {
     }
 
     public static void EntityNukeTorex_statFac(World world, double posX, double posY, double posZ, float nukeYield) {
+        if(!isHBMLoaded) {
+            return;
+        }
         try {
             if (nukeTorexClass != null) {
                 Method statFacMethod = nukeTorexClass.getMethod("statFacStandard", World.class, double.class, double.class, double.class, float.class);
@@ -52,6 +63,9 @@ public class MCH_HBMUtil {
     }
 
     public static void ExplosionChaos_spawnClorine(World world, double posX, double posY, double posZ, float chemYield) {
+        if(!isHBMLoaded) {
+            return;
+        }
         try {
             if (explosionChaosClass != null) {
                 Method spawnChlorineMethod = explosionChaosClass.getMethod("spawnChlorine", World.class, double.class, double.class, double.class, float.class, double.class, int.class);
@@ -63,6 +77,9 @@ public class MCH_HBMUtil {
     }
 
     public static void ExplosionCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
+        if(!isHBMLoaded) {
+            return;
+        }
         try {
             if (explosionCreatorClass != null) {
                 Method composeEffectMethod;
@@ -81,6 +98,9 @@ public class MCH_HBMUtil {
         }
     }
     public static void ExplosionSmallCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
+        if(!isHBMLoaded) {
+            return;
+        }
         try {
             if (explosionSmallCreatorClass != null) {
                 Method composeEffectMethod;
@@ -99,6 +119,9 @@ public class MCH_HBMUtil {
     }
 
     public static Object ExplosionNT_instance_init(World world, Entity entity, double posX, double posY, double posZ, float explosionPower) {
+        if(!isHBMLoaded) {
+            return null;
+        }
         try {
             if (explosionNTClass != null) {
                 Class<?>[] explosionNTParamTypes = {World.class, Entity.class, double.class, double.class, double.class, float.class};
@@ -112,6 +135,9 @@ public class MCH_HBMUtil {
     }
 
     public static void ExplosionNT_instance_overrideResolutionAndExplode(Object explosionNTInstance, int resolution) {
+        if(!isHBMLoaded) {
+            return;
+        }
         try {
             if (explosionNTInstance != null) {
                 Method overrideResolutionMethod = explosionNTInstance.getClass().getMethod("overrideResolution", int.class);
@@ -124,6 +150,9 @@ public class MCH_HBMUtil {
         }
     }
     public static void ExplosionNT_instance_addAttrib(Object explosionNTInstance, String attrib) {
+        if(!isHBMLoaded) {
+            return;
+        }
         try {
             if (explosionNTInstance != null) {
                 Class<?> exAttribClass = Class.forName("com.hbm.explosion.ExplosionNT$ExAttrib");

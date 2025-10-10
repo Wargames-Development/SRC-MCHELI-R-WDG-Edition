@@ -103,7 +103,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
       RenderingRegistry.registerEntityRenderingHandler(MCH_EntityATMissile.class, new MCH_RenderATMissile());
       RenderingRegistry.registerEntityRenderingHandler(MCH_EntityTorpedo.class, new MCH_RenderBullet());
       RenderingRegistry.registerEntityRenderingHandler(MCH_EntityBomb.class, new MCH_RenderBomb());
-      RenderingRegistry.registerEntityRenderingHandler(MCH_EntityMarkerRocket.class, new MCH_RenderBullet());
+      RenderingRegistry.registerEntityRenderingHandler(MCH_EntityMarkerRocket.class, new MCH_RenderMarkerRocket());
       RenderingRegistry.registerEntityRenderingHandler(MCH_EntityDispensedItem.class, new MCH_RenderBullet());
       RenderingRegistry.registerEntityRenderingHandler(MCH_EntityFlare.class, new MCH_RenderFlare());
       RenderingRegistry.registerEntityRenderingHandler(MCH_EntityThrowable.class, new MCH_RenderThrowable());
