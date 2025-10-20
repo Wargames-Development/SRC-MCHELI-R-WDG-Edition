@@ -1,4 +1,4 @@
-package mcheli;
+package mcheli.render;
 
 public class MCH_RWRResult {
     String name;

@@ -15,8 +15,9 @@ public class PacketWeaponLaserShooting extends PacketBase {
     float width;
     int life;
     boolean pulsate;
+    double renderStartDist;
 
-    public PacketWeaponLaserShooting(Vec3 start, Vec3 hit, int argb, float width, int life, boolean pulsate) {
+    public PacketWeaponLaserShooting(Vec3 start, Vec3 hit, int argb, float width, int life, boolean pulsate, double renderStartDist) {
         this.srcX = start.xCoord;
         this.srcY = start.yCoord;
         this.srcZ = start.zCoord;
@@ -27,6 +28,7 @@ public class PacketWeaponLaserShooting extends PacketBase {
         this.width = width;
         this.life = life;
         this.pulsate = pulsate;
+        this.renderStartDist = renderStartDist;
     }
 
     public PacketWeaponLaserShooting() {
@@ -44,6 +46,7 @@ public class PacketWeaponLaserShooting extends PacketBase {
         data.writeFloat(width);
         data.writeInt(life);
         data.writeBoolean(pulsate);
+        data.writeDouble(renderStartDist);
     }
 
     @Override
@@ -58,6 +61,7 @@ public class PacketWeaponLaserShooting extends PacketBase {
         width = data.readFloat();
         life = data.readInt();
         pulsate = data.readBoolean();
+        renderStartDist = data.readDouble();
     }
 
     @Override
@@ -67,6 +71,6 @@ public class PacketWeaponLaserShooting extends PacketBase {
 
     @Override
     public void handleClientSide(EntityPlayer clientPlayer) {
-        MCH_RenderLaser.addBeam(Vec3.createVectorHelper(srcX, srcY, srcZ), Vec3.createVectorHelper(destX, destY, destZ), argb, width, life, pulsate);
+        MCH_RenderLaser.addBeam(Vec3.createVectorHelper(srcX, srcY, srcZ), Vec3.createVectorHelper(destX, destY, destZ), argb, width, life, pulsate, renderStartDist);
     }
 }

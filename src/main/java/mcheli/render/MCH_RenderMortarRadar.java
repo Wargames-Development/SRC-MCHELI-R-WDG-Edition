@@ -1,6 +1,8 @@
-package mcheli;
+package mcheli.render;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import mcheli.MCH_EntityInfo;
+import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;

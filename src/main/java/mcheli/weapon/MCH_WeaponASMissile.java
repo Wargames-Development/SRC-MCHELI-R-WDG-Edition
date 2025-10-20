@@ -90,7 +90,6 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             MCH_EntityASMissile missile = new MCH_EntityASMissile(this.worldObj, params.posX, params.posY, params.posZ, targetX, targetY, targetZ, yaw, pitch, this.acceleration);
             missile.setName(this.name);
             missile.setParameterFromWeapon(this, params.entity, params.user);
-
             // 设置导弹的目标位置
             missile.targetPosX = hitResult.hitVec.xCoord;
             missile.targetPosY = hitResult.hitVec.yCoord;

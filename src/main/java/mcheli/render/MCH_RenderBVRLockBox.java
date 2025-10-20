@@ -1,6 +1,8 @@
-package mcheli;
+package mcheli.render;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import mcheli.MCH_EntityInfo;
+import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
@@ -10,7 +12,6 @@ import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.player.EntityPlayer;
