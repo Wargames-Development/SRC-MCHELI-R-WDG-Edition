@@ -92,7 +92,7 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
         int life = weaponInfo.timeFuse;
         boolean pulsate = true;
         if (!worldObj.isRemote) {
-            MCH_MOD.getPacketHandler().sendToAllExcept(new PacketWeaponLaserShooting(start, hitVec, argb, width, life, pulsate),
+            MCH_MOD.getPacketHandler().sendToAllExcept(new PacketWeaponLaserShooting(start, hitVec, argb, width, life, pulsate, weaponInfo.turningFactor),
                 prm.posX, prm.posY, prm.posZ, 1000F, prm.user instanceof EntityPlayer ? (EntityPlayer) prm.user : null, prm.user.dimension);
         } else {
             renderLaser(start, end, argb, width, life, pulsate);
@@ -136,7 +136,7 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
 
     @SideOnly(Side.CLIENT)
     public void renderLaser(Vec3 start, Vec3 hit, int argb, float width, int life, boolean pulsate) {
-        MCH_RenderLaser.addBeam(start, hit, argb, width, life, pulsate);
+        MCH_RenderLaser.addBeam(start, hit, argb, width, life, pulsate, weaponInfo.turningFactor);
     }
 
 

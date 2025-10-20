@@ -1,20 +1,13 @@
 package mcheli.weapon;
 
-import mcheli.MCH_EntityInfo;
 import mcheli.MCH_Lib;
-import mcheli.MCH_MOD;
-import mcheli.MCH_RenderBVRLockBox;
 import mcheli.aircraft.MCH_AircraftInfo;
-import mcheli.network.packets.PacketLockTarget;
-import mcheli.network.packets.PacketLockTargetBVR;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
-
-import java.util.Map;
 
 public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 

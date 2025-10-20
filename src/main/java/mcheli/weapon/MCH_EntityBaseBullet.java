@@ -83,6 +83,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private List<ChunkCoordIntPair> loadedChunks = new ArrayList<>();
     private double airburstTravelled = 0.0D;
     private boolean airburstTriggered = false;
+    public Vec3 initPos;
 
     public MCH_EntityBaseBullet(World par1World) {
         super(par1World);
@@ -127,6 +128,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.prevMotionY = super.motionY;
         this.prevMotionZ = super.motionZ;
         this.acceleration = acceleration;
+        this.initPos = Vec3.createVectorHelper(px, py, pz);
     }
 
     public void init(ForgeChunkManager.Ticket ticket) {
@@ -1080,6 +1082,16 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
                 if (m.entityHit instanceof MCH_EntityFlare || m.entityHit instanceof MCH_EntityChaff) {
                     return;
+                }
+
+                if(weaponInfo != null && weaponInfo.enableBulletDecay && initPos != null && m.hitVec != null) {
+                    Vec3 hitVec = Vec3.createVectorHelper(m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
+                    float decayFactor = 1f;
+                    float dist = (float) initPos.distanceTo(hitVec);
+                    for (MCH_IBulletDecay decay : weaponInfo.bulletDecay) {
+                        decayFactor = decay.calculateDecayFactor(dist);
+                    }
+                    damageFactor *= decayFactor;
                 }
                 this.onImpactEntity(m.entityHit, damageFactor);
                 this.piercing--;

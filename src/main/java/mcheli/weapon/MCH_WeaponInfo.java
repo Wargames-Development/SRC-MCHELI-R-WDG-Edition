@@ -556,7 +556,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.activeRadar = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableOffAxis")) {
                 this.enableOffAxis = this.toBool(data);
-            } else if (item.equalsIgnoreCase("TurningFactor")) {
+            } else if (item.equalsIgnoreCase("TurningFactor") || item.equalsIgnoreCase("LaserStartDistance")) {
                 this.turningFactor = this.toDouble(data);
             } else if (item.equalsIgnoreCase("EnableChunkLoader")) {
                 this.enableChunkLoader = this.toBool(data);
