@@ -1,14 +1,24 @@
 package mcheli;
 
+import mcheli.aircraft.MCH_EntityHide;
+import mcheli.aircraft.MCH_EntityHitBox;
+import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.weapon.MCH_WeaponLaser;
+import mcheli.weapon.MCH_WeaponParam;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MCH_RayTracer {
+
     public static ArrayList<MovingObjectPosition> rayTraceAllBlocks(World world, Vec3 p_147447_1_, Vec3 p_147447_2_, boolean p_147447_3_, boolean p_147447_4_, boolean p_147447_5_) {
        if (!Double.isNaN(p_147447_1_.xCoord) && !Double.isNaN(p_147447_1_.yCoord) && !Double.isNaN(p_147447_1_.zCoord)) {
           if (!Double.isNaN(p_147447_2_.xCoord) && !Double.isNaN(p_147447_2_.yCoord) && !Double.isNaN(p_147447_2_.zCoord)) {
@@ -166,4 +176,40 @@ public class MCH_RayTracer {
           return null;
        }
     }
+
+    public static MovingObjectPosition rayTrace(World w, Vec3 src, Vec3 dest) {
+        if (w == null || src == null || dest == null) return null;
+        int SEGMENT_LEN = 100;
+        Vec3 start = Vec3.createVectorHelper(src.xCoord, src.yCoord, src.zCoord);
+        Vec3 end   = Vec3.createVectorHelper(dest.xCoord, dest.yCoord, dest.zCoord);
+        double dx = end.xCoord - start.xCoord;
+        double dy = end.yCoord - start.yCoord;
+        double dz = end.zCoord - start.zCoord;
+        double totalDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (totalDist <= 0.0001) {
+            return w.func_147447_a(start, end, false, false, true);
+        }
+        double ux = dx / totalDist;
+        double uy = dy / totalDist;
+        double uz = dz / totalDist;
+        int segments = Math.max(1, (int) Math.ceil(totalDist / SEGMENT_LEN));
+        Vec3 segStart = Vec3.createVectorHelper(start.xCoord, start.yCoord, start.zCoord);
+        MovingObjectPosition lastResult = null;
+        for (int i = 1; i <= segments; i++) {
+            double curLen = Math.min(i * SEGMENT_LEN, totalDist);
+            Vec3 segEnd = Vec3.createVectorHelper(
+                start.xCoord + ux * curLen,
+                start.yCoord + uy * curLen,
+                start.zCoord + uz * curLen
+            );
+            MovingObjectPosition hit = w.func_147447_a(segStart, segEnd, false, false, true);
+            lastResult = hit;
+            if (hit != null && hit.typeOfHit != MovingObjectPosition.MovingObjectType.MISS) {
+                return hit;
+            }
+            segStart = segEnd;
+        }
+        return lastResult;
+    }
+
 }

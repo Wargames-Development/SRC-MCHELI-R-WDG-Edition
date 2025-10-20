@@ -25,6 +25,31 @@ public class MCH_Color {
    }
 
    public float round(float f) {
-      return f < 0.0F?0.0F:(f > 1.0F?1.0F:f);
+      return f < 0.0F?0.0F:(Math.min(f, 1.0F));
    }
+
+    public int toARGB() {
+        int aInt = Math.round(this.a * 255);
+        int rInt = Math.round(this.r * 255);
+        int gInt = Math.round(this.g * 255);
+        int bInt = Math.round(this.b * 255);
+
+        return (aInt << 24) | (rInt << 16) | (gInt << 8) | bInt;
+    }
+
+    public int toRGB() {
+        int rInt = Math.round(this.r * 255);
+        int gInt = Math.round(this.g * 255);
+        int bInt = Math.round(this.b * 255);
+
+        return 0xFF000000 | (rInt << 16) | (gInt << 8) | bInt;
+    }
+
+    public static MCH_Color fromARGB(int argb) {
+        float a = ((argb >>> 24) & 0xFF) / 255.0f;
+        float r = ((argb >>> 16) & 0xFF) / 255.0f;
+        float g = ((argb >>>  8) & 0xFF) / 255.0f;
+        float b = ((argb       ) & 0xFF) / 255.0f;
+        return new MCH_Color(a, r, g, b);
+    }
 }

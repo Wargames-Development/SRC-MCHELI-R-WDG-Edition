@@ -3298,6 +3298,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return this.getAcInfo() != null && this.getAcInfo().haveChaff() && this.chaff.tick == 0;
     }
 
+    public boolean isChaffUsing() {
+        return this.chaff.isUsing();
+    }
+
     public boolean canUseMaintenance() {
         return this.getAcInfo() != null && this.getAcInfo().haveMaintenance() && this.maintenance.tick == 0;
     }

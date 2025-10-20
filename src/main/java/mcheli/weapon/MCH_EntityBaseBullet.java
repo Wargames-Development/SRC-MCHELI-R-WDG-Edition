@@ -20,8 +20,7 @@ import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_EntityPlayer;
 import mcheli.wrapper.W_MovingObjectPosition;
 import mcheli.wrapper.W_WorldFunc;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockDoublePlant;
+import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityCloudFX;
@@ -62,6 +61,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public int piercing;
     public int delayFuse;
     public int sprinkleTime;
+    public int spawnedBulletNum;
     public byte isBomblet;
     public double prevPosX2;
     public double prevPosY2;
@@ -153,60 +153,50 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             for (ChunkCoordIntPair chunk : loadedChunks) {
                 ForgeChunkManager.unforceChunk(chunkLoaderTicket, chunk);
             }
-
             loadedChunks.clear();
             ChunkCoordIntPair[] neighboringChunks = {
-                    new ChunkCoordIntPair(chunkX, chunkZ),           // Current chunk
-                    new ChunkCoordIntPair(chunkX + 1, chunkZ),       // +X
-                    new ChunkCoordIntPair(chunkX - 1, chunkZ),       // -X
-                    new ChunkCoordIntPair(chunkX, chunkZ + 1),       // +Z
-                    new ChunkCoordIntPair(chunkX, chunkZ - 1),       // -Z
-                    new ChunkCoordIntPair(chunkX + 1, chunkZ + 1),   // +X, +Z
-                    new ChunkCoordIntPair(chunkX - 1, chunkZ - 1),   // -X, -Z
-                    new ChunkCoordIntPair(chunkX + 1, chunkZ - 1),   // +X, -Z
-                    new ChunkCoordIntPair(chunkX - 1, chunkZ + 1)    // -X, +Z
+                    new ChunkCoordIntPair(chunkX, chunkZ),
+                    new ChunkCoordIntPair(chunkX + 1, chunkZ),
+                    new ChunkCoordIntPair(chunkX - 1, chunkZ),
+                    new ChunkCoordIntPair(chunkX, chunkZ + 1),
+                    new ChunkCoordIntPair(chunkX, chunkZ - 1),
+                    new ChunkCoordIntPair(chunkX + 1, chunkZ + 1),
+                    new ChunkCoordIntPair(chunkX - 1, chunkZ - 1),
+                    new ChunkCoordIntPair(chunkX + 1, chunkZ - 1),
+                    new ChunkCoordIntPair(chunkX - 1, chunkZ + 1)
             };
             for (ChunkCoordIntPair chunk : neighboringChunks) {
-                loadedChunks.add(chunk);  // add chunk directly without checking
+                loadedChunks.add(chunk);
                 ForgeChunkManager.forceChunk(chunkLoaderTicket, chunk);
             }
-            //System.out.println("Loaded surrounding chunks at: " + chunkX + ", " + chunkZ);
         }
     }
 
-
     public void loadChunksInBulletPath(int currentChunkX, int currentChunkZ, double motionX, double motionZ) {
         if (!worldObj.isRemote && chunkLoaderTicket != null) {
-            // Unload previously loaded chunks to avoid memory bloat
             for (ChunkCoordIntPair chunk : loadedChunks) {
                 ForgeChunkManager.unforceChunk(chunkLoaderTicket, chunk);
             }
             loadedChunks.clear();
-            // Calculate the next chunk in the direction of the bullet's motion
             int nextChunkX = currentChunkX + (motionX > 0 ? 1 : (motionX < 0 ? -1 : 0));
             int nextChunkZ = currentChunkZ + (motionZ > 0 ? 1 : (motionZ < 0 ? -1 : 0));
-            // Define the chunks to load (current, next in X, next in Z, and diagonal)
             ChunkCoordIntPair[] chunksToLoad = {
-                    new ChunkCoordIntPair(currentChunkX, currentChunkZ),      // Current chunk
-                    new ChunkCoordIntPair(nextChunkX, currentChunkZ),         // Next chunk in X direction
-                    new ChunkCoordIntPair(currentChunkX, nextChunkZ),         // Next chunk in Z direction
-                    new ChunkCoordIntPair(nextChunkX, nextChunkZ)             // Diagonal chunk
+                    new ChunkCoordIntPair(currentChunkX, currentChunkZ),
+                    new ChunkCoordIntPair(nextChunkX, currentChunkZ),
+                    new ChunkCoordIntPair(currentChunkX, nextChunkZ),
+                    new ChunkCoordIntPair(nextChunkX, nextChunkZ)
             };
-            // Load the chunks ahead of the bullet's path
             for (ChunkCoordIntPair chunk : chunksToLoad) {
                 if (!loadedChunks.contains(chunk)) {
                     loadedChunks.add(chunk);
                     ForgeChunkManager.forceChunk(chunkLoaderTicket, chunk);
                 }
             }
-//            System.out.println("Loaded chunks for bullet at: " + currentChunkX + ", " + currentChunkZ +
-//                    " moving to: " + nextChunkX + ", " + nextChunkZ);
         }
     }
 
     private void clearChunkLoaders() {
         for (ChunkCoordIntPair chunk : loadedChunks) {
-            System.out.println("Clearing chunk loader due to impact.");
             ForgeChunkManager.unforceChunk(chunkLoaderTicket, chunk);
         }
     }
@@ -240,7 +230,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 if (!super.worldObj.isRemote) {
                     this.getDataWatcher().updateObject(29, s);
                 }
-
                 this.onSetWeaponInfo();
             }
         }
@@ -414,6 +403,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.shootingEntity = user;
     }
 
+    public void setParameterFromWeapon(Entity entity, Entity user) {
+        this.shootingAircraft = entity;
+        this.shootingEntity = user;
+    }
+
     public void setParameterFromWeapon(MCH_EntityBaseBullet b, Entity entity, Entity user) {
         this.explosionPower = b.explosionPower;
         this.explosionPowerInWater = b.explosionPowerInWater;
@@ -422,6 +416,44 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.shootingAircraft = entity;
         this.shootingEntity = user;
     }
+
+    public void guidanceToPos(double targetPosX, double targetPosY, double targetPosZ) {
+
+        if (getInfo().tickEndHoming > 0 && ticksExisted > getInfo().tickEndHoming) {
+            return;
+        }
+
+        double tx = targetPosX - this.posX;
+        double ty = targetPosY - this.posY;
+        double tz = targetPosZ - this.posZ;
+
+        double d = MathHelper.sqrt_double(tx * tx + ty * ty + tz * tz);
+        if (d < 1.0E-6D) {
+            return;
+        }
+
+        double accel = this.acceleration;
+        double mx = tx * accel / d;
+        double my = ty * accel / d;
+        double mz = tz * accel / d;
+
+//        Vector3f missileDirection = new Vector3f(this.motionX, this.motionY, this.motionZ);
+//        Vector3f targetDirection  = new Vector3f(tx, ty, tz);
+//        double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
+//        double maxAllowedAngle = Math.toRadians(getInfo().maxDegreeOfMissile);
+//        if (angle > maxAllowedAngle) {
+//            return;
+//        }
+        double turning = getInfo().turningFactor;
+        this.motionX = this.motionX + (mx - this.motionX) * turning;
+        this.motionY = this.motionY + (my - this.motionY) * turning;
+        this.motionZ = this.motionZ + (mz - this.motionZ) * turning;
+        double a = Math.atan2(this.motionZ, this.motionX);
+        this.rotationYaw = (float) (a * 180.0D / Math.PI) - 90.0F;
+        double r = Math.sqrt(this.motionX * this.motionX + this.motionZ * this.motionZ);
+        this.rotationPitch = -((float) (Math.atan2(this.motionY, r) * 180.0D / Math.PI));
+    }
+
 
     public void guidanceToTarget(double targetPosX, double targetPosY, double targetPosZ) {
         this.guidanceToTarget(targetPosX, targetPosY, targetPosZ, 1.0F);
@@ -1062,6 +1094,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 if (mat == Material.leaves || mat == Material.plants || d0 == Blocks.iron_bars || d0 instanceof BlockDoublePlant) {
                     return;
                 }
+                if (d0 instanceof BlockGlass || d0 instanceof BlockStainedGlass || d0 instanceof BlockPane || d0 instanceof BlockStainedGlassPane) {
+                    return;
+                }
                 hitX = m.hitVec.xCoord + dx;
                 hitY = m.hitVec.yCoord + dy;
                 hitZ = m.hitVec.zCoord + dz;
@@ -1391,9 +1426,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
                                 && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
-                            continue;
-                        }
-                        if (((MCH_EntityAircraft) entity).chaffUseTime > 0) {
                             continue;
                         }
                         // 排除地面上的目标

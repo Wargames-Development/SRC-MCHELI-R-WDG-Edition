@@ -15,6 +15,7 @@ public class MCH_EntityRocket extends MCH_EntityBaseBullet {
    public void onUpdate() {
       super.onUpdate();
       this.onUpdateBomblet();
+      this.onUpdateSpreader();
       if(super.isBomblet <= 0 && this.getInfo() != null && !this.getInfo().disableSmoke) {
          this.spawnExplosionParticle(this.getInfo().trajectoryParticleName, 3, 5.0F * this.getInfo().smokeSize * 0.5F);
       }
@@ -36,6 +37,37 @@ public class MCH_EntityRocket extends MCH_EntityBaseBullet {
       }
 
    }
+
+    public void onUpdateSpreader() {
+        if (!super.worldObj.isRemote) {
+            if (this.getInfo().spawnBulletInAir && this.spawnedBulletNum < getInfo().spawnBulletMaxNum && !super.isDead) {
+                if (this.ticksExisted > 5 && this.ticksExisted % getInfo().spawnBulletIntervalTick == 0) {
+                    ++this.spawnedBulletNum;
+                    for (int i = 0; i < this.getInfo().spawnBulletPerNum; ++i) {
+                        double mX = 1e-6, mY = 1e-6, mZ = 1e-6, speed = 0.001;
+                        if(getInfo().spawnBulletInheritSpeed) {
+                            mX = motionX;
+                            mY = motionY;
+                            mZ = motionZ;
+                            speed = acceleration;
+                        }
+                        MCH_EntityRocket e = new MCH_EntityRocket(super.worldObj, posX, posY, posZ, mX, mY, mZ, rotationYaw, rotationPitch, speed);
+                        e.setName(getInfo().bombletModelName);
+                        e.setParameterFromWeapon(shootingAircraft, shootingEntity);
+                        e.setPower(e.getInfo().power);
+                        e.explosionPower = e.getInfo().explosion;
+                        e.explosionPowerInWater = e.getInfo().explosionInWater;
+                        float MOTION = this.getInfo().bombletDiff;
+                        e.motionX += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                        e.motionY += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                        e.motionZ += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+
+                        super.worldObj.spawnEntityInWorld(e);
+                    }
+                }
+            }
+        }
+    }
 
    public MCH_BulletModel getDefaultBulletModel() {
       return MCH_DefaultBulletModels.Rocket;

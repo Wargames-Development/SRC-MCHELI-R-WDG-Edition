@@ -2,8 +2,10 @@ package mcheli.weapon;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.network.packets.PacketLaserGuidanceTargeting;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -147,6 +149,8 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             targetPosX = hitResult.hitVec.xCoord;
             targetPosY = hitResult.hitVec.yCoord;
             targetPosZ = hitResult.hitVec.zCoord;
+
+            MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX,targetPosY,targetPosZ));
 
             if(lockBox != null) {
                 lockBox.setPosition(targetPosX, targetPosY, targetPosZ);

@@ -557,6 +557,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
       MinecraftForge.EVENT_BUS.register(new MCH_RenderBVRLockBox());
       MinecraftForge.EVENT_BUS.register(new MCH_RenderRWR());
       MinecraftForge.EVENT_BUS.register(new MCH_RenderMortarRadar());
+      MinecraftForge.EVENT_BUS.register(new MCH_RenderLaser());
    }
 
    public void setCreativeDigDelay(int n) {

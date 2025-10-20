@@ -8,6 +8,7 @@ import java.util.Random;
 
 import mcheli.MCH_Config;
 import mcheli.MCH_MOD;
+import mcheli.MCH_RayTracer;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.wrapper.W_Item;
@@ -47,7 +48,7 @@ public class MCH_ItemWrench extends W_Item {
 
    public boolean func_150897_b(Block b) {
       Material material = b.getMaterial();
-      return material == Material.iron?true:material instanceof MaterialLogic;
+      return material == Material.iron || material instanceof MaterialLogic;
    }
 
    public float func_150893_a(ItemStack itemStack, Block block) {
@@ -85,7 +86,7 @@ public class MCH_ItemWrench extends W_Item {
    }
 
    public boolean hitEntity(ItemStack itemStack, EntityLivingBase entity, EntityLivingBase player) {
-      //todo config option here
+
       if (MCH_Config.wrenchdropitem.prmBool) {
          if (!player.worldObj.isRemote) {
             if (rand.nextInt(40) == 0) {
@@ -145,6 +146,18 @@ public class MCH_ItemWrench extends W_Item {
 
    public MCH_EntityAircraft getMouseOverAircraft(EntityPlayer player) {
       MovingObjectPosition m = this.getMouseOver(player, 1.0F);
+//       Vec3 start = Vec3.createVectorHelper(player.posX,
+//           player.posY + player.getEyeHeight(),
+//           player.posZ);
+//
+//        // 终点：沿视线 100 米处
+//       final double range = 100.0D; // 100 米 ≈ 100 方块
+//       Vec3 look = player.getLook(1.0F); // 单位向量
+//       Vec3 end  = start.addVector(look.xCoord * range,
+//           look.yCoord * range,
+//           look.zCoord * range);
+//       MovingObjectPosition m = MCH_RayTracer.rayTraceVehicleCollision(player.worldObj, start, end , null);
+
       MCH_EntityAircraft ac = null;
       if(m != null) {
          if(m.entityHit instanceof MCH_EntityAircraft) {
@@ -161,65 +174,64 @@ public class MCH_ItemWrench extends W_Item {
    }
 
    private static MovingObjectPosition rayTrace(EntityLivingBase entity, double dist, float tick) {
-      Vec3 vec3 = Vec3.createVectorHelper(entity.posX, entity.posY + (double)entity.getEyeHeight(), entity.posZ);
-      Vec3 vec31 = entity.getLook(tick);
-      Vec3 vec32 = vec3.addVector(vec31.xCoord * dist, vec31.yCoord * dist, vec31.zCoord * dist);
-      return entity.worldObj.func_147447_a(vec3, vec32, false, false, true);
+      Vec3 start = Vec3.createVectorHelper(entity.posX, entity.posY + (double)entity.getEyeHeight(), entity.posZ);
+      Vec3 look = entity.getLook(tick);
+      Vec3 end = start.addVector(look.xCoord * dist, look.yCoord * dist, look.zCoord * dist);
+      return entity.worldObj.func_147447_a(start, end, false, false, true);
    }
 
    private MovingObjectPosition getMouseOver(EntityLivingBase user, float tick) {
+       Vec3 lookVec = user.getLook(tick);
+       Vec3 start = Vec3.createVectorHelper(user.posX, user.posY + (double)user.getEyeHeight(), user.posZ);
       Entity pointedEntity = null;
-      double d0 = 4.0D;
-      MovingObjectPosition objectMouseOver = rayTrace(user, d0, tick);
-      double d1 = d0;
-      Vec3 vec3 = Vec3.createVectorHelper(user.posX, user.posY + (double)user.getEyeHeight(), user.posZ);
-      if(objectMouseOver != null) {
-         d1 = objectMouseOver.hitVec.distanceTo(vec3);
+      double maxDoubledDist = 4D;
+      MovingObjectPosition result = rayTrace(user, maxDoubledDist, tick);
+      double dist = maxDoubledDist;
+      if(result != null) {
+         dist = result.hitVec.distanceTo(start);
       }
-
-      Vec3 vec31 = user.getLook(tick);
-      Vec3 vec32 = vec3.addVector(vec31.xCoord * d0, vec31.yCoord * d0, vec31.zCoord * d0);
-      pointedEntity = null;
-      Vec3 vec33 = null;
+      Vec3 end = start.addVector(lookVec.xCoord * maxDoubledDist, lookVec.yCoord * maxDoubledDist, lookVec.zCoord * maxDoubledDist);
+      Vec3 hitVec = null;
       float f1 = 1.0F;
-      List list = user.worldObj.getEntitiesWithinAABBExcludingEntity(user, user.boundingBox.addCoord(vec31.xCoord * d0, vec31.yCoord * d0, vec31.zCoord * d0).expand((double)f1, (double)f1, (double)f1));
-      double d2 = d1;
+      List list = user.worldObj.getEntitiesWithinAABBExcludingEntity(user,
+          user.boundingBox.addCoord(lookVec.xCoord * maxDoubledDist, lookVec.yCoord * maxDoubledDist, lookVec.zCoord * maxDoubledDist).expand(f1, f1, f1));
+      double d2 = dist;
 
-      for(int i = 0; i < list.size(); ++i) {
-         Entity entity = (Entity)list.get(i);
-         if(entity.canBeCollidedWith()) {
-            float f2 = entity.getCollisionBorderSize();
-            AxisAlignedBB axisalignedbb = entity.boundingBox.expand((double)f2, (double)f2, (double)f2);
-            MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(vec3, vec32);
-            if(axisalignedbb.isVecInside(vec3)) {
-               if(0.0D < d2 || d2 == 0.0D) {
-                  pointedEntity = entity;
-                  vec33 = movingobjectposition == null?vec3:movingobjectposition.hitVec;
-                  d2 = 0.0D;
+       for (Object o : list) {
+           Entity entity = (Entity) o;
+           if (entity.canBeCollidedWith()) {
+               float f2 = entity.getCollisionBorderSize();
+               AxisAlignedBB axisalignedbb = entity.boundingBox.expand(f2, f2, f2);
+               MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(start, end);
+               if (axisalignedbb.isVecInside(start)) {
+                   if (0.0D < d2 || d2 == 0.0D) {
+                       pointedEntity = entity;
+                       hitVec = movingobjectposition == null ? start : movingobjectposition.hitVec;
+                       d2 = 0.0D;
+                   }
+               } else if (movingobjectposition != null) {
+                   double d3 = start.distanceTo(movingobjectposition.hitVec);
+                   if (d3 < d2 || d2 == 0.0D) {
+                       if (entity == user.ridingEntity && !entity.canRiderInteract()) {
+                           if (d2 == 0.0D) {
+                               pointedEntity = entity;
+                               hitVec = movingobjectposition.hitVec;
+                           }
+                       } else {
+                           pointedEntity = entity;
+                           hitVec = movingobjectposition.hitVec;
+                           d2 = d3;
+                       }
+                   }
                }
-            } else if(movingobjectposition != null) {
-               double d3 = vec3.distanceTo(movingobjectposition.hitVec);
-               if(d3 < d2 || d2 == 0.0D) {
-                  if(entity == user.ridingEntity && !entity.canRiderInteract()) {
-                     if(d2 == 0.0D) {
-                        pointedEntity = entity;
-                        vec33 = movingobjectposition.hitVec;
-                     }
-                  } else {
-                     pointedEntity = entity;
-                     vec33 = movingobjectposition.hitVec;
-                     d2 = d3;
-                  }
-               }
-            }
-         }
+           }
+       }
+
+      if(pointedEntity != null && (d2 < dist || result == null)) {
+         result = new MovingObjectPosition(pointedEntity, hitVec);
       }
 
-      if(pointedEntity != null && (d2 < d1 || objectMouseOver == null)) {
-         objectMouseOver = new MovingObjectPosition(pointedEntity, vec33);
-      }
-
-      return objectMouseOver;
+      return result;
    }
 
    public boolean onBlockDestroyed(ItemStack itemStack, World world, Block block, int x, int y, int z, EntityLivingBase entity) {
