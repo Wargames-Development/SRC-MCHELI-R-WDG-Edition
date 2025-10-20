@@ -71,7 +71,9 @@ public class MCH_MissileDetector {
 
                 if (var4 != null) {
                     if (this.ac.isFlareUsing()) {
-                        this.destroyMissile();
+                        this.destroyMissileFlare();
+                    } else if (this.ac.isChaffUsing()) {
+                        this.destroyMissileChaff();
                     } else if (!this.ac.isUAV() && !this.world.isRemote) {
                         LockResult result = isLockedByMissile();
                         if (this.alertCount == 0 && (isLocked || result.isLock)) {
@@ -135,7 +137,7 @@ public class MCH_MissileDetector {
         }
     }
 
-    public void destroyMissile() {
+    public void destroyMissileFlare() {
         if (world.isRemote) return;
         List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(400.0D, 400.0D, 400.0D));
         if (list == null) {
@@ -161,6 +163,22 @@ public class MCH_MissileDetector {
                     if (ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
                         msl.setTargetEntity(null);
                     }
+                }
+            }
+        }
+    }
+
+    public void destroyMissileChaff() {
+        if (world.isRemote) return;
+        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(100.0D, 100.0D, 100.0D));
+        if (list == null) {
+            return;
+        }
+        for (Object o : list) {
+            MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
+            if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
+                if (msl.getInfo().isRadarMissile) {
+                    msl.setTargetEntity(null);
                 }
             }
         }

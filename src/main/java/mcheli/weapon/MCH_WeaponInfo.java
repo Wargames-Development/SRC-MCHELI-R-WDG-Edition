@@ -3,14 +3,7 @@ package mcheli.weapon;
 import mcheli.MCH_BaseInfo;
 import mcheli.MCH_Color;
 import mcheli.MCH_DamageFactor;
-import mcheli.helicopter.MCH_EntityHeli;
-import mcheli.plane.MCP_EntityPlane;
-import mcheli.tank.MCH_EntityTank;
-import mcheli.vehicle.MCH_EntityVehicle;
-import mcheli.wrapper.W_Item;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.util.ArrayList;
@@ -308,6 +301,22 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 是否有尾焰
      */
     public boolean enableExhaustFlare = false;
+
+    /**
+     * 子弹在飞行途中生成其他的子弹，适用于航空布撒器
+     */
+    public boolean spawnBulletInAir;
+    public int spawnBulletMaxNum = 1;
+    public int spawnBulletIntervalTick = 20;
+    public int spawnBulletPerNum = 1;
+    public boolean spawnBulletInheritSpeed;
+
+    /**
+     * 子弹伤害衰减
+     */
+    public List<MCH_IBulletDecay> bulletDecay = new ArrayList<>();
+    public boolean enableBulletDecay;
+
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -631,6 +640,23 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.markerRocketSpawnSpeed = this.toInt(data);
             } else if(item.equalsIgnoreCase("EnableExhaustFlare")) {
                 this.enableExhaustFlare = this.toBool(data);
+            } else if(item.equalsIgnoreCase("SpawnBulletInAir")) {
+                this.spawnBulletInAir = this.toBool(data);
+            } else if(item.equalsIgnoreCase("SpawnBulletMaxNum")) {
+                this.spawnBulletMaxNum = this.toInt(data);
+            } else if(item.equalsIgnoreCase("SpawnBulletIntervalTick")) {
+                this.spawnBulletIntervalTick = this.toInt(data);
+            } else if(item.equalsIgnoreCase("SpawnBulletPerNum")) {
+                this.spawnBulletPerNum = this.toInt(data);
+            } else if(item.equalsIgnoreCase("SpawnBulletInheritSpeed")) {
+                this.spawnBulletInheritSpeed = this.toBool(data);
+            } else if(item.equalsIgnoreCase("BulletDecay")) {
+                String[] split = data.split("\\s*,\\s*");
+                String bulletDecayType = split[0];
+                String[] args = new String[split.length - 1];
+                System.arraycopy(split, 1, args, 0, args.length);
+                this.bulletDecay.add(MCH_BulletDecayFactory.createBulletDecay(bulletDecayType, args));
+                this.enableBulletDecay = true;
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {
@@ -797,9 +823,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                         } else if (item.equalsIgnoreCase("DispenseRange")) {
                             this.dispenseRange = this.toInt(data, 1, 100);
                         } else if (item.equalsIgnoreCase("Length")) {
-                            this.length = (float) this.toInt(data, 1, 300);
+                            this.length = this.toFloat(data, 1, 1000);
                         } else if (item.equalsIgnoreCase("Radius")) {
-                            this.radius = (float) this.toInt(data, 1, 1000);
+                            this.radius = this.toFloat(data, 0, 1000);
                         } else if (item.equalsIgnoreCase("Target")) {
                             if (data.indexOf("block") >= 0) {
                                 this.target = 64;

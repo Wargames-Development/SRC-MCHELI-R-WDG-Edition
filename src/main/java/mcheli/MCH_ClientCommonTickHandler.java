@@ -32,6 +32,7 @@ import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vehicle.MCH_ClientVehicleTickHandler;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vehicle.MCH_GuiVehicle;
+import mcheli.weapon.MCH_RenderLaser;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
 import net.minecraft.client.Minecraft;
@@ -275,6 +276,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         if (var7 != null && var7.ridingEntity == null) {
             MCH_Camera.currentCameraMode = 0;
         }
+
+        MCH_RenderLaser.tickBeams();
     }
 
     public void onTickPre() {

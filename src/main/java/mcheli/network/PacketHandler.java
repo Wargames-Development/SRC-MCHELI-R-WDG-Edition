@@ -125,6 +125,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
         registerPacket(PacketLockTargetBVR.class);
         registerPacket(PacketMissileLockType.class);
         registerPacket(PacketPlaySound.class);
+        registerPacket(PacketWeaponLaserShooting.class);
     }
 
     /**
@@ -279,10 +280,12 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
         for (Object p : players) {
             if (p instanceof EntityPlayerMP) {
                 EntityPlayerMP pl = (EntityPlayerMP) p;
-                if (pl.dimension == dimension && !pl.getUniqueID().equals(player.getUniqueID())) {
-                    double dist = (pl.posX - x) * (pl.posX - x) + (pl.posY - y) * (pl.posY - y) + (pl.posZ - z) * (pl.posZ - z);
-                    if (dist < rangeSq) {
-                        sendTo(packet, pl);
+                if (pl.dimension == dimension ) {
+                    if(player == null || !pl.getUniqueID().equals(player.getUniqueID())) {
+                        double dist = (pl.posX - x) * (pl.posX - x) + (pl.posY - y) * (pl.posY - y) + (pl.posZ - z) * (pl.posZ - z);
+                        if (dist < rangeSq) {
+                            sendTo(packet, pl);
+                        }
                     }
                 }
             }

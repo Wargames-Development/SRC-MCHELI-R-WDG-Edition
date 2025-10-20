@@ -19,11 +19,9 @@ import net.minecraft.world.World;
 public class MCH_WeaponTvMissile extends MCH_WeaponBase {
 
    protected MCH_EntityTvMissile lastShotTvMissile = null;
-   protected Entity lastShotEntity = null;
-   protected boolean isTVGuided = false;
+   protected Entity lastShotEntity;
+   protected boolean isTVGuided;
    public MCH_LaserGuidanceSystem guidanceSystem;
-
-   //todo: add guided cluster munition type/bomblet handling
 
 
    public MCH_WeaponTvMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
@@ -147,6 +145,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
 
       MCH_EntityTvMissile e = new MCH_EntityTvMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double)acr);
       e.setName(super.name);
+      e.setTVMissile(isTVGuided);
       e.setParameterFromWeapon(this, prm.entity, prm.user);
       this.lastShotEntity = prm.entity;
       this.lastShotTvMissile = e;
@@ -160,9 +159,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
       if(super.worldObj.isRemote) {
          if(guidanceSystem != null) {
             this.guidanceSystem.targeting = true;
-            if(super.tick % 3 == 0) {
-               MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true));
-            }
             this.guidanceSystem.update();
          }
       }
@@ -175,7 +171,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
          if(guidanceSystem != null) {
             this.guidanceSystem.targeting = false;
             if(super.tick % 3 == 0) {
-               MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false));
+               MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0,0,0));
             }
          }
       }

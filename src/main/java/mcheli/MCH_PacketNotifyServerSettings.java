@@ -7,8 +7,11 @@ import mcheli.MCH_Config;
 import mcheli.MCH_MOD;
 import mcheli.MCH_Packet;
 import mcheli.wrapper.W_Network;
+import net.minecraft.client.entity.AbstractClientPlayer;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
 
 public class MCH_PacketNotifyServerSettings extends MCH_Packet {
 
@@ -74,4 +77,5 @@ public class MCH_PacketNotifyServerSettings extends MCH_Packet {
    public static void sendAll() {
       send((EntityPlayerMP)null);
    }
+
 }

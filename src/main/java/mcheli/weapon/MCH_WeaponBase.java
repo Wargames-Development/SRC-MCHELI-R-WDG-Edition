@@ -83,22 +83,6 @@ public abstract class MCH_WeaponBase {
       return this.displayName;
    }
 
-  // public MCH_WeaponParam setAccuracy(MCH_WeaponParam prm) {
-  //    if(weaponInfo.accuracy > 0.0F) {
-  //       double accuracy = weaponInfo.accuracy;
-  //       if(prm.entity.motionX > 0 || prm.entity.motionZ > 0) {
-  //          if(weaponInfo.stabilizer != 0) {
-  //             accuracy *= (100 / weaponInfo.stabilizer);
-  //          }else {
-  //             accuracy *= 100;
-  //          }
-  //       }
-  //       prm.rotYaw += (rand.nextFloat() - 0.5F) * accuracy;
-  //       prm.rotPitch += (rand.nextFloat() - 0.5F) * accuracy;
-  //    }
-  //    return prm;
-  // }
-
    public abstract boolean shot(MCH_WeaponParam var1);
 
    public boolean lock(MCH_WeaponParam prm) {
@@ -203,10 +187,8 @@ public abstract class MCH_WeaponBase {
 
    public Vec3 getShotPos(Entity entity) {
       if(entity instanceof MCH_EntityAircraft && this.onTurret) {
-         // System.out.println("On turret");
          return ((MCH_EntityAircraft)entity).calcOnTurretPos(this.position);
       } else {
-         // System.out.println("NOT on turret");
          Vec3 v = Vec3.createVectorHelper(this.position.xCoord, this.position.yCoord, this.position.zCoord);
          float roll = entity instanceof MCH_EntityAircraft?((MCH_EntityAircraft)entity).getRotRoll():0.0F;
          return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);

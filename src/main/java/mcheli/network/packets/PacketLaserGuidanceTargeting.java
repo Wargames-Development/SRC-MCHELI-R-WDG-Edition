@@ -12,8 +12,15 @@ public class PacketLaserGuidanceTargeting extends PacketBase {
 
     boolean targeting;
 
-    public PacketLaserGuidanceTargeting(boolean targeting) {
+    double targetPosX;
+    double targetPosY;
+    double targetPosZ;
+
+    public PacketLaserGuidanceTargeting(boolean targeting, double targetPosX, double targetPosY, double targetPosZ) {
         this.targeting = targeting;
+        this.targetPosX = targetPosX;
+        this.targetPosY = targetPosY;
+        this.targetPosZ = targetPosZ;
     }
 
     public PacketLaserGuidanceTargeting() {
@@ -22,11 +29,17 @@ public class PacketLaserGuidanceTargeting extends PacketBase {
     @Override
     public void encodeInto(ChannelHandlerContext ctx, ByteBuf data) {
         data.writeBoolean(targeting);
+        data.writeDouble(targetPosX);
+        data.writeDouble(targetPosY);
+        data.writeDouble(targetPosZ);
     }
 
     @Override
     public void decodeInto(ChannelHandlerContext ctx, ByteBuf data) {
         targeting = data.readBoolean();
+        targetPosX = data.readDouble();
+        targetPosY = data.readDouble();
+        targetPosZ = data.readDouble();
     }
 
     @Override
@@ -36,6 +49,9 @@ public class PacketLaserGuidanceTargeting extends PacketBase {
             MCH_WeaponTvMissile weaponTvMissile = (MCH_WeaponTvMissile) ac.getCurrentWeapon(playerEntity).getCurrentWeapon();
             if(weaponTvMissile.guidanceSystem != null) {
                 weaponTvMissile.guidanceSystem.targeting = targeting;
+                weaponTvMissile.guidanceSystem.targetPosX = targetPosX;
+                weaponTvMissile.guidanceSystem.targetPosY = targetPosY;
+                weaponTvMissile.guidanceSystem.targetPosZ = targetPosZ;
             }
         }
     }
