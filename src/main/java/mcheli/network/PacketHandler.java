@@ -116,6 +116,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
     public void initialise() {
         channels = NetworkRegistry.INSTANCE.newChannel("MCHReforged", this);
         registerPacket(PacketAirburstDistReset.class);
+        registerPacket(PacketAircraftPositionSync.class);
         registerPacket(PacketBoundingBoxHit.class);
         registerPacket(PacketChaffUse.class);
         registerPacket(PacketDamageIndicator.class);
