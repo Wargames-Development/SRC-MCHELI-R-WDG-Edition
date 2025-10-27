@@ -3,6 +3,7 @@ package mcheli;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.Vec3;
 
 public class MCH_Math {
 
@@ -699,4 +700,30 @@ public class MCH_Math {
          return fb;
       }
    }
+
+    public static Vec3 rotateWorldVecToLocal(double x, double y, double z, float yaw, float pitch, float roll) {
+        // 将角度转换为弧度，取负号表示从世界坐标系反向旋转到本地坐标系
+        double yawRad = -Math.toRadians(yaw);
+        double pitchRad = -Math.toRadians(pitch);
+        double rollRad = -Math.toRadians(roll);
+        // 绕Y轴旋转（航向）
+        double cosYaw = Math.cos(yawRad);
+        double sinYaw = Math.sin(yawRad);
+        double x1 = x * cosYaw - z * sinYaw;
+        double z1 = x * sinYaw + z * cosYaw;
+        double y1 = y;
+        // 绕X轴旋转（俯仰）
+        double cosPitch = Math.cos(pitchRad);
+        double sinPitch = Math.sin(pitchRad);
+        double y2 = y1 * cosPitch - z1 * sinPitch;
+        double z2 = y1 * sinPitch + z1 * cosPitch;
+        double x2 = x1;
+        // 绕Z轴旋转（滚转）
+        double cosRoll = Math.cos(rollRad);
+        double sinRoll = Math.sin(rollRad);
+        double finalX = x2 * cosRoll - y2 * sinRoll;
+        double finalY = x2 * sinRoll + y2 * cosRoll;
+        double finalZ = z2;
+        return Vec3.createVectorHelper(finalX, finalY, finalZ);
+    }
 }

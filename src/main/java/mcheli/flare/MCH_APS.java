@@ -1,12 +1,12 @@
 package mcheli.flare;
 
 import mcheli.MCH_Explosion;
+import mcheli.MCH_ExplosionParam;
 import mcheli.MCH_FMURUtil;
 import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.packets.PacketIronCurtainUse;
 import mcheli.weapon.*;
-import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -112,14 +112,26 @@ public class MCH_APS {
                 if(entity.getClass().getName().contains("EntityGrenade")) {
                     if(MCH_FMURUtil.grenadeDestructedByAPS(entity, (EntityLivingBase) user)) {
                         W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
-                        MCH_Explosion.newExplosion(worldObj, user, user, entity.posX, entity.posY, entity.posZ,
-                                2, 0, true, true, false, true, 0, null);
+                        MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                            .exploder(user)
+                            .player(user instanceof EntityPlayer ? (EntityPlayer) user : null)
+                            .x(entity.posX).y(entity.posY).z(entity.posZ)
+                            .size(2.0F)
+                            .sizeBlock(0.0F)
+                            .isPlaySound(true)
+                            .isSmoking(true)
+                            .isFlaming(false)
+                            .isDestroyBlock(true)
+                            .countSetFireEntity(0)
+                            .isInWater(false)
+                            .build();
+                        MCH_Explosion.newExplosion(worldObj, param);
                     }
                 }
 
                 if(entity instanceof MCH_EntityAAMissile
                         || entity instanceof MCH_EntityRocket
-                        || entity instanceof MCH_EntityATMissile 
+                        || entity instanceof MCH_EntityATMissile
                         || entity instanceof MCH_EntityASMissile
                         || entity instanceof MCH_EntityTvMissile
                 ) {
@@ -128,8 +140,20 @@ public class MCH_APS {
                         bullet.setDead();
                         W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
                         MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
-                        MCH_Explosion.newExplosion(worldObj, user, user, entity.posX, entity.posY, entity.posZ,
-                                3, 0, true, true, false, true, 0, null);
+                        MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                            .exploder(user)
+                            .player(user instanceof EntityPlayer ? (EntityPlayer) user : null)
+                            .x(entity.posX).y(entity.posY).z(entity.posZ)
+                            .size(3.0F)
+                            .sizeBlock(0.0F)
+                            .isPlaySound(true)
+                            .isSmoking(true)
+                            .isFlaming(false)
+                            .isDestroyBlock(true)
+                            .countSetFireEntity(0)
+                            .isInWater(false)
+                            .build();
+                        MCH_Explosion.newExplosion(worldObj, param);
                     }
                 }
 

@@ -31,122 +31,37 @@ import java.util.*;
 public class MCH_Explosion extends Explosion {
 
     private static Random explosionRNG = new Random();
-    public final int field_77289_h = 16;
     public World world;
     public Map field_77288_k = new HashMap();
-    public boolean isDestroyBlock;
-    public int countSetFireEntity;
-    public boolean isPlaySound;
-    public boolean isInWater;
-    public EntityPlayer explodedPlayer;
-    public float explosionSizeBlock;
-    public MCH_DamageFactor damageFactor = null;
+    public MCH_ExplosionParam param;
+    public boolean destroyBlocksByRule;
     MCH_Explosion.ExplosionResult result;
-    private float damageVsLiving = 1f;
-    private float damageVsPlayer = 1f;
-    private float damageVsPlane = 1f;
-    private float damageVsVehicle = 1f;
-    private float damageVsTank = 1f;
-    private float damageVsHeli = 1f;
-    private float damageVsShip = 1f;
 
-    public MCH_Explosion(World par1World, Entity exploder, Entity player, double x, double y, double z, float size) {
-        super(par1World, exploder, x, y, z, size);
-        this.world = par1World;
-        this.isDestroyBlock = false;
-        this.explosionSizeBlock = size;
-        this.countSetFireEntity = 0;
-        this.isPlaySound = true;
-        this.isInWater = false;
-        this.result = null;
-        this.explodedPlayer = player instanceof EntityPlayer ? (EntityPlayer) player : null;
+    public MCH_Explosion(World world, MCH_ExplosionParam param) {
+        super(world, param.exploder, param.x, param.y, param.z, param.size);
+        this.world = world;
+        this.param = param;
+        this.result = newExplosionResult();
+        this.isSmoking = param.isSmoking;
+        this.isFlaming = param.isFlaming;
+        this.destroyBlocksByRule = world.getGameRules().getGameRuleBooleanValue("mobGriefing") && param.isDestroyBlock;
     }
 
-    public static MCH_Explosion.ExplosionResult newExplosion(World w, Entity entityExploded, Entity player, double x, double y, double z, float size, float sizeBlock, boolean playSound, boolean isSmoking, boolean isFlaming, boolean isDestroyBlock, int countSetFireEntity) {
-        return newExplosion(w, entityExploded, player, x, y, z, size, sizeBlock, playSound, isSmoking, isFlaming, isDestroyBlock, countSetFireEntity, null);
-    }
-
-    public static MCH_Explosion.ExplosionResult newExplosion(World w, Entity entityExploded, Entity player, double x, double y, double z,
-                                                             float size, float sizeBlock, boolean playSound, boolean isSmoking, boolean isFlaming,
-                                                             boolean isDestroyBlock, int countSetFireEntity, MCH_DamageFactor df) {
-        return newExplosion(w, entityExploded, player, x, y, z, size, sizeBlock, playSound, isSmoking, isFlaming, isDestroyBlock, countSetFireEntity, df, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-    }
-
-    public static MCH_Explosion.ExplosionResult newExplosion(World w, Entity entityExploded, Entity player, double x, double y, double z,
-                                                             float size, float sizeBlock, boolean playSound, boolean isSmoking, boolean isFlaming,
-                                                             boolean isDestroyBlock, int countSetFireEntity, MCH_DamageFactor df,
-                                                             float damageVsPlayer, float damageVsLiving, float damageVsPlane, float damageVsHeli, float damageVsTank, float damageVsVehicle, float damageVsShip) {
+    public static MCH_Explosion.ExplosionResult newExplosion(World w, MCH_ExplosionParam p) {
         if (w.isRemote) {
             return null;
-        } else {
-            MCH_Explosion exp = new MCH_Explosion(w, entityExploded, player, x, y, z, size);
-            exp.isSmoking = isSmoking;
-            exp.isFlaming = isFlaming;
-            exp.isDestroyBlock = w.getGameRules().getGameRuleBooleanValue("mobGriefing") && isDestroyBlock;
-            exp.explosionSizeBlock = sizeBlock;
-            exp.countSetFireEntity = countSetFireEntity;
-            exp.isPlaySound = playSound;
-            exp.isInWater = false;
-            exp.result = exp.newExplosionResult();
-            exp.damageFactor = df;
-            exp.damageVsPlayer = damageVsPlayer;
-            exp.damageVsLiving = damageVsLiving;
-            exp.damageVsPlane = damageVsPlane;
-            exp.damageVsHeli = damageVsHeli;
-            exp.damageVsTank = damageVsTank;
-            exp.damageVsVehicle = damageVsVehicle;
-            exp.damageVsShip = damageVsShip;
-            exp.doExplosionA();
-            exp.doExplosionB(true);
-            MCH_PacketEffectExplosion.ExplosionParam param = MCH_PacketEffectExplosion.create();
-            param.exploderID = W_Entity.getEntityId(entityExploded);
-            param.posX = x;
-            param.posY = y;
-            param.posZ = z;
-            param.size = size;
-            param.inWater = false;
-            param.isSmoking = exp.isSmoking;
-            MCH_PacketEffectExplosion.send(param);
-            return exp.result;
         }
-    }
-
-    public static MCH_Explosion.ExplosionResult newExplosionInWater(World w, Entity entityExploded, Entity player, double x, double y, double z, float size, float sizeBlock,
-                                                                    boolean playSound, boolean isSmoking, boolean isFlaming, boolean isDestroyBlock, int countSetFireEntity, MCH_DamageFactor df,
-                                                                    float damageVsPlayer, float damageVsLiving, float damageVsPlane, float damageVsHeli, float damageVsTank, float damageVsVehicle, float damageVsShip) {
-        if (w.isRemote) {
-            return null;
-        } else {
-            MCH_Explosion exp = new MCH_Explosion(w, entityExploded, player, x, y, z, size);
-            exp.isSmoking = isSmoking;
-            exp.isFlaming = isFlaming;
-            exp.isDestroyBlock = w.getGameRules().getGameRuleBooleanValue("mobGriefing") && isDestroyBlock;
-            exp.explosionSizeBlock = sizeBlock;
-            exp.countSetFireEntity = countSetFireEntity;
-            exp.isPlaySound = playSound;
-            exp.isInWater = true;
-            exp.result = exp.newExplosionResult();
-            exp.damageFactor = df;
-            exp.damageVsPlayer = damageVsPlayer;
-            exp.damageVsLiving = damageVsLiving;
-            exp.damageVsPlane = damageVsPlane;
-            exp.damageVsHeli = damageVsHeli;
-            exp.damageVsTank = damageVsTank;
-            exp.damageVsVehicle = damageVsVehicle;
-            exp.damageVsShip = damageVsShip;
-            exp.doExplosionA();
-            exp.doExplosionB(true);
-            MCH_PacketEffectExplosion.ExplosionParam param = MCH_PacketEffectExplosion.create();
-            param.exploderID = W_Entity.getEntityId(entityExploded);
-            param.posX = x;
-            param.posY = y;
-            param.posZ = z;
-            param.size = size;
-            param.inWater = true;
-            param.isSmoking = exp.isSmoking;
-            MCH_PacketEffectExplosion.send(param);
-            return exp.result;
-        }
+        MCH_Explosion exp = new MCH_Explosion(w, p);
+        exp.doExplosionA();
+        exp.doExplosionB(true);
+        MCH_PacketEffectExplosion.ExplosionParam net = MCH_PacketEffectExplosion.create();
+        net.exploderID = W_Entity.getEntityId(p.exploder);
+        net.posX = p.x; net.posY = p.y; net.posZ = p.z;
+        net.size = p.size;
+        net.inWater = p.isInWater;
+        net.isSmoking = p.isSmoking;
+        MCH_PacketEffectExplosion.send(net);
+        return exp.result;
     }
 
     public static void playExplosionSound(World w, double x, double y, double z) {
@@ -156,9 +71,7 @@ public class MCH_Explosion extends Explosion {
 
     public static void effectExplosion(World world, Entity exploder, double explosionX, double explosionY, double explosionZ, float explosionSize, boolean isSmoking) {
         ArrayList affectedBlockPositions = new ArrayList();
-        boolean field_77289_h = true;
         HashSet hashset = new HashSet();
-
         int i;
         int j;
         int k;
@@ -502,7 +415,7 @@ public class MCH_Explosion extends Explosion {
                 int j2 = MathHelper.floor_double(super.explosionZ + (double) super.explosionSize + 1.0D);
                 List list = this.world.getEntitiesWithinAABBExcludingEntity(super.exploder, W_AxisAlignedBB.getAABB(i, k, var34, j, l1, j2));
                 Vec3 vec3 = W_WorldFunc.getWorldVec3(this.world, super.explosionX, super.explosionY, super.explosionZ);
-                super.exploder = this.explodedPlayer;
+                super.exploder = param.player;
 
                 for (int i1 = 0; i1 < list.size(); ++i1) {
                     Entity entity = (Entity) list.get(i1);
@@ -516,8 +429,8 @@ public class MCH_Explosion extends Explosion {
                             d0 /= dist;
                             d1 /= dist;
                             d2 /= dist;
-                            double var40 = this.getBlockDensity(vec3, entity.boundingBox);
-                            double var41 = (1.0D - rDist) * var40;
+                            double blockDensity = this.getBlockDensity(vec3, entity.boundingBox);
+                            double var41 = (1.0D - rDist) * blockDensity;
                             float damage = (float) ((int) ((var41 * var41 + var41) / 2.0D * 8.0D * (double) super.explosionSize + 1.0D));
                             if (damage > 0.0F && this.result != null && !(entity instanceof EntityItem) && !(entity instanceof EntityExpBottle) && !(entity instanceof EntityXPOrb) && !W_Entity.isEntityFallingBlock(entity)) {
                                 if (entity instanceof MCH_EntityBaseBullet && super.exploder instanceof EntityPlayer) {
@@ -534,17 +447,17 @@ public class MCH_Explosion extends Explosion {
                             MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
                             DamageSource ds = DamageSource.setExplosionSource(this);
                             damage = MCH_Config.applyDamageVsEntity(entity, ds, damage);
-                            if (entity instanceof EntityPlayer) damage *= damageVsPlayer;
-                            else if (entity instanceof EntityLivingBase) damage *= damageVsLiving;
+                            if (entity instanceof EntityPlayer) damage *= param.damageVsPlayer;
+                            else if (entity instanceof EntityLivingBase) damage *= param.damageVsLiving;
                             else if (entity instanceof MCP_EntityPlane) {
                                 MCP_EntityPlane plane = (MCP_EntityPlane) entity;
                                 if(plane.getAcInfo() != null && plane.getAcInfo().isFloat) {
-                                    damage *= damageVsShip;
-                                } else damage *= damageVsPlane;
+                                    damage *= param.damageVsShip;
+                                } else damage *= param.damageVsPlane;
                             }
-                            else if (entity instanceof MCH_EntityHeli) damage *= damageVsHeli;
-                            else if (entity instanceof MCH_EntityTank) damage *= damageVsTank;
-                            else if (entity instanceof MCH_EntityVehicle) damage *= damageVsVehicle;
+                            else if (entity instanceof MCH_EntityHeli) damage *= param.damageVsHeli;
+                            else if (entity instanceof MCH_EntityTank) damage *= param.damageVsTank;
+                            else if (entity instanceof MCH_EntityVehicle) damage *= param.damageVsVehicle;
                             entity.attackEntityFrom(ds, damage);
                             double d11 = EnchantmentProtection.func_92092_a(entity, var41);
                             if (entity instanceof EntityLivingBase) {
@@ -557,10 +470,10 @@ public class MCH_Explosion extends Explosion {
                                 this.field_77288_k.put(entity, W_WorldFunc.getWorldVec3(this.world, d0 * var41, d1 * var41, d2 * var41));
                             }
 
-                            if (damage > 0.0F && this.countSetFireEntity > 0) {
+                            if (damage > 0.0F && param.countSetFireEntity > 0) {
                                 double fireFactor = 1.0D - dist / (double) super.explosionSize;
                                 if (fireFactor > 0.0D) {
-                                    entity.setFire((int) (fireFactor * (double) this.countSetFireEntity));
+                                    entity.setFire((int) (fireFactor * (double) param.countSetFireEntity));
                                 }
                             }
                         }
@@ -617,7 +530,7 @@ public class MCH_Explosion extends Explosion {
                         f /= k2;
                         i2 /= k2;
                         list /= k2;
-                        float d7 = this.explosionSizeBlock * (0.7F + this.world.rand.nextFloat() * 0.6F);
+                        float d7 = param.sizeBlock * (0.7F + this.world.rand.nextFloat() * 0.6F);
                         d0 = super.explosionX;
                         d1 = super.explosionY;
                         d2 = super.explosionZ;
@@ -636,7 +549,7 @@ public class MCH_Explosion extends Explosion {
                                     f3 = d10.getExplosionResistance(super.exploder, this.world, d8, i1, d9, super.explosionX, super.explosionY, super.explosionZ);
                                 }
 
-                                if (this.isInWater) {
+                                if (param.isInWater) {
                                     f3 *= this.world.rand.nextFloat() * 0.2F + 0.2F;
                                 }
 
@@ -689,11 +602,10 @@ public class MCH_Explosion extends Explosion {
     }
 
     public void doExplosionB(boolean par1) {
-        if (this.isPlaySound) {
+        if (param.isPlaySound) {
             W_WorldFunc.DEF_playSoundEffect(this.world, super.explosionX, super.explosionY, super.explosionZ, "random.explode", 4.0F, (1.0F + (this.world.rand.nextFloat() - this.world.rand.nextFloat()) * 0.2F) * 0.7F);
         }
 
-        MCH_Config var10000;
         Iterator iterator;
         ChunkPosition chunkposition;
         int i;
@@ -710,12 +622,11 @@ public class MCH_Explosion extends Explosion {
                 j = W_ChunkPosition.getChunkPosY(chunkposition);
                 k = W_ChunkPosition.getChunkPosZ(chunkposition);
                 l = W_WorldFunc.getBlockId(this.world, i, j, k);
-                if (l > 0 && this.isDestroyBlock && this.explosionSizeBlock > 0.0F) {
-                    var10000 = MCH_MOD.config;
+                if (l > 0 && destroyBlocksByRule && param.sizeBlock > 0.0F) {
                     if (MCH_Config.Explosion_DestroyBlock.prmBool) {
                         b = W_Block.getBlockById(l);
                         if (b.canDropFromExplosion(this)) {
-                            b.dropBlockAsItemWithChance(this.world, i, j, k, this.world.getBlockMetadata(i, j, k), 1.0F / this.explosionSizeBlock, 0);
+                            b.dropBlockAsItemWithChance(this.world, i, j, k, this.world.getBlockMetadata(i, j, k), 1.0F / param.sizeBlock, 0);
                         }
 
                         b.onBlockExploded(this.world, i, j, k, this);
@@ -725,7 +636,6 @@ public class MCH_Explosion extends Explosion {
         }
 
         if (super.isFlaming) {
-            var10000 = MCH_MOD.config;
             if (MCH_Config.Explosion_FlamingBlock.prmBool) {
                 iterator = super.affectedBlockPositions.iterator();
 
@@ -746,13 +656,17 @@ public class MCH_Explosion extends Explosion {
     }
 
     public MCH_Explosion.ExplosionResult newExplosionResult() {
-        return new MCH_Explosion.ExplosionResult();
+        return new MCH_Explosion.ExplosionResult(this);
     }
 
     public class ExplosionResult {
 
-        public boolean hitEntity = false;
+        public ExplosionResult(MCH_Explosion explosion) {
+            this.explosion = explosion;
+        }
 
+        public boolean hitEntity = false;
+        public MCH_Explosion explosion;
 
     }
 }

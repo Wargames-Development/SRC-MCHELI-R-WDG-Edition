@@ -3,6 +3,7 @@ package mcheli.weapon;
 import java.util.List;
 
 import com.flansmod.common.network.PacketPlaySound;
+import com.flansmod.common.vector.Vector3f;
 import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
@@ -59,23 +60,22 @@ public class MCH_EntityBullet extends MCH_EntityBaseBullet {
 
    @Override
    protected void onUpdateCollided() {
-      double mx = super.motionX * super.accelerationFactor;
-      double my = super.motionY * super.accelerationFactor;
-      double mz = super.motionZ * super.accelerationFactor;
+       double mx = super.motionX * this.accelerationFactor;
+       double my = super.motionY * this.accelerationFactor;
+       double mz = super.motionZ * this.accelerationFactor;
       float damageFactor = 1.0F;
       MovingObjectPosition m = null;
 
-      Vec3 vec3;
-      Vec3 vec31;
+      Vec3 src;
+      Vec3 dir;
       for(int entity = 0; entity < 5; ++entity) {
-         vec3 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
-         vec31 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
-         m = W_WorldFunc.clip(super.worldObj, vec3, vec31);
+          src = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
+          dir = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
+         m = W_WorldFunc.clip(super.worldObj, src, dir);
          boolean list = false;
          if(super.shootingEntity != null && W_MovingObjectPosition.isHitTypeTile(m)) {
             Block d0 = W_WorldFunc.getBlock(super.worldObj, m.blockX, m.blockY, m.blockZ);
-            MCH_Config var10000 = MCH_MOD.config;
-            if(MCH_Config.bulletBreakableBlocks.contains(d0)) {
+             if(MCH_Config.bulletBreakableBlocks.contains(d0)) {
                W_WorldFunc.destroyBlock(super.worldObj, m.blockX, m.blockY, m.blockZ, true);
                list = true;
             }
@@ -86,8 +86,8 @@ public class MCH_EntityBullet extends MCH_EntityBaseBullet {
          }
       }
 
-      vec3 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
-      vec31 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
+      src = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
+      dir = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
       if(this.getInfo().delayFuse > 0) {
          if(m != null) {
             this.boundBullet(m.sideHit);
@@ -97,38 +97,51 @@ public class MCH_EntityBullet extends MCH_EntityBaseBullet {
          }
 
       } else {
-         if(m != null) {
-            vec31 = W_WorldFunc.getWorldVec3(super.worldObj, m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
-         }
+          if (m != null) {
+              dir = W_WorldFunc.getWorldVec3(super.worldObj, m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
+          }
 
-         Entity var22 = null;
-         List var23 = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.addCoord(mx, my, mz).expand(21.0D, 21.0D, 21.0D));
-         double var24 = 0.0D;
-
-         for(int j = 0; j < var23.size(); ++j) {
-            Entity entity1 = (Entity)var23.get(j);
-            if(this.canBeCollidedEntity(entity1)) {
-               float f = 0.3F;
-               AxisAlignedBB axisalignedbb = entity1.boundingBox.expand(f, f, f);
-               MovingObjectPosition m1 = axisalignedbb.calculateIntercept(vec3, vec31);
-               if(m1 != null) {
-                  double d1 = vec3.distanceTo(m1.hitVec);
-                  if(d1 < var24 || var24 == 0.0D) {
-                     var22 = entity1;
-                     var24 = d1;
+          Entity hitEntity = null;
+          List entities = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.addCoord(mx, my, mz).expand(21.0D, 21.0D, 21.0D));
+          double d2 = 0.0D;
+          MovingObjectPosition result = m;
+          for (Object o : entities) {
+              Entity entity = (Entity) o;
+              if (this.canBeCollidedEntity(entity) && shootingAircraft != o) {
+                  float f = 0.3F;
+                  MovingObjectPosition movingObjectPosition = entity.boundingBox.expand(f, f, f).calculateIntercept(src, dir);
+                  if (movingObjectPosition != null) {
+                      double d1 = src.distanceTo(movingObjectPosition.hitVec);
+                      if (d1 < d2 || d2 == 0.0D) {
+                          hitEntity = entity;
+                          d2 = d1;
+                          result = movingObjectPosition;
+                      }
                   }
-               }
-            }
-         }
+              }
+          }
 
-         if(var22 != null) {
-            m = new MovingObjectPosition(var22);
-         }
+          if(result != null) {
+              dir = Vec3.createVectorHelper(result.hitVec.xCoord - this.posX, result.hitVec.yCoord - this.posY, result.hitVec.zCoord - this.posZ);
+              double d = 1.0;
+              if (mx != 0.0) {
+                  d = dir.xCoord / mx;
+              } else if (my != 0.0) {
+                  d = dir.yCoord / my;
+              } else if (mz != 0.0) {
+                  d = dir.zCoord / mz;
+              }
+              if (d < 0.0) {
+                  d = -d;
+              }
 
-         if(m != null) {
-            this.onImpact(m, damageFactor);
-         }
-
+              Vec3 newHitVec = Vec3.createVectorHelper(posX + mx * d, posY + my * d, posZ + mz * d);
+              if (hitEntity != null) {
+                  this.onImpact(new MovingObjectPosition(hitEntity, newHitVec), damageFactor);
+              } else {
+                  this.onImpact(result, damageFactor);
+              }
+          }
       }
    }
 

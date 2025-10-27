@@ -45,7 +45,7 @@ public class MCH_AircraftPacketHandler {
                ac.setRotRoll(req.roll);
                if(req.rollRev) {
                   //System.out.println("req.rollRev");
-                  MCH_Lib.DbgLog(ac.worldObj, "onPacketIndRotation Error:req.rollRev y=%.2f, p=%.2f, r=%.2f", new Object[]{Float.valueOf(req.yaw), Float.valueOf(req.pitch), Float.valueOf(req.roll)});
+                  MCH_Lib.DbgLog(ac.worldObj, "onPacketIndRotation Error:req.rollRev y=%.2f, p=%.2f, r=%.2f", req.yaw, req.pitch, req.roll);
                   if(ac.getRiddenByEntity() != null) {
                      ac.getRiddenByEntity().rotationYaw = req.yaw;
                      ac.getRiddenByEntity().prevRotationYaw = req.yaw;
@@ -366,7 +366,7 @@ public class MCH_AircraftPacketHandler {
                ac.cs_tankAutoThrottleDown = pc.tankAutoThrottleDown;
             }
 
-            ac.camera.setShaderSupport(sid, Boolean.valueOf(pc.shaderSupport));
+            ac.camera.setShaderSupport(sid, pc.shaderSupport);
          }
 
       }
@@ -427,12 +427,4 @@ public class MCH_AircraftPacketHandler {
       }
    }
 
-   public static void onPacketAircraftLocation(EntityPlayer entityPlayer, ByteArrayDataInput data) {
-      if(entityPlayer.worldObj.isRemote) {
-         MCH_PacketAircraftLocation pc = new MCH_PacketAircraftLocation();
-         pc.readData(data);
-
-         //Mk1Eyeball.getInstance().addContact(pc);
-      }
-   }
 }

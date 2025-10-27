@@ -439,13 +439,13 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         double my = ty * accel / d;
         double mz = tz * accel / d;
 
-//        Vector3f missileDirection = new Vector3f(this.motionX, this.motionY, this.motionZ);
-//        Vector3f targetDirection  = new Vector3f(tx, ty, tz);
-//        double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
-//        double maxAllowedAngle = Math.toRadians(getInfo().maxDegreeOfMissile);
-//        if (angle > maxAllowedAngle) {
-//            return;
-//        }
+        Vector3f missileDirection = new Vector3f(this.motionX, this.motionY, this.motionZ);
+        Vector3f targetDirection  = new Vector3f(tx, ty, tz);
+        double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
+        double maxAllowedAngle = Math.toRadians(getInfo().maxDegreeOfMissile);
+        if (angle > maxAllowedAngle) {
+            return;
+        }
         double turning = getInfo().turningFactor;
         this.motionX = this.motionX + (mx - this.motionX) * turning;
         this.motionY = this.motionY + (my - this.motionY) * turning;
@@ -718,31 +718,28 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         if (!this.isInWater()) {
-            if (ticksExisted > getInfo().speedFactorStartTick && ticksExisted < getInfo().speedFactorEndTick) {
-                // 计算当前总速度
-                double currentSpeed = Math.sqrt(
-                        motionX * motionX +
-                                motionY * motionY +
-                                motionZ * motionZ
-                );
+            if (ticksExisted > getInfo().speedFactorStartTick
+                && ticksExisted < getInfo().speedFactorEndTick) {
 
-                if (currentSpeed > 0) { // 避免除以零
-                    // 获取速度方向单位向量
+                double currentSpeed = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
+                if (currentSpeed > 0.0D) {
                     double dirX = motionX / currentSpeed;
                     double dirY = motionY / currentSpeed;
                     double dirZ = motionZ / currentSpeed;
 
-                    // 沿速度方向叠加固定增量
                     motionX += dirX * getInfo().speedFactor;
                     motionY += dirY * getInfo().speedFactor;
                     motionZ += dirZ * getInfo().speedFactor;
+
                     acceleration += getInfo().speedFactor;
                 }
             }
+
             super.motionY += this.getGravity();
         } else {
             super.motionY += this.getGravityInWater();
         }
+
 
         if (!super.isDead) {
             onUpdateCollided();
@@ -934,16 +931,15 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         double mz = super.motionZ * this.accelerationFactor;
         MovingObjectPosition m = null;
 
-        Vec3 vec3;
-        Vec3 vec31;
+        Vec3 src;
+        Vec3 dir;
         for (int entity = 0; entity < 5; ++entity) {
-            vec3 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
-            vec31 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
-            m = W_WorldFunc.clip(super.worldObj, vec3, vec31);
+            src = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
+            dir = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
+            m = W_WorldFunc.clip(super.worldObj, src, dir);
             boolean list = false;
             if (this.shootingEntity != null && W_MovingObjectPosition.isHitTypeTile(m)) {
                 Block d0 = W_WorldFunc.getBlock(super.worldObj, m.blockX, m.blockY, m.blockZ);
-                MCH_Config var10000 = MCH_MOD.config;
                 if (MCH_Config.bulletBreakableBlocks.contains(d0)) {
                     W_WorldFunc.destroyBlock(super.worldObj, m.blockX, m.blockY, m.blockZ, true);
                     list = true;
@@ -955,8 +951,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
         }
 
-        vec3 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
-        vec31 = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
+        src = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
+        dir = W_WorldFunc.getWorldVec3(super.worldObj, super.posX + mx, super.posY + my, super.posZ + mz);
         if (this.getInfo().delayFuse > 0) {
             if (m != null) {
                 this.boundBullet(m.sideHit);
@@ -967,37 +963,50 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
         } else {
             if (m != null) {
-                vec31 = W_WorldFunc.getWorldVec3(super.worldObj, m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
+                dir = W_WorldFunc.getWorldVec3(super.worldObj, m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
             }
 
-            Entity var22 = null;
-            List var23 = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.addCoord(mx, my, mz).expand(21.0D, 21.0D, 21.0D));
-            double var24 = 0.0D;
-
-            for (int j = 0; j < var23.size(); ++j) {
-                Entity entity1 = (Entity) var23.get(j);
-                if (this.canBeCollidedEntity(entity1)) {
+            Entity hitEntity = null;
+            List entities = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.addCoord(mx, my, mz).expand(21.0D, 21.0D, 21.0D));
+            double d2 = 0.0D;
+            MovingObjectPosition result = m;
+            for (Object o : entities) {
+                Entity entity = (Entity) o;
+                if (this.canBeCollidedEntity(entity) && shootingAircraft != o) {
                     float f = 0.3F;
-                    AxisAlignedBB axisalignedbb = entity1.boundingBox.expand(f, f, f);
-                    MovingObjectPosition m1 = axisalignedbb.calculateIntercept(vec3, vec31);
-                    if (m1 != null) {
-                        double d1 = vec3.distanceTo(m1.hitVec);
-                        if (d1 < var24 || var24 == 0.0D) {
-                            var22 = entity1;
-                            var24 = d1;
+                    MovingObjectPosition movingObjectPosition = entity.boundingBox.expand(f, f, f).calculateIntercept(src, dir);
+                    if (movingObjectPosition != null) {
+                        double d1 = src.distanceTo(movingObjectPosition.hitVec);
+                        if (d1 < d2 || d2 == 0.0D) {
+                            hitEntity = entity;
+                            d2 = d1;
+                            result = movingObjectPosition;
                         }
                     }
                 }
             }
 
-            if (var22 != null) {
-                m = new MovingObjectPosition(var22);
-            }
+            if(result != null) {
+                dir = Vec3.createVectorHelper(result.hitVec.xCoord - this.posX, result.hitVec.yCoord - this.posY, result.hitVec.zCoord - this.posZ);
+                double d = 1.0;
+                if (mx != 0.0) {
+                    d = dir.xCoord / mx;
+                } else if (my != 0.0) {
+                    d = dir.yCoord / my;
+                } else if (mz != 0.0) {
+                    d = dir.zCoord / mz;
+                }
+                if (d < 0.0) {
+                    d = -d;
+                }
 
-            if (m != null) {
-                this.onImpact(m, damageFactor);
+                Vec3 newHitVec = Vec3.createVectorHelper(posX + mx * d, posY + my * d, posZ + mz * d);
+                if (hitEntity != null) {
+                    this.onImpact(new MovingObjectPosition(hitEntity, newHitVec), damageFactor);
+                } else {
+                    this.onImpact(result, damageFactor);
+                }
             }
-
         }
     }
 
@@ -1084,8 +1093,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     return;
                 }
 
-                if(weaponInfo != null && weaponInfo.enableBulletDecay && initPos != null && m.hitVec != null) {
-                    Vec3 hitVec = Vec3.createVectorHelper(m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
+                Vec3 hitVec = Vec3.createVectorHelper(m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
+                if(weaponInfo != null && weaponInfo.enableBulletDecay && initPos != null) {
                     float decayFactor = 1f;
                     float dist = (float) initPos.distanceTo(hitVec);
                     for (MCH_IBulletDecay decay : weaponInfo.bulletDecay) {
@@ -1093,11 +1102,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                     damageFactor *= decayFactor;
                 }
-                this.onImpactEntity(m.entityHit, damageFactor);
+                this.onImpactEntity(m.entityHit, damageFactor, hitVec);
                 this.piercing--;
-                hitX = m.entityHit.posX + dx;
-                hitY = m.entityHit.posY + dy;
-                hitZ = m.entityHit.posZ + dz;
+                hitX = m.hitVec.xCoord + dx;
+                hitY = m.hitVec.yCoord + dy;
+                hitZ = m.hitVec.zCoord + dz;
             }
 
             if (m.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
@@ -1168,6 +1177,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             if (m.entityHit == null) {
                 spawnBlockPar(m, m.blockX, m.blockY, m.blockZ);
             }
+//            if (m.entityHit == null) {
+//                worldObj.spawnEntityInWorld(new EntityDebugDot(worldObj, new com.flansmod.common.vector.Vector3f(m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord), 100, 1F, 0F, 0F));
+//            } else {
+//                worldObj.spawnEntityInWorld(new EntityDebugDot(worldObj, new com.flansmod.common.vector.Vector3f(m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord), 100, 0F, 1F, 0F));
+//            }
 
             if (m.entityHit instanceof MCH_EntityAircraft) {
                 MCH_EntityAircraft ac = (MCH_EntityAircraft) m.entityHit;
@@ -1270,11 +1284,12 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
     }
 
-    public void onImpactEntity(Entity entity, float damageFactor) {
+    public void onImpactEntity(Entity entity, float damageFactor, Vec3 hitVec) {
         if (!entity.isDead) {
             MCH_Lib.DbgLog(super.worldObj, "MCH_EntityBaseBullet.onImpactEntity:Damage=%d:" + entity.getClass(), this.getPower());
             MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
             DamageSource ds = DamageSource.causeThrownDamage(this, this.shootingEntity);
+            ds = MCH_IndicatedDamageSource.build(ds, hitVec, Vec3.createVectorHelper(motionX, motionY, motionZ));
             float damage = MCH_Config.applyDamageVsEntity(entity, ds, (float) this.getPower() * damageFactor);
             damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
             entity.attackEntityFrom(ds, damage);
@@ -1287,19 +1302,45 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void newFAExplosion(double x, double y, double z, float exp, float expBlock) {
-        MCH_Explosion.ExplosionResult result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, true, true, this.getInfo().flaming, false, 15, null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
+        MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+            .exploder(this)
+            .player(this.shootingEntity instanceof EntityPlayer ? (EntityPlayer) this.shootingEntity : null)
+            .x(x).y(y).z(z)
+            .size(exp)
+            .sizeBlock(expBlock)
+            .isPlaySound(true)
+            .isSmoking(true)
+            .isFlaming(this.getInfo().flaming)
+            .isDestroyBlock(false)
+            .countSetFireEntity(15)
+            .isInWater(false)
+            .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+            .damageVsLiving(getInfo().explosionDamageVsLiving)
+            .damageVsPlane(getInfo().explosionDamageVsPlane)
+            .damageVsHeli(getInfo().explosionDamageVsHeli)
+            .damageVsTank(getInfo().explosionDamageVsTank)
+            .damageVsVehicle(getInfo().explosionDamageVsVehicle)
+            .damageVsShip(getInfo().explosionDamageVsShip)
+            .build();
+        MCH_Explosion.ExplosionResult result = MCH_Explosion.newExplosion(super.worldObj, param);
         if (result != null && result.hitEntity) {
             this.notifyHitBullet();
         }
-
     }
 
     public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater) {
-        MCH_Explosion.ExplosionResult result;
-        if (!inWater) {
-            if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
-                int hbmExplosionPower = this.explosionPower;
+        newExplosion(x, y, z, exp, expBlock, inWater, false);
+    }
 
+    public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater, boolean directDamage) {
+        MCH_Explosion.ExplosionResult result;
+        boolean playSound = (this.isBomblet != 1) || (super.rand.nextInt(3) == 0);
+        EntityPlayer creditedPlayer = (this.shootingEntity instanceof EntityPlayer)
+            ? (EntityPlayer) this.shootingEntity
+            : null;
+        if (!inWater) {
+            //HBM爆炸效果
+            if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
                 Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, null, x, y, z, getInfo().effectYield);
                 if (explosionNTInstance != null && !this.getInfo().disableDestroyBlock) {
                     MCH_HBMUtil.ExplosionNT_instance_addAttrib(explosionNTInstance, "NOHURT");
@@ -1310,12 +1351,72 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 } else if (this.getInfo().explosionType.equals("hbmNT_Shell")) {
                     MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
                 }
-                result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, false, this.getInfo().flaming, false, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
-            } else {
-                result = MCH_Explosion.newExplosion(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, true, this.getInfo().flaming, getInfo().explosionBlock > 0, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
+                MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                    .exploder(this)
+                    .player(creditedPlayer)
+                    .x(x).y(y).z(z)
+                    .size(exp)
+                    .sizeBlock(expBlock)
+                    .isPlaySound(playSound)
+                    .isSmoking(false)
+                    .isFlaming(this.getInfo().flaming)
+                    .isDestroyBlock(false)
+                    .isInWater(false)
+                    .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+                    .damageVsLiving(getInfo().explosionDamageVsLiving)
+                    .damageVsPlane(getInfo().explosionDamageVsPlane)
+                    .damageVsHeli(getInfo().explosionDamageVsHeli)
+                    .damageVsTank(getInfo().explosionDamageVsTank)
+                    .damageVsVehicle(getInfo().explosionDamageVsVehicle)
+                    .damageVsShip(getInfo().explosionDamageVsShip)
+                    .build();
+                result = MCH_Explosion.newExplosion(super.worldObj, param);
+            }
+            //普通爆炸效果
+            else {
+                MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                    .exploder(this)
+                    .player(creditedPlayer)
+                    .x(x).y(y).z(z)
+                    .size(exp)
+                    .sizeBlock(expBlock)
+                    .isPlaySound(playSound)
+                    .isSmoking(true)
+                    .isFlaming(this.getInfo().flaming)
+                    .isDestroyBlock(getInfo().explosionBlock > 0)
+                    .isInWater(false)
+                    .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+                    .damageVsLiving(getInfo().explosionDamageVsLiving)
+                    .damageVsPlane(getInfo().explosionDamageVsPlane)
+                    .damageVsHeli(getInfo().explosionDamageVsHeli)
+                    .damageVsTank(getInfo().explosionDamageVsTank)
+                    .damageVsVehicle(getInfo().explosionDamageVsVehicle)
+                    .damageVsShip(getInfo().explosionDamageVsShip)
+                    .build();
+                result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
         } else {
-            result = MCH_Explosion.newExplosionInWater(super.worldObj, this, this.shootingEntity, x, y, z, exp, expBlock, this.isBomblet != 1 || super.rand.nextInt(3) == 0, true, this.getInfo().flaming, getInfo().explosionBlock > 0, 0, this.getInfo() != null ? this.getInfo().damageFactor : null, getInfo().explosionDamageVsPlayer, getInfo().explosionDamageVsLiving, getInfo().explosionDamageVsPlane, getInfo().explosionDamageVsHeli, getInfo().explosionDamageVsTank, getInfo().explosionDamageVsVehicle, getInfo().explosionDamageVsShip);
+            //水下爆炸
+            MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                .exploder(this)
+                .player(creditedPlayer)
+                .x(x).y(y).z(z)
+                .size(exp)
+                .sizeBlock(expBlock)
+                .isPlaySound(playSound)
+                .isSmoking(true)
+                .isFlaming(this.getInfo().flaming)
+                .isDestroyBlock(getInfo().explosionBlock > 0)
+                .isInWater(true)
+                .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+                .damageVsLiving(getInfo().explosionDamageVsLiving)
+                .damageVsPlane(getInfo().explosionDamageVsPlane)
+                .damageVsHeli(getInfo().explosionDamageVsHeli)
+                .damageVsTank(getInfo().explosionDamageVsTank)
+                .damageVsVehicle(getInfo().explosionDamageVsVehicle)
+                .damageVsShip(getInfo().explosionDamageVsShip)
+                .build();
+            result = MCH_Explosion.newExplosion(super.worldObj, param);
         }
 
         if (this.getInfo().nukeYield > 0 && MCH_HBMUtil.isHBMLoaded) {
