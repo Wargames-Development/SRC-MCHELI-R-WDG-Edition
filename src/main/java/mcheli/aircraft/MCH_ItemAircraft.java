@@ -26,12 +26,9 @@ public abstract class MCH_ItemAircraft extends W_Item {
 
    private static boolean isRegistedDispenseBehavior = false;
 
-
    public MCH_ItemAircraft(int i) {
       super(i);
    }
-
-
 
    public static void registerDispenseBehavior(Item item) {
       if(!isRegistedDispenseBehavior) {
@@ -41,14 +38,6 @@ public abstract class MCH_ItemAircraft extends W_Item {
 
    public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean par4) {
       MCH_EntityAircraft ac = createAircraft(player.worldObj, -1.0D, -1.0D, -1.0D, stack);
-      if (ac != null &&
-              ac.isNewUAV()) {
-         lines.add(EnumChatFormatting.RED + "DANGER!");
-         lines.add(EnumChatFormatting.RED + "This drone has a new UAV mechanic!");
-         lines.add(EnumChatFormatting.RED + "It may contain a lot of bugs!");
-         lines.add(EnumChatFormatting.RED + "Clear your inventory before use!");
-      }
-//
       super.addInformation(stack, player, lines, par4);
    }
 
@@ -56,20 +45,12 @@ public abstract class MCH_ItemAircraft extends W_Item {
 
    public abstract MCH_EntityAircraft createAircraft(World var1, double var2, double var4, double var6, ItemStack var8);
 
-   MCH_EntityAircraft ac;
-   public MCH_EntityAircraft onTileClick(ItemStack itemStack, World world, float rotationYaw, int x, int y, int z) {
 
+   public MCH_EntityAircraft onTileClick(ItemStack itemStack, World world, float rotationYaw, int x, int y, int z) {
       MCH_EntityAircraft ac = this.createAircraft(world, (double)((float)x + 0.5F), (double)((float)y + 1.0F), (double)((float)z + 0.5F), itemStack);
       if(ac == null) {
          return null;
       } else {
-         //hopefully reloads the 'aircraft' (vehicle)'s textures when placed.
-         //if(ac.getAcInfo() != null) {
-         //   ac.getAcInfo().reload();
-         //   ac.changeType(ac.getAcInfo().name);
-         //   ac.onAcInfoReloaded();
-         //}
-         //causes a crash when the fucking model is not loaded
          ac.initRotationYaw((float)(((MathHelper.floor_double((double)(rotationYaw * 4.0F / 360.0F) + 0.5D) & 3) - 1) * 90));
          return !world.getCollidingBoundingBoxes(ac, ac.boundingBox.expand(-0.1D, -0.1D, -0.1D)).isEmpty()?null:ac;
       }
@@ -138,11 +119,9 @@ public abstract class MCH_ItemAircraft extends W_Item {
    }
 
    public MCH_EntityAircraft spawnAircraft(ItemStack itemStack, World world, EntityPlayer player, int x, int y, int z) {
-
-
       MCH_EntityAircraft ac = this.onTileClick(itemStack, world, player.rotationYaw, x, y, z);
       if(ac != null) {
-         if(ac.isUAV() || ac.isNewUAV()) {
+         if(ac.isUAV()) {
             if(world.isRemote) {
                if(ac.isSmallUAV()) {
                   W_EntityPlayer.addChatMessage(player, "Please use the UAV station OR Portable Controller");
@@ -150,32 +129,23 @@ public abstract class MCH_ItemAircraft extends W_Item {
                   W_EntityPlayer.addChatMessage(player, "Please use the UAV station");
                }
             }
-
             ac = null;
          } else {
             if(!world.isRemote) {
                ac.getAcDataFromItem(itemStack);
                world.spawnEntityInWorld(ac);
-               //crashes randomly?
-               //if(ac.getAcInfo() != null) {
-               //   ac.getAcInfo().reload();
-               //   //ac.onAcInfoReloaded();
-               //}
                MCH_Achievement.addStat(player, MCH_Achievement.welcome, 1);
             }
-
             if(!player.capabilities.isCreativeMode) {
                --itemStack.stackSize;
             }
          }
       }
-
       return ac;
    }
 
    public void rideEntity(ItemStack item, Entity target, EntityPlayer player) {
-      MCH_Config var10000 = MCH_MOD.config;
-      if(!MCH_Config.PlaceableOnSpongeOnly.prmBool && target instanceof EntityMinecartEmpty && target.riddenByEntity == null) {
+       if(!MCH_Config.PlaceableOnSpongeOnly.prmBool && target instanceof EntityMinecartEmpty && target.riddenByEntity == null) {
          MCH_EntityAircraft ac = this.spawnAircraft(item, player.worldObj, player, (int)target.posX, (int)target.posY + 2, (int)target.posZ);
          if(!player.worldObj.isRemote && ac != null) {
             ac.mountEntity(target);

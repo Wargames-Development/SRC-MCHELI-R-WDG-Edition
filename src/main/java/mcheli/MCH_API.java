@@ -18,7 +18,7 @@ public class MCH_API {
         if (!aircraft.checkTeam(player)) {
             return false;
         }
-        if (!aircraft.getAcInfo().canRide || aircraft.isUAV() || aircraft.isNewUAV()) {
+        if (!aircraft.getAcInfo().canRide || aircraft.isUAV()) {
             return false;
         }
         if (aircraft.getRiddenByEntity() != null || player.ridingEntity instanceof MCH_EntitySeat) {

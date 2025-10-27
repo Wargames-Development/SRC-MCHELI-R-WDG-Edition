@@ -50,7 +50,6 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public int inventorySize;
     public boolean isUAV;
     public boolean isSmallUAV;
-    public boolean isNewUAV;
     public boolean isTargetDrone;
     public float autoPilotRot;
     public float onGroundPitch;
@@ -264,7 +263,6 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.enableBack = false;
         this.isUAV = false;
         this.isSmallUAV = false;
-        this.isNewUAV = false;
         this.isTargetDrone = false;
         this.autoPilotRot = -0.6F;
         this.regeneration = false;
@@ -416,10 +414,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
             this.repellingHooks.clear();
         }
 
-        if (this.isUAV || this.isNewUAV) {
+        if (this.isUAV) {
             this.alwaysCameraView = true;
             if (this.seatList.size() == 0) {
-                //I think it adds the seat to the UAV to keep the UAV working beyond its usual range. Maybe not.
                 MCH_SeatInfo i = new MCH_SeatInfo(Vec3.createVectorHelper(0.0D, 0.0D, 0.0D), false);
                 this.seatList.add(i);
             }
@@ -931,12 +928,6 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             this.isSmallUAV = false;
                                                         } else if (item.equalsIgnoreCase("SmallUAV")) {
                                                             this.isUAV = this.toBool(data);
-                                                            this.isSmallUAV = true;
-                                                        } else if (item.equalsIgnoreCase("NewUAV")) {
-                                                            this.isNewUAV = toBool(data);
-                                                            this.isSmallUAV = false;
-                                                        } else if (item.equalsIgnoreCase("NewSmallUAV")) {
-                                                            this.isNewUAV = toBool(data);
                                                             this.isSmallUAV = true;
                                                         } else if (item.equalsIgnoreCase("TargetDrone")) {
                                                             this.isTargetDrone = this.toBool(data);
