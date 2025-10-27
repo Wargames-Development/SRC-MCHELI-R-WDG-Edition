@@ -2,10 +2,7 @@ package mcheli.uav;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import mcheli.MCH_Config;
-import mcheli.MCH_Explosion;
-import mcheli.MCH_Lib;
-import mcheli.MCH_MOD;
+import mcheli.*;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
@@ -219,11 +216,11 @@ public class MCH_EntityUavStation extends W_EntityContainer {
             } else {
                 boolean isCreative = false;
                 Entity entity = damageSource.getEntity();
-                boolean isDamegeSourcePlayer = false;
+                boolean isDamageSourcePlayer = false;
                 if (entity instanceof EntityPlayer) {
                     isCreative = ((EntityPlayer) entity).capabilities.isCreativeMode;
                     if (dmt.compareTo("player") == 0) {
-                        isDamegeSourcePlayer = true;
+                        isDamageSourcePlayer = true;
                     }
 
                     W_WorldFunc.MOD_playSoundAtEntity(this, "hit", 1.0F, 1.0F);
@@ -239,8 +236,22 @@ public class MCH_EntityUavStation extends W_EntityContainer {
 
                     super.dropContentsWhenDead = true;
                     this.setDead();
-                    if (!isDamegeSourcePlayer) {
-                        MCH_Explosion.newExplosion(super.worldObj, null, super.riddenByEntity, super.posX, super.posY, super.posZ, 1.0F, 0.0F, true, true, false, false, 0);
+                    if (!isDamageSourcePlayer) {
+                        MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                            .exploder(null)
+                            .player(super.riddenByEntity instanceof EntityPlayer ?
+                                (EntityPlayer) super.riddenByEntity : null)
+                            .x(super.posX).y(super.posY).z(super.posZ)
+                            .size(1.0F)
+                            .sizeBlock(0.0F)
+                            .isPlaySound(true)
+                            .isSmoking(true)
+                            .isFlaming(false)
+                            .isDestroyBlock(false)
+                            .countSetFireEntity(0)
+                            .isInWater(false)
+                            .build();
+                        MCH_Explosion.newExplosion(super.worldObj, param);
                     }
 
                     if (!isCreative) {

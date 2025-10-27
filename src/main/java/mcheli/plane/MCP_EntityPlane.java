@@ -2,7 +2,6 @@ package mcheli.plane;
 
 import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
-import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_PacketStatusRequest;
@@ -23,8 +22,6 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
-
-import java.util.Iterator;
 
 public class MCP_EntityPlane extends MCH_EntityAircraft {
 
@@ -73,7 +70,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         if (this.planeInfo == null) {
-            MCH_Lib.Log((Entity) this, "##### MCP_EntityPlane changePlaneType() Plane info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
+            MCH_Lib.Log(this, "##### MCP_EntityPlane changePlaneType() Plane info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
             this.setDead();
         } else {
             this.setAcInfo(this.planeInfo);
@@ -91,7 +88,6 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public boolean canMountWithNearEmptyMinecart() {
-        MCH_Config var10000 = MCH_MOD.config;
         return MCH_Config.MountMinecartPlane.prmBool;
     }
 
@@ -140,7 +136,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         } else {
             float roll = MathHelper.abs(MathHelper.wrapAngleTo180_float(this.getRotRoll()));
             float pitch = MathHelper.abs(MathHelper.wrapAngleTo180_float(this.getRotPitch()));
-            return roll <= 40.0F && pitch <= 40.0F ? this.getCurrentThrottle() > 0.6000000238418579D && MCH_Lib.getBlockIdY(this, 3, -5) == 0 : false;
+            return roll <= 40.0F && pitch <= 40.0F && this.getCurrentThrottle() > 0.6000000238418579D && MCH_Lib.getBlockIdY(this, 3, -5) == 0;
         }
     }
 
@@ -178,7 +174,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             }
 
             if (super.onGround && this.getVtolMode() == 0 && this.planeInfo.isDefaultVtol) {
-                this.swithVtolMode(true);
+                this.switchVtolMode(true);
             }
 
             super.prevPosX = super.posX;
@@ -244,7 +240,6 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public float getControlRotYaw(float mouseX, float mouseY, float tick) {
-        MCH_Config var10000 = MCH_MOD.config;
         if (MCH_Config.MouseControlFlightSimMode.prmBool) {
             this.rotationByKey(tick);
             return this.addkeyRotValue * 20.0F;
@@ -258,13 +253,11 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public float getControlRotRoll(float mouseX, float mouseY, float tick) {
-        MCH_Config var10000 = MCH_MOD.config;
         return MCH_Config.MouseControlFlightSimMode.prmBool ? mouseX * 2.0F : (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX);
     }
 
     private void rotationByKey(float partialTicks) {
         float rot = 0.2F;
-        MCH_Config var10000 = MCH_MOD.config;
         if (!MCH_Config.MouseControlFlightSimMode.prmBool && this.getVtolMode() != 0) {
             rot *= 0.0F;
         }
@@ -292,12 +285,9 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             boolean isFly = MCH_Lib.getBlockIdY(this, 3, -3) == 0;
             float rot;
             if (isFly && !this.isFreeLookMode() && !super.isGunnerMode && (!this.getAcInfo().isFloat || this.getWaterDepth() <= 0.0D)) {
-                if (isFly) {
-                    MCH_Config var10000 = MCH_MOD.config;
-                    if (!MCH_Config.MouseControlFlightSimMode.prmBool) {
-                        this.rotationByKey(partialTicks);
-                        this.setRotRoll(this.getRotRoll() + this.addkeyRotValue * 0.5F * this.getAcInfo().mobilityRoll);
-                    }
+                if (!MCH_Config.MouseControlFlightSimMode.prmBool) {
+                    this.rotationByKey(partialTicks);
+                    this.setRotRoll(this.getRotRoll() + this.addkeyRotValue * 0.5F * this.getAcInfo().mobilityRoll);
                 }
             } else {
                 rot = 1.0F;
@@ -467,9 +457,6 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             if ((double) this.getHP() < (double) this.getMaxHP() * 0.5D) {
                 if (this.getPlaneInfo() != null) {
                     int rotorNum = this.getPlaneInfo().rotorList.size();
-                    if (rotorNum < 0) {
-                        rotorNum = 0;
-                    }
 
                     if (super.isFirstDamageSmoke) {
                         super.prevDamageSmokePos = new Vec3[rotorNum + 1];
@@ -570,10 +557,8 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                     dist = 1.0D;
                 }
 
-                Iterator i$ = this.getAcInfo().particleSplashs.iterator();
-
-                while (i$.hasNext()) {
-                    MCH_AircraftInfo.ParticleSplash p = (MCH_AircraftInfo.ParticleSplash) i$.next();
+                for (Object o : this.getAcInfo().particleSplashs) {
+                    MCH_AircraftInfo.ParticleSplash p = (MCH_AircraftInfo.ParticleSplash) o;
 
                     for (int i = 0; i < p.num; ++i) {
                         if (dist > 0.03D + (double) super.rand.nextFloat() * 0.1D) {
@@ -614,10 +599,9 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                 float pitch = this.getRotPitch();
                 float roll = this.getRotRoll();
                 Vec3 nozzleRot = MCH_Lib.RotVec3(0.0D, 0.0D, 1.0D, -yaw - 180.0F, pitch - this.getNozzleRotation(), roll);
-                Iterator i$ = this.planeInfo.nozzles.iterator();
 
-                while (i$.hasNext()) {
-                    MCH_AircraftInfo.DrawnPart nozzle = (MCH_AircraftInfo.DrawnPart) i$.next();
+                for (Object o : this.planeInfo.nozzles) {
+                    MCH_AircraftInfo.DrawnPart nozzle = (MCH_AircraftInfo.DrawnPart) o;
                     if ((double) super.rand.nextFloat() <= this.getCurrentThrottle() * 1.5D) {
                         Vec3 nozzlePos = MCH_Lib.RotVec3(nozzle.pos, -yaw, -pitch, -roll);
                         double x = super.posX + nozzlePos.xCoord + nozzleRot.xCoord;
@@ -687,9 +671,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             }
         }
 
-        if (this.getRiddenByEntity() != null) {
-            ;
-        }
+        this.getRiddenByEntity();
 
         this.updateSound();
         this.onUpdate_Particle();
@@ -975,15 +957,11 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public boolean getNozzleStat() {
-        return this.partNozzle != null ? this.partNozzle.getStatus() : false;
+        return this.partNozzle != null && this.partNozzle.getStatus();
     }
 
     public int getVtolMode() {
         return !this.getNozzleStat() ? (this.getNozzleRotation() <= 0.005F ? 0 : 1) : (this.getNozzleRotation() >= 89.995F ? 2 : 1);
-    }
-
-    public float getFuleConsumptionFactor() {
-        return super.getFuelConsumptionFactor() * (float) (this.getVtolMode() == 2 ? 1 : 1);
     }
 
     public float getNozzleRotation() {
@@ -994,7 +972,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         return this.partNozzle != null ? this.partNozzle.prevRotation : 0.0F;
     }
 
-    public void swithVtolMode(boolean mode) {
+    public void switchVtolMode(boolean mode) {
         if (this.partNozzle != null) {
             if (this.planeInfo.isDefaultVtol && super.onGround && !mode) {
                 return;
@@ -1046,7 +1024,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public boolean canUseWing() {
-        return this.partWing == null ? true : (this.getPlaneInfo().isVariableSweepWing ? (this.getCurrentThrottle() < 0.2D ? this.partWing.isOFF() : true) : this.partWing.isOFF());
+        return this.partWing == null || (this.getPlaneInfo().isVariableSweepWing ? (!(this.getCurrentThrottle() < 0.2D) || this.partWing.isOFF()) : this.partWing.isOFF());
     }
 
     public boolean canFoldWing() {
@@ -1076,7 +1054,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public boolean canUnfoldWing() {
-        return this.partWing != null && this.getModeSwitchCooldown() <= 0 ? this.partWing.isON() : false;
+        return this.partWing != null && this.getModeSwitchCooldown() <= 0 && this.partWing.isON();
     }
 
     public void foldWing(boolean fold) {

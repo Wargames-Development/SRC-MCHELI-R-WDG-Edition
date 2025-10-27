@@ -16,6 +16,7 @@ import mcheli.flare.MCH_Maintenance;
 import mcheli.multiplay.MCH_Multiplay;
 import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketBoundingBoxHit;
+import mcheli.network.packets.PacketDamageIndicator;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
@@ -234,6 +235,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private double lastCalcLandInDistanceCount;
     private double lastLandInDistance;
     private boolean switchSeat = false;
+    public List<MCH_DamageIndicator> damageIndicatorList = new ArrayList<>();
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -1060,6 +1062,40 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     MinecraftForge.EVENT_BUS.post(e);
                                 }
                             }
+                            if (damageSource instanceof MCH_IndicatedDamageSource && damageSource.getSourceOfDamage() != null) {
+                                MCH_IndicatedDamageSource ids = (MCH_IndicatedDamageSource) damageSource;
+                                // 击中点的世界绝对坐标
+                                Vec3 absHitPos = ids.hitPos;
+                                // 弹药的世界运动方向（未经归一化）
+                                Vec3 absBulletDir = ids.dir;
+
+                                // 计算从载具中心到击中点的向量（世界坐标系）
+                                double dx = absHitPos.xCoord - posX;
+                                double dy = absHitPos.yCoord - posY;
+                                double dz = absHitPos.zCoord - posZ;
+
+                                // 获取载具当前姿态角：水平旋转（航向）、俯仰、滚转
+                                float yaw = this.rotationYaw;   // 或者使用ac.getRotYaw()，取决于具体实现
+                                float pitch = this.rotationPitch; // 或者ac.getRotPitch()
+                                float roll = this.rotationRoll; // 或者ac.getRotRoll()，需从实体中获取当前滚转角
+
+                                // 将世界坐标系向量转换到载具局部坐标系
+                                Vec3 relHitPos = MCH_Math.rotateWorldVecToLocal(dx, dy, dz, yaw, pitch, roll);
+                                // 将子弹运动方向转换到载具局部坐标系，并归一化为纯方向
+                                Vec3 relDir = MCH_Math.rotateWorldVecToLocal(absBulletDir.xCoord, absBulletDir.yCoord, absBulletDir.zCoord, yaw, pitch, roll).normalize();
+
+                                String weaponName = "Hit";
+                                Entity hitEntity = damageSource.getSourceOfDamage();
+                                if (hitEntity instanceof MCH_EntityBaseBullet && ((MCH_EntityBaseBullet) hitEntity).getInfo() != null) {
+                                    weaponName = ((MCH_EntityBaseBullet) hitEntity).getInfo().displayName;
+                                }
+
+                                // 将相对坐标和方向发送给客户端，客户端会根据这些信息绘制受击指示器
+                                MCH_MOD.getPacketHandler().sendToAll(new PacketDamageIndicator(
+                                    relHitPos.xCoord, relHitPos.yCoord, relHitPos.zCoord,
+                                    relDir.xCoord, relDir.yCoord, relDir.zCoord,
+                                    weaponName, bbName, damage * 100 / getMaxHP(), getEntityId()));
+                            }
                             if(bbName != null && lastAttackedEntity instanceof EntityPlayer) {
                                 MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId() , bbName, damage * 100 / getMaxHP(), (byte) 0), (EntityPlayerMP) lastAttackedEntity);
                             }
@@ -1091,7 +1127,20 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     this.explosionByCrash(0.0D);
                                     this.damageSinceDestroyed = this.getMaxHP();
                                 } else {
-                                    MCH_Explosion.newExplosion(super.worldObj, (Entity) null, entity, super.posX, super.posY, super.posZ, this.getAcInfo().explosionSizeByCrash, 2.0F, true, true, true, true, 5);
+                                    MCH_ExplosionParam p = MCH_ExplosionParam.builder()
+                                        .exploder(null)
+                                        .player(entity instanceof EntityPlayer ? (EntityPlayer) entity : null)
+                                        .x(super.posX).y(super.posY).z(super.posZ)
+                                        .size(this.getAcInfo().explosionSizeByCrash)
+                                        .sizeBlock(2.0F)
+                                        .isPlaySound(true)
+                                        .isSmoking(true)
+                                        .isFlaming(true)
+                                        .isDestroyBlock(true)
+                                        .countSetFireEntity(5)
+                                        .isInWater(false)
+                                        .build();
+                                    MCH_Explosion.newExplosion(super.worldObj, p);
                                 }
                             } else {
                                 if (this.getAcInfo() != null && this.getAcInfo().getItem() != null) {
@@ -1129,7 +1178,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void destruct() {
         if (this.getRiddenByEntity() != null) {
-            this.getRiddenByEntity().mountEntity((Entity) null);
+            this.getRiddenByEntity().mountEntity(null);
         }
 
         this.setDead(true);
@@ -1529,7 +1578,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (ironCurtainRunningTick > 0) {
             ironCurtainRunningTick--;
             ironCurtainWaveTimer++;
-            ironCurtainLastFactor = ironCurtainCurrentFactor;//基于计时器生成波动曲线（0.5~1.0）
+            ironCurtainLastFactor = ironCurtainCurrentFactor;
             float waveSpeed = 0.25f;
             ironCurtainCurrentFactor = 0.75f + 0.25f * (float) Math.sin(ironCurtainWaveTimer * waveSpeed);
         } else {
@@ -1619,7 +1668,21 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (!super.worldObj.isRemote && this.isTargetDrone() && !this.isDestroyed() && this.getCountOnUpdate() > 20 && !this.canUseFuel()) {
             this.setDamageTaken(this.getMaxHP());
             this.destroyAircraft(null);
-            MCH_Explosion.newExplosion(super.worldObj, (Entity) null, (Entity) null, super.posX, super.posY, super.posZ, 2.0F, 2.0F, true, true, true, true, 5);
+            MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                .exploder(null)
+                .player(null)
+                .x(super.posX).y(super.posY).z(super.posZ)
+                .size(2.0F)
+                .sizeBlock(2.0F)
+                .isPlaySound(true)
+                .isSmoking(true)
+                .isFlaming(true)
+                .isDestroyBlock(true)
+                .countSetFireEntity(5)
+                .isInWater(false)
+                .build();
+            MCH_Explosion.newExplosion(super.worldObj, param);
+
         }
 
         if (super.worldObj.isRemote && this.getAcInfo() != null && this.getHP() <= 0 && this.getDespawnCount() <= 0) {
@@ -2269,8 +2332,22 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public void explosionByCrash(double prevMotionY) {
         float exp = getAcInfo().explosionSizeByCrash;
         MCH_Lib.DbgLog(super.worldObj, "OnGroundAfterDestroyed:motionY=%.3f", new Object[]{Float.valueOf((float) prevMotionY)});
-        MCH_Explosion.newExplosion(super.worldObj, (Entity) null, (Entity) null, super.posX, super.posY, super.posZ, exp, exp >= 2.0F ? exp * 0.5F : 1.0F, true, true, true, true, 5);
+        MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+            .exploder(null)
+            .player(null)
+            .x(super.posX).y(super.posY).z(super.posZ)
+            .size(exp)
+            .sizeBlock(exp >= 2.0F ? exp * 0.5F : 1.0F)
+            .isPlaySound(true)
+            .isSmoking(true)
+            .isFlaming(true)
+            .isDestroyBlock(true)
+            .countSetFireEntity(5)
+            .isInWater(false)
+            .build();
+        MCH_Explosion.newExplosion(super.worldObj, param);
     }
+
 
     public void onUpdate_CollisionGroundDamage() {
         if (!this.isDestroyed()) {

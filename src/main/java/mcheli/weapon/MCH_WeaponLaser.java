@@ -6,7 +6,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.*;
 import mcheli.aircraft.*;
 import mcheli.chain.MCH_EntityChain;
-import mcheli.network.PacketBase;
 import mcheli.network.packets.PacketWeaponLaserShooting;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_Entity;

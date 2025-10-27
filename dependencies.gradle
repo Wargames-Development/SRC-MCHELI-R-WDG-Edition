@@ -36,4 +36,10 @@
 dependencies {
     implementation(rfg.deobf(project.files("lib/Flan's Mod Ultimate-1.58-Reforged.jar")))
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.69-GTNH:dev")
+    // Lombok —— 编译期可见，运行时不需要
+    compileOnly("org.projectlombok:lombok:1.18.30")
+    annotationProcessor("org.projectlombok:lombok:1.18.30")
+    // 测试源码也启用（如有测试）
+    testCompileOnly("org.projectlombok:lombok:1.18.30")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.30")
 }

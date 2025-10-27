@@ -56,11 +56,11 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
             double x = super.posX - super.shootingEntity.posX;
             double y = super.posY - super.shootingEntity.posY;
             double z = super.posZ - super.shootingEntity.posZ;
-            if (x * x + y * y + z * z > 1440000.0D) {
+            if (x * x + y * y + z * z > 2000 * 2000.0D) {
                 this.setDead();
             }
 
-            if (!super.worldObj.isRemote && !super.isDead) {
+            if (!super.worldObj.isRemote && !super.isDead && this.getCountOnUpdate() > this.getInfo().rigidityTime) {
                 this.onUpdateMotion();
             }
         } else if (!super.worldObj.isRemote) {

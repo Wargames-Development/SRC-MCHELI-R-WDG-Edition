@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  cpw.mods.fml.common.eventhandler.SubscribeEvent
  *  net.minecraftforge.event.CommandEvent
@@ -14,14 +14,6 @@
 package mcheli.wrapper;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
-import mcheli.aircraft.MCH_EntityAircraft;
-import mcheli.aircraft.MCH_PacketAircraftLocation;
-import mcheli.plane.MCP_EntityPlane;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.world.World;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -29,9 +21,6 @@ import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.EntityInteractEvent;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class W_EventHook {
     @SubscribeEvent

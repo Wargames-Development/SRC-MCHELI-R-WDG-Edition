@@ -1,15 +1,13 @@
 package mcheli.throwable;
 
 import mcheli.MCH_Explosion;
+import mcheli.MCH_ExplosionParam;
 import mcheli.MCH_Lib;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
-import mcheli.throwable.MCH_ThrowableInfo;
-import mcheli.throwable.MCH_ThrowableInfoManager;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.projectile.EntityThrowable;
 import net.minecraft.util.MathHelper;
@@ -120,7 +118,20 @@ public class MCH_EntityThrowable extends EntityThrowable {
          if(!super.isDead) {
             if(!super.worldObj.isRemote) {
                if(this.countOnUpdate == this.getInfo().timeFuse && this.getInfo().explosion > 0) {
-                  MCH_Explosion.newExplosion(super.worldObj, null, null, super.posX, super.posY, super.posZ, (float)this.getInfo().explosion, (float)this.getInfo().explosionBlock, true, true, this.getInfo().flaming, true, 0);
+                   MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                       .exploder(null)
+                       .player(null)
+                       .x(super.posX).y(super.posY).z(super.posZ)
+                       .size((float) this.getInfo().explosion)
+                       .sizeBlock((float) this.getInfo().explosionBlock)
+                       .isPlaySound(true)
+                       .isSmoking(true)
+                       .isFlaming(this.getInfo().flaming)
+                       .isDestroyBlock(true)
+                       .countSetFireEntity(0)
+                       .isInWater(false)
+                       .build();
+                   MCH_Explosion.newExplosion(super.worldObj, param);
                   this.setDead();
                   return;
                }
