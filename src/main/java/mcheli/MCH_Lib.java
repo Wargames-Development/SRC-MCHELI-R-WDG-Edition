@@ -246,18 +246,14 @@ public class MCH_Lib {
    }
 
    public static void DbgLog(boolean isRemote, String format, Object ... data) {
-      MCH_Config var10000 = MCH_MOD.config;
-      if(MCH_Config.DebugLog) {
-         String t = getTime();
+       if(MCH_Config.DebugLog) {
          if(isRemote) {
-            String playerName = "null";
-            if(getClientPlayer() instanceof EntityPlayer) {
-               playerName = ((EntityPlayer)getClientPlayer()).getDisplayName();
-            }
-
-            System.out.println(String.format(format, data));
+             if(getClientPlayer() instanceof EntityPlayer) {
+                 ((EntityPlayer) getClientPlayer()).getDisplayName();
+             }
+            System.out.printf((format) + "%n", data);
          } else {
-            System.out.println(String.format(format, data));
+            System.out.printf((format) + "%n", data);
          }
       }
 
