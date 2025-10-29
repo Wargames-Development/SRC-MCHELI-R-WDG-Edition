@@ -10,9 +10,31 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 public class PacketMissileLockType extends PacketBase {
 
-    public byte missileLockType; // 0-未锁定 1-半主动 2-红外 3-主动 4-未知
-    public byte vehicleLockType; // 0-未锁定 1-扫描 2-锁定
-    public byte missileLockDist; // 0-未锁定 1-50m内 2-150m内 3-600m内
+    public byte missileLockType;
+    /** Missile Lock Type:
+     * 0 = None,
+     * 1 = Semi-active,
+     * 2 = Infrared,
+     * 3 = Active,
+     * 4 = Unknown
+     */
+
+    public byte vehicleLockType;
+    /** Vehicle lock type:
+     * 0 = None,
+     * 1 = Scanning,
+     * 2 = Locked – Ground vehicle,
+     * 3 = Locked – Airborne vehicle,
+     * 4 = Locked – Unknown
+     */
+
+    public byte missileLockDist;
+    /** Missile lock distance category:
+     * 0 = None,
+     * 1 = Within 50m,
+     * 2 = Within 150m,
+     * 3 = Within 600m
+     */
 
     public PacketMissileLockType(byte missileLockType, byte vehicleLockType, byte missileLockDist) {
         this.missileLockType = missileLockType;

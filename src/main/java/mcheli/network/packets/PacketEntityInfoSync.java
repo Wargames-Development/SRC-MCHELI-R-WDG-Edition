@@ -12,13 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 仅包含：快照序号 + 本帧全量实体信息。
- * 不再使用 OPERATION_REMOVE；服务器从不下发删除。
+ * Contains only: snapshot sequence number + full entity information for this frame.
+ * OPERATION_REMOVE is no longer used; the server never sends delete operations.
  */
 public class PacketEntityInfoSync extends PacketBase {
 
     private List<MCH_EntityInfo> entities;
-    private long snapshotSeq; // 新增：包级快照序号
+    private long snapshotSeq; // Added: snapshot sequence number for this packet
 
     public PacketEntityInfoSync() {}
 
@@ -68,12 +68,12 @@ public class PacketEntityInfoSync extends PacketBase {
 
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
-        // 仅服务器下发；无服务端处理逻辑
+        // Server only sends this packet; no server-side handling logic
     }
 
     @Override
     public void handleClientSide(EntityPlayer player) {
-        // 仅当该包的快照序号不小于客户端已知最新序号时才应用（乱序保护）
+        // Apply only if the packet’s snapshot sequence number is >= the client’s latest known sequence (out-of-order protection)
         MCH_EntityInfoClientTracker.updateEntities(entities, snapshotSeq);
     }
 }
