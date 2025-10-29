@@ -55,6 +55,11 @@ public class MCH_ExplosionParam {
     public float sizeBlock;
 
     /**
+     * 直击的实体，用于应用固定伤害
+     */
+    public Entity directAttackEntity;
+
+    /**
      * Whether to play the explosion sound.  When set to {@code false} the
      * explosion will occur silently.  This can be useful for custom
      * explosion effects or debugging.

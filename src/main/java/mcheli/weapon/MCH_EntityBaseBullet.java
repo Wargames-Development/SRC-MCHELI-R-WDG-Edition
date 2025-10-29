@@ -1134,19 +1134,19 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     if (this.getInfo().isFAE) {
                         this.newFAExplosion(super.posX, super.posY, super.posZ, p, (float) this.getInfo().explosionBlock);
                     } else if (p > 0.0F) {
-                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit);
                     } else if (p < 0.0F) {
                         this.playExplosionSound();
                     }
                 } else if (m.entityHit != null) {
                     if (this.isInWater()) {
-                        this.newExplosion(hitX, hitY, hitZ, i, i, true);
+                        this.newExplosion(hitX, hitY, hitZ, i, i, true, m.entityHit);
                     } else {
-                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit);
                     }
                 } else if (!this.isInWater() && !MCH_Lib.isBlockInWater(super.worldObj, m.blockX, m.blockY, m.blockZ)) {
                     if (p > 0.0F) {
-                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit);
                     } else if (p < 0.0F) {
                         this.playExplosionSound();
                     }
@@ -1329,10 +1329,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater) {
-        newExplosion(x, y, z, exp, expBlock, inWater, false);
+        newExplosion(x, y, z, exp, expBlock, inWater, null);
     }
 
-    public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater, boolean directDamage) {
+    public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater, Entity directAttackEntity) {
         MCH_Explosion.ExplosionResult result;
         boolean playSound = (this.isBomblet != 1) || (super.rand.nextInt(3) == 0);
         EntityPlayer creditedPlayer = (this.shootingEntity instanceof EntityPlayer)
@@ -1362,6 +1362,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .isFlaming(this.getInfo().flaming)
                     .isDestroyBlock(false)
                     .isInWater(false)
+                    .directAttackEntity(directAttackEntity)
                     .damageVsPlayer(getInfo().explosionDamageVsPlayer)
                     .damageVsLiving(getInfo().explosionDamageVsLiving)
                     .damageVsPlane(getInfo().explosionDamageVsPlane)
@@ -1385,6 +1386,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .isFlaming(this.getInfo().flaming)
                     .isDestroyBlock(getInfo().explosionBlock > 0)
                     .isInWater(false)
+                    .directAttackEntity(directAttackEntity)
                     .damageVsPlayer(getInfo().explosionDamageVsPlayer)
                     .damageVsLiving(getInfo().explosionDamageVsLiving)
                     .damageVsPlane(getInfo().explosionDamageVsPlane)
@@ -1408,6 +1410,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 .isFlaming(this.getInfo().flaming)
                 .isDestroyBlock(getInfo().explosionBlock > 0)
                 .isInWater(true)
+                .directAttackEntity(directAttackEntity)
                 .damageVsPlayer(getInfo().explosionDamageVsPlayer)
                 .damageVsLiving(getInfo().explosionDamageVsLiving)
                 .damageVsPlane(getInfo().explosionDamageVsPlane)

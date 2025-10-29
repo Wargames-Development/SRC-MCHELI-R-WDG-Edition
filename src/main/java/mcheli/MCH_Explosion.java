@@ -7,7 +7,6 @@ import mcheli.particles.MCH_ParticlesUtil;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
-import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.wrapper.*;
 import net.minecraft.block.Block;
 import net.minecraft.enchantment.EnchantmentProtection;
@@ -56,7 +55,9 @@ public class MCH_Explosion extends Explosion {
         exp.doExplosionB(true);
         MCH_PacketEffectExplosion.ExplosionParam net = MCH_PacketEffectExplosion.create();
         net.exploderID = W_Entity.getEntityId(p.exploder);
-        net.posX = p.x; net.posY = p.y; net.posZ = p.z;
+        net.posX = p.x;
+        net.posY = p.y;
+        net.posZ = p.z;
         net.size = p.size;
         net.inWater = p.isInWater;
         net.isSmoking = p.isSmoking;
@@ -180,21 +181,21 @@ public class MCH_Explosion extends Explosion {
                 if (explosionSize >= 6.0F && remainingFlares > 0) {
                     // 计算曳光弹的速度系数，受爆炸大小和随机数影响
                     double flareSpeed = Math.min(explosionSize / 16.0F, 0.6D) *
-                            (0.5F + world.rand.nextFloat() * 0.5F);
+                        (0.5F + world.rand.nextFloat() * 0.5F);
                     // 创建并发射曳光弹实体
                     world.spawnEntityInWorld(
-                            new MCH_EntityFlare(
-                                    world,
-                                    particleX,
-                                    particleY + 2.0D,
-                                    particleZ,
-                                    Math.sin(angle) * flareSpeed,
-                                    (1.0D + dirY / 5.0D) * flareSpeed,
-                                    Math.cos(angle) * flareSpeed,
-                                    2.0F,
-                                    0,
-                                    -0.025
-                            )
+                        new MCH_EntityFlare(
+                            world,
+                            particleX,
+                            particleY + 2.0D,
+                            particleZ,
+                            Math.sin(angle) * flareSpeed,
+                            (1.0D + dirY / 5.0D) * flareSpeed,
+                            Math.cos(angle) * flareSpeed,
+                            2.0F,
+                            0,
+                            -0.025
+                        )
                     );
                     remainingFlares--;
                 }
@@ -203,21 +204,21 @@ public class MCH_Explosion extends Explosion {
                 if (spawnCount % 4 == 0) {
                     // 根据爆炸大小计算尘埃粒子的速度尺度
                     float dustVelocity = Math.min(explosionSize / 3.0F, 2.0F) *
-                            (0.5F + world.rand.nextFloat() * 0.5F);
+                        (0.5F + world.rand.nextFloat() * 0.5F);
                     // 生成碎块尘埃粒子
                     MCH_ParticlesUtil.spawnParticleTileDust(
-                            world,
-                            (int) (particleX + 0.5D),
-                            (int) (particleY - 0.5D),
-                            (int) (particleZ + 0.5D),
-                            particleX,
-                            particleY + 1.0D,
-                            particleZ,
-                            Math.sin(angle) * dustVelocity,
-                            0.5D + dirY / 5.0D * dustVelocity,
-                            Math.cos(angle) * dustVelocity,
-                            Math.min(explosionSize / 2.0F, 3.0F) *
-                                    (0.5F + world.rand.nextFloat() * 0.5F)
+                        world,
+                        (int) (particleX + 0.5D),
+                        (int) (particleY - 0.5D),
+                        (int) (particleZ + 0.5D),
+                        particleX,
+                        particleY + 1.0D,
+                        particleZ,
+                        Math.sin(angle) * dustVelocity,
+                        0.5D + dirY / 5.0D * dustVelocity,
+                        Math.cos(angle) * dustVelocity,
+                        Math.min(explosionSize / 2.0F, 3.0F) *
+                            (0.5F + world.rand.nextFloat() * 0.5F)
                     );
                 }
 
@@ -237,19 +238,19 @@ public class MCH_Explosion extends Explosion {
 
                     // 创建爆炸粒子参数对象
                     MCH_ParticleParam particle = new MCH_ParticleParam(
-                            world,
-                            "explode",
-                            particleX,
-                            particleY,
-                            particleZ,
-                            dirX,
-                            dirY,
-                            dirZ,
-                            explosionSize < 8.0F ? (explosionSize < 2.0F ? 1.5F : explosionSize * 1.5F) : 12.0F
+                        world,
+                        "explode",
+                        particleX,
+                        particleY,
+                        particleZ,
+                        dirX,
+                        dirY,
+                        dirZ,
+                        explosionSize < 8.0F ? (explosionSize < 2.0F ? 1.5F : explosionSize * 1.5F) : 12.0F
                     );
                     // 为粒子随机设置颜色值（RGB通道）
                     particle.r = particle.g = particle.b =
-                            0.3F + world.rand.nextFloat() * 0.4F;
+                        0.3F + world.rand.nextFloat() * 0.4F;
                     particle.r += 0.1F;
                     particle.g += 0.05F;
                     particle.a = 0.4F + world.rand.nextFloat() * 0.4F;
@@ -257,7 +258,7 @@ public class MCH_Explosion extends Explosion {
                     // 随机设置粒子的生命周期
                     particle.age = 5 + world.rand.nextInt(10);
                     particle.age = (int) ((float) particle.age *
-                            (Math.max(explosionSize / 2, 6.0F)));
+                        (Math.max(explosionSize / 2, 6.0F)));
                     particle.gravity = 0.001f;
                     particle.diffusible = true;
 
@@ -388,188 +389,277 @@ public class MCH_Explosion extends Explosion {
         }
     }
 
+    /**
+     * 某些实体不参与 result 统计与日志，保持与原版一致的排除项
+     */
+    private static boolean isIgnorableEntity(Entity e) {
+        return (e instanceof EntityItem)
+            || (e instanceof EntityExpBottle)
+            || (e instanceof EntityXPOrb)
+            || W_Entity.isEntityFallingBlock(e);
+    }
+
+    /**
+     * 不同目标类型的伤害倍率（原逻辑抽取成函数，便于维护）
+     */
+    private static float applyTypeMultipliers(Entity e, float damage, MCH_ExplosionParam param) {
+        if (e instanceof EntityPlayer) {
+            return damage * param.damageVsPlayer;
+        } else if (e instanceof EntityLivingBase) {
+            return damage * param.damageVsLiving;
+        } else if (e instanceof MCP_EntityPlane) {
+            MCP_EntityPlane plane = (MCP_EntityPlane) e;
+            if (plane.getAcInfo() != null && plane.getAcInfo().isFloat) {
+                return damage * param.damageVsShip;
+            } else {
+                return damage * param.damageVsPlane;
+            }
+        } else if (e instanceof MCH_EntityHeli) {
+            return damage * param.damageVsHeli;
+        } else if (e instanceof MCH_EntityTank) {
+            return damage * param.damageVsTank;
+        } else if (e instanceof MCH_EntityVehicle) {
+            return damage * param.damageVsVehicle;
+        }
+        return damage;
+    }
+
+    /**
+     * 计算点到 AABB 的最小欧氏距离（在盒内则为 0）
+     */
+    private static double distancePointToAABB(double px, double py, double pz, net.minecraft.util.AxisAlignedBB bb) {
+        double dx = 0.0D;
+        if (px < bb.minX) dx = bb.minX - px;
+        else if (px > bb.maxX) dx = px - bb.maxX;
+        double dy = 0.0D;
+        if (py < bb.minY) dy = bb.minY - py;
+        else if (py > bb.maxY) dy = py - bb.maxY;
+        double dz = 0.0D;
+        if (pz < bb.minZ) dz = bb.minZ - pz;
+        else if (pz > bb.maxZ) dz = pz - bb.maxZ;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
     public boolean isRemote() {
         return this.world.isRemote;
     }
 
+    @Override
     public void doExplosionA() {
-        HashSet hashset = new HashSet();
-        int i = 0;
+        // === 1) 采样射线，收集会受影响的方块（供 doExplosionB 真正处理） ===
+        final int RAYS = 16;
+        final double STEP = 0.30000001192092896D;
+        final Set<ChunkPosition> affected = new HashSet<>();
 
-        while (true) {
-            this.getClass();
-            int j;
-            int k;
-            double d0;
-            double d1;
-            double d2;
-            if (i >= 16) {
-                float var33 = super.explosionSize;
-                super.affectedBlockPositions.addAll(hashset);
-                super.explosionSize *= 2.0F;
-                i = MathHelper.floor_double(super.explosionX - (double) super.explosionSize - 1.0D);
-                j = MathHelper.floor_double(super.explosionX + (double) super.explosionSize + 1.0D);
-                k = MathHelper.floor_double(super.explosionY - (double) super.explosionSize - 1.0D);
-                int l1 = MathHelper.floor_double(super.explosionY + (double) super.explosionSize + 1.0D);
-                int var34 = MathHelper.floor_double(super.explosionZ - (double) super.explosionSize - 1.0D);
-                int j2 = MathHelper.floor_double(super.explosionZ + (double) super.explosionSize + 1.0D);
-                List list = this.world.getEntitiesWithinAABBExcludingEntity(super.exploder, W_AxisAlignedBB.getAABB(i, k, var34, j, l1, j2));
-                Vec3 vec3 = W_WorldFunc.getWorldVec3(this.world, super.explosionX, super.explosionY, super.explosionZ);
-                super.exploder = param.player;
-
-                for (int i1 = 0; i1 < list.size(); ++i1) {
-                    Entity entity = (Entity) list.get(i1);
-                    double rDist = entity.getDistance(super.explosionX, super.explosionY, super.explosionZ) / (double) super.explosionSize;
-                    if (rDist <= 1.0D) {
-                        d0 = entity.posX - super.explosionX;
-                        d1 = entity.posY + (double) entity.getEyeHeight() - super.explosionY;
-                        d2 = entity.posZ - super.explosionZ;
-                        double dist = MathHelper.sqrt_double(d0 * d0 + d1 * d1 + d2 * d2);
-                        if (dist != 0.0D) {
-                            d0 /= dist;
-                            d1 /= dist;
-                            d2 /= dist;
-                            double blockDensity = this.getBlockDensity(vec3, entity.boundingBox);
-                            double var41 = (1.0D - rDist) * blockDensity;
-                            float damage = (float) ((int) ((var41 * var41 + var41) / 2.0D * 8.0D * (double) super.explosionSize + 1.0D));
-                            if (damage > 0.0F && this.result != null && !(entity instanceof EntityItem) && !(entity instanceof EntityExpBottle) && !(entity instanceof EntityXPOrb) && !W_Entity.isEntityFallingBlock(entity)) {
-                                if (entity instanceof MCH_EntityBaseBullet && super.exploder instanceof EntityPlayer) {
-                                    if (!W_Entity.isEqual(((MCH_EntityBaseBullet) entity).shootingEntity, super.exploder)) {
-                                        this.result.hitEntity = true;
-                                        MCH_Lib.DbgLog(this.world, "MCH_Explosion.doExplosionA:Damage=%.1f:HitEntityBullet=" + entity.getClass(), damage);
-                                    }
-                                } else {
-                                    MCH_Lib.DbgLog(this.world, "MCH_Explosion.doExplosionA:Damage=%.1f:HitEntity=" + entity.getClass(), damage);
-                                    this.result.hitEntity = true;
-                                }
-                            }
-
-                            MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
-                            DamageSource ds = DamageSource.setExplosionSource(this);
-                            damage = MCH_Config.applyDamageVsEntity(entity, ds, damage);
-                            if (entity instanceof EntityPlayer) damage *= param.damageVsPlayer;
-                            else if (entity instanceof EntityLivingBase) damage *= param.damageVsLiving;
-                            else if (entity instanceof MCP_EntityPlane) {
-                                MCP_EntityPlane plane = (MCP_EntityPlane) entity;
-                                if(plane.getAcInfo() != null && plane.getAcInfo().isFloat) {
-                                    damage *= param.damageVsShip;
-                                } else damage *= param.damageVsPlane;
-                            }
-                            else if (entity instanceof MCH_EntityHeli) damage *= param.damageVsHeli;
-                            else if (entity instanceof MCH_EntityTank) damage *= param.damageVsTank;
-                            else if (entity instanceof MCH_EntityVehicle) damage *= param.damageVsVehicle;
-                            entity.attackEntityFrom(ds, damage);
-                            double d11 = EnchantmentProtection.func_92092_a(entity, var41);
-                            if (entity instanceof EntityLivingBase) {
-                                entity.motionX += d0 * d11 * 0.4D;
-                                entity.motionY += d1 * d11 * 0.1D;
-                                entity.motionZ += d2 * d11 * 0.4D;
-                            }
-
-                            if (entity instanceof EntityPlayer) {
-                                this.field_77288_k.put(entity, W_WorldFunc.getWorldVec3(this.world, d0 * var41, d1 * var41, d2 * var41));
-                            }
-
-                            if (damage > 0.0F && param.countSetFireEntity > 0) {
-                                double fireFactor = 1.0D - dist / (double) super.explosionSize;
-                                if (fireFactor > 0.0D) {
-                                    entity.setFire((int) (fireFactor * (double) param.countSetFireEntity));
-                                }
-                            }
-                        }
-                    }
-                }
-
-                super.explosionSize = var33;
-                return;
-            }
-
-            j = 0;
-
-            while (true) {
-                this.getClass();
-                if (j >= 16) {
-                    ++i;
-                    break;
-                }
-
-                k = 0;
-
-                while (true) {
-                    this.getClass();
-                    if (k >= 16) {
-                        ++j;
-                        break;
+        for (int xi = 0; xi < RAYS; xi++) {
+            for (int yi = 0; yi < RAYS; yi++) {
+                for (int zi = 0; zi < RAYS; zi++) {
+                    // 只在“立方体表面”发射射线（减少重复）
+                    if (xi != 0 && xi != RAYS - 1 && yi != 0 && yi != RAYS - 1 && zi != 0 && zi != RAYS - 1) {
+                        continue;
                     }
 
-                    label134:
-                    {
-                        if (i != 0) {
-                            this.getClass();
-                            if (i != 16 - 1 && j != 0) {
-                                this.getClass();
-                                if (j != 16 - 1 && k != 0) {
-                                    this.getClass();
-                                    if (k != 16 - 1) {
-                                        break label134;
-                                    }
-                                }
+                    // 将 [0,RAYS-1] 映射到 [-1,1]，得到方向向量
+                    double dx = xi / (RAYS - 1.0D) * 2.0D - 1.0D;
+                    double dy = yi / (RAYS - 1.0D) * 2.0D - 1.0D;
+                    double dz = zi / (RAYS - 1.0D) * 2.0D - 1.0D;
+                    double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    dx /= len;
+                    dy /= len;
+                    dz /= len;
+
+                    float blast = param.sizeBlock * (0.7F + this.world.rand.nextFloat() * 0.6F);
+                    double px = this.explosionX;
+                    double py = this.explosionY;
+                    double pz = this.explosionZ;
+
+                    // 沿射线行进，衰减爆轰强度并记录方块
+                    for (float step = 0.3F; blast > 0.0F; blast -= 0.22500001F) {
+                        final int bx = MathHelper.floor_double(px);
+                        final int by = MathHelper.floor_double(py);
+                        final int bz = MathHelper.floor_double(pz);
+
+                        final int blockId = W_WorldFunc.getBlockId(this.world, bx, by, bz);
+                        if (blockId > 0) {
+                            final Block block = W_WorldFunc.getBlock(this.world, bx, by, bz);
+                            float resistance;
+                            if (this.exploder != null) {
+                                resistance = W_Entity.getBlockExplosionResistance(this.exploder, this, this.world, bx, by, bz, block);
+                            } else {
+                                resistance = block.getExplosionResistance(this.exploder, this.world, bx, by, bz,
+                                    this.explosionX, this.explosionY, this.explosionZ);
                             }
+                            if (param.isInWater) {
+                                resistance *= this.world.rand.nextFloat() * 0.2F + 0.2F;
+                            }
+                            blast -= (resistance + 0.3F) * 0.3F;
                         }
 
-                        float var10000 = (float) i;
-                        this.getClass();
-                        double f = (double) (var10000 / (16.0F - 1.0F) * 2.0F - 1.0F);
-                        var10000 = (float) j;
-                        this.getClass();
-                        double i2 = (double) (var10000 / (16.0F - 1.0F) * 2.0F - 1.0F);
-                        var10000 = (float) k;
-                        this.getClass();
-                        double list = (double) (var10000 / (16.0F - 1.0F) * 2.0F - 1.0F);
-                        double k2 = Math.sqrt(f * f + i2 * i2 + list * list);
-                        f /= k2;
-                        i2 /= k2;
-                        list /= k2;
-                        float d7 = param.sizeBlock * (0.7F + this.world.rand.nextFloat() * 0.6F);
-                        d0 = super.explosionX;
-                        d1 = super.explosionY;
-                        d2 = super.explosionZ;
-
-                        for (float f2 = 0.3F; d7 > 0.0F; d7 -= 0.22500001F) {
-                            int d8 = MathHelper.floor_double(d0);
-                            int i1 = MathHelper.floor_double(d1);
-                            int d9 = MathHelper.floor_double(d2);
-                            int k1 = W_WorldFunc.getBlockId(this.world, d8, i1, d9);
-                            if (k1 > 0) {
-                                Block d10 = W_WorldFunc.getBlock(this.world, d8, i1, d9);
-                                float f3;
-                                if (super.exploder != null) {
-                                    f3 = W_Entity.getBlockExplosionResistance(super.exploder, this, this.world, d8, i1, d9, d10);
-                                } else {
-                                    f3 = d10.getExplosionResistance(super.exploder, this.world, d8, i1, d9, super.explosionX, super.explosionY, super.explosionZ);
-                                }
-
-                                if (param.isInWater) {
-                                    f3 *= this.world.rand.nextFloat() * 0.2F + 0.2F;
-                                }
-
-                                d7 -= (f3 + 0.3F) * 0.3F;
-                            }
-
-                            if (d7 > 0.0F && (super.exploder == null || W_Entity.shouldExplodeBlock(super.exploder, this, this.world, d8, i1, d9, k1, d7))) {
-                                hashset.add(new ChunkPosition(d8, i1, d9));
-                            }
-
-                            d0 += f * 0.30000001192092896D;
-                            d1 += i2 * 0.30000001192092896D;
-                            d2 += list * 0.30000001192092896D;
+                        if (blast > 0.0F && (this.exploder == null ||
+                            W_Entity.shouldExplodeBlock(this.exploder, this, this.world, bx, by, bz, blockId, blast))) {
+                            affected.add(new ChunkPosition(bx, by, bz));
                         }
+
+                        px += dx * STEP;
+                        py += dy * STEP;
+                        pz += dz * STEP;
                     }
-
-                    ++k;
                 }
             }
         }
+        this.affectedBlockPositions.addAll(affected);
+
+        // === 2) 处理实体伤害与击退 ===
+        final float sizeBefore = this.explosionSize;
+        this.explosionSize *= 2.0F; // 原版做法：扩大一次半径用于实体搜索
+
+        final int minX = MathHelper.floor_double(this.explosionX - this.explosionSize - 1.0D);
+        final int maxX = MathHelper.floor_double(this.explosionX + this.explosionSize + 1.0D);
+        final int minY = MathHelper.floor_double(this.explosionY - this.explosionSize - 1.0D);
+        final int maxY = MathHelper.floor_double(this.explosionY + this.explosionSize + 1.0D);
+        final int minZ = MathHelper.floor_double(this.explosionZ - this.explosionSize - 1.0D);
+        final int maxZ = MathHelper.floor_double(this.explosionZ + this.explosionSize + 1.0D);
+
+        final List list = this.world.getEntitiesWithinAABBExcludingEntity(
+            this.exploder, W_AxisAlignedBB.getAABB(minX, minY, minZ, maxX, maxY, maxZ));
+
+        final Vec3 center = W_WorldFunc.getWorldVec3(this.world, this.explosionX, this.explosionY, this.explosionZ);
+
+        // 伤害归属：如果由玩家引发，设置为玩家（保持原有行为）
+        this.exploder = param.player;
+
+        // “点爆”基础伤害：在 rDist=0、无遮挡 时的理论伤害（用于直击实体）
+        final float pointBlankBase = (float) ((int) (8.0D * (double) this.explosionSize + 1.0D));
+
+        // === 2.1 普通实体（排除直击对象） ===
+        for (Object o : list) {
+            final Entity e = (Entity) o;
+
+            // 排除“直击实体”，它将被单独处理
+            if (param.directAttackEntity != null && W_Entity.isEqual(e, param.directAttackEntity)) {
+                continue;
+            }
+
+            final double rDist = e.getDistance(this.explosionX, this.explosionY, this.explosionZ) / (double) this.explosionSize;
+            if (rDist > 1.0D) {
+                continue;
+            }
+
+            double vx = e.posX - this.explosionX;
+            double vy = e.posY + (double) e.getEyeHeight() - this.explosionY;
+            double vz = e.posZ - this.explosionZ;
+            final double vLen = MathHelper.sqrt_double(vx * vx + vy * vy + vz * vz);
+            if (vLen == 0.0D) {
+                continue;
+            }
+            vx /= vLen;
+            vy /= vLen;
+            vz /= vLen;
+
+            // 用于击退/向量登记的遮挡+距离因子（保持原版感觉）
+            double density = this.getBlockDensity(center, e.boundingBox);
+            final double attenForKnock = (1.0D - rDist) * density;
+            final double attenForDamage = Math.max(0.0D, attenForKnock);
+
+            float damage = (float) ((int) (((attenForDamage * attenForDamage + attenForDamage) / 2.0D) * 8.0D
+                * (double) this.explosionSize + 1.0D));
+
+            if (damage > 0.0F && this.result != null && !isIgnorableEntity(e)) {
+                this.result.hitEntity = true;
+                MCH_Lib.DbgLog(this.world, "MCH_Explosion.doExplosionA:Damage=%.1f:HitEntity=%s", damage, e.getClass());
+            }
+
+            // 统一应用伤害免疫/配置
+            MCH_Lib.applyEntityHurtResistantTimeConfig(e);
+            DamageSource ds = DamageSource.setExplosionSource(this);
+            damage = MCH_Config.applyDamageVsEntity(e, ds, damage);
+            damage = applyTypeMultipliers(e, damage, param);
+
+            // 施加伤害
+            e.attackEntityFrom(ds, damage);
+
+            // 击退与向量登记
+            final double kb = EnchantmentProtection.func_92092_a(e, attenForKnock);
+            if (e instanceof EntityLivingBase) {
+                e.motionX += vx * kb * 0.4D;
+                e.motionY += vy * kb * 0.1D;
+                e.motionZ += vz * kb * 0.4D;
+            }
+            if (e instanceof EntityPlayer) {
+                this.field_77288_k.put(e, W_WorldFunc.getWorldVec3(this.world, vx * attenForKnock, vy * attenForKnock, vz * attenForKnock));
+            }
+
+            // 点燃：保持原行为（随“中心距离”线性）
+            if (damage > 0.0F && param.countSetFireEntity > 0) {
+                final double fireFactor = 1.0D - vLen / (double) this.explosionSize;
+                if (fireFactor > 0.0D) {
+                    e.setFire((int) (fireFactor * (double) param.countSetFireEntity));
+                }
+            }
+        }
+
+        // === 2.2 直击实体：单独固定伤害 ===
+        if (param.directAttackEntity != null && !isIgnorableEntity(param.directAttackEntity)) {
+            final Entity e = param.directAttackEntity;
+
+            // 用“爆点到 AABB 的最小距离”来计算击退/点燃的衰减（伤害固定为点爆，不衰减）
+            final double minDistToBox = distancePointToAABB(this.explosionX, this.explosionY, this.explosionZ, e.boundingBox);
+            final double rDistBox = Math.min(1.0D, minDistToBox / (double) this.explosionSize);
+
+            // 方向向量仍用“爆心 -> 眼睛高度”的方向
+            double vx = e.posX - this.explosionX;
+            double vy = e.posY + (double) e.getEyeHeight() - this.explosionY;
+            double vz = e.posZ - this.explosionZ;
+            final double vLen = MathHelper.sqrt_double(vx * vx + vy * vy + vz * vz);
+            if (vLen != 0.0D) {
+                vx /= vLen;
+                vy /= vLen;
+                vz /= vLen;
+            }
+
+            // 击退/登记按距离+遮挡（但不影响“固定伤害”）
+            double density = this.getBlockDensity(center, e.boundingBox);
+            final double attenForKnock = (1.0D - rDistBox) * density;
+
+            // === 固定伤害：点爆伤害，不随距离/遮挡衰减 ===
+            float damage = pointBlankBase;
+
+            if (this.result != null) {
+                this.result.hitEntity = true;
+                MCH_Lib.DbgLog(this.world, "MCH_Explosion.doExplosionA:Damage=%.1f:DirectHit=%s", damage, e.getClass());
+            }
+
+            // 统一应用伤害免疫/配置
+            MCH_Lib.applyEntityHurtResistantTimeConfig(e);
+            DamageSource ds = DamageSource.setExplosionSource(this);
+            damage = MCH_Config.applyDamageVsEntity(e, ds, damage);
+            damage = applyTypeMultipliers(e, damage, param);
+
+            // 施加伤害（固定伤害）
+            e.attackEntityFrom(ds, damage);
+
+            // 击退与向量登记：随 rDistBox 与遮挡衰减
+            final double kb = EnchantmentProtection.func_92092_a(e, attenForKnock);
+            if (e instanceof EntityLivingBase) {
+                e.motionX += vx * kb * 0.4D;
+                e.motionY += vy * kb * 0.1D;
+                e.motionZ += vz * kb * 0.4D;
+            }
+            if (e instanceof EntityPlayer) {
+                this.field_77288_k.put(e, W_WorldFunc.getWorldVec3(this.world, vx * attenForKnock, vy * attenForKnock, vz * attenForKnock));
+            }
+
+            // 点燃：用 AABB 距离做线性系数，可更贴近“贴脸爆”表现
+            if (damage > 0.0F && param.countSetFireEntity > 0) {
+                final double fireFactor = 1.0D - rDistBox; // 基于对 AABB 的最小距离
+                if (fireFactor > 0.0D) {
+                    e.setFire((int) (fireFactor * (double) param.countSetFireEntity));
+                }
+            }
+        }
+
+        // 还原爆炸半径
+        this.explosionSize = sizeBefore;
     }
 
     private double getBlockDensity(Vec3 vec3, AxisAlignedBB p_72842_2_) {
@@ -661,12 +751,11 @@ public class MCH_Explosion extends Explosion {
 
     public class ExplosionResult {
 
+        public boolean hitEntity = false;
+        public MCH_Explosion explosion;
         public ExplosionResult(MCH_Explosion explosion) {
             this.explosion = explosion;
         }
-
-        public boolean hitEntity = false;
-        public MCH_Explosion explosion;
 
     }
 }
