@@ -20,36 +20,40 @@ import org.lwjgl.opengl.GL11;
 import java.util.List;
 
 /**
- * 载具HUD渲染器 - 包含伤害指示器渲染。
+ * Vehicle HUD Renderer – includes damage indicator rendering.
  *
- * <p>本类负责在玩家骑乘载具时，在屏幕左上角绘制载具的3D模型以及受到攻击的提示信息。
- * 为了防止渲染区域超出屏幕，渲染区域的位置通过 {@link #horizontalOffset} 和 {@link #verticalOffset} 调整。
- * 此外，伤害指示器的绘制使用了相对坐标和方向，这些信息已经在服务器端根据载具的俯仰、滚转和水平旋转
- * 进行了变换。</p>
+ * <p>This class is responsible for drawing the vehicle's 3D model and damage indicators
+ * on the top-left area of the screen when the player is riding a vehicle.
+ * To prevent the rendered area from exceeding screen boundaries, the rendering
+ * position is adjusted using {@link #horizontalOffset} and {@link #verticalOffset}.
+ * Additionally, the damage indicator rendering uses relative coordinates and directions,
+ * which have already been transformed on the server side according to the vehicle's
+ * pitch, roll, and yaw rotations.</p>
  */
 public class MCH_RenderDamageIndicator {
 
     /**
-     * 模型自旋角度，用于让模型缓慢旋转展示。
+     * Model spin angle, used to make the model slowly rotate for display.
      */
     private static float spinYaw = 0.0F;
     /**
-     * 模型渲染时用于计算缩放的像素基准值。调整此值可以改变模型在框中的大小。
+     * Pixel base value used to calculate model scaling during rendering.
+     * Adjusting this value changes the model’s size within the frame.
      */
     private static final double BOX_PIXELS = 220.0;
     /**
-     * 额外的缩放比例，用于微调模型大小。
+     * Additional zoom factor for fine-tuning the model size.
      */
     private static final float EXTRA_ZOOM = 1.2F;
 
     /**
-     * 渲染区域相对于屏幕右上角的水平偏移像素。
-     * 调整此值可以让HUD离开屏幕边缘，避免被截断。
+     * Horizontal pixel offset of the rendering area relative to the top-right corner of the screen.
+     * Adjust this value to move the HUD away from the screen edge and prevent clipping.
      */
     private static final int horizontalOffset = 70;
     /**
-     * 渲染区域相对于屏幕顶部的垂直偏移像素。
-     * 调整此值可以让HUD离开屏幕边缘，避免被截断。
+     * Vertical pixel offset of the rendering area relative to the top of the screen.
+     * Adjust this value to move the HUD away from the screen edge and prevent clipping.
      */
     private static final int verticalOffset = 30;
 
@@ -63,10 +67,11 @@ public class MCH_RenderDamageIndicator {
     }
 
     /**
-     * 主渲染入口。玩家骑乘载具时在HUD上绘制模型和伤害指示器。
+     * Main rendering entry point. Draws the vehicle model and damage indicators on the HUD
+     * when the player is riding a vehicle.
      *
-     * @param mc          客户端实例
-     * @param partialTicks 渲染补间因子
+     * @param mc           Minecraft client instance
+     * @param partialTicks Render interpolation factor
      */
     public static void render(Minecraft mc, float partialTicks) {
         if (mc == null || mc.thePlayer == null || mc.theWorld == null) return;
@@ -84,53 +89,54 @@ public class MCH_RenderDamageIndicator {
         W_ModelCustom model = (W_ModelCustom) ac.getAcInfo().model;
         if (model == null) return;
 
-        // 获取伤害指示器列表（客户端通过数据包接收的，已经是相对坐标和相对方向）
+        // Get the list of damage indicators (received by client packets, already in relative coordinates and direction)
         List<MCH_DamageIndicator> damageIndicators = ac.damageIndicatorList;
 
-        // 绑定载具贴图
+        // Bind the vehicle texture
         ResourceLocation texture = getTextureForAircraft(ac);
         if (texture != null) {
             mc.getTextureManager().bindTexture(texture);
         }
 
-        // 使用ScaledResolution获取屏幕宽高（单位：HUD缩放后的像素）
+        // Use ScaledResolution to get screen width and height (in HUD-scaled pixels)
         W_ScaledResolution sr = new W_ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
         int sw = sr.getScaledWidth();
         int sh = sr.getScaledHeight();
 
-        // 基础框大小和外边距，以800px高度为参考自适应缩放
+        // Base box size and margin, scaled relative to an 800px height reference
         final int baseBoxSize = 140;
         final int baseMargin = 6;
 
-        // 根据屏幕高度调整框的大小，避免在低分辨率屏幕上过大
+        // Adjust the box size based on screen height to prevent oversized HUDs on low resolutions
         float scaleFactor = Math.min(1.0f, (float) sh / 800.0f);
         int boxSize = (int) (baseBoxSize * scaleFactor);
         int margin = (int) (baseMargin * scaleFactor);
 
-        // 计算渲染框中心位置（左上角偏移），注意需要减去水平偏移并加上垂直偏移
+        // Calculate render frame center position (offset from top-left corner),
+        // subtracting horizontal offset and adding vertical offset
         double drawX = sw - margin - boxSize * 0.5 - horizontalOffset;
         double drawY = margin + boxSize * 0.5 + verticalOffset;
 
-        // 根据模型的尺寸计算缩放因子，使模型完整显示在框内
+        // Compute the model scaling factor so that the full model fits inside the frame
         double modelSize = Math.abs(model.size) < 0.01 ? 0.01 : Math.abs(model.size);
         double scale = (BOX_PIXELS / modelSize) * EXTRA_ZOOM;
 
-        // 计算模型中心，模型坐标范围由加载的OBJ模型提供
+        // Calculate model center; the coordinate bounds are provided by the loaded OBJ model
         double cx = (model.maxX - model.minX) * 0.5 + model.minX;
         double cy = (model.maxY - model.minY) * 0.5 + model.minY;
         double cz = (model.maxZ - model.minZ) * 0.5 + model.minZ;
         double[] center = new double[]{cx, cy, cz};
 
-        // 自旋角度增加，让模型缓慢旋转
+        // Increment spin angle to make the model rotate slowly
         spinYaw += (1.8F * partialTicks);
         if (spinYaw > 360.0F) spinYaw -= 360.0F;
 
-        // 渲染模型和伤害指示器
+        // Render the model and damage indicators
         renderModel(mc, model, drawX, drawY, scale, center, damageIndicators, boxSize, margin);
     }
 
     /**
-     * 根据载具类型获取对应的贴图路径。
+     * Get the corresponding texture path based on the aircraft type.
      */
     private static ResourceLocation getTextureForAircraft(MCH_EntityAircraft ac) {
         if (ac.getTextureName() == null) return null;
@@ -151,7 +157,8 @@ public class MCH_RenderDamageIndicator {
     }
 
     /**
-     * 渲染3D模型及其伤害指示器。使用OpenGL配置剪裁区域，以防渲染超出框外。
+     * Renders the 3D model and its damage indicators.
+     * Uses OpenGL scissoring to restrict the drawing region and prevent rendering outside the HUD frame.
      */
     private static void renderModel(Minecraft mc, W_ModelCustom model,
                                     double drawX, double drawY,
@@ -162,12 +169,12 @@ public class MCH_RenderDamageIndicator {
         try {
             GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
 
-            // 开启深度测试，确保模型之间的遮挡关系正确
+            // Enable depth testing to ensure correct occlusion between model parts
             GL11.glEnable(GL11.GL_DEPTH_TEST);
             GL11.glDepthFunc(GL11.GL_LEQUAL);
             GL11.glDepthMask(true);
 
-            // 使用剪裁区域限制绘制范围，防止模型超出HUD框
+            // Use a scissor region to limit the drawing area, preventing the model from rendering outside the HUD box
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
             W_ScaledResolution sr = new W_ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
             int scaleFactor = sr.getScaleFactor();
@@ -179,7 +186,7 @@ public class MCH_RenderDamageIndicator {
             GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
             GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
-            // 设置OpenGL状态
+            // Configure OpenGL states
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             GL11.glDisable(GL11.GL_LIGHTING);
@@ -188,17 +195,19 @@ public class MCH_RenderDamageIndicator {
             GL11.glCullFace(GL11.GL_BACK);
             GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-            // 设置模型位置和旋转：放置到屏幕位置、翻转Y轴（MC坐标系不同）并绕Y轴旋转
+            // Set model position and rotation: move to screen location, flip Y-axis (due to MC coordinate system),
+            // and rotate around Y-axis for spinning animation
             GL11.glTranslated(drawX, drawY, 300.0);
             GL11.glRotated(180.0, 1.0, 0.0, 0.0);
             GL11.glRotated(spinYaw, 0.0, 1.0, 0.0);
             GL11.glScaled(scale, scale, -scale);
             GL11.glTranslated(-center[0], -center[1], -center[2]);
 
-            // 绘制模型
+            // Render the model
             model.renderAll(0, model.getFaceNum());
 
-            // 绘制伤害指示器：这些指示器的坐标和方向已经在服务器端变换至相对坐标
+            // Render damage indicators — these positions and orientations have already been transformed
+            // on the server side into relative coordinates
             if (damageIndicators != null && !damageIndicators.isEmpty()) {
                 renderDamageIndicators(damageIndicators);
             }
@@ -213,22 +222,23 @@ public class MCH_RenderDamageIndicator {
     }
 
     /**
-     * 批量绘制伤害指示器，每个指示器描述了一次子弹击中载具的位置和方向。
-     * 深度测试保持开启，这样线条和标记会被载具模型正确遮挡。
+     * Renders a batch of damage indicators, each representing a bullet hit position
+     * and direction on the vehicle model.
+     * Depth testing remains enabled so that lines and markers are correctly occluded by the model.
      */
     private static void renderDamageIndicators(List<MCH_DamageIndicator> indicators) {
         GL11.glPushMatrix();
         try {
             GL11.glPushAttrib(GL11.GL_ENABLE_BIT);
-            // 关闭纹理、剔除，启用混合
+            // Disable textures and face culling, enable blending
             GL11.glDisable(GL11.GL_TEXTURE_2D);
             GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            // 深度测试保持开启，让线条和标记与模型正确交互
+            // Keep depth testing enabled so that lines and markers properly interact with the model
             GL11.glEnable(GL11.GL_DEPTH_TEST);
             GL11.glDepthFunc(GL11.GL_LEQUAL);
-            // 线条宽度
+            // Line width
             GL11.glLineWidth(2.5F);
             for (MCH_DamageIndicator indicator : indicators) {
                 if (indicator.relativeHitPos != null && indicator.relativeDir != null) {
@@ -242,23 +252,26 @@ public class MCH_RenderDamageIndicator {
     }
 
     /**
-     * 绘制单个伤害指示器。
+     * Renders a single damage indicator.
      *
-     * <p>使用相对命中点和相对弹道方向计算线段的起点。为了保证线段长度与伤害成正比，先归一化方向向量，然后乘以计算出的长度。</p>
+     * <p>Uses the relative hit position and bullet trajectory direction to calculate the start point of the line.
+     * To ensure that the line length is proportional to the amount of damage, the direction vector is normalized
+     * and then multiplied by the computed length.</p>
      */
     private static void renderDamageIndicator(MCH_DamageIndicator indicator) {
         Vec3 hitPos = indicator.relativeHitPos;
         Vec3 bulletDir = indicator.relativeDir;
         if (hitPos == null || bulletDir == null) return;
 
-        // 根据伤害计算线段长度，伤害越高线段越长
+        // Compute the line length based on damage — higher damage produces a longer line
         double baseLength = 0.5;
         double lineLength = baseLength * (0.7 + indicator.damage / 150.0);
 
-        // 归一化弹道方向，使其仅表示方向不受速度影响
+        // Normalize bullet direction so it represents only direction, not speed
         Vec3 dirNorm = bulletDir.normalize();
 
-        // 起点为命中点沿着子弹方向反向偏移一定距离
+        // Starting point is the hit position offset backwards along the bullet direction
+
         Vec3 lineStart = Vec3.createVectorHelper(
             hitPos.xCoord - dirNorm.xCoord * lineLength,
             hitPos.yCoord - dirNorm.yCoord * lineLength,
@@ -266,11 +279,11 @@ public class MCH_RenderDamageIndicator {
         );
         Vec3 lineEnd = hitPos;
 
-        // 根据伤害设置红色透明度，伤害越高颜色越鲜艳
+        // Set red color intensity based on damage — higher damage yields a brighter red
         float colorIntensity = (float) Math.min(1.0, 0.4 + indicator.damage / 120.0);
         GL11.glColor4f(1.0f, 0.0f, 0.0f, colorIntensity);
 
-        // 绘制线条
+        // Draw the line segment
         GL11.glBegin(GL11.GL_LINES);
         try {
             GL11.glVertex3d(lineStart.xCoord, lineStart.yCoord, lineStart.zCoord);
@@ -279,7 +292,7 @@ public class MCH_RenderDamageIndicator {
             GL11.glEnd();
         }
 
-        // 在命中点绘制一个小球体标记，大小根据伤害变化
+        // Draw a small sphere marker at the hit position, with size based on damage
         GL11.glPushMatrix();
         GL11.glTranslated(hitPos.xCoord, hitPos.yCoord, hitPos.zCoord);
         GL11.glColor4f(1.0f, 0.0f, 0.0f, colorIntensity * 0.8f);
@@ -287,15 +300,15 @@ public class MCH_RenderDamageIndicator {
         drawSimpleSphere(sphereRadius, 6, 4);
         GL11.glPopMatrix();
 
-        // 恢复颜色为白色
+        // Restore color to white
         GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
-     * 绘制一个简化球体。使用三角形扇形构造上下两半球。
+     * Draws a simplified sphere using triangle fans to construct the upper and lower hemispheres.
      */
     private static void drawSimpleSphere(double radius, int slices, int stacks) {
-        // 上半球
+        // Upper hemisphere
         GL11.glBegin(GL11.GL_TRIANGLE_FAN);
         GL11.glVertex3d(0, radius, 0);
         for (int i = 0; i <= slices; i++) {
@@ -305,7 +318,7 @@ public class MCH_RenderDamageIndicator {
             GL11.glVertex3d(x, 0, z);
         }
         GL11.glEnd();
-        // 下半球
+        // Lower hemisphere
         GL11.glBegin(GL11.GL_TRIANGLE_FAN);
         GL11.glVertex3d(0, -radius, 0);
         for (int i = 0; i <= slices; i++) {

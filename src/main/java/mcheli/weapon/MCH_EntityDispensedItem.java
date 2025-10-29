@@ -59,7 +59,7 @@ public class MCH_EntityDispensedItem extends MCH_EntityBaseBullet {
             Item item = null;
             int itemDamage = 0;
 
-            // 查找射手
+            // Find the shooter
             if (m != null && this.getInfo() != null) {
                 if (super.shootingAircraft instanceof EntityPlayer) {
                     player = (EntityPlayer) super.shootingAircraft;
@@ -71,14 +71,14 @@ public class MCH_EntityDispensedItem extends MCH_EntityBaseBullet {
                 itemDamage = this.getInfo().dispenseDamege;
             }
 
-            // 只有当玩家和物品都存在时才处理生成逻辑
+            // Proceed with spawning logic only when both player and item exist
             if (player != null && !player.isDead && item != null) {
-                // 计算中心坐标：默认使用命中方块坐标
+                // Compute center coordinates: default to the hit block position
                 int centerX = m.blockX;
                 int centerY = m.blockY;
                 int centerZ = m.blockZ;
 
-                // 如果击中了实体，则用实体脚下方块作为中心
+                // If an entity was hit, use the block beneath the entity’s feet as the center
                 if (m.entityHit != null) {
                     centerX = MathHelper.floor_double(m.entityHit.posX);
                     centerY = MathHelper.floor_double(m.entityHit.boundingBox.minY) - 1; // 实体脚下方块
@@ -96,7 +96,7 @@ public class MCH_EntityDispensedItem extends MCH_EntityBaseBullet {
                             for (int z = -RNG; z <= RNG; ++z) {
                                 int dist = x * x + y * y + z * z;
                                 if (dist <= RNG * RNG) {
-                                    // 大圆和小圆的概率逻辑保持不变
+                                    // Keep the original probability logic for large/small circles
                                     if ((double) dist <= 0.5D * (double) RNG * (double) RNG || super.rand.nextInt(2) == 0) {
                                         this.useItemToBlock(centerX + x, worldY, centerZ + z,
                                                 item, itemDamage, dummyPlayer);

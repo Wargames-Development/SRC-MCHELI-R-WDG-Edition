@@ -12,17 +12,17 @@ import java.util.Random;
 
 public class MCH_Chaff {
 
-    //冷却时长 0代表冷却结束
+    // Cooldown duration; 0 indicates cooldown finished
     public int tick;
-    //生效时长 0代表使用结束
+    // Active duration; 0 indicates effect has ended
     public int useTick;
-    //箔条使用时间
+    // Chaff active duration
     public int chaffUseTime;
-    //箔条等待时间
+    // Chaff cooldown duration
     public int chaffWaitTime;
     public World worldObj;
     public MCH_EntityAircraft aircraft;
-    //箔条使用时分批间隔
+    // Interval between spawning chaff entities while active
     private int spawnChaffEntityIntervalTick;
     public final Random rand = new Random();
 
@@ -86,45 +86,45 @@ public class MCH_Chaff {
     }
 
     private void spawnChaffEntity() {
-        // 获取飞机的偏航角，换算成弧度
+        // Get the aircraft’s yaw angle and convert it to radians
         float yaw = this.aircraft.rotationYaw;
         float rad = (float) (yaw / 180.0F * Math.PI);
 
-        // 计算机身前向与左右侧向单位向量
+        // Calculate the aircraft’s forward and side unit vectors
         double forwardX = -MathHelper.sin(rad);
         double forwardZ =  MathHelper.cos(rad);
-        // 左右方向相当于在偏航角上加/减 90°
+        // Left and right directions are offset by ±90° from the yaw angle
         double leftX = -MathHelper.sin(rad + (float) Math.PI / 2F);
         double leftZ =  MathHelper.cos(rad + (float) Math.PI / 2F);
         double rightX = -MathHelper.sin(rad - (float) Math.PI / 2F);
         double rightZ =  MathHelper.cos(rad - (float) Math.PI / 2F);
 
-        // 基准位置：在飞机尾部稍微偏下一点
+        // Base position: slightly below and behind the aircraft’s tail
         double baseX = this.aircraft.lastTickPosX - forwardX * 20D;
         double baseY = this.aircraft.lastTickPosY - 10D;
         double baseZ = this.aircraft.lastTickPosZ - forwardZ * 20D;
 
-        // 左右偏移距离，可根据机体宽度调整
+        // Side offset distance, adjustable based on aircraft width
         double sideOffset = 1.5D;
 
-        // 计算左侧与右侧箔条的生成位置
+        // Compute the spawn positions for the left and right chaff
         double leftPosX = baseX + leftX * sideOffset;
         double leftPosZ = baseZ + leftZ * sideOffset;
         double rightPosX = baseX + rightX * sideOffset;
         double rightPosZ = baseZ + rightZ * sideOffset;
 
-        // 初速度：用飞机当前速度加上一小段侧向速度，使箔条朝两侧散开
+        // Initial velocity: aircraft’s current velocity plus small lateral spread
         double sideSpeed = 0.2D;
-        // 左侧初速度
+        // Left-side initial velocity
         double leftVelX = this.aircraft.motionX + leftX * sideSpeed;
         double leftVelY = this.aircraft.motionY;
         double leftVelZ = this.aircraft.motionZ + leftZ * sideSpeed;
-        // 右侧初速度
+        // Right-side initial velocity
         double rightVelX = this.aircraft.motionX + rightX * sideSpeed;
         double rightVelY = this.aircraft.motionY;
         double rightVelZ = this.aircraft.motionZ + rightZ * sideSpeed;
 
-        // 创建并加入两枚箔条实体
+        // Create and spawn two chaff entities
         MCH_EntityChaff leftChaff = new MCH_EntityChaff(worldObj,
                 leftPosX, baseY, leftPosZ,
                 leftVelX, leftVelY, leftVelZ);

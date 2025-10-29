@@ -34,22 +34,22 @@ public class MCH_RenderMortarRadar {
     private static final int RWR_CENTER_Y = 280;
     private static final double SCREEN_HEIGHT_ADAPT_CONSTANT = 520;
 
-    private static final double MIN_DISTANCE = 20.0;  // 最小显示距离（米）
-    private static final double MAX_DISTANCE = 300.0; // 最大显示距离（米）
-    private static final int MIN_RADIUS = 0;          // 最小显示半径（像素
+    private static final double MIN_DISTANCE = 20.0;  // Minimum display distance (meters)
+    private static final double MAX_DISTANCE = 300.0; // Maximum display distance (meters)
+    private static final int MIN_RADIUS = 0;          // Minimum display radius (pixels)
     private static final int RWR_CROSS_SIZE = 21;
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
-        //获取基本信息
+        // Get basic information
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
         World world = mc.theWorld;
         ScaledResolution sc = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
         if (player == null || world == null) return;
 
-        //获取玩家机载武器
+        // Get the player's mounted aircraft (if any)
         MCH_EntityAircraft ac = null;
         if (player.ridingEntity instanceof MCH_EntityAircraft) {
             ac = (MCH_EntityAircraft) player.ridingEntity;
@@ -83,24 +83,24 @@ public class MCH_RenderMortarRadar {
             }
         }
 
-        //开始渲染
+        // Begin rendering
         GL11.glPushMatrix();
         {
             double sx = sc.getScaledHeight() * (RWR_CENTER_X / SCREEN_HEIGHT_ADAPT_CONSTANT);
             double sy = sc.getScaledHeight() * (RWR_CENTER_Y / SCREEN_HEIGHT_ADAPT_CONSTANT);
             drawRWRCircle(sx, sy, sc, RADAR);
 
-            // 新增实体渲染逻辑
+            // New entity rendering logic
             double circleRadius = sc.getScaledHeight() * (RWR_SIZE / SCREEN_HEIGHT_ADAPT_CONSTANT) / 2.0;
             for (MCH_EntityInfo entity : getServerLoadedEntity()) {
                 if (!isValidEntity(entity, player)) continue;
 
-                // 计算插值位置
+                // Calculate interpolated position
                 double xPos = interpolate(entity.posX, entity.lastTickPosX, event.partialTicks);
                 double yPos = interpolate(entity.posY, entity.lastTickPosY, event.partialTicks);
                 double zPos = interpolate(entity.posZ, entity.lastTickPosZ, event.partialTicks);
 
-                // 计算相对向量
+                // Compute relative vector
                 Vec3 delta = Vec3.createVectorHelper(
                     xPos - (player.posX + (player.posX - player.lastTickPosX) * event.partialTicks),
                     yPos - (player.posY + (player.posY - player.lastTickPosY) * event.partialTicks),
@@ -115,18 +115,18 @@ public class MCH_RenderMortarRadar {
                 double angle = Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, dot))));
                 if (lookHorizontal.crossProduct(deltaHorizontal).yCoord < 0) angle = -angle;
 
-                // 计算距离相关参数
+                // Compute distance-related parameters
                 double distance = Math.sqrt(delta.xCoord * delta.xCoord + delta.zCoord * delta.zCoord);
                 double radiusRatio = Math.min(Math.max((distance - MIN_DISTANCE) / (_MAX_DISTANCE - MIN_DISTANCE), 0), 1); // 100-1000米映射到0-1
                 double renderRadius = MIN_RADIUS + (circleRadius - MIN_RADIUS) * radiusRatio; // 20像素到最大半径
 
-                // 计算屏幕坐标
+                // Calculate screen coordinates
                 double radian = Math.toRadians(angle);
                 double markerX = sx + renderRadius * Math.sin(-radian);
                 double markerY = sy - renderRadius * Math.cos(radian);
 
                 drawMortarTarget(markerX, markerY, sc);
-                // 绘制文字
+                // Draw label text
                 MCH_RWRResult rwrResult = getTargetTypeOnRadar(entity, ac);
                 String text = rwrResult.name + "[" + (int) distance + "]";
                 int color = rwrResult.color;
@@ -181,7 +181,7 @@ public class MCH_RenderMortarRadar {
     }
 
 
-    // 新增实体校验方法
+    // New entity validation method
     private boolean isValidEntity(MCH_EntityInfo entity, EntityPlayer player) {
         if (entity.entityClassName.contains("MCH_EntityChaff") || entity.entityClassName.contains("MCH_EntityFlare")) {
             return false;

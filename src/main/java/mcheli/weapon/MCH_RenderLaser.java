@@ -183,14 +183,14 @@ public class MCH_RenderLaser {
     }
 
     public static class Beam {
-        public final Vec3 start;     // 激光起始坐标
-        public final Vec3 end;       // 激光结束坐标
-        public final float r, g, b;  // 0..1
-        public final float a;        // 0..1
-        public final float width;    // 基础宽度（方块单位）
-        public final boolean pulsate; // 是否脉动
-        public int lifeTicks;        // 剩余生存 tick
-        public double renderStartDist; // 从起点开始渲染的距离
+        public final Vec3 start;     // Laser starting coordinate
+        public final Vec3 end;       // Laser ending coordinate
+        public final float r, g, b;  // Color components (range 0..1)
+        public final float a;        // Alpha (transparency, range 0..1)
+        public final float width;    // Base width of the beam (in block units)
+        public final boolean pulsate; // Whether the beam pulses in intensity
+        public int lifeTicks;        // Remaining lifetime in ticks
+        public double renderStartDist; // Distance from the start point at which rendering begins
 
         public Beam(Vec3 start, Vec3 end, float r, float g, float b, float a, float width, boolean pulsate, int lifeTicks, double renderStartDist) {
             this.start = start;

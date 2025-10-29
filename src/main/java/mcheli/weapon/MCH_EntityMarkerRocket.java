@@ -122,28 +122,28 @@ public class MCH_EntityMarkerRocket extends MCH_EntityBaseBullet {
 
     @Override
     public void onImpact(MovingObjectPosition m, float damageFactor) {
-        // 仅在服务端执行命中处理
+        // Execute impact handling only on the server side
         if (!super.worldObj.isRemote) {
-            // 命中实体：启动标记状态并将火箭贴在实体上
+            // If an entity was hit: activate marker state and attach the rocket to the entity
             if (m.entityHit != null || W_MovingObjectPosition.isHitTypeEntity(m)) {
-                // 设置为标记状态(2)，以便开始倒计时并呼叫支援炸弹
+                // Set marker status to (2) to begin countdown and trigger support bomb drop
                 this.setMarkerStatus(2);
 
-                // 将火箭移动到实体上方（约高出 1.1 格）
+                // Move the rocket above the entity (approximately 1.1 blocks higher)
                 double px = m.entityHit.posX;
                 double py = m.entityHit.posY + (double) m.entityHit.height + 1.1D;
                 double pz = m.entityHit.posZ;
                 this.setPosition(px, py, pz);
 
-                // 更新上一帧位置，确保粒子效果正确
+                // Update previous frame positions to ensure particle effects render correctly
                 this.prevPosX = this.posX;
                 this.prevPosY = this.posY;
                 this.prevPosZ = this.posZ;
 
-                // 开始倒计时，随后将在 onUpdate 中投下炸弹
+                // Start countdown — the bomb will be dropped during onUpdate()
                 this.countDown = 100;
             }
-            // 没有命中实体，则原样处理方块命中逻辑
+            // If no entity was hit, handle block impact logic instead
             else {
                 int x = m.blockX;
                 int y = m.blockY;
@@ -169,7 +169,7 @@ public class MCH_EntityMarkerRocket extends MCH_EntityBaseBullet {
                         break;
                 }
 
-                // 命中空气方块时创建火并挂靠标记火箭
+                // When hitting an air block, create fire and attach the marker rocket
                 if (super.worldObj.isAirBlock(x, y, z)) {
                     if (MCH_Config.Explosion_FlamingBlock.prmBool) {
                         W_WorldFunc.setBlock(super.worldObj, x, y, z, Blocks.fire);

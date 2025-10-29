@@ -20,9 +20,32 @@ import java.util.List;
 public class MCH_MissileDetector {
 
     public static final int SEARCH_RANGE = 60;
-    public byte missileLockType; // 0-未锁定 1-半主动 2-红外 3-主动 4-未知
-    public byte vehicleLockType; // 0-未锁定 1-扫描 2-锁定-地面载具 3-锁定-空中载具 4-锁定-未知
-    public byte missileLockDist; // 0-未锁定 1-50m内 2-150m内 3-600m内
+    public byte missileLockType;
+    /** Missile lock type:
+     * 0 = None,
+     * 1 = Semi-active,
+     * 2 = Infrared,
+     * 3 = Active,
+     * 4 = Unknown
+     */
+
+    public byte vehicleLockType;
+    /** Vehicle lock type:
+     * 0 = None,
+     * 1 = Scanning,
+     * 2 = Locked – Ground vehicle,
+     * 3 = Locked – Airborne vehicle,
+     * 4 = Locked – Unknown
+     */
+
+    public byte missileLockDist;
+    /** Missile lock distance category:
+     * 0 = None,
+     * 1 = Within 50m,
+     * 2 = Within 150m,
+     * 3 = Within 600m
+     */
+
     private MCH_EntityAircraft ac;
     private World world;
     private int alertCount;
@@ -146,19 +169,19 @@ public class MCH_MissileDetector {
         for (Object o : list) {
             MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
             if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
-                //红外弹
+                // Infrared missile
                 if (msl.getInfo().isHeatSeekerMissile) {
-                    //抗干扰弹
+                    // Flare countermeasure (anti-jamming missile)
                     if (msl.getInfo().antiFlareCount > 0 && !msl.antiFlareUse) {
                         msl.antiFlareUse = true;
                         msl.antiFlareTick = msl.getInfo().antiFlareCount;
                     }
-                    //非抗干扰
+                    // Non–flare-resistant missile
                     else {
                         msl.setTargetEntity(null);
                     }
                 }
-                //雷达弹不做处理
+                // Radar-guided missile — no countermeasure applied
                 else if (msl.getInfo().isRadarMissile) {
                     if (ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
                         msl.setTargetEntity(null);

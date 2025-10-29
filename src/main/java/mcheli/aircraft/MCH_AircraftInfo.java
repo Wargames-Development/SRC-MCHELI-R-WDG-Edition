@@ -141,83 +141,86 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public List partSteeringWheel;
     public List lightHatchList;
     /**
-     * 雷达种类
+     * Radar type
      */
     public EnumRadarType radarType = EnumRadarType.EARLY_AA;
     /**
-     * RWR种类
+     * RWR (Radar Warning Receiver) type
      */
     public EnumRWRType rwrType = EnumRWRType.DIGITAL;
     /**
-     * 当前载具在现代对空雷达中显示的名字
+     * Display name of this vehicle on modern anti-air radars
      */
     public String nameOnModernAARadar = "";
     /**
-     * 当前载具在早期对空雷达中显示的名字
+     * Display name of this vehicle on early-generation anti-air radars
      */
     public String nameOnEarlyAARadar = "";
     /**
-     * 当前载具在现代对地雷达中显示的名字
+     * Display name of this vehicle on modern air-to-surface radars
      */
     public String nameOnModernASRadar = "";
     /**
-     * 当前载具在早期对地雷达中显示的名字
+     * Display name of this vehicle on early-generation air-to-surface radars
      */
     public String nameOnEarlyASRadar = "";
     /**
-     * 载具被摧毁时爆炸范围
+     * Explosion radius when the vehicle is destroyed
      */
     public float explosionSizeByCrash = 5;
     /**
-     * 倒车速度倍率，默认1
+     * Reverse speed multiplier (default: 1)
      */
     public float throttleDownFactor = 1;
     /**
-     * 箔条生效时长
+     * Duration of chaff effectiveness
      */
     public int chaffUseTime = 100;
     /**
-     * 箔条冷却时长
+     * Chaff cooldown duration
      */
     public int chaffWaitTime = 400;
     /**
-     * 维修系统生效时长 （时长即为回血百分比）
+     * Maintenance system active duration
+     * (duration equals percentage of health restored)
      */
     public int maintenanceUseTime = 20;
     /**
-     * 维修系统冷却时长
+     * Maintenance system cooldown duration
      */
     public int maintenanceWaitTime = 300;
     /**
-     * 载具瘫痪阈值，血量低于此百分比将关闭载具引擎
+     * Vehicle paralysis threshold — engine shuts down
+     * if HP falls below this percentage
      */
     public int engineShutdownThreshold = 20;
     /**
-     * APS生效时长
+     * APS (Active Protection System) active duration
      */
     public int apsUseTime = 100;
     /**
-     * APS冷却时长
+     * APS cooldown duration
      */
     public int apsWaitTime = 400;
     /**
-     * APS范围
+     * APS effective range
      */
     public int apsRange = 8;
     /**
-     * 是否有RWR
+     * Whether the vehicle is equipped with RWR
      */
     public boolean hasRWR = false;
     /**
-     * hud自定义字段，用于指示载具hud
+     * HUD type indicator for this vehicle
      */
     public int hudType = 0;
     /**
-     * hud自定义字段，用于指示载具weaponGroupType
+     * HUD indicator for weapon group type
      */
     public int weaponGroupType = 0;
     /**
-     * 载具爆炸倍率，最终的爆炸伤害=爆炸伤害*爆炸倍率
+     * Explosion damage multiplier
+     * Final damage = baseDamage * multiplier
      */
     public float armorExplosionDamageMultiplier = 1.0f;
 

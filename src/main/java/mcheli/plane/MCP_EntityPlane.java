@@ -364,78 +364,78 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     protected void onUpdate_ControlNotHovering() {
-        // 判断是否不处于炮手模式
+        // Check if not in gunner mode
         if (!super.isGunnerMode) {
-            // 获取油门上下状态
+            // Get throttle-up/down factor from aircraft info
             float throttleUpDown = this.getAcInfo().throttleUpDown;
 
-            // 判断是否是转向状态（只左转或只右转）
+            // Check if turning (either left or right, but not both)
             boolean turn = super.moveLeft && !super.moveRight || !super.moveLeft && super.moveRight;
 
-            // 获取旋转转向油门
+            // Get pivot-turn throttle threshold
             float pivotTurnThrottle = this.getAcInfo().pivotTurnThrottle;
 
-            // 本地油门上升状态
+            // Local throttle-up flag
             boolean localThrottleUp = super.throttleUp;
 
-            // 如果是转向且当前油门小于旋转油门阈值，并且没有加速和减速
+            // If turning, current throttle is below the pivot-turn threshold, and neither accelerating nor decelerating
             if (turn && this.getCurrentThrottle() < (double) this.getAcInfo().pivotTurnThrottle && !localThrottleUp && !super.throttleDown) {
-                // 设置本地油门上升状态为true
+                // Force throttle-up
                 localThrottleUp = true;
-                // 加速倍增
+                // Double the throttle-up rate
                 throttleUpDown *= 2.0F;
             }
 
-            // 如果本地油门上升
+            // If throttle is increasing
             if (localThrottleUp) {
-                // 设置油门为当前油门
+                // Base throttle factor
                 float f = throttleUpDown;
 
-                // 如果骑乘的实体不为空，调整油门
+                // If riding another entity, adjust throttle based on the entity’s movement speed
                 if (this.getRidingEntity() != null) {
                     double mx = this.getRidingEntity().motionX;
                     double mz = this.getRidingEntity().motionZ;
-                    // 基于骑乘实体的速度调整油门
+                    // Scale throttle by the mount’s velocity magnitude
                     f = throttleUpDown * MathHelper.sqrt_double(mx * mx + mz * mz) * this.getAcInfo().throttleUpDownOnEntity;
                 }
 
-                // 如果允许倒车并且油门向后，则递减后退油门
+                // If reverse throttle is enabled and active, gradually reduce reverse throttle
                 if (this.getAcInfo().enableBack && super.throttleBack > 0.0F) {
                     super.throttleBack = (float) ((double) super.throttleBack - 0.01D * (double) f);
                 } else {
-                    // 否则，设置后退油门为0
+                    // Otherwise, reset reverse throttle
                     super.throttleBack = 0.0F;
-                    // 如果当前油门小于1，则增加油门
+                    // If current throttle is below 1, increase it
                     if (this.getCurrentThrottle() < 1.0D) {
                         this.addCurrentThrottle(0.01D * (double) f);
                     } else {
-                        // 否则，设置油门为最大值1
+                        // Otherwise, set throttle to maximum (1.0)
                         this.setCurrentThrottle(1.0D);
                     }
                 }
             }
-            // 如果本地油门下降
+            // If throttle is decreasing
             else if (super.throttleDown) {
-                // 如果当前油门大于0，则递减油门
+                // Gradually reduce throttle if above 0
                 if (this.getCurrentThrottle() > 0.0D) {
                     this.addCurrentThrottle(-0.01D * (double) throttleUpDown);
                 } else {
-                    // 否则，设置油门为0
+                    // Otherwise, set throttle to 0
                     this.setCurrentThrottle(0.0D);
-                    // 如果允许倒车，则增加后退油门
+                    // If reverse throttle is enabled, gradually increase it
                     if (this.getAcInfo().enableBack) {
                         super.throttleBack = (float) ((double) super.throttleBack + 0.0025D * (double) throttleUpDown);
-                        // 限制后退油门不超过0.6
+                        // Clamp reverse throttle to a maximum of 0.6
                         if (super.throttleBack > 0.6F) {
                             super.throttleBack = 0.6F;
                         }
                     }
                 }
             }
-            // 如果启用了自动油门降低，并且当前油门大于0，则逐步降低油门
+            // If auto-throttle-down is enabled and current throttle is above 0, gradually reduce throttle
             else if (super.cs_planeAutoThrottleDown && this.getCurrentThrottle() > 0.0D) {
                 this.addCurrentThrottle(-0.005D * (double) throttleUpDown);
-                // 如果油门低于0，则设置为0
+                // Clamp throttle to 0 if it goes below
                 if (this.getCurrentThrottle() <= 0.0D) {
                     this.setCurrentThrottle(0.0D);
                 }
@@ -691,42 +691,42 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
 
         boolean levelOff = super.isGunnerMode;
         if (dp == 0.0D) {
-            // 如果是目标无人机，并且有足够的燃料且没有被摧毁，则执行以下代码
+            // If this is a target drone, has sufficient fuel, and is not destroyed
             if (this.isTargetDrone() && this.canUseFuel() && !this.isDestroyed()) {
 
-                // 获取无人机当前位置3个单位向下、40个单位向前的方块
+                // Get the block located 3 units below and 40 units forward of the drone
                 Block throttle = MCH_Lib.getBlockY(this, 3, -100, true);
 
-                // 如果方块不为空且不是空气方块（即存在某个物体）
+                // If the block is not null and not air (i.e., there’s an obstacle)
                 if (throttle != null && !W_Block.isEqual(throttle, Blocks.air)) {
 
-                    // 如果没有找到目标方块，或者目标方块是空气方块，则执行下面的代码
+                    // If no target block was found or the target block is air, check a closer range
                     throttle = MCH_Lib.getBlockY(this, 3, -5, true);
 
-                    // 如果目标方块为空或是空气方块，进行自动驾驶的旋转和俯仰调整
+                    // If the target block is null or air, perform autopilot rotation and pitch adjustment
                     if (throttle == null || W_Block.isEqual(throttle, Blocks.air)) {
 
-                        // 根据自动驾驶旋转量调整航向（Yaw）
+                        // Adjust yaw based on the autopilot’s rotation rate
                         this.setRotYaw(this.getRotYaw() + this.getAcInfo().autoPilotRot * 2.0F);
 
-                        // 如果俯仰角度大于-20度，则逐渐减小俯仰角度
+                        // If pitch angle is above -20°, gradually decrease pitch
                         if (this.getRotPitch() > -20.0F) {
                             this.setRotPitch(this.getRotPitch() - 0.5F);
                         }
                     }
                 } else {
-                    // 如果没有遇到障碍物，则按照自动驾驶的旋转量调整航向（Yaw）
+                    // If no obstacle detected, adjust yaw according to the autopilot’s rotation rate
                     this.setRotYaw(this.getRotYaw() + this.getAcInfo().autoPilotRot * 1.0F);
 
-                    // 自动调整俯仰角度，使其逐渐减小
+                    // Automatically stabilize pitch by gradually reducing it
                     this.setRotPitch(this.getRotPitch() * 0.95F);
 
-                    // 如果可以收起起落架，则执行收起起落架的操作
+                    // If landing gear can be retracted, fold it up
                     if (this.canFoldLandingGear()) {
                         this.foldLandingGear();
                     }
 
-                    // 标记为平稳飞行状态
+                    // Mark as level flight
                     levelOff = true;
                 }
             }
@@ -756,110 +756,113 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             }
         }
 
-        // 计算油门1的值，当前油门除以10
+        // Calculate throttle1 as the current throttle divided by 10
         float throttle1 = (float) (this.getCurrentThrottle() / 10.0D);
         Vec3 v;
 
-        // 如果喷嘴的旋转角度大于0.001F
+        // If the nozzle rotation angle is greater than 0.001F
         if (this.getNozzleRotation() > 0.001F) {
-            // 根据喷嘴旋转角度调整飞机俯仰角度
+            // Gradually reduce pitch based on nozzle rotation
             this.setRotPitch(this.getRotPitch() * 0.95F);
-            // 根据航向角和俯仰角计算方向向量
+            // Compute the forward direction vector based on yaw and adjusted pitch
             v = MCH_Lib.Rot2Vec3(this.getRotYaw(), this.getRotPitch() - this.getNozzleRotation());
-            // 如果喷嘴旋转角度大于等于90度，缩小x和z方向的速度
+            // If nozzle rotation is ≥ 90°, reduce X and Z velocity components
             if (this.getNozzleRotation() >= 90.0F) {
                 v.xCoord *= 0.800000011920929D;
                 v.zCoord *= 0.800000011920929D;
             }
         } else {
-            // 否则，计算默认的方向向量，俯仰角度减去10度
+            // Otherwise, compute the default direction vector (pitch angle -10°)
             v = MCH_Lib.Rot2Vec3(this.getRotYaw(), this.getRotPitch() - 10.0F);
         }
 
-        // 如果没有达到平稳飞行状态
+        // If not in level-flight mode
         if (!levelOff) {
-            // 如果喷嘴旋转角度小于等于0.01F，根据油门调整垂直方向上的速度
+            // When nozzle rotation ≤ 0.01F, apply stronger vertical acceleration based on throttle
             if (this.getNozzleRotation() <= 0.01F) {
                 super.motionY += v.yCoord * (double) throttle1 / 2.0D;
             } else {
+                // Otherwise, apply reduced vertical acceleration
                 super.motionY += v.yCoord * (double) throttle1 / 8.0D;
             }
         }
 
-        // 判断是否可以在地面移动
+        // Determine if the aircraft can move along the ground
         boolean canMove = true;
         if (!this.getAcInfo().canMoveOnGround) {
-            // 获取地面方块信息，判断是否可以移动
+            // Check ground block below the aircraft to determine movement capability
             Block motion = MCH_Lib.getBlockY(this, 3, -2, false);
-            // 如果方块不是水或者空气方块，设置canMove为false，表示不能移动
+            // If the block is neither water nor air, movement is not allowed
             if (!W_Block.isEqual(motion, W_Block.getWater()) && !W_Block.isEqual(motion, Blocks.air) && !W_Block.isEqual(motion, Blocks.flowing_water)) {
                 canMove = false;
             }
         }
 
-        // 如果可以移动，则更新水平速度
+        // If movement is allowed, update horizontal velocity
         if (canMove) {
-            // 如果启用了倒车功能，并且油门向后，则根据油门倒退
+            // If reverse throttle is enabled and active, move backward
             if (this.getAcInfo().enableBack && super.throttleBack > 0.0F) {
                 super.motionX -= v.xCoord * (double) super.throttleBack;
                 super.motionZ -= v.zCoord * (double) super.throttleBack;
             } else {
-                // 否则，根据油门前进
+                // Otherwise, move forward based on throttle
                 super.motionX += v.xCoord * (double) throttle1;
                 super.motionZ += v.zCoord * (double) throttle1;
             }
         }
 
-        // 对垂直速度进行衰减
+        // Apply damping to vertical velocity
         super.motionY *= 0.95D;
-        // 根据飞行器的运动系数衰减水平速度
+        // Apply horizontal motion damping using the aircraft’s motion factor
         super.motionX *= this.getAcInfo().motionFactor;
         super.motionZ *= this.getAcInfo().motionFactor;
 
-        // 计算当前水平速度的大小
+        // Compute current horizontal speed magnitude
         double motion1 = Math.sqrt(super.motionX * super.motionX + super.motionZ * super.motionZ);
-        // 获取最大速度限制
+        // Retrieve maximum speed limit
         float speedLimit = this.getMaxSpeed();
-        // 如果当前速度超过最大速度限制，按最大速度比例缩小水平速度
+
+        // If current horizontal speed exceeds the speed limit, scale it down proportionally
         if (motion1 > (double) speedLimit) {
             super.motionX *= (double) speedLimit / motion1;
             super.motionZ *= (double) speedLimit / motion1;
             motion1 = speedLimit;
         }
 
-        // 如果当前速度大于上一帧的速度，并且当前速度小于最大速度限制，逐步增加速度
+        // If accelerating (current > previous) but still below max speed, increase speed gradually
         if (motion1 > prevMotion && super.currentSpeed < (double) speedLimit) {
             super.currentSpeed += ((double) speedLimit - super.currentSpeed) / 35.0D;
             if (super.currentSpeed > (double) speedLimit) {
                 super.currentSpeed = (double) speedLimit;
             }
         } else {
-            // 否则逐步减少速度，保持最低速度0.07
+            // Otherwise, decelerate gradually toward a minimum speed floor of 0.07
             super.currentSpeed -= (super.currentSpeed - 0.07D) / 35.0D;
             if (super.currentSpeed < 0.07D) {
                 super.currentSpeed = 0.07D;
             }
         }
 
-        // 如果飞行器在地面或距离地面较近，则缩减水平速度，应用地面俯仰角度
+        // If the aircraft is on the ground or close to the surface, apply ground drag and pitch correction
         if (super.onGround || MCH_Lib.getBlockIdY(this, 1, -2) > 0) {
             super.motionX *= this.getAcInfo().motionFactor;
             super.motionZ *= this.getAcInfo().motionFactor;
-            // 如果俯仰角度小于40度，则根据地面状态调整俯仰角度
+            // If pitch is within ±40°, apply on-ground pitch stabilization
             if (MathHelper.abs(this.getRotPitch()) < 40.0F) {
                 this.applyOnGroundPitch(0.8F);
             }
         }
 
-        // 更新飞行器位置
+        // Update entity position
         this.moveEntity(super.motionX, super.motionY, super.motionZ);
 
-        // 更新旋转角度
+        // Update rotation (yaw and pitch)
         this.setRotation(this.getRotYaw(), this.getRotPitch());
-        // 更新方块信息
+
+        // Refresh block collision and environment data
         this.onUpdate_updateBlock();
 
-        // 如果骑乘的实体存在并且已经死亡，则解除骑乘
+        // If the passenger entity exists but is dead, unmount and clear reference
         if (this.getRiddenByEntity() != null && this.getRiddenByEntity().isDead) {
             this.unmountEntity();
             super.riddenByEntity = null;
