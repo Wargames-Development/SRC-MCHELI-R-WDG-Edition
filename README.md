@@ -6,7 +6,7 @@
 
 # MCHELI-Reforged Wargames Edition SRC
 
-This repository is the source code behind [MCHELI-Reforged Wargames Edition]()**ADD LINK**, a further fork of the MCHELI-Reforged [Gitee link](https://gitee.com/TV90/MCH-Reforged), [Github Link](https://github.com/TV90/MCH-Reforged) maintained by [TV90](https://github.com/TV90). This all builds ontop of the original [1.7.10 MCHELI](https://www.curseforge.com/minecraft/mc-mods/mcheli-minecraft-helicopter-mod) created by EMB4 which was decoded by MOC many years ago since EMB4 left the modding scene.
+This repository is the source code behind [MCHELI-Reforged Wargames Edition](https://github.com/Wargames-Development/MCHELI-R-WDG-Edition), a further fork of the MCHELI-Reforged [Gitee link](https://gitee.com/TV90/MCH-Reforged), [Github Link](https://github.com/TV90/MCH-Reforged) maintained by [TV90](https://github.com/TV90). This all builds ontop of the original [1.7.10 MCHELI](https://www.curseforge.com/minecraft/mc-mods/mcheli-minecraft-helicopter-mod) created by EMB4 which was decoded by MOC many years ago since EMB4 left the modding scene.
 
 Please checkout our [Credits Section](#meet-our-team--credits) for the full information.
 
