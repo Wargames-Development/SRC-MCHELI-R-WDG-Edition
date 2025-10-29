@@ -1,4 +1,35 @@
-                    GNU GENERAL PUBLIC LICENSE
+SPDX-License-Identifier: GPL-3.0-or-later
+
+MC Helicopter — Wargames Development Group Fork (source code only)
+Copyright (c) 2025–present Wargames Development Group
+(organization head: Glac) and individual contributors.
+
+Lineage & attribution (informational only; not additional terms):
+• Original “MC Helicopter” by EMB4 — All Rights Reserved (2014–2017).
+  Not included here except for clean-room reimplementations, fair use, or with explicit permission.
+• Mcheli-O / “MC Helicopter Overdrive” by RagexPrince683 and contributors — GPL-3.0-or-later.
+  This repository is a fork that periodically syncs with Mcheli-O and carries WDG changes.
+• MCHeli-Reforged (MCHeli-R) by TV90 and contributors — GPL-3.0.
+  Portions may be included per the GPL.
+
+Scope:
+• This license applies to the **source code** in this repository (e.g., under /src).
+• Non-code assets (textures/models/sounds) are **out of scope** for this LICENSE unless a file explicitly says otherwise.
+
+License of this repository’s source code:
+• GNU General Public License v3.0 **or later** (GPL-3.0-or-later).
+• No additional restrictions are intended; this preamble is purely informational and does not modify the GPL terms below.
+
+Contribution policy:
+• By submitting a change, you agree to license your contribution under GPL-3.0-or-later
+  and to be listed in the commit history and/or AUTHORS.
+
+Upstream sync note:
+• WDG keeps this fork up to date with Mcheli-O while maintaining its own modifications,
+  which are © their respective authors under GPL-3.0-or-later.
+
+
+                   GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
