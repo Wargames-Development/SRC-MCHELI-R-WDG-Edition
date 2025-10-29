@@ -27,7 +27,7 @@ public class MCH_RenderLockBox extends W_Render {
     public static void renderGuidanceHUD() {
         EntityClientPlayerMP player = Minecraft.getMinecraft().thePlayer;
         if(player == null) return;
-        MCH_EntityAircraft ac = null; //玩家乘坐的实体
+        MCH_EntityAircraft ac = null; // The entity the player is riding
         if(player.ridingEntity instanceof MCH_EntityAircraft) {
             ac = (MCH_EntityAircraft)player.ridingEntity;
         } else if(player.ridingEntity instanceof MCH_EntitySeat) {
@@ -67,27 +67,27 @@ public class MCH_RenderLockBox extends W_Render {
             if(distance > 1000) return;
 
             GL11.glPushMatrix();
-            // 进行位置变换，将目标实体渲染到玩家视角中
+            // Apply positional transforms to render the target entity relative to the player's view
             GL11.glTranslatef((float)x, (float)y , (float)z);
             GL11.glNormal3f(0.0F, 1.0F, 0.0F);
             GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
             GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
             GL11.glScalef(-0.02666667F, -0.02666667F, 0.02666667F);
-            GL11.glDisable(2896); // 禁用深度测试
-            GL11.glTranslatef(0.0F, 9.374999F, 0.0F); // 上移一些偏移量
-            GL11.glDepthMask(false); // 禁用深度写入
-            GL11.glEnable(3042); // 启用混合
-            GL11.glBlendFunc(770, 771); // 设置混合模式
-            GL11.glDisable(3553); // 禁用纹理
-            GL11.glDisable(2929 /* GL_DEPTH_TEST */);
+            GL11.glDisable(2896); // Disable lighting
+            GL11.glTranslatef(0.0F, 9.374999F, 0.0F); // Apply upward offset
+            GL11.glDepthMask(false); // Disable depth writing
+            GL11.glEnable(3042); // Enable blending
+            GL11.glBlendFunc(770, 771); // Set blend mode (SRC_ALPHA, ONE_MINUS_SRC_ALPHA)
+            GL11.glDisable(3553); // Disable texturing
+            GL11.glDisable(2929 /* GL_DEPTH_TEST */); // Disable depth testing
             if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
                 RenderHelper.disableStandardItemLighting();
                 OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-                GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
+                GL11.glColor4f(1000F, 0F, 1000F, 1.0F); // Magenta hue for thermal vision mode
             }
-            // 获取绘制前的屏幕宽度
+            // Get current viewport width before drawing
             int prevWidth = GL11.glGetInteger(2849);
-            // 设置目标实体大小 50-20, 1000-1000
+            // Adjust entity size based on target distance (50–20 units near, 1000–1000 units far)
             float minDistance = 50.0F;
             float size1 = 20.0F;
             float maxDistance = 300.0F;
@@ -96,47 +96,47 @@ public class MCH_RenderLockBox extends W_Render {
             size = Math.max(size1, Math.min(maxSize, size));
 
 
-            // 创建Tessellator对象，用于绘制图形
+            // Create a Tessellator instance for drawing geometric shapes
             Tessellator tessellator = Tessellator.instance;
-            tessellator.startDrawing(2); // 开始绘制线条
-            tessellator.setBrightness(240); // 设置亮度
+            tessellator.startDrawing(2); // Begin drawing line primitives
+            tessellator.setBrightness(240); // Set brightness level
 
-            GL11.glLineWidth((float) MCH_Gui.scaleFactor * 1.5F); // 设置线宽
-            tessellator.setColorRGBA_F(0.0F, 1.0F, 0.0F, 1.0F); // 绿色
+            GL11.glLineWidth((float) MCH_Gui.scaleFactor * 1.5F); // Set line thickness
+            tessellator.setColorRGBA_F(0.0F, 1.0F, 0.0F, 1.0F); // Set color to green
 
-            // 绘制矩形框，表示锁定范围
+            // Draw a rectangular outline representing the lock-on area
             tessellator.addVertex(-size - 1.0F, 0.0D, 0.0D);
             tessellator.addVertex(-size - 1.0F, size * 2.0F, 0.0D);
             tessellator.addVertex(size + 1.0F, size * 2.0F, 0.0D);
             tessellator.addVertex(size + 1.0F, 0.0D, 0.0D);
-            tessellator.draw(); // 绘制线条
+            tessellator.draw(); // Render the lines
 
 
             if(distance > 10) {
-                // 获取 FontRenderer 对象并设置颜色为绿色
+                // Get FontRenderer and set text color to green
                 FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
                 {
                     GL11.glPushMatrix();
-                    GL11.glTranslatef(0.0F, size * 2.0F + 1.0F, 0.0F); // 将文本放置在矩形框的下方
+                    GL11.glTranslatef(0.0F, size * 2.0F + 1.0F, 0.0F); // Position text below the rectangle
                     float fontSize = 5.0F + (float) ((distance - 10.0D) / (300.0D - 10.0D)) * (40.0F - 5.0F);
-                    // 确保字体大小在5和40之间
+                    // Clamp font size between 5 and 40
                     fontSize = Math.max(5.0F, Math.min(40.0F, fontSize));
                     GL11.glScalef(fontSize, fontSize, fontSize);
-                    String text = String.format("%.1f", distance); // 格式化为一位小数
+                    String text = String.format("%.1f", distance); // Format distance with one decimal place
                     fontRenderer.drawString(text, -fontRenderer.getStringWidth(text) / 2, 0, 0x00ff00);
                     GL11.glPopMatrix();
                 }
             }
 
             GL11.glPopMatrix();
-            // 恢复之前的线宽，启用纹理，恢复深度写入和深度测试
-            GL11.glLineWidth((float) prevWidth);
-            GL11.glEnable(3553);
-            GL11.glDepthMask(true);
-            GL11.glEnable(2896);
-            GL11.glDisable(3042);
-            GL11.glEnable(2929 /* GL_DEPTH_TEST */);
-            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F); // 恢复默认颜色
+            // Restore previous OpenGL states
+            GL11.glLineWidth((float) prevWidth); // Reset line width
+            GL11.glEnable(3553); // Enable texturing
+            GL11.glDepthMask(true); // Re-enable depth writing
+            GL11.glEnable(2896); // Re-enable lighting
+            GL11.glDisable(3042); // Disable blending
+            GL11.glEnable(2929 /* GL_DEPTH_TEST */); // Re-enable depth testing
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F); // Reset to default color
         }
     }
 }

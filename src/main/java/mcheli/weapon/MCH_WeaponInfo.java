@@ -97,175 +97,207 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public List listMuzzleFlashSmoke;
 
     /**
-     * 生成的方块破碎粒子数量
+     * Number of block-debris particles to spawn on impact.
      */
     public int flakParticlesCrack = 10;
+
     /**
-     * 生成的白色烟雾粒子数量
+     * Number of white smoke particles to spawn.
      */
     public int numParticlesFlak = 3;
+
     /**
-     * 生成的方块破碎粒子扩散，推荐值0.1(步枪子弹) ~ 0.6(反坦克步枪)
+     * Spread of block-debris particles. Recommended values:
+     * 0.1 (rifle bullets) ~ 0.6 (anti-tank rifle).
      */
     public float flakParticlesDiff = 0.3F;
     public String hitSound = "";
     public String hitSoundIron = "hit_metal";
     public String railgunSound = "railgun";
     public float hitSoundRange = 100;
+
     /**
-     * 是否为红外弹，会受到热焰弹干扰
+     * Infrared-guided missile; can be decoyed by flares.
      */
     public boolean isHeatSeekerMissile = true;
+
     /**
-     * 是否为雷达弹，会受到箔条干扰
+     * Radar-guided missile; can be decoyed by chaff.
      */
     public boolean isRadarMissile = false;
-    //弹药导引头最大导引角度
+    // Maximum seeker gimbal angle (degrees)
     public int maxDegreeOfMissile = 60;
-    //脱锁延时，-1为永远锁定
+    // Time until lock is dropped; -1 means lock persists indefinitely
     public int tickEndHoming = -1;
+
     /**
-     * 最大锁定距离
+     * Maximum lock-on range.
      */
     public int maxLockOnRange = 300;
+
     /**
-     * 机载雷达最大锁定角度
+     * Maximum lock-on cone angle for onboard radar.
      */
     public int maxLockOnAngle = 10;
+
     /**
-     * 速度门雷达最大角度，超过此角度将脱锁 (也可用于红外弹尾后攻击)
+     * Velocity-gate radar maximum angle; exceeding this angle drops lock
+     * (also usable for IR rear-aspect logic).
      */
     public float pdHDNMaxDegree = 1000f;
+
     /**
-     * 速度门雷达脱锁间隔，超过最大角度后，在该tick后导弹脱锁
+     * Velocity-gate radar lock-drop delay (ticks) after exceeding the max angle.
      */
     public int pdHDNMaxDegreeLockOutCount = 10;
+
     /**
-     * 导弹抗干扰时长，-1为不抗干扰
+     * Missile countermeasure resistance duration; -1 disables resistance.
      */
     public int antiFlareCount = -1;
+
     /**
-     * 雷达弹多径杂波检测高度，飞机低于这个高度将使雷达弹脱锁
+     * Multipath/clutter check altitude for radar missiles.
+     * If the aircraft is below this altitude, radar lock is dropped.
      */
     public int lockMinHeight = 25;
+
     /**
-     * 半主动雷达弹需要持续引导
+     * Semi-active radar missiles require continuous illumination/guidance.
      */
     public boolean passiveRadar = false;
 
     /**
-     * 半主动雷达弹脱离引导后脱锁计时
+     * Countdown (ticks) to drop lock after semi-active guidance is lost.
      */
     public int passiveRadarLockOutCount = 20;
 
     /**
-     * 对TV弹启用激光制导
+     * Enables laser guidance for TV missiles.
      */
     public boolean laserGuidance = false;
 
     /**
-     * 是否有激光吊舱
+     * Whether the aircraft or launcher is equipped with a laser designator pod.
      */
     public boolean hasLaserGuidancePod = true;
 
     /**
-     * 允许离轴射击 AA弹
+     * Allows off-boresight (off-axis) firing for AA missiles.
      */
     public boolean enableOffAxis = true;
 
     /**
-     * 导弹机动参数，越小越平滑，值设为1时为原版导弹机动，推荐值为0.1
+     * Missile maneuverability factor — the lower the value, the smoother the turn.
+     * A value of 1.0 behaves like the original missile; recommended around 0.1–0.5.
      */
     public double turningFactor = 0.5;
 
     /**
-     * 启用区块加载器(试验功能)
+     * Enables chunk loading around the missile (experimental feature).
      */
     public boolean enableChunkLoader = false;
 
     /**
-     * 主动雷达弹 BVR 发射后自动追踪目标
+     * Enables active radar guidance (BVR — Beyond Visual Range).
+     * Missile will autonomously track targets after launch.
      */
     public boolean activeRadar = false;
 
     /**
-     * 主动雷达弹 扫描间隔
+     * Scan interval (ticks) for active radar missiles.
      */
     public int scanInterval = 20;
 
     /**
-     * 武器切换冷却
+     * Weapon switching cooldown (ticks).
      */
     public int weaponSwitchCount = 0;
 
     /**
-     * 武器切换音效
+     * Sound effect played when switching weapons.
      */
     public String weaponSwitchSound = "";
 
     /**
-     * 武器垂直后坐力
+     * Weapon vertical recoil strength.
      */
     public float recoilPitch = 0.0F;
+
     /**
-     * 武器水平后坐力（固定方向）
+     * Weapon horizontal recoil (fixed direction).
      */
     public float recoilYaw = 0.0F;
+
     /**
-     * 武器随机垂直后坐力 (Recoil 2 + rndRecoil 0.5 == 1.5-2.5 Recoil range)
+     * Randomized vertical recoil range.
+     * Example: recoilPitch 2.0 + recoilPitchRange 0.5 → range 1.5–2.5.
      */
     public float recoilPitchRange = 0.0F;
+
     /**
-     * 武器随机水平后坐力
+     * Randomized horizontal recoil range.
      */
     public float recoilYawRange = 0.0F;
+
     /**
-     * 武器后坐力恢复速度
+     * Recoil recovery speed — higher values recover faster.
      */
     public float recoilRecoverFactor = 0.8F;
 
     /**
-     * 每tick速度增加数值，小于0减速，大于0加速
+     * Per-tick change in velocity.
+     * Negative values cause deceleration; positive values cause acceleration.
      */
     public float speedFactor = 0F;
+
     /**
-     * 每tick的速度乘数生效时长
+     * Tick at which the speed multiplier effect begins.
      */
     public int speedFactorStartTick = 0;
+
     /**
-     * 每tick的速度乘数结束时长
+     * Tick at which the speed multiplier effect ends.
      */
     public int speedFactorEndTick = 0;
+
     /**
-     * 速度是否跟随载机，最终速度 = 载机速度 + 子弹速度
+     * Whether the projectile’s velocity is affected by the carrier aircraft’s speed.
+     * Final velocity = aircraft speed + projectile speed.
      */
     public boolean speedDependsAircraft = false;
+
     /**
-     * 是否可以锁定导弹实体
+     * Whether this missile can lock onto other missile entities.
      */
     public boolean canLockMissile = false;
+
     /**
-     * 允许超视距索敌
+     * Enables Beyond Visual Range (BVR) target acquisition.
      */
     public boolean enableBVR = false;
+
     /**
-     * 超视距索敌功能最小启用距离
+     * Minimum range (in meters/blocks) before BVR target acquisition activates.
      */
     public int minRangeBVR = 300;
+
     /**
-     * 预测实体位置
+     * Whether to predict the target’s future position based on its motion vector.
      */
     public boolean predictTargetPos = true;
 
     /**
-     * 锁定箔条的最大次数，超过此次数导弹将变为直射状态
+     * Maximum number of times the missile can lock onto chaff.
+     * After exceeding this count, it switches to unguided (direct-fire) mode.
      */
     public int numLockedChaffMax = 2;
 
     /**
-     * 对不同实体类型的爆炸伤害倍率
+     * Explosion damage multiplier against living entities.
      */
     public float explosionDamageVsLiving = 1f;
+
     public float explosionDamageVsPlayer = 1f;
     public float explosionDamageVsPlane = 1f;
     public float explosionDamageVsVehicle = 1f;
@@ -276,21 +308,26 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public boolean canBeIntercepted = false;
     public boolean canAirburst = false;
     public int explosionAirburst;
+
     /**
-     * hud自定义字段，用于指示准星hud
+     * Custom HUD field for indicating the reticle or crosshair type.
      */
     public int crossType = 0;
+
     /**
-     * 是否有迫击炮雷达
+     * Whether the weapon system includes a mortar radar.
      */
     public boolean hasMortarRadar = false;
+
     /**
-     * 迫击炮雷达最大显示距离，应大于曲射武器的最大射程
+     * Maximum detection range for the mortar radar.
+     * Should be greater than the maximum range of indirect-fire weapons.
      */
     public double mortarRadarMaxDist = -1;
 
     /**
-     * Marker Rocket参数
+     * Marker Rocket parameters.
+     * Defines the number, spacing, height, and speed of spawned marker rockets.
      */
     public int markerRocketSpawnNum = 5;
     public int markerRocketSpawnDiff = 15;
@@ -298,12 +335,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int markerRocketSpawnSpeed = 5;
 
     /**
-     * 是否有尾焰
+     * Whether the projectile or missile renders an exhaust flame effect.
      */
     public boolean enableExhaustFlare = false;
 
+
     /**
-     * 子弹在飞行途中生成其他的子弹，适用于航空布撒器
+     * Whether the projectile spawns additional projectiles mid-flight.
+     * Commonly used for cluster munitions or aerial dispensers.
      */
     public boolean spawnBulletInAir;
     public int spawnBulletMaxNum = 1;
@@ -312,7 +351,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public boolean spawnBulletInheritSpeed;
 
     /**
-     * 子弹伤害衰减
+     * Bullet damage decay parameters.
+     * Used to reduce damage over distance or time in flight.
      */
     public List<MCH_IBulletDecay> bulletDecay = new ArrayList<>();
     public boolean enableBulletDecay;

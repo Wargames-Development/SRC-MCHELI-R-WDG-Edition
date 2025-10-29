@@ -7,9 +7,9 @@ import net.minecraft.util.Vec3;
 
 public class MCH_IndicatedDamageSource extends EntityDamageSourceIndirect {
 
-    //命中的绝对坐标
+    // Absolute coordinates of the impact point
     public Vec3 hitPos;
-    //子弹的绝对运动方向
+    // Absolute motion direction of the bullet
     public Vec3 dir;
 
     public MCH_IndicatedDamageSource(String p_i1568_1_, Entity p_i1568_2_, Entity p_i1568_3_) {

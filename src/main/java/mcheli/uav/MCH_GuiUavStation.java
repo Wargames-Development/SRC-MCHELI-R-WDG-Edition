@@ -90,21 +90,22 @@ public class MCH_GuiUavStation extends W_GuiContainer {
                         this.uavStation.posUavY,
                         this.uavStation.posUavZ
                 };
-                // i 表示坐标索引（0=x,1=y,2=z），j 表示 BTN 数组的索引
+                // i represents the coordinate index (0 = X, 1 = Y, 2 = Z)
+                // j represents the index within the BTN array
                 int i = btn.id >> 4 & 15;
                 int j = (btn.id & 15) - 1;
                 int[] BTN = new int[]{-10, -1, 1, 10};
-                // 根据按键变化坐标
+                // Update coordinates based on button input
                 pos1[i] += BTN[j];
-                // 按轴分别限定范围
-                if (i == 1) { // y 坐标
+                // Clamp the values for each axis
+                if (i == 1) { // Y coordinate
                     if (pos1[i] < 0) {
                         pos1[i] = 0;
                     }
                     if (pos1[i] > 50) {
                         pos1[i] = 50;
                     }
-                } else { // x 或 z 坐标
+                } else { // X or Z coordinate
                     if (pos1[i] < -20) {
                         pos1[i] = -20;
                     }
@@ -112,7 +113,7 @@ public class MCH_GuiUavStation extends W_GuiContainer {
                         pos1[i] = 20;
                     }
                 }
-                // 若有改变则发送更新
+                // If any value changed, send an update packet to the server
                 if (this.uavStation.posUavX != pos1[0]
                         || this.uavStation.posUavY != pos1[1]
                         || this.uavStation.posUavZ != pos1[2]) {

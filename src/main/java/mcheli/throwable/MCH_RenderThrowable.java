@@ -15,9 +15,9 @@ import org.lwjgl.opengl.GL11;
 @SideOnly(Side.CLIENT)
 public class MCH_RenderThrowable extends W_Render {
 
-    /** 光晕半径 */
+    /** Halo radius */
     private static final float _RADIUS = 6.0F;
-    /** 光晕亮度 */
+    /** Halo brightness */
     private static final float BRIGHTNESS = 1.0F;
 
     public MCH_RenderThrowable() {
@@ -38,21 +38,21 @@ public class MCH_RenderThrowable extends W_Render {
         }
 
         GL11.glPushMatrix();
-        // 移动到实体位置
+        // Move to entity position
         GL11.glTranslated(posX, posY, posZ);
 
-        // 保存并设置全亮
+        // Save and set maximum brightness
         final float prevBrightnessX = OpenGlHelper.lastBrightnessX;
         final float prevBrightnessY = OpenGlHelper.lastBrightnessY;
         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240F, 240F);
 
-        // ==== 渲染光晕（仅手持照明弹时） ====
+        // ==== Render light halo (only when holding a flare) ====
         if (info.handFlare) {
             renderLight(entity, partialTicks);
         }
 
-        // ==== 渲染模型 ====
-        // 将模型旋转到实体角度
+        // ==== Render model ====
+        // Rotate model to match entity orientation
         GL11.glRotatef(entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * partialTicks, 0.0F, -1.0F, 0.0F);
         GL11.glRotatef(entity.prevRotationPitch + (entity.rotationPitch - entity.prevRotationPitch) * partialTicks, 1.0F, 0.0F, 0.0F);
 
@@ -63,16 +63,16 @@ public class MCH_RenderThrowable extends W_Render {
         }
         this.restoreCommonRenderParam();
 
-        // 还原亮度
+        // Restore brightness
         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, prevBrightnessX, prevBrightnessY);
 
         GL11.glPopMatrix();
     }
 
     /**
-     * 渲染圆形光晕 - 热成像模式下禁用透明度
-     * @param entity 实体
-     * @param partialTicks 部分刻
+     * Renders a circular light halo — transparency is disabled in thermal vision mode.
+     * @param entity The entity to render the light for
+     * @param partialTicks Interpolation factor between ticks
      */
     private void renderLight(Entity entity, float partialTicks) {
         float RADIUS = _RADIUS;
@@ -82,46 +82,46 @@ public class MCH_RenderThrowable extends W_Render {
             RADIUS += 4f;
         }
 
-        // 参考探照灯渲染的设置
+        // Rendering setup similar to spotlight rendering
         RenderHelper.disableStandardItemLighting();
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glShadeModel(GL11.GL_SMOOTH);
         GL11.glEnable(GL11.GL_BLEND);
 
-        // 根据模式选择不同的混合函数
+        // Choose blend function based on mode
         if (isThermalVision) {
-            // 热成像模式：禁用透明度，使用不透明混合
+            // Thermal vision mode: disable transparency and use opaque blending
             GL11.glDisable(GL11.GL_ALPHA_TEST);
-            GL11.glBlendFunc(GL11.GL_ONE, GL11.GL_ZERO); // 不透明混合
+            GL11.glBlendFunc(GL11.GL_ONE, GL11.GL_ZERO); // Opaque blend
         } else {
-            // 正常模式：使用透明混合
+            // Normal mode: use additive transparent blending
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
             GL11.glDisable(GL11.GL_ALPHA_TEST);
         }
 
         GL11.glDisable(GL11.GL_CULL_FACE);
-        GL11.glDepthMask(false); // 禁用深度写入，这样光晕不会被方块挡住
+        GL11.glDepthMask(false); // Disable depth writing so the halo isn't blocked by world geometry
 
         GL11.glPushMatrix();
 
-        // 使光晕始终朝向玩家
+        // Make the halo always face the player
         GL11.glRotatef(-RenderManager.instance.playerViewY, 0.0F, 1.0F, 0.0F);
         GL11.glRotatef(RenderManager.instance.playerViewX, 1.0F, 0.0F, 0.0F);
 
-        // 稍微向前移动以避免z-fighting
+        // Slightly move forward to avoid z-fighting
         GL11.glTranslatef(0.0F, 0.0F, 0.1F);
 
         Tessellator tessellator = Tessellator.instance;
 
-        // 使用多层同心圆环实现径向渐变
-        int layers = 16; // 层数，越多渐变越平滑
-        int segments = 32; // 每层的分段数
+        // Use multiple concentric ring layers to create a radial gradient
+        int layers = 16; // Number of layers; more layers = smoother gradient
+        int segments = 32; // Number of segments per layer
 
         for (int layer = 0; layer < layers; layer++) {
             float innerRadius = (layer * RADIUS) / layers;
             float outerRadius = ((layer + 1) * RADIUS) / layers;
 
-            // 计算内圈和外圈的颜色和透明度
+            // Calculate color and transparency for inner and outer rings
             float innerProgress = innerRadius / RADIUS;
             float outerProgress = outerRadius / RADIUS;
 
@@ -129,30 +129,30 @@ public class MCH_RenderThrowable extends W_Render {
             float outerRed, outerGreen, outerBlue, outerAlpha;
 
             if (isThermalVision) {
-                // 热成像模式：品红色，完全不透明
+                // Thermal vision mode: magenta color, fully opaque
                 innerRed = 1.0F;
                 innerGreen = 0.0F;
                 innerBlue = 1.0F;
-                innerAlpha = 1.0F; // 完全不透明
+                innerAlpha = 1.0F; // Fully opaque
 
                 outerRed = 1.0F;
                 outerGreen = 0.0F;
                 outerBlue = 1.0F;
-                outerAlpha = 1.0F; // 完全不透明
+                outerAlpha = 1.0F; // Fully opaque
             } else {
-                // 正常模式：红色到白色渐变
+                // Normal mode: gradient from red to white
                 innerRed = 1.0F;
-                innerGreen = innerProgress; // 从0到1
-                innerBlue = innerProgress;  // 从0到1
-                innerAlpha = 1.0F - innerProgress * innerProgress; // 使用平方曲线使中心更不透明
+                innerGreen = innerProgress; // 0 → 1
+                innerBlue = innerProgress;  // 0 → 1
+                innerAlpha = 1.0F - innerProgress * innerProgress; // Squared falloff for opacity
 
                 outerRed = 1.0F;
-                outerGreen = outerProgress; // 从0到1
-                outerBlue = outerProgress;  // 从0到1
-                outerAlpha = 1.0F - outerProgress * outerProgress; // 使用平方曲线使中心更不透明
+                outerGreen = outerProgress; // 0 → 1
+                outerBlue = outerProgress;  // 0 → 1
+                outerAlpha = 1.0F - outerProgress * outerProgress; // Squared falloff for opacity
             }
 
-            // 应用亮度
+            // Apply brightness
             innerRed *= BRIGHTNESS; innerGreen *= BRIGHTNESS; innerBlue *= BRIGHTNESS;
             outerRed *= BRIGHTNESS; outerGreen *= BRIGHTNESS; outerBlue *= BRIGHTNESS;
 
@@ -163,13 +163,13 @@ public class MCH_RenderThrowable extends W_Render {
                 double sin = Math.sin(angle);
                 double cos = Math.cos(angle);
 
-                // 内圈点
+                // Inner ring vertex
                 double xInner = sin * innerRadius;
                 double yInner = cos * innerRadius;
                 tessellator.setColorRGBA_F(innerRed, innerGreen, innerBlue, innerAlpha);
                 tessellator.addVertex(xInner, yInner, 0.0D);
 
-                // 外圈点
+                // Outer ring vertex
                 double xOuter = sin * outerRadius;
                 double yOuter = cos * outerRadius;
                 tessellator.setColorRGBA_F(outerRed, outerGreen, outerBlue, outerAlpha);
@@ -181,13 +181,13 @@ public class MCH_RenderThrowable extends W_Render {
 
         GL11.glPopMatrix();
 
-        // 恢复设置
+        // Restore previous render state
         GL11.glDepthMask(true);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_ALPHA_TEST);
 
-        // 恢复混合函数
+        // Restore default blend function
         if (isThermalVision) {
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         } else {

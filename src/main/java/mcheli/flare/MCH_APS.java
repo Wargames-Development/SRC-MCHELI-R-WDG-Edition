@@ -18,13 +18,13 @@ import java.util.List;
 
 public class MCH_APS {
 
-    //冷却时长 0代表冷却结束
+    // Cooldown duration; 0 indicates cooldown finished
     public int tick;
-    //生效时长 0代表使用结束
+    // Active duration; 0 indicates effect has ended
     public int useTick;
-    //APS生效时间
+    // APS active duration
     public int useTime;
-    //APS等待时间
+    // APS cooldown duration
     public int waitTime;
 
     public World worldObj;

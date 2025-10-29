@@ -8,20 +8,30 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 客户端仅依赖“全量快照心跳”进行增量/覆盖；删除完全靠本地过期清理。
- * - 乱序保护：仅接受 snapshotSeq >= lastAppliedSeq 的数据。
- * - 过期策略：同时依据毫秒超时与缺席序号阈值做双重判定。
- * - 定时器：使用 ClientTick（避免 Timer 的跨线程问题）。
+ * Client-side entity snapshot tracker.
+ *
+ * The client only relies on periodic “full snapshot heartbeats” for incremental or full updates;
+ * deletions are handled entirely via local expiration cleanup.
+ *
+ * Behavior and safeguards:
+ * - **Out-of-order protection:** Only accepts snapshot packets where `snapshotSeq >= lastAppliedSeq`.
+ * - **Expiration policy:** Uses a dual condition — entities expire when both the time threshold
+ *   and the missing-sequence threshold are exceeded.
+ * - **Timer mechanism:** Uses the client tick loop instead of a separate timer to avoid
+ *   cross-thread issues in Minecraft’s single-threaded environment.
  */
 public class MCH_EntityInfoClientTracker {
 
-    /** 可调：心跳缺席的毫秒阈值（例如 5s） */
+    /** Configurable: maximum heartbeat absence in milliseconds before expiration (e.g., 1000ms = 1s). */
     public static long EXPIRATION_MS = 1_000L;
-    /** 可调：心跳缺席的序号阈值（以服务器 tick 计数，20TPS 下 100≈5s） */
+
+    /** Configurable: maximum missing snapshot sequence count before expiration (e.g., 20 ticks ≈ 1s at 20TPS). */
     public static long MISSING_SEQ_THRESHOLD = 20L;
-    /** 可调：清理扫描的 Tick 周期（例如每 10 个客户端 Tick 扫描一次） */
+
+    /** Configurable: how often cleanup runs, measured in client ticks (e.g., every 10 ticks). */
     public static int CLEANUP_TICK_INTERVAL = 10;
 
+    /** Internal structure to track entity info and last-seen timestamps. */
     private static final class Tracked {
         MCH_EntityInfo info;
         long lastSeenMillis;
@@ -34,18 +44,21 @@ public class MCH_EntityInfoClientTracker {
     }
 
     private static final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
-    private static volatile long lastAppliedSeq = -1L;    // 已应用的最新快照序号
-    private static volatile long latestSeqObserved = -1L; // 最近接收到的最大序号（用于缺席判断）
+    private static volatile long lastAppliedSeq = -1L;    // Latest applied snapshot sequence number
+    private static volatile long latestSeqObserved = -1L; // Highest sequence number received (for gap detection)
     private static int clientTickCounter = 0;
 
     static {
-        // 注册客户端 Tick 监听（类被首次引用时完成注册）
+        // Register client tick listener — runs once when the class is first loaded
         FMLCommonHandler.instance().bus().register(new ClientTicker());
     }
 
-    /** 由网络包回调调用：应用一批实体并记录快照序号 */
+    /**
+     * Called by network packet handler:
+     * Applies a batch of entity snapshots and records the associated sequence number.
+     */
     public static void updateEntities(List<MCH_EntityInfo> infos, long snapshotSeq) {
-        // 乱序/迟到包保护
+        // Out-of-order or late packet protection — ignore older snapshots
         if (snapshotSeq < lastAppliedSeq) {
             return;
         }
@@ -67,7 +80,10 @@ public class MCH_EntityInfoClientTracker {
         lastAppliedSeq = snapshotSeq;
     }
 
-    /** 兼容旧接口：不再使用服务端 REMOVE 包，这里保留以防外部调用 */
+    /**
+     * Legacy compatibility: the old server-side REMOVE packet is no longer used.
+     * This method is kept only to maintain backward compatibility for any external calls.
+     */
     @Deprecated
     public static void removeEntities(List<MCH_EntityInfo> infos) {
         for (MCH_EntityInfo info : infos) {
@@ -88,7 +104,10 @@ public class MCH_EntityInfoClientTracker {
         return Collections.unmodifiableCollection(out);
     }
 
-    /** 定期扫描：缺席过久（时间或序号）则删除 */
+    /**
+     * Periodic cleanup: removes entities that have been absent for too long,
+     * based on either elapsed time or missing sequence count.
+     */
     private static void cleanupExpired() {
         if (tracked.isEmpty()) return;
 
@@ -109,7 +128,9 @@ public class MCH_EntityInfoClientTracker {
         }
     }
 
-    /** ※ 注意：必须是 public 才能被 ASMEventHandler 访问 */
+    /**
+     * Note: Must be declared public so that ASMEventHandler can access it.
+     */
     public static class ClientTicker {
         @SubscribeEvent
         public void onClientTick(TickEvent.ClientTickEvent event) {

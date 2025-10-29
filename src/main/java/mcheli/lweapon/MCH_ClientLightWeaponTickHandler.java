@@ -157,7 +157,7 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
          } else {
             W_Reflection.restoreCameraZoom();
          }
-//add not rpg check here
+         //add not rpg check here
          // if("rpg7".equalsIgnoreCase(!MCH_ItemLightWeaponBase.getName(player.getHeldItem()))) {
 
          // }

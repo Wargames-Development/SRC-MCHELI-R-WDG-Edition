@@ -5,8 +5,10 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 
 /**
- * 飞机的整体包围盒，用于与外界的 AxisAlignedBB 做检测，同时组合检测部件的旋转包围盒。
- * 继承自 AxisAlignedBB，使其仍可与 Minecraft 自带逻辑兼容。
+ * Represents the aircraft’s overall bounding box, used for collision checks
+ * against external AxisAlignedBBs and for combining the rotated bounding boxes
+ * of individual components.
+ * Inherits from AxisAlignedBB to maintain compatibility with Minecraft’s native logic.
  */
 public class MCH_AircraftBoundingBox extends AxisAlignedBB {
 
@@ -19,14 +21,15 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
    }
 
    /**
-    * 工厂方法，用于创建新的 MCH_AircraftBoundingBox 实例并设置边界。
+    * Factory method for creating a new MCH_AircraftBoundingBox instance
+    * and setting its bounds.
     */
    public AxisAlignedBB NewAABB(double minX, double minY, double minZ,
                                 double maxX, double maxY, double maxZ) {
       return (new MCH_AircraftBoundingBox(this.ac)).setBounds(minX, minY, minZ, maxX, maxY, maxZ);
    }
 
-   // 飞机整体包围盒
+   // Overall bounding box of the aircraft
 
    @Override
    public boolean intersectsWith(AxisAlignedBB aabb) {
@@ -35,17 +38,17 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
       this.ac.lastBBDamageFactor = 1.0F;
       this.ac.lastBBName = null;
 
-      // 仍先用整体外接 AABB 快速判定
+      // First perform a quick check using the overall external AABB
       if (super.intersectsWith(aabb)) {
          dist = this.getDistSq(aabb, this);
          ret = true;
       }
 
-      // 遍历各部件包围盒
+      // Iterate through bounding boxes of all components
       for (MCH_BoundingBox bb : this.ac.extraBoundingBox) {
-         // 先用部件的轴对齐外包围盒做快速过滤
+         // First perform a quick filter using each part’s axis-aligned bounding box
          if (bb.boundingBox.intersectsWith(aabb)) {
-            // 用完整的 OBB-AABB 判定代替原来的 corners 判定
+            // Replace the original corner-based check with a full OBB–AABB intersection test
             if (bb.intersectsAABB(aabb)) {
                double dist2 = this.getDistSq(aabb, this);
                if (dist2 < dist) {
@@ -145,7 +148,8 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
    }
 
    /**
-    * 获取包围盒与射线的交点，若与部件包围盒更近，则使用部件包围盒。
+    * Gets the intersection point between the bounding box and a ray.
+    * If a component’s bounding box is closer, that one is used instead.
     */
    public MovingObjectPosition calculateIntercept(Vec3 start, Vec3 end) {
       this.ac.lastBBDamageFactor = 1.0F;
@@ -153,21 +157,21 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
       MovingObjectPosition bestMop = super.calculateIntercept(start, end);
       double bestDist = (bestMop != null) ? start.distanceTo(bestMop.hitVec) : Double.MAX_VALUE;
 
-      // 遍历旋转部件包围盒，使用 OBB 射线检测
+      // Iterate through rotated component bounding boxes and perform OBB ray intersection checks
       for (MCH_BoundingBox bb : this.ac.extraBoundingBox) {
-         // 将射线转换到 bb 的局部坐标系
+         // Transform the ray into the bounding box’s local coordinate system
          Vec3 dir = end.subtract(start);
-         // 计算射线在 bb.axis 上的分量
+         // Calculate the ray’s component along bb.axis
          double dirX = dir.dotProduct(bb.axisX);
          double dirY = dir.dotProduct(bb.axisY);
          double dirZ = dir.dotProduct(bb.axisZ);
-         // 射线起点相对 bb 中心的向量
+         // Vector from the ray’s origin to the center of the bounding box
          Vec3 relStart = start.subtract(bb.center);
          double startX = relStart.dotProduct(bb.axisX);
          double startY = relStart.dotProduct(bb.axisY);
          double startZ = relStart.dotProduct(bb.axisZ);
 
-         // slab 法：在各轴求交点参数 t
+         // Slab method: calculate intersection parameters t along each axis
          double tMin = 0.0D;
          double tMax = 1.0D;
          boolean skip = false;
@@ -214,10 +218,10 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
                skip = true;
             }
          }
-         // 是否有相交
+         // Check if an intersection exists
          if (!skip && tMax >= tMin && tMin <= 1.0D && tMax >= 0.0D) {
             double tHit = (tMin < 0.0D) ? tMax : tMin;
-            // 计算相交点
+            // Calculate the intersection point
             Vec3 hit = start.addVector(
                     dir.xCoord * tHit,
                     dir.yCoord * tHit,

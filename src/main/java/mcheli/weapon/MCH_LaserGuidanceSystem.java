@@ -55,7 +55,7 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
 
             float yaw;
             float pitch;
-            MCH_EntityAircraft ac = null; //玩家乘坐的实体
+            MCH_EntityAircraft ac = null; // The entity the player is riding
             if(user.ridingEntity instanceof MCH_EntityAircraft) {
                 ac = (MCH_EntityAircraft)user.ridingEntity;
             } else if(user.ridingEntity instanceof MCH_EntitySeat) {
@@ -64,27 +64,28 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 ac = ((MCH_EntityUavStation)user.ridingEntity).getControlAircract();
             }
 
+            // Use player's orientation if using a laser designator
             if (hasLaserGuidancePod) {
-                yaw = user.rotationYaw;  // 获取玩家的偏航角度
-                pitch = user.rotationPitch;  // 获取玩家的俯仰角度
+                yaw = user.rotationYaw;  // Player's yaw (horizontal rotation)
+                pitch = user.rotationPitch;  // Player's pitch (vertical rotation)
             } else {
                 if(ac == null) return;
                 yaw = ac.rotationYaw;
                 pitch = ac.rotationPitch;
             }
 
-            // 计算目标方向的三维坐标变化量
+            // Calculate 3D directional vector based on orientation
             double targetX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double targetZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
 
-            // 计算方向的距离
+            // Compute direction magnitude
             double dist = MathHelper.sqrt_double(targetX * targetX + targetY * targetY + targetZ * targetZ);
-            double maxDist = 1500.0;
-            double segmentLength = 100.0;  // 每段的长度
-            int numSegments = (int) (maxDist / segmentLength);  // 计算需要的段数
+            double maxDist = 1500.0;    // Maximum targeting distance (in meters/blocks)
+            double segmentLength = 100.0;  // Length of each ray segment
+            int numSegments = (int) (maxDist / segmentLength);  // Number of segments to trace
 
-            // 在客户端和服务器端都将目标方向进行归一化处理
+            // Normalize and scale direction vector
             targetX = targetX * maxDist / dist;
             targetY = targetY * maxDist / dist;
             targetZ = targetZ * maxDist / dist;
@@ -115,43 +116,45 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 posZ = RenderManager.renderPosZ;
             }
 
-            // 计算发射源
+            // Compute the source vector (origin of laser beam)
             Vec3 src = W_WorldFunc.getWorldVec3(this.worldObj, posX, posY, posZ);
 
-            // 射线检测
+            // Perform ray tracing
             MovingObjectPosition hitResult = null;
 
             for (int i = 1; i <= numSegments; i++) {
-                // 计算当前分段的目标点，确保每段都从上一个段的终点开始
+                // Compute target point for this segment, each starting from the previous endpoint
                 Vec3 currentDst = W_WorldFunc.getWorldVec3(this.worldObj,
                         posX + targetX * i / numSegments,
                         posY + targetY * i / numSegments,
                         posZ + targetZ * i / numSegments);
 
-                // 执行射线检测
+                // Perform collision detection (ray trace)
                 List<MovingObjectPosition> hitResults = rayTraceAllBlocks(this.worldObj, src, currentDst, false, true, true);
 
                 if (hitResults != null && !hitResults.isEmpty()) {
                     hitResult = hitResults.get(0);
-                    break;  // 找到碰撞结果后，退出循环
+                    break;  // Exit loop when a collision is found
                 }
 
-                // 更新src为当前检测的dst
-                src = currentDst;  // 当前段的dst成为下一段的src
+                // Update src to current segment endpoint for next iteration
+                src = currentDst;
             }
 
-            // 如果没有检测到碰撞，则返回默认的目标位置
+            // If no collision was detected, default to the farthest target point
             if (hitResult == null) {
-                hitResult = new MovingObjectPosition(null, src.addVector(targetX, targetY, targetZ));  // 使用目标点作为默认值
+                hitResult = new MovingObjectPosition(null, src.addVector(targetX, targetY, targetZ));  // Use end-point as fallback
             }
 
-            // 设置导弹的目标位置
+            // Set missile target position
             targetPosX = hitResult.hitVec.xCoord;
             targetPosY = hitResult.hitVec.yCoord;
             targetPosZ = hitResult.hitVec.zCoord;
 
+            // Send target update packet to server
             MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX,targetPosY,targetPosZ));
 
+            // Update or spawn target lock box entity
             if(lockBox != null) {
                 lockBox.setPosition(targetPosX, targetPosY, targetPosZ);
             } else {

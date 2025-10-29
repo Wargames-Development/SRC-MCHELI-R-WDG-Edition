@@ -50,7 +50,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
         }
     }
 
-    // 播放蓄力音效，只在蓄力开始时播放一次
+    // Play the charge-up sound effect — only triggered once when charging begins
     @SideOnly(Side.CLIENT)
     public void playLockSound(float x, float y, float z) {
         if (lockSound == null) {
@@ -104,7 +104,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
         return true;
     }
 
-    // 处理射击事件
+    // Handle the firing event
     @Override
     public boolean shot(MCH_WeaponParam prm) {
         if(!super.worldObj.isRemote) {
@@ -122,7 +122,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
             }
 
         }
-        return false;  // 继续蓄力，未发射
+        return false;  // Continue charging — projectile not yet fired
     }
 
     public float getRailgunTime() {

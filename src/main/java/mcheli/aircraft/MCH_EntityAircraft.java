@@ -684,25 +684,25 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
 
             float dmg = MCH_Config.KillPassengersWhenDestroyed.prmBool ? 100000.0F : 0.001F;
-            DamageSource damageSource = DamageSource.generic; // 默认的伤害来源为generic
+            DamageSource damageSource = DamageSource.generic; // Default damage source: generic
             if (this.worldObj.difficultySetting.getDifficultyId() == 0) {
-                // 如果最后攻击这个实体的是玩家，创建一个基于玩家的伤害来源
+                // If the last entity to attack this aircraft was a player, create a player-based damage source
                 if (this.lastAttackedEntity instanceof EntityPlayer) {
                     damageSource = DamageSource.causePlayerDamage((EntityPlayer) this.lastAttackedEntity);
                 }
             } else {
-                // 如果世界难度不为和平模式，创建一个基于爆炸的伤害来源
+                // If the world difficulty is not Peaceful, create an explosion-based damage source
                 damageSource = DamageSource.setExplosionSource(new Explosion(this.worldObj, this.lastAttackedEntity,
                     this.posX, this.posY, this.posZ, 1.0F));
             }
             if (source != null) {
                 damageSource = source;
             }
-            // 如果当前实体存在，应用伤害
+            // If the main rider exists, apply damage
             if (this.riddenByEntity != null) {
                 this.riddenByEntity.attackEntityFrom(damageSource, dmg);
             }
-            // 遍历所有座位上的实体，如果座位上有实体，应用伤害
+            // Apply damage to all entities occupying seats
             for (MCH_EntitySeat seat : getSeats()) {
                 if (seat != null && seat.riddenByEntity != null) {
                     seat.riddenByEntity.attackEntityFrom(damageSource, dmg);
@@ -1024,7 +1024,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 }
                             }
                             MCH_Lib.DbgLog(super.worldObj, "MCH_EntityAircraft.attackEntityFrom:damage=%.1f(factor=%.2f):%s", damage, damageFactor, dmt);
-                            //触发载具伤害事件
+                            // Trigger aircraft damage event
                             String name = (String) getAcInfo().displayNameLang.get("en_US");
                             if (lastRiddenByEntity instanceof EntityPlayer && lastAttackedEntity instanceof EntityLivingBase) {
                                 EntityPlayer player = (EntityPlayer) lastRiddenByEntity;
@@ -1035,24 +1035,24 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                             }
                             if (damageSource instanceof MCH_IndicatedDamageSource && damageSource.getSourceOfDamage() != null) {
                                 MCH_IndicatedDamageSource ids = (MCH_IndicatedDamageSource) damageSource;
-                                // 击中点的世界绝对坐标
+                                // World-space absolute coordinates of the impact point
                                 Vec3 absHitPos = ids.hitPos;
-                                // 弹药的世界运动方向（未经归一化）
+                                // Bullet’s motion vector in world space (not normalized)
                                 Vec3 absBulletDir = ids.dir;
 
-                                // 计算从载具中心到击中点的向量（世界坐标系）
+                                // Calculate the vector from the aircraft’s center to the impact point (in world coordinates)
                                 double dx = absHitPos.xCoord - posX;
                                 double dy = absHitPos.yCoord - posY;
                                 double dz = absHitPos.zCoord - posZ;
 
-                                // 获取载具当前姿态角：水平旋转（航向）、俯仰、滚转
-                                float yaw = this.rotationYaw;   // 或者使用ac.getRotYaw()，取决于具体实现
-                                float pitch = this.rotationPitch; // 或者ac.getRotPitch()
-                                float roll = this.rotationRoll; // 或者ac.getRotRoll()，需从实体中获取当前滚转角
+                                // Get the aircraft’s current orientation angles: yaw, pitch, and roll
+                                float yaw = this.rotationYaw;     // or use ac.getRotYaw(), depending on implementation
+                                float pitch = this.rotationPitch; // or ac.getRotPitch()
+                                float roll = this.rotationRoll;   // or ac.getRotRoll(), must retrieve current roll angle from entity
 
-                                // 将世界坐标系向量转换到载具局部坐标系
+                                // Convert the world-space vector to the aircraft’s local coordinate system
                                 Vec3 relHitPos = MCH_Math.rotateWorldVecToLocal(dx, dy, dz, yaw, pitch, roll);
-                                // 将子弹运动方向转换到载具局部坐标系，并归一化为纯方向
+                                // Convert the bullet direction to local space and normalize to a pure direction vector
                                 Vec3 relDir = MCH_Math.rotateWorldVecToLocal(absBulletDir.xCoord, absBulletDir.yCoord, absBulletDir.zCoord, yaw, pitch, roll).normalize();
 
                                 String weaponName = "Hit";
@@ -1061,7 +1061,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     weaponName = ((MCH_EntityBaseBullet) hitEntity).getInfo().displayName;
                                 }
 
-                                // 将相对坐标和方向发送给客户端，客户端会根据这些信息绘制受击指示器
+                                // Send relative coordinates and direction to clients - used to render hit indicators on impact
                                 MCH_MOD.getPacketHandler().sendToAll(new PacketDamageIndicator(
                                     relHitPos.xCoord, relHitPos.yCoord, relHitPos.zCoord,
                                     relDir.xCoord, relDir.yCoord, relDir.zCoord,
@@ -1076,7 +1076,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         if (this.getDamageTaken() >= this.getMaxHP() || isDamageSourcePlayer) {
                             if (!isDamageSourcePlayer) {
                                 this.setDamageTaken(this.getMaxHP());
-                                //触发载具击杀事件
+                                // Trigger aircraft destruction event
                                 String name = (String) getAcInfo().displayNameLang.get("en_US");
                                 if (lastRiddenByEntity instanceof EntityPlayer && lastAttackedEntity instanceof EntityLivingBase) {
                                     EntityPlayer player = (EntityPlayer) lastRiddenByEntity;
@@ -5644,7 +5644,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     @SideOnly(Side.CLIENT)
     public void resetAirburstDistance(EntityPlayer player, MCH_WeaponBase wb) {
-        //MCH_AircraftInfo.CameraPosition cameraPosition = getCameraPosInfo();
+        // MCH_AircraftInfo.CameraPosition cameraPosition = getCameraPosInfo();
         int dist;
         double posX = RenderManager.renderPosX;
         double posY = RenderManager.renderPosY;
@@ -5656,12 +5656,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         double targetZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
         double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
         double distNorm = MathHelper.sqrt_double(targetX * targetX + targetY * targetY + targetZ * targetZ);
-        // 归一化并拉伸到最大检测距离
+        // Normalize and scale the direction vector to the maximum detection range
         targetX = targetX * maxDist / distNorm;
         targetY = targetY * maxDist / distNorm;
         targetZ = targetZ * maxDist / distNorm;
 
-        // 按照100格为步长逐段进行射线检测
+        // Perform ray tracing in 100-block segments along the path
         double segmentLength = 100.0;
         int numSegments = (int) (maxDist / segmentLength);
         Vec3 src = W_WorldFunc.getWorldVec3(this.worldObj, posX, posY, posZ);
@@ -5676,16 +5676,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 hitResult = hits.get(0);
                 break;
             }
-            // 未命中则将终点作为下一次的起点
+            // If no collision detected, use the previous segment’s endpoint as the next start point
             src = dst;
         }
-        // 如果没有命中方块，则默认将远端目标作为命中点
+        // If no block was hit, use the farthest target point as the default impact position
         if (hitResult == null) {
             hitResult = new MovingObjectPosition(null,
                 src.addVector(targetX, targetY, targetZ));
         }
 
-        // 计算摄像机到命中点的距离并取整
+        // Calculate the distance from the camera to the impact point, rounded to the nearest integer
         Vec3 hitVec = hitResult.hitVec;
         dist = (int) Math.sqrt(
             (hitVec.xCoord - posX) * (hitVec.xCoord - posX) +
@@ -6161,7 +6161,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (worldObj.isRemote) {
             return;
         }
-        //有bug
+        // TODO: Fix bug
         //MCH_MOD.getPacketHandler().sendToDimension(new PacketAircraftPositionSync(posX, posY, posZ, rotationYaw, rotationPitch, rotationRoll, getEntityId()), dimension);
     }
 

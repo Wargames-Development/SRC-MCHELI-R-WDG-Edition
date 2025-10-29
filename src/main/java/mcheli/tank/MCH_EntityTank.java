@@ -231,7 +231,7 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
          super.updateExtraBoundingBox();
          super.updateExtraBoundingBox();
       }
-      // 计算炮塔相对车体的偏航角差
+      // Calculate the yaw offset between the turret and the vehicle body
       Entity rider = this.getRiddenByEntity();
       float turretYawOffset = storedTurretYawOffset;
       if (rider != null) {
@@ -241,19 +241,19 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
          storedTurretYawOffset = turretYawOffset;
       }
 
-      // 更新额外的碰撞箱
+      // Update the additional bounding boxes
       for (MCH_BoundingBox ebb : super.extraBoundingBox) {
          if (ebb.boundingBoxType == EnumBoundingBoxType.TURRET) {
             ebb.localRotYaw = turretYawOffset;
-//            ebb.localRotPitch = -getRotPitch();
-//            ebb.localRotRoll = -getRotRoll();
+            // ebb.localRotPitch = -getRotPitch();
+            // ebb.localRotRoll = -getRotRoll();
          } else {
             ebb.localRotYaw = 0.0F;
             ebb.localRotPitch = 0.0F;
             ebb.localRotRoll = 0.0F;
          }
 
-         // 调用包围盒的更新方法
+         // Call the bounding box update method
          ebb.updatePosition(super.posX, super.posY, super.posZ,
                  this.getRotYaw(), this.getRotPitch(), this.getRotRoll());
       }
@@ -299,7 +299,8 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
       List list = getCollidingBoundingBoxes(this, super.boundingBox.addCoord(parX, parY, parZ));
       parY = this.calculateYOffset(list, super.boundingBox, parY);
 
-      // NEW: 用部位碰撞箱收紧Y位移，并把主AABB补偿到位
+      // NEW: Use part-specific collision boxes to constrain Y displacement,
+      // and compensate the main AABB accordingly
 //      double limitedY = limitByExtrasY(parY, parX, parZ);
 //      if (limitedY != parY) {
 //         super.boundingBox.offset(0.0D, limitedY - parY, 0.0D);
@@ -317,7 +318,8 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
 
       parX = this.calculateXOffset(list, super.boundingBox, parX);
 
-      // NEW: 用部位碰撞箱收紧X位移，并把主AABB补偿到位（Z 仍用期望 mz）
+      // NEW: Use part-specific collision boxes to constrain X displacement,
+      // and compensate the main AABB accordingly (Z still uses the expected value mz)
 //      double limitedX = limitByExtrasX(parX, parY, parZ);
 //      if (limitedX != parX) {
 //         super.boundingBox.offset(limitedX - parX, 0.0D, 0.0D);
@@ -326,7 +328,8 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
 
       parZ = this.calculateZOffset(list, super.boundingBox, parZ);
 
-      // NEW: 用部位碰撞箱收紧Z位移，并把主AABB补偿到位（X 已是最终 parX）
+      // NEW: Use part-specific collision boxes to constrain Z displacement,
+      // and compensate the main AABB accordingly (X is already the final parX)
 //      double limitedZ = limitByExtrasZ(parZ, parX, parY);
 //      if (limitedZ != parZ) {
 //         super.boundingBox.offset(0.0D, 0.0D, limitedZ - parZ);
@@ -349,7 +352,7 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
          parZ = this.calculateZOffset(list, super.boundingBox, mz);
          parY = this.calculateYOffset(list, super.boundingBox, -super.stepHeight);
 
-         // 让台阶候选位移也受部位限制（收紧到安全）
+         // Make the step-candidate displacement also constrained by part-specific collision boxes (tightened to safe limits)
 //         double sY = limitByExtrasY(parY, parX, parZ);
 //         if (sY != parY) { super.boundingBox.offset(0.0D, sY - parY, 0.0D); parY = sY; }
 //         double sX = limitByExtrasX(parX, parY, parZ);
@@ -692,19 +695,19 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
 
    @SideOnly(Side.CLIENT)
    public void onUpdate_IronCurtainParticle(int ri, double x, double y, double z, float size) {
-      // 仅在客户端且铁幕激活时生成粒子
+      // Generate particles only on the client side when the Iron Curtain is active
       if(worldObj.isRemote && ironCurtainRunningTick > 0) {
-         // 颜色波动参数（使用插值后的实际因子）
+         // Color fluctuation parameter (based on interpolated time factor)
          float factor = 0.5f + 0.5f * (float)Math.sin(ironCurtainRunningTick * 0.15f);
          final float DARK_RED_R = 0.5f * factor;
          final float DARK_RED_G = 0.1f * factor;
          final float DARK_RED_B = 0.1f * factor;
 
-         // 粒子基础参数
-         int particleCount = 2 + rand.nextInt(3); // 每个碰撞箱生成2-4个粒子
-         float baseSize = size * (0.8f + rand.nextFloat() * 0.4f); // 尺寸波动
+         // Base particle parameters
+         int particleCount = 2 + rand.nextInt(3); // Each bounding box spawns 2–4 particles
+         float baseSize = size * (0.8f + rand.nextFloat() * 0.4f); // Randomized size variation
 
-         // 生成环绕粒子群
+         // Generate surrounding particle cluster
          for(int i = 0; i < particleCount; i++) {
             EntityCloudFX particle = new EntityCloudFX(worldObj,
                     x + (rand.nextGaussian() * 0.3),
@@ -712,7 +715,7 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
                     z + (rand.nextGaussian() * 0.3),
                     0, 0, 0) {
 
-               // 重写渲染逻辑强制应用颜色
+               // Override render logic to force custom color
                @Override
                public void renderParticle(Tessellator tess, float partialTicks,
                                           float rotX, float rotZ, float rotYZ,
@@ -722,20 +725,20 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
                }
             };
 
-            // 粒子动态参数配置
+            // Configure dynamic particle color
             particle.setRBGColorF(DARK_RED_R, DARK_RED_G, DARK_RED_B);
 
-            // 运动参数（带旋转扩散）
+            // Motion parameters (rotational diffusion)
             float motionSpread = 0.015f * (ironCurtainRunningTick % 40 + 1);
             particle.motionX = (rand.nextFloat() - 0.5f) * motionSpread;
             particle.motionY = 0.01f + rand.nextFloat() * 0.02f;
             particle.motionZ = (rand.nextFloat() - 0.5f) * motionSpread;
 
-            // 添加特效
+            // Add visual effect to renderer
             Minecraft.getMinecraft().effectRenderer.addEffect(particle);
          }
 
-         // 10%概率生成核心高亮粒子
+         // 10% chance to generate a core highlight particle
          if(rand.nextFloat() < 0.1f) {
             EntityCloudFX coreParticle = new EntityCloudFX(worldObj, x, y, z, 0, 0, 0) {
                @Override
@@ -1116,45 +1119,45 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
       }
    }
 
-   // MCH_EntityTank 内部新增
+   // Added in MCH_EntityTank
    private void resolveTankTankHardStop(MCH_EntityTank other) {
-      // 只在服务端做权威修正
+      // Perform authoritative correction only on the server side
       if (worldObj.isRemote) return;
 
       AxisAlignedBB a = this.boundingBox;
       AxisAlignedBB b = other.boundingBox;
       if (a == null || b == null || !a.intersectsWith(b)) return;
 
-      // 质量：缺省为1
+      // Mass: defaults to 1
       double m1 = (this.getTankInfo()!=null && this.getTankInfo().weightType > 0)
               ? this.getTankInfo().weightType : 1.0;
       double m2 = (other.getTankInfo()!=null && other.getTankInfo().weightType > 0)
               ? other.getTankInfo().weightType : 1.0;
       double total = m1 + m2;
 
-      // 各方向的重叠量（取正值）
-      double overlapXLeft  = b.maxX - a.minX; // 需要把 this 往 -X 推
-      double overlapXRight = a.maxX - b.minX; // 需要把 this 往 +X 推
-      double overlapZBack  = b.maxZ - a.minZ; // 需要把 this 往 -Z 推
-      double overlapZFront = a.maxZ - b.minZ; // 需要把 this 往 +Z 推
+      // Overlap amount along each direction (positive values)
+      double overlapXLeft  = b.maxX - a.minX; // Push this tank toward -X
+      double overlapXRight = a.maxX - b.minX; // Push this tank toward +X
+      double overlapZBack  = b.maxZ - a.minZ; // Push this tank toward -Z
+      double overlapZFront = a.maxZ - b.minZ; // Push this tank toward +Z
 
-      // 轴向最小重叠量
+      // Minimum overlap along major axes
       double overlapX = Math.min(overlapXLeft, overlapXRight);
       double overlapZ = Math.min(overlapZBack, overlapZFront);
 
       double eps = 1.0e-6;
 
       if (overlapX < overlapZ) {
-         // 沿 X 轴分离
-         double dir = (overlapXLeft < overlapXRight) ? -1.0 : 1.0; // this 的方向
+         // Separate along the X axis
+         double dir = (overlapXLeft < overlapXRight) ? -1.0 : 1.0; // Direction for this tank
          double dThis  = overlapX * (m2 / total) + eps;
          double dOther = overlapX * (m1 / total) + eps;
 
          this.posX  += dir * dThis;
          other.posX -= dir * dOther;
       } else {
-         // 沿 Z 轴分离
-         double dir = (overlapZBack < overlapZFront) ? -1.0 : 1.0; // this 的方向
+         // Separate along the Z axis
+         double dir = (overlapZBack < overlapZFront) ? -1.0 : 1.0; // Direction for this tank
          double dThis  = overlapZ * (m2 / total) + eps;
          double dOther = overlapZ * (m1 / total) + eps;
 
@@ -1162,13 +1165,13 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
          other.posZ -= dir * dOther;
       }
 
-      // 停住：清零双方水平速度与油门
+      // Stop movement: zero both tanks' horizontal velocity and throttle
       this.motionX = this.motionZ = 0.0;
       other.motionX = other.motionZ = 0.0;
       this.setCurrentThrottle(0.0); this.throttleBack = 0.0F;
       other.setCurrentThrottle(0.0); other.throttleBack = 0.0F;
 
-      // 让 AABB 与坐标同步
+      // Synchronize AABB with position
       this.setPosition(this.posX, this.posY, this.posZ);
       other.setPosition(other.posX, other.posY, other.posZ);
    }
@@ -1518,14 +1521,15 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
       return 0.7F;
    }
 
-   // 根据部位碰撞箱，收紧Y轴位移（desiredY>0取各箱允许位移的最小值，<0取最大值）
+   // Constrain Y-axis displacement based on part-specific collision boxes
+   // (if desiredY > 0 take the minimum allowed among boxes; if < 0 take the maximum)
    private double limitByExtrasY(double desiredY, double dx, double dz) {
       if (desiredY == 0.0D || this.extraBoundingBox == null) return desiredY;
       double limited = desiredY;
       for (MCH_BoundingBox ebb : this.extraBoundingBox) {
          if (ebb == null || ebb.boundingBox == null) continue;
          AxisAlignedBB eb = ebb.boundingBox.copy();
-         // 按本帧期望位移建立碰撞查询
+         // Build collision query using this frame’s intended displacement
          List listE = getCollidingBoundingBoxes(this, eb.addCoord(dx, desiredY, dz));
          double allowed = this.calculateYOffset(listE, eb, desiredY); // 会offset eb
          if (desiredY > 0.0D) limited = Math.min(limited, allowed);
@@ -1534,14 +1538,14 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
       return limited;
    }
 
-   // 收紧X轴位移（已应用Y=appliedY；Z仍是期望dz）
+   // Constrain X-axis displacement (Y already applied as appliedY; Z still uses intended dz)
    private double limitByExtrasX(double desiredX, double appliedY, double dz) {
       if (desiredX == 0.0D || this.extraBoundingBox == null) return desiredX;
       double limited = desiredX;
       for (MCH_BoundingBox ebb : this.extraBoundingBox) {
          if (ebb == null || ebb.boundingBox == null) continue;
          AxisAlignedBB eb = ebb.boundingBox.copy();
-         // 先把部位箱体按已应用的Y移动到正确基准
+         // First move the part AABB by the already-applied Y to the correct baseline
          eb.offset(0.0D, appliedY, 0.0D);
          List listE = getCollidingBoundingBoxes(this, eb.addCoord(desiredX, 0.0D, dz));
          double allowed = this.calculateXOffset(listE, eb, desiredX); // 会offset eb
@@ -1551,14 +1555,14 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
       return limited;
    }
 
-   // 收紧Z轴位移（已应用X=appliedX、Y=appliedY）
+   // Constrain Z-axis displacement (X and Y already applied as appliedX/appliedY)
    private double limitByExtrasZ(double desiredZ, double appliedX, double appliedY) {
       if (desiredZ == 0.0D || this.extraBoundingBox == null) return desiredZ;
       double limited = desiredZ;
       for (MCH_BoundingBox ebb : this.extraBoundingBox) {
          if (ebb == null || ebb.boundingBox == null) continue;
          AxisAlignedBB eb = ebb.boundingBox.copy();
-         // 先把部位箱体按已应用的X、Y移动到正确基准
+         // First move the part AABB by the already-applied X and Y to the correct baseline
          eb.offset(appliedX, appliedY, 0.0D);
          List listE = getCollidingBoundingBoxes(this, eb.addCoord(0.0D, 0.0D, desiredZ));
          double allowed = this.calculateZOffset(listE, eb, desiredZ); // 会offset eb

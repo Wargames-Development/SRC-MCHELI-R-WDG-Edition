@@ -18,43 +18,51 @@ public abstract class MCH_EntityGuidanceSystem implements MCH_IGuidanceSystem {
     public MCH_IEntityLockChecker checker;
 
     /**
-     * 是否为红外弹，会受到热焰弹干扰
+     * Whether this is an infrared-guided missile — can be affected by flares.
      */
     public boolean isHeatSeekerMissile = true;
 
     /**
-     * 是否为雷达弹，会受到箔条干扰
+     * Whether this is a radar-guided missile — can be affected by chaff.
      */
     public boolean isRadarMissile = false;
 
     /**
-     * 半主动雷达弹需要持续引导
+     * Whether this is a semi-active radar missile that requires continuous guidance.
      */
     public boolean passiveRadar = false;
 
     /**
-     * 半主动雷达弹脱离引导后脱锁计时
+     * Countdown (in ticks) before a semi-active radar missile loses lock after guidance stops.
      */
     public int passiveRadarLockOutCount = 20;
+
     /**
-     * 速度门雷达最大角度，超过此角度将脱锁 (也可用于红外弹尾后攻击)
+     * PD (Pulse Doppler) radar maximum lock angle — exceeding this will cause lock loss.
+     * Can also be used for rear-aspect IR missiles.
      */
     public float pdHDNMaxDegree = 1000f;
+
     /**
-     * 速度门雷达脱锁间隔，超过最大角度后，在该tick后导弹脱锁
+     * PD radar lock loss delay — missile will lose lock after this many ticks
+     * if the maximum angle threshold is exceeded.
      */
     public int pdHDNMaxDegreeLockOutCount = 10;
+
     /**
-     * 导弹抗干扰时长，-1为不抗干扰
+     * Duration (in ticks) of countermeasure resistance.
+     * A value of -1 disables countermeasure resistance.
      */
     public int antiFlareCount = -1;
 
     /**
-     * 雷达弹多径杂波检测高度，飞机低于这个高度将使雷达弹脱锁
+     * Multipath radar clutter detection height — aircraft below this altitude
+     * will cause radar-guided missiles to lose lock.
      */
     public int lockMinHeight = 12;
+
     /**
-     * 是否可以锁定导弹实体
+     * Whether the missile can lock onto other missile entities.
      */
     public boolean canLockMissile = false;
 
