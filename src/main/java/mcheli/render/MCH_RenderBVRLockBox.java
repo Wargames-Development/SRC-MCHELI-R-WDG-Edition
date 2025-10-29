@@ -35,17 +35,18 @@ public class MCH_RenderBVRLockBox {
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+        // Only proceed after the full HUD has rendered
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
 
-        //获取基本信息
+        // === Basic context setup ===
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
         World world = mc.theWorld;
         ScaledResolution sc = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
         if (player == null || world == null) return;
-        if (mc.gameSettings.thirdPersonView != 0) return;
+        if (mc.gameSettings.thirdPersonView != 0) return; // Only render in first-person view
 
-        //获取玩家机载武器
+        // === Retrieve the player’s current aircraft ===
         MCH_EntityAircraft ac = null;
         if(player.ridingEntity instanceof MCH_EntityAircraft) {
             ac = (MCH_EntityAircraft)player.ridingEntity;
@@ -54,48 +55,62 @@ public class MCH_RenderBVRLockBox {
         } else if(player.ridingEntity instanceof MCH_EntityUavStation) {
             ac = ((MCH_EntityUavStation)player.ridingEntity).getControlAircract();
         }
-        if(ac == null || ac.getCurrentWeapon(player) == null || ac.getCurrentWeapon(player).getCurrentWeapon() == null) return;
-        MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
-        if(wi == null || !wi.enableBVR) return;
 
-        //开始渲染
+        // Skip if the player isn’t controlling a valid aircraft with a weapon
+        if(ac == null || ac.getCurrentWeapon(player) == null || ac.getCurrentWeapon(player).getCurrentWeapon() == null)
+            return;
+
+        MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
+        if(wi == null || !wi.enableBVR) return; // Only render for BVR-capable weapons
+
+        // === Begin rendering overlay ===
         GL11.glPushMatrix();
         {
+            // Copy the latest synchronized entity list from server state
             List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
             for (MCH_EntityInfo entity : entities) {
                 if (!canRenderEntity(entity, player, wi)) continue;
+
+                // Interpolate position between ticks for smooth rendering
                 double x = interpolate(entity.posX, entity.lastTickPosX, event.partialTicks);
                 double y = interpolate(entity.posY, entity.lastTickPosY, event.partialTicks) + 1;
                 double z = interpolate(entity.posZ, entity.lastTickPosZ, event.partialTicks);
+
                 Vec3 entityPos = Vec3.createVectorHelper(x, y, z);
                 double[] screenPos = worldToScreen(new Vector3f(entityPos));
+
                 double sx = screenPos[0];
                 double sy = screenPos[1];
                 boolean lock = false;
+
                 if (sx > 0 && sy > 0) {
-                    float alpha = 0.1f;
+                    float alpha = 0.1f; // base transparency
                     double ox = screenPos[2];
                     double oy = screenPos[3];
                     double distScreen = ox * ox + oy * oy;
-                    if(distScreen < Math.pow(0.038 * sc.getScaledHeight(), 2)) { // 20
+
+                    // === Proximity-based scaling of alpha and lock acquisition ===
+                    if(distScreen < Math.pow(0.038 * sc.getScaledHeight(), 2)) { // < 20px radius
                         alpha = 1f;
                         currentLockedEntities.put(entity.entityId, entity);
                         lock = true;
-                    } else if (distScreen < Math.pow(0.076 * sc.getScaledHeight(), 2)) { // 40
+                    } else if (distScreen < Math.pow(0.076 * sc.getScaledHeight(), 2)) { // < 40px
                         alpha = 1f;
-                    } else if (distScreen < Math.pow(0.152 * sc.getScaledHeight(), 2)) { // 80
+                    } else if (distScreen < Math.pow(0.152 * sc.getScaledHeight(), 2)) { // < 80px
                         alpha = 0.8f;
-                    } else if (distScreen < Math.pow(0.228 * sc.getScaledHeight(), 2)) { // 120
+                    } else if (distScreen < Math.pow(0.228 * sc.getScaledHeight(), 2)) { // < 120px
                         alpha = 0.6f;
-                    } else if (distScreen < Math.pow(0.288 * sc.getScaledHeight(), 2)) { // 150
+                    } else if (distScreen < Math.pow(0.288 * sc.getScaledHeight(), 2)) { // < 150px
                         alpha = 0.4f;
-                    } else if (distScreen > Math.pow(0.384 * sc.getScaledHeight(), 2)) { // 200
+                    } else if (distScreen > Math.pow(0.384 * sc.getScaledHeight(), 2)) { // > 200px, clamp on HUD edge
                         double distance = Math.sqrt(distScreen);
                         double ratio = 200 / distance;
                         sx = sc.getScaledWidth() / 2.0 + ox * ratio;
                         sy = sc.getScaledHeight() / 2.0 + oy * ratio;
                         alpha = 0.2f;
                     }
+
+                    // === Missile markers ===
                     if(entity.entityClassName.contains("MCH_EntityAAMissile")) {
                         if(player.getDistanceSq(x, y, z) < 1000 * 1000 && alpha > 0.4) {
                             drawMSLMarker(sx, sy, true, alpha);
@@ -105,15 +120,17 @@ public class MCH_RenderBVRLockBox {
                             );
                         }
                     } else {
+                        // === Regular aircraft/entity marker ===
                         drawEntityMarker(sx, sy, lock, alpha);
                         if(alpha >= 0.6f) {
                             Minecraft.getMinecraft().fontRenderer.drawString(
                                     String.format("[%s %.1fm]", ac.getNameOnMyRadar(entity) , player.getDistance(x, y, z)),
                                     (int) (sx - 20), (int) (sy + 12),
-                                    lock ? 0xFF0000 : 0x00FF00
+                                    lock ? 0xFF0000 : 0x00FF00 // red if locked, green otherwise
                             );
                         }
                     }
+                    // Clear locks if the entity is no longer under lock range
                     if(!lock) {
                         currentLockedEntities.clear();
                     }
@@ -156,11 +173,11 @@ public class MCH_RenderBVRLockBox {
         if(Math.toDegrees(Vector3f.angle(rPos, lookVec)) > 45) {
             return new double[] {-1, -1, -1, -1};
         }
-        // 计算相机坐标系
+        // Calculate camera coordinate system
         Vector3f worldUp = new Vector3f(0, 1, 0);
         Vector3f R = new Vector3f();
         Vector3f.cross(lookVec, worldUp, R);
-        // 处理叉积为零的情况（如直视上方/下方）
+        // Handle zero cross-product case (e.g., looking straight up or down)
         if (R.lengthSquared() < 1e-5) {
             float yawRad = (float) Math.toRadians(player.rotationYaw + 90);
             R.set((float) Math.cos(yawRad), 0, (float) -Math.sin(yawRad));
@@ -169,20 +186,20 @@ public class MCH_RenderBVRLockBox {
         Vector3f U = new Vector3f();
         Vector3f.cross(R, lookVec, U);
         U.normalise();
-        // 分解相对坐标到相机轴
+        // Decompose relative coordinates into camera axes
         float dx = Vector3f.dot(rPos, R);
         float dy = Vector3f.dot(rPos, U);
         float dz = Vector3f.dot(rPos, lookVec);
         if (dz <= 0) return new double[]{-1, -1, -1, -1};
-        // 获取显示参数
+        // Get display parameters
         ScaledResolution sc = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
         float fov = Minecraft.getMinecraft().gameSettings.fovSetting;
         double tanHalfFov = Math.tan(Math.toRadians(fov) * 0.5);
         double aspect = (double) sc.getScaledWidth() / sc.getScaledHeight();
-        // 透视投影计算
+        // Perspective projection calculation
         double xProj = (dx / dz) / (aspect * tanHalfFov);
         double yProj = (dy / dz) / tanHalfFov;
-        // 转换为屏幕坐标
+        // Convert to screen coordinates
         double screenX = sc.getScaledWidth() / 2.0 + xProj * (sc.getScaledWidth() / 2.0);
         double screenY = sc.getScaledHeight() / 2.0 - yProj * (sc.getScaledHeight() / 2.0);
         return new double[]{screenX, screenY, screenX - sc.getScaledWidth() / 2.0, screenY - sc.getScaledHeight() / 2.0};
@@ -220,7 +237,7 @@ public class MCH_RenderBVRLockBox {
         return old + (now - old) * partialTicks;
     }
 
-    // 修改后的渲染状态设置
+    // Modified rendering state settings
     private void prepareRenderState(boolean lock, float alpha) {
         GL11.glEnable(3042);
         if(lock) {
