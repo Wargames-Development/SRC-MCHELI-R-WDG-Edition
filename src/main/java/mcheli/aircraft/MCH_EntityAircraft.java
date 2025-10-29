@@ -43,33 +43,36 @@ import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.*;
-import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.MinecraftForge;
 
 import java.util.*;
 
 public abstract class MCH_EntityAircraft extends W_EntityContainer implements MCH_IEntityLockChecker, MCH_IEntityCanRideAircraft, IEntityAdditionalSpawnData {
+
     public static final byte LIMIT_GROUND_PITCH = 40;
     public static final byte LIMIT_GROUND_ROLL = 40;
     public static final int CAMERA_PITCH_MIN = -30;
     public static final int CAMERA_PITCH_MAX = 70;
-    protected static final int DATAWT_ID_FOLD_STAT = 30;
-    protected static final int DATAWT_ID_PART_STAT = 31;
     protected static final int PART_ID_CANOPY = 0;
     protected static final int PART_ID_NOZZLE = 1;
     protected static final int PART_ID_LANDINGGEAR = 2;
     protected static final int PART_ID_WING = 3;
     protected static final int PART_ID_HATCH = 4;
-    //MCH_EntityAircraft ac = null;
     private static final int DATAWT_ID_DAMAGE = 19;
     private static final int DATAWT_ID_TYPE = 20;
     private static final int DATAWT_ID_TEXTURE_NAME = 21;
     private static final int DATAWT_ID_UAV_STATION = 22;
     private static final int DATAWT_ID_STATUS = 23;
+    private static final int DATAWT_ID_USE_WEAPON = 24;
+    private static final int DATAWT_ID_FUEL = 25;
+    private static final int DATAWT_ID_ROT_ROLL = 26;
+    private static final int DATAWT_ID_COMMAND = 27;
+    private static final int DATAWT_ID_THROTTLE = 29;
+    private static final int DATAWT_ID_FOLD_STAT = 30;
+    private static final int DATAWT_ID_PART_STAT = 31;
     private static final int CMN_ID_FLARE = 0;
     private static final int CMN_ID_FREE_LOOK = 1;
     private static final int CMN_ID_RELOADING = 2;
@@ -82,14 +85,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private static final int CMN_ID_CNTRL_UP = 9;
     private static final int CMN_ID_CNTRL_DOWN = 10;
     private static final int CMN_ID_CNTRL_BRAKE = 11;
-    private static final int DATAWT_ID_USE_WEAPON = 24;
-    private static final int DATAWT_ID_FUEL = 25;
-    private static final int DATAWT_ID_ROT_ROLL = 26;
-    private static final int DATAWT_ID_COMMAND = 27;
-    private static final int DATAWT_ID_THROTTLE = 29;
+
     private static final MCH_EntitySeat[] seatsDummy = new MCH_EntitySeat[0];
-    public static boolean newuavvariable = false;
-    private static MCH_EntityAircraft aircraft;
     public final MCH_MissileDetector missileDetector;
     public final HashMap noCollisionEntities = new HashMap();
     protected final MCH_SoundUpdater soundUpdater;
@@ -134,9 +131,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public MCH_Parts partHatch;
     public MCH_Parts partCanopy;
     public MCH_Parts partLandingGear;
-    public double prevRidingEntityPosX;
-    public double prevRidingEntityPosY;
-    public double prevRidingEntityPosZ;
     public boolean canRideRackStatus;
     public Vec3 target = Vec3.createVectorHelper(0, 0, 0);
     public MCH_BoundingBox[] extraBoundingBox;
@@ -163,7 +157,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public float recoilYaw = 0.0F;
     public float recoilValue = 0.0F;
     public int brightnessHigh = 240;
-    public int brightnessLow = 240;
     public float thirdPersonDist = 4.0F;
     public Entity lastAttackedEntity = null;
     public MCH_Chaff chaff;
@@ -174,9 +167,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public float ironCurtainCurrentFactor = 0.5f;
     public int ironCurtainWaveTimer = 0;
     public int chaffUseTime = 0;
-    private Vec3 prevVelocity = null; // 记录上次更新时的速度向量
     public float gForce;
-    private float smoothedGForce = 1.0F;
+    public Entity lastRiddenByEntity;
+    public List<MCH_DamageIndicator> damageIndicatorList = new ArrayList<>();
     protected double velocityX;
     protected double velocityY;
     protected double velocityZ;
@@ -190,12 +183,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     protected MCH_WeaponSet dummyWeapon;
     protected int useWeaponStat;
     protected int hitStatus;
-    public Entity lastRiddenByEntity;
     protected Entity lastRidingEntity;
     protected boolean isGunnerMode = false;
     protected boolean isGunnerModeOtherSeat = false;
     protected boolean isGunnerFreeLookMode = false;
-    private ForgeChunkManager.Ticket chunkTicket;
+    private Vec3 prevVelocity = null;
+    private float smoothedGForce = 1.0F;
     private MCH_AircraftInfo acInfo;
     private int commonStatus;
     private Entity[] partEntities;
@@ -222,11 +215,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private double fuelConsumption;
     private int fuelSuppliedCount;
     private int supplyAmmoWait;
-    //public static boolean isNewUAV = MCH_AircraftInfo.isNewUAV;
-    //public static Entity rider = lastRidingEntity;
-    //MCH_EntityAircraft MCH_EntityUavStation;
     private boolean beforeSupplyAmmo;
-    //public EntityPlayerMP playerEntity = (EntityPlayerMP) getCommandSenderAsPlayer(player);\
     private boolean isParachuting;
     private MCH_Queue prevPosition;
     private int tickRepelling;
@@ -235,7 +224,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private double lastCalcLandInDistanceCount;
     private double lastLandInDistance;
     private boolean switchSeat = false;
-    public List<MCH_DamageIndicator> damageIndicatorList = new ArrayList<>();
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -263,7 +251,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.cs_dismountAll = false;
         this.cs_heliAutoThrottleDown = true;
         this.cs_planeAutoThrottleDown = false;
-        MCH_Config var10001 = MCH_MOD.config;
         super.renderDistanceWeight = MCH_Config.RenderDistanceWeight.prmDouble;
         this.setCommonUniqueId("");
         this.seatSearchCount = 0;
@@ -390,30 +377,27 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     protected void entityInit() {
         super.entityInit();
         this.getDataWatcher().addObject(20, "");
-        this.getDataWatcher().addObject(19, new Integer(0));
-        this.getDataWatcher().addObject(23, new Integer(0));
-        this.getDataWatcher().addObject(24, new Integer(0));
-        this.getDataWatcher().addObject(25, new Integer(0));
+        this.getDataWatcher().addObject(19, 0);
+        this.getDataWatcher().addObject(23, 0);
+        this.getDataWatcher().addObject(24, 0);
+        this.getDataWatcher().addObject(25, 0);
         this.getDataWatcher().addObject(21, "");
-        this.getDataWatcher().addObject(22, new Integer(0));
-        this.getDataWatcher().addObject(26, new Short((short) 0));
-        this.getDataWatcher().addObject(27, new String(""));
-        this.getDataWatcher().addObject(29, new Integer(0));
-        this.getDataWatcher().addObject(31, new Integer(0));
+        this.getDataWatcher().addObject(22, 0);
+        this.getDataWatcher().addObject(26, 0.0F);
+        this.getDataWatcher().addObject(27, "");
+        this.getDataWatcher().addObject(29, 0);
+        this.getDataWatcher().addObject(31, 0);
         if (!super.worldObj.isRemote) {
-            MCH_Config var10002 = MCH_MOD.config;
             this.setCommonStatus(3, MCH_Config.InfinityAmmo.prmBool);
-            var10002 = MCH_MOD.config;
             this.setCommonStatus(4, MCH_Config.InfinityFuel.prmBool);
             setGunnerStatus(true);
-            //if (isUAV());
         }
 
         this.getEntityData().setString("EntityType", this.getEntityType());
     }
 
     public float getServerRoll() {
-        return this.getDataWatcher().getWatchableObjectShort(26);
+        return this.getDataWatcher().getWatchableObjectFloat(26);
     }
 
     public float getRotYaw() {
@@ -461,7 +445,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         float prevYaw = super.prevRotationYaw;
         float currentYaw = this.getRotYaw();
 
-        // Normalize the angles to avoid interpolation issues across the 360° boundary
         while (currentYaw - prevYaw < -180.0F) {
             currentYaw += 360.0F;
         }
@@ -542,19 +525,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public void setTypeName(String s) {
         String beforeType = this.getTypeName();
         if (s != null && !s.isEmpty() && s.compareTo(beforeType) != 0) {
-            this.getDataWatcher().updateObject(20, String.valueOf(s));
+            this.getDataWatcher().updateObject(20, s);
             this.changeType(s);
             this.initRotationYaw(this.getRotYaw());
         }
 
     }
-
-    // if (isNewUAV() = true) {
-    //    System.out.println("isNewUAV() is true");
-//
-    // } else {
-    //    System.out.println("isNewUAV() is false");
-    // }
 
     public abstract void changeType(String var1);
 
@@ -564,10 +540,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean isUAV() {
         return this.getAcInfo() != null && this.getAcInfo().isUAV;
-    }
-
-    public boolean isNewUAV() {
-        return (getAcInfo() != null && (getAcInfo()).isNewUAV);
     }
 
     public boolean isSmallUAV() {
@@ -594,16 +566,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public MCH_EntityUavStation getUavStation() {
-        return (isUAV() || isNewUAV()) ? this.uavStation : null;
+        return this.isUAV() ? this.uavStation : null;
     }
 
     public void setUavStation(MCH_EntityUavStation uavSt) {
         this.uavStation = uavSt;
         if (!super.worldObj.isRemote) {
             if (uavSt != null) {
-                this.getDataWatcher().updateObject(22, Integer.valueOf(W_Entity.getEntityId(uavSt)));
+                this.getDataWatcher().updateObject(22, W_Entity.getEntityId(uavSt));
             } else {
-                this.getDataWatcher().updateObject(22, Integer.valueOf(0));
+                this.getDataWatcher().updateObject(22, 0);
             }
         }
 
@@ -652,7 +624,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             n = 1;
         }
 
-        this.getDataWatcher().updateObject(29, Integer.valueOf(n));
+        this.getDataWatcher().updateObject(29, n);
     }
 
     public int getMaxHP() {
@@ -676,7 +648,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             par1 = this.getMaxHP();
         }
 
-        this.getDataWatcher().updateObject(19, Integer.valueOf(par1));
+        this.getDataWatcher().updateObject(19, par1);
     }
 
     public void destroyAircraft(DamageSource source) {
@@ -721,7 +693,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             } else {
                 // 如果世界难度不为和平模式，创建一个基于爆炸的伤害来源
                 damageSource = DamageSource.setExplosionSource(new Explosion(this.worldObj, this.lastAttackedEntity,
-                        this.posX, this.posY, this.posZ, 1.0F));
+                    this.posX, this.posY, this.posZ, 1.0F));
             }
             if (source != null) {
                 damageSource = source;
@@ -956,7 +928,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             } else if (super.worldObj.isRemote) {
                 return true;
             } else {
-                MCH_Config var10000 = MCH_MOD.config;
                 float damage = MCH_Config.applyDamageByExternal(this, damageSource, org_damage);
                 if (!MCH_Multiplay.canAttackEntity(damageSource, this)) {
                     return false;
@@ -988,7 +959,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "message.mcheli.overpressure", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
                             } else if (lastAttackedEntity instanceof MCH_DummyEntityPlayer) {
                                 EntityPlayer mp = worldObj.getPlayerEntityByName(lastAttackedEntity.getCommandSenderName());
-                                if(mp instanceof EntityPlayerMP) {
+                                if (mp instanceof EntityPlayerMP) {
                                     MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "message.mcheli.overpressure", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) mp);
                                 }
                             }
@@ -1096,8 +1067,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     relDir.xCoord, relDir.yCoord, relDir.zCoord,
                                     weaponName, bbName, damage * 100 / getMaxHP(), getEntityId()));
                             }
-                            if(bbName != null && lastAttackedEntity instanceof EntityPlayer) {
-                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId() , bbName, damage * 100 / getMaxHP(), (byte) 0), (EntityPlayerMP) lastAttackedEntity);
+                            if (bbName != null && lastAttackedEntity instanceof EntityPlayer) {
+                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), bbName, damage * 100 / getMaxHP(), (byte) 0), (EntityPlayerMP) lastAttackedEntity);
                             }
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
                         }
@@ -1145,11 +1116,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                             } else {
                                 if (this.getAcInfo() != null && this.getAcInfo().getItem() != null) {
                                     if (isCreative) {
-                                        var10000 = MCH_MOD.config;
                                         if (MCH_Config.DropItemInCreativeMode.prmBool && !isSneaking) {
                                             this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
                                         }
-                                        var10000 = MCH_MOD.config;
                                         if (!MCH_Config.DropItemInCreativeMode.prmBool && isSneaking) {
                                             this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
                                         }
@@ -1200,12 +1169,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         NBTTagCompound nbt = is.getTagCompound();
         nbt.setString("MCH_Command", this.getCommand());
-        MCH_Config var10000 = MCH_MOD.config;
         if (MCH_Config.ItemFuel.prmBool) {
             nbt.setInteger("MCH_Fuel", this.getFuel());
         }
 
-        var10000 = MCH_MOD.config;
         if (MCH_Config.ItemDamage.prmBool) {
             is.setItemDamage(this.getDamageTaken());
         }
@@ -1216,12 +1183,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (is.hasTagCompound()) {
             NBTTagCompound nbt = is.getTagCompound();
             this.setCommandForce(nbt.getString("MCH_Command"));
-            MCH_Config var10000 = MCH_MOD.config;
             if (MCH_Config.ItemFuel.prmBool) {
                 this.setFuel(nbt.getInteger("MCH_Fuel"));
             }
 
-            var10000 = MCH_MOD.config;
             if (MCH_Config.ItemDamage.prmBool) {
                 this.setDamageTaken(is.getItemDamage());
             }
@@ -1247,9 +1212,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void onFirstUpdate() {
         if (!super.worldObj.isRemote) {
-            MCH_Config var10002 = MCH_MOD.config;
             this.setCommonStatus(3, MCH_Config.InfinityAmmo.prmBool);
-            var10002 = MCH_MOD.config;
             this.setCommonStatus(4, MCH_Config.InfinityFuel.prmBool);
         }
 
@@ -1352,15 +1315,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void setAngles(Entity player, boolean fixRot, float fixYaw, float fixPitch, float deltaX, float deltaY, float x, float y, float partialTicks) {
-        //System.out.println("set angles");
         if (partialTicks < 0.03F) {
             partialTicks = 0.4F;
-            //System.out.println("partial ticks = 0.4");
         }
 
         if (partialTicks > 0.9F) {
             partialTicks = 0.6F;
-            //System.out.println("Partial ticks = 0.6");
         }
 
         this.lowPassPartialTicks.put(partialTicks);
@@ -1489,17 +1449,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         if (!this.isOverridePlayerPitch() && !fixRot) {
-            //System.out.println("this is when the helicopter is hovering");
             player.setAngles(0.0F, deltaY);
         } else {
-            //System.out.println("God's unholy retribution");
             player.prevRotationPitch = this.getRotPitch() + (fixRot ? fixPitch : 0.0F);
             player.rotationPitch = this.getRotPitch() + (fixRot ? fixPitch : 0.0F);
         }
 
         if (this.getRidingEntity() == null && ac_yaw != this.getRotYaw() || ac_pitch != this.getRotPitch() || ac_roll != this.getRotRoll()) {
             this.aircraftRotChanged = true;
-            //System.out.println("aircraft rot changed");
         }
 
     }
@@ -1599,59 +1556,30 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.onUpdate_RidingEntity();
 
         Iterator itr = this.listUnmountReserve.iterator();
-
         while (itr.hasNext()) {
             MCH_EntityAircraft.UnmountReserve ft = (MCH_EntityAircraft.UnmountReserve) itr.next();
             if (ft.entity != null && !ft.entity.isDead) {
                 ft.entity.setPosition(ft.posX, ft.posY, ft.posZ);
                 ft.entity.fallDistance = super.fallDistance;
             }
-
             if (ft.cnt > 0) {
                 --ft.cnt;
             }
-
             if (ft.cnt == 0) {
                 itr.remove();
             }
         }
 
-        //TODO: idrk
-
-        //if (isInLava()) {
-        //   // Apply lava damage at regular intervals
-        //   if (worldObj.getWorldTime() % 20 == 0) { // Apply damage every second (20 ticks)
-        //      attackEntityFrom(DamageSource.LAVA, lavaDamageAmount);
-        //   }
-        //}
-
-        Entity e;
-        int var7;
-        if (isDestroyed() && getCountOnUpdate() % 20 == 0) {
-            /* 1422 */
-            for (int i = 0; i < getSeatNum() + 1; i++) {
-                /* 1423 */
-                Entity entity = getEntityBySeatId(i);
-                /* 1424 */
-                if (entity != null && (i != 0 || !isUAV() || !isNewUAV())) {
-                    /* 1425 */
-                    MCH_Config var10000 = MCH_MOD.config;
-                    /* 1426 */
+        if (this.isDestroyed() && this.getCountOnUpdate() % 10 == 0) {
+            for (int sid = 0; sid < this.getSeatNum() + 1; ++sid) {
+                Entity entity = this.getEntityBySeatId(sid);
+                if (entity != null && (sid != 0 || !this.isUAV())) {
                     if (MCH_Config.applyDamageVsEntity(entity, DamageSource.inFire, 1.0F) > 0.0F) {
-                        /* 1427 */
                         entity.setFire(5);
-                        /*      */
                     }
-                    /*      */
                 }
-                /*      */
             }
-            /*      */
         }
-
-        // if (isDestroyed() && isNewUAV()) {
-        //
-        // }
 
         if ((this.aircraftRotChanged || this.aircraftRollRev) && super.worldObj.isRemote && this.getRiddenByEntity() != null) {
             MCH_PacketIndRotation.send(this);
@@ -1661,7 +1589,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         if (!super.worldObj.isRemote && (int) this.prevRotationRoll != (int) this.getRotRoll()) {
             float var8 = MathHelper.wrapAngleTo180_float(this.getRotRoll());
-            this.getDataWatcher().updateObject(26, new Short((short) ((int) var8)));
+            this.getDataWatcher().updateObject(26, var8);
         }
 
         this.prevRotationRoll = this.getRotRoll();
@@ -1699,10 +1627,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         super.onUpdate();
         if (this.getParts() != null) {
             Entity[] var9 = this.getParts();
-            int var10 = var9.length;
-
-            for (int prevOnGround = 0; prevOnGround < var10; ++prevOnGround) {
-                Entity prevMotionY = var9[prevOnGround];
+            for (Entity prevMotionY : var9) {
                 if (prevMotionY != null) {
                     prevMotionY.onUpdate();
                 }
@@ -1755,7 +1680,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         this.updateSupplyAmmo();
         this.autoRepair();
-        var7 = this.getFlareTick();
+        int ft = this.getFlareTick();
         this.flareDv.update();
         if (this.getAcInfo() != null && this.chaff != null) {
             this.chaff.chaffUseTime = getAcInfo().chaffUseTime;
@@ -1773,11 +1698,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.aps.range = getAcInfo().apsRange;
             this.aps.onUpdate();
         }
-        if (!super.worldObj.isRemote && this.getFlareTick() == 0 && var7 != 0) {
+        if (!super.worldObj.isRemote && this.getFlareTick() == 0 && ft != 0) {
             this.setCommonStatus(0, false);
         }
 
-        e = this.getRiddenByEntity();
+        Entity e = this.getRiddenByEntity();
         if (e != null && !e.isDead && !this.isDestroyed()) {
             this.lastRiderYaw = e.rotationYaw;
             this.prevLastRiderYaw = e.prevRotationYaw;
@@ -1836,6 +1761,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.lastRiddenByEntity = this.getRiddenByEntity();
         this.lastRidingEntity = this.getRidingEntity();
         this.prevPosition.put(Vec3.createVectorHelper(super.posX, super.posY, super.posZ));
+        this.onUpdatePositionSync();
     }
 
     private void updateNoCollisionEntities() {
@@ -2122,10 +2048,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public int getAlt(double px, double py, double pz) {
         int i;
-        for (i = 0; i < 256 && py - (double) i > 0.0D && (py - (double) i >= 256.0D || 0 == W_WorldFunc.getBlockId(super.worldObj, (int) px, (int) py - i, (int) pz)); ++i) {
-            ;
+        for (i = 0;
+             i < 256 && py - (double) i > 0.0D && (py - (double) i >= 256.0D || 0 == W_WorldFunc.getBlockId(super.worldObj, (int) px, (int) py - i, (int) pz));
+             ++i) {
         }
-
         return i;
     }
 
@@ -2206,8 +2132,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void unmountAircraft() {
-        System.out.println("unmount fired");
-        //if this is a newUAV go back to the fuckin station pos.
         Vec3 v = Vec3.createVectorHelper(super.posX, super.posY, super.posZ);
         if (super.ridingEntity instanceof MCH_EntitySeat) {
             MCH_EntityAircraft ac = ((MCH_EntitySeat) super.ridingEntity).getParent();
@@ -2221,7 +2145,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         this.setLocationAndAngles(v.xCoord, v.yCoord, v.zCoord, this.getRotYaw(), this.getRotPitch());
-        this.mountEntity((Entity) null);
+        this.mountEntity(null);
         this.setLocationAndAngles(v.xCoord, v.yCoord, v.zCoord, this.getRotYaw(), this.getRotPitch());
     }
 
@@ -2230,7 +2154,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void unmount(Entity entity) {
-        //same here (maybe?) sir actually nvm this is parachuting unmount lololo
         if (this.getAcInfo() != null) {
             MCH_EntitySeat seat;
             Vec3 dropPos;
@@ -2385,44 +2308,17 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void applyServerPositionAndRotation() {
-        double increment = (double) this.aircraftPosRotInc;
-
-        // Accurate wrapping and double precision
-        double yawDiff = MathHelper.wrapAngleTo180_double(this.aircraftYaw - this.getRotYaw());
-        double rollDiff = MathHelper.wrapAngleTo180_double(this.getServerRoll() - this.getRotRoll());
-
-        //System.out.println("applyServerPositionAndRotation called:");
-        //System.out.println("  Current Yaw: " + this.getRotYaw() + ", Target Yaw: " + this.aircraftYaw + ", Yaw Difference: " + yawDiff);
-        //System.out.println("  Current Roll: " + this.getRotRoll() + ", Target Roll: " + this.getServerRoll() + ", Roll Difference: " + rollDiff);
-
+        double rpinc = this.aircraftPosRotInc;
+        double yaw = MathHelper.wrapAngleTo180_double(this.aircraftYaw - (double) this.getRotYaw());
+        double roll = MathHelper.wrapAngleTo180_double((double) this.getServerRoll() - (double) this.getRotRoll());
         if (!this.isDestroyed() && (!W_Lib.isClientPlayer(this.getRiddenByEntity()) || this.getRidingEntity() != null)) {
-            // Smooth interpolation
-            float newRotYaw = (float) (this.getRotYaw() + yawDiff / increment);
-            float newRotPitch = (float) (this.getRotPitch() + (this.aircraftPitch - this.getRotPitch()) / increment);
-            float newRotRoll = (float) (this.getRotRoll() + rollDiff / increment);
-
-            // Apply the new rotations
-            this.setRotYaw(newRotYaw);
-            this.setRotPitch(newRotPitch);
-            this.setRotRoll(newRotRoll);
-
-            //System.out.println("  New Rotations: Yaw=" + newRotYaw + ", Pitch=" + newRotPitch + ", Roll=" + newRotRoll);
+            this.setRotYaw((float) ((double) this.getRotYaw() + yaw / rpinc));
+            this.setRotPitch((float) ((double) this.getRotPitch() + (this.aircraftPitch - (double) this.getRotPitch()) / rpinc));
+            this.setRotRoll((float) ((double) this.getRotRoll() + roll / rpinc));
         }
-
-        // Smooth position interpolation
-        this.setPosition(
-                super.posX + (this.aircraftX - super.posX) / increment,
-                super.posY + (this.aircraftY - super.posY) / increment,
-                super.posZ + (this.aircraftZ - super.posZ) / increment
-        );
+        this.setPosition(this.posX + (this.aircraftX - this.posX) / rpinc, this.posY + (this.aircraftY - this.posY) / rpinc, this.posZ + (this.aircraftZ - this.posZ) / rpinc);
         this.setRotation(this.getRotYaw(), this.getRotPitch());
-
-        //possible culprit of the bullshit??????
-        //commenting this out makes vehicles behave like leap frogger but it might also cause the vehicle shake bug so I'm like actually lost as to what to do here
         --this.aircraftPosRotInc;
-
-        //System.out.println("  New Position: X=" + super.posX + ", Y=" + super.posY + ", Z=" + super.posZ);
-        //System.out.println("  Remaining Increment: " + this.aircraftPosRotInc);
     }
 
     protected void autoRepair() {
@@ -2439,7 +2335,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 } else {
                     this.repairCount = 40;
                     double hpp = (double) this.getHP() / (double) this.getMaxHP();
-                    MCH_Config var10001 = MCH_MOD.config;
                     if (hpp >= MCH_Config.AutoRepairHP.prmDouble) {
                         this.repair(this.getMaxHP() / 100);
                     }
@@ -2551,7 +2446,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
 
             if (fuel != this.getFuel()) {
-                this.getDataWatcher().updateObject(25, Integer.valueOf(fuel));
+                this.getDataWatcher().updateObject(25, fuel);
             }
         }
 
@@ -2580,8 +2475,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             if (!super.worldObj.isRemote && this.getCountOnUpdate() % 10 == 0) {
                 List list = super.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, this.getBoundingBox().expand((double) range, (double) range, (double) range));
 
-                for (int i = 0; i < list.size(); ++i) {
-                    MCH_EntityAircraft ac = (MCH_EntityAircraft) list.get(i);
+                for (Object o : list) {
+                    MCH_EntityAircraft ac = (MCH_EntityAircraft) o;
                     if (!W_Entity.isEqual(this, ac)) {
                         if ((!super.onGround || ac.canSupply()) && ac.getFuel() < ac.getMaxFuel()) {
                             int fc = ac.getMaxFuel() - ac.getFuel();
@@ -2816,7 +2711,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public MCH_EntityAircraft setTextureName(String name) {
         if (name != null && !name.isEmpty()) {
-            this.getDataWatcher().updateObject(21, String.valueOf(name));
+            this.getDataWatcher().updateObject(21, name);
         }
 
         return this;
@@ -2838,7 +2733,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (max <= 4.0f + eps) {
             float hi = Math.min(4.0f, max);
             if (1.0f <= max + eps) list.add(1.0f);
-            if (hi > 1.0f + eps)  list.add(hi);
+            if (hi > 1.0f + eps) list.add(hi);
         } else {
             float mid = max * 0.5f;
             if (1.0f <= max + eps) list.add(1.0f);
@@ -2865,7 +2760,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (next > max) next = max;
         this.camera.setCameraZoom(next);
     }
-
 
 
     public int getZoomMax() {
@@ -3117,7 +3011,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     protected void onUpdate_updateBlock() {
-        MCH_Config var10000 = MCH_MOD.config;
         if (MCH_Config.Collision_DestroyBlock.prmBool) {
             for (int l = 0; l < 4; ++l) {
                 int i1 = MathHelper.floor_double(super.posX + ((double) (l % 2) - 0.5D) * 0.8D);
@@ -3568,37 +3461,20 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public int getClientPositionDelayCorrection() {
-        return 7;
+        return 0;
     }
 
+    @Override
     public void setPositionAndRotation2(double par1, double par3, double par5, float par7, float par8, int par9) {
-        // Validate inputs
-        if (par9 < 0) {
-            System.out.println("get fucked");
-            throw new IllegalArgumentException("par9 must be non-negative");
-        }
-
-        // Enhanced precision and accuracy
         this.aircraftPosRotInc = par9 + this.getClientPositionDelayCorrection();
         this.aircraftX = par1;
         this.aircraftY = par3;
         this.aircraftZ = par5;
-        this.aircraftYaw = (double) par7;
-        this.aircraftPitch = (double) par8;
-
-        // Apply current velocities
-        super.motionX = this.velocityX;
-        super.motionY = this.velocityY;
-        super.motionZ = this.velocityZ;
-
-        // Log debug information for monitoring
-
-        //this was the last debug stuff I had not commented out
-        //System.out.println("setPositionAndRotation2 called:");
-        //System.out.println("  Position set to: X=" + par1 + ", Y=" + par3 + ", Z=" + par5);
-        //System.out.println("  Rotation set to: Yaw=" + par7 + ", Pitch=" + par8);
-        //System.out.println("  Increment: " + par9);
-        //System.out.println("  Motion set to: motionX=" + super.motionX + ", motionY=" + super.motionY + ", motionZ=" + super.motionZ);
+        this.aircraftYaw = par7;
+        this.aircraftPitch = par8;
+        this.motionX = this.velocityX;
+        this.motionY = this.velocityY;
+        this.motionZ = this.velocityZ;
     }
 
     public void updateRiderPosition(double px, double py, double pz) {
@@ -4032,7 +3908,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         if (this.getTowChainEntity() != null) {
             this.getTowChainEntity().setDead();
-            this.setTowChainEntity((MCH_EntityChain) null);
+            this.setTowChainEntity(null);
         }
 
         Entity[] var6 = this.getParts();
@@ -4059,7 +3935,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             rByEntity = super.riddenByEntity;
             this.camera.initCamera(0, rByEntity);
             if (!super.worldObj.isRemote) {
-                super.riddenByEntity.mountEntity((Entity) null);
+                super.riddenByEntity.mountEntity(null);
             }
         } else if (this.lastRiddenByEntity != null) {
             rByEntity = this.lastRiddenByEntity;
@@ -4068,23 +3944,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
 
-        MCH_Lib.DbgLog(super.worldObj, "unmountEntity:" + rByEntity, new Object[0]);
+        MCH_Lib.DbgLog(super.worldObj, "unmountEntity:" + rByEntity);
         if (!this.isRidePlayer()) {
             this.switchGunnerMode(false);
         }
 
         setCommonStatus(1, false);
-        if (rByEntity != null) {
-            if (isUAV()) {
-                if (rByEntity.ridingEntity instanceof MCH_EntityUavStation) {
-                    rByEntity.mountEntity((Entity) null);
-                }
-            } else if (isNewUAV()) {
-                newuavvariable = true;
-                rByEntity.mountEntity((Entity) getUavStation());
-            } else {
-                setUnmountPosition(rByEntity, (getSeatsInfo()[0]).pos);
-            }
+        if (!this.isUAV()) {
+            this.setUnmountPosition(rByEntity, this.getSeatsInfo()[0].pos);
+        } else if (rByEntity != null && rByEntity.ridingEntity instanceof MCH_EntityUavStation) {
+            rByEntity.mountEntity(null);
         }
 
         super.riddenByEntity = null;
@@ -4525,8 +4394,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 AxisAlignedBB bb = this.getBoundingBox();
                 List list = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, bb.expand(60.0D, 60.0D, 60.0D));
 
-                for (int i = 0; i < list.size(); ++i) {
-                    Entity entity = (Entity) list.get(i);
+                for (Object o : list) {
+                    Entity entity = (Entity) o;
                     if (entity instanceof MCH_EntityAircraft) {
                         MCH_EntityAircraft ac = (MCH_EntityAircraft) entity;
                         if (ac.getAcInfo() != null) {
@@ -4538,25 +4407,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     if (seat != null && seat.riddenByEntity == null) {
                                         Vec3 v = ac.getTransformedPosition(info.getEntryPos());
                                         float r = info.range;
-                                        boolean var10000;
-                                        if (super.posX >= v.xCoord - (double) r && super.posX <= v.xCoord + (double) r) {
-                                            var10000 = true;
-                                        } else {
-                                            var10000 = false;
-                                        }
-
-                                        if (super.posY >= v.yCoord - (double) r && super.posY <= v.yCoord + (double) r) {
-                                            var10000 = true;
-                                        } else {
-                                            var10000 = false;
-                                        }
-
-                                        if (super.posZ >= v.zCoord - (double) r && super.posZ <= v.zCoord + (double) r) {
-                                            var10000 = true;
-                                        } else {
-                                            var10000 = false;
-                                        }
-
                                         if (super.posX >= v.xCoord - (double) r && super.posX <= v.xCoord + (double) r && super.posY >= v.yCoord - (double) r && super.posY <= v.yCoord + (double) r && super.posZ >= v.zCoord - (double) r && super.posZ <= v.zCoord + (double) r && this.canRideAircraft(ac, sid, info)) {
                                             this.canRideRackStatus = true;
                                             return;
@@ -4768,10 +4618,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
         if (!(getAcInfo()).canRide)
             return false;
-        if (this.riddenByEntity == null && !isUAV() && !isNewUAV()) {
+        if (this.riddenByEntity == null && !isUAV()) {
             if (player.ridingEntity instanceof MCH_EntitySeat)
                 return false;
-            if (!canRideSeatOrRack(0, (Entity) player)) {
+            if (!canRideSeatOrRack(0, player)) {
                 return false;
             }
             if (!this.switchSeat) {
@@ -5136,31 +4986,18 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void initCurrentWeapon(Entity entity) {
-        /* 4760 */
         int sid = getSeatIdByEntity(entity);
-        /* 4761 */
         MCH_Lib.DbgLog(this.worldObj, "initCurrentWeapon:" + W_Entity.getEntityId(entity) + ":%d", sid);
-        /* 4762 */
         if (sid >= 0 && sid < this.currentWeaponID.length) {
-            /* 4763 */
             this.currentWeaponID[sid] = -1;
-            /* 4764 */
             if (entity instanceof EntityPlayer) { //|| entity instanceof mcheli.mob.MCH_EntityGunner
-                /* 4765 */
                 this.currentWeaponID[sid] = getNextWeaponID(entity, 1);
-                /* 4766 */
                 switchWeapon(entity, getCurrentWeaponID(entity));
-                /* 4767 */
                 if (this.worldObj.isRemote) {
-                    /* 4768 */
                     MCH_PacketIndNotifyAmmoNum.send(this, -1);
-                    /*      */
                 }
-                /*      */
             }
-            /*      */
         }
-        /*      */
     }
 
     public void initPilotWeapon() {
@@ -5301,82 +5138,43 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public int getCurrentWeaponID(Entity entity) {
-        /* 4881 */
         if (!(entity instanceof EntityPlayer)) { //&& !(entity instanceof mcheli.mob.MCH_EntityGunner)
-            /* 4882 */
             return -1;
-            /*      */
         }
-        /* 4884 */
         int id = getSeatIdByEntity(entity);
-        /* 4885 */
         return (id >= 0 && id < this.currentWeaponID.length) ? this.currentWeaponID[id] : -1;
-        /*      */
     }
 
     public int getNextWeaponID(Entity entity, int step) {
-        /* 4890 */
         if (getAcInfo() == null) {
-            /* 4891 */
             return -1;
-            /*      */
         }
-        /* 4893 */
         int sid = getSeatIdByEntity(entity);
-        /* 4894 */
         if (sid < 0) {
-            /* 4895 */
             return -1;
-            /*      */
         }
-        /* 4897 */
         int id = getCurrentWeaponID(entity);
-        /*      */
-        /*      */
         int i;
-        /* 4900 */
         for (i = 0; i < getWeaponNum(); i++) {
-            /* 4901 */
             if (step >= 0) {
-                /* 4902 */
                 id = (id + 1) % getWeaponNum();
-                /*      */
             } else {
-                /* 4904 */
                 id = (id > 0) ? (id - 1) : (getWeaponNum() - 1);
-                /*      */
             }
-            /*      */
-            /* 4907 */
             MCH_AircraftInfo.Weapon w = getAcInfo().getWeaponById(id);
-            /* 4908 */
             if (w != null) {
-                /* 4909 */
                 MCH_WeaponInfo wi = getWeaponInfoById(id);
-                /* 4910 */
                 int wpsid = getWeaponSeatID(wi, w);
-                /* 4911 */
                 if (wpsid < getSeatNum() + 1 + 1 && (wpsid == sid || (sid == 0 && w.canUsePilot && !(getEntityBySeatId(wpsid) instanceof EntityPlayer)))) { //&& !(getEntityBySeatId(wpsid) instanceof mcheli.mob.MCH_EntityGunner)
-                    /*      */
                     break;
-                    /*      */
                 }
-                /*      */
             }
-            /*      */
         }
-        /*      */
-        /* 4917 */
         if (i >= getWeaponNum()) {
-            /* 4918 */
             return -1;
-            /*      */
         }
-        /* 4920 */
         MCH_Lib.DbgLog(this.worldObj, "getNextWeaponID:%d:->%d", new Object[]{Integer.valueOf(W_Entity.getEntityId(entity)), Integer.valueOf(id)});
-        /* 4921 */
         return id;
-        /*      */
     }
 
     public int getWeaponSeatID(MCH_WeaponInfo wi, MCH_AircraftInfo.Weapon w) {
@@ -5446,7 +5244,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (this.getAcInfo() != null) {
             if (this.getAcInfo().getWeaponNum() > 0) {
                 int prevUseWeaponStat = this.useWeaponStat;
-                if (!super.worldObj.isRemote) {
+                if (!this.worldObj.isRemote) {
                     this.useWeaponStat |= this.getUsedWeaponStat();
                     this.getDataWatcher().updateObject(24, this.useWeaponStat);
                     this.useWeaponStat = 0;
@@ -5457,9 +5255,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 float yaw = MathHelper.wrapAngleTo180_float(this.getRotYaw());
                 float pitch = MathHelper.wrapAngleTo180_float(this.getRotPitch());
                 int id = 0;
-                int wid = 0;
 
-                while (wid < this.weapons.length) {
+                for (int wid = 0; wid < this.weapons.length; ++wid) {
                     MCH_WeaponSet w = this.weapons[wid];
                     boolean isLongDelay = false;
                     if (w.getFirstWeapon() != null) {
@@ -5467,109 +5264,91 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     }
 
                     boolean isSelected = false;
-                    int[] isWpnUsed = this.currentWeaponID;
-                    int wi = isWpnUsed.length;
-                    int entity = 0;
 
-                    while (true) {
-                        if (entity < wi) {
-                            int ep = isWpnUsed[entity];
-                            if (ep != wid) {
-                                ++entity;
-                                continue;
-                            }
-
+                    for (int swid : this.currentWeaponID) {
+                        if (swid == wid) {
                             isSelected = true;
+                            break;
+                        }
+                    }
+
+                    boolean isWpnUsed = false;
+
+                    for (int index = 0; index < w.getWeaponNum(); ++index) {
+                        boolean isPrevUsed = id < 32 && (prevUseWeaponStat & 1 << id) != 0;
+                        boolean isUsed = id < 32 && (this.useWeaponStat & 1 << id) != 0;
+                        if (isLongDelay && isPrevUsed && isUsed) {
+                            isUsed = false;
                         }
 
-                        boolean var16 = false;
-
-                        float ey;
-                        for (wi = 0; wi < w.getWeaponNum(); ++wi) {
-                            boolean var18 = id < 32 && (prevUseWeaponStat & 1 << id) != 0;
-                            boolean var20 = id < 32 && (this.useWeaponStat & 1 << id) != 0;
-                            if (isLongDelay && var18 && var20) {
-                                var20 = false;
+                        isWpnUsed |= isUsed;
+                        if (!isPrevUsed && isUsed) {
+                            float recoil = w.getInfo().recoil;
+                            if (recoil > 0.0F) {
+                                this.recoilCount = 30;
+                                this.recoilValue = recoil;
+                                this.recoilYaw = w.rotationYaw;
                             }
-
-                            var16 |= var20;
-                            if (!var18 && var20) {
-                                ey = w.getInfo().recoil;
-                                if (ey > 0.0F) {
-                                    this.recoilCount = 30;
-                                    this.recoilValue = ey;
-                                    this.recoilYaw = w.rotationYaw;
-                                }
-                            }
-
-                            if (super.worldObj.isRemote && var20) {
-                                Vec3 var21 = MCH_Lib.RotVec3(0.0D, 0.0D, -1.0D, -w.rotationYaw - yaw, -w.rotationPitch);
-                                Vec3 targetYaw = w.getCurrentWeapon().getShotPos(this);
-                                this.spawnParticleMuzzleFlash(super.worldObj, w.getInfo(), super.posX + targetYaw.xCoord, super.posY + targetYaw.yCoord, super.posZ + targetYaw.zCoord, var21);
-                            }
-
-                            w.updateWeapon(this, var20, wi);
-                            ++id;
                         }
 
-                        w.update(this, isSelected, var16);
-                        MCH_AircraftInfo.Weapon var17 = this.getAcInfo().getWeaponById(wid);
-                        if (var17 != null && !this.isDestroyed()) {
-                            Entity var19 = this.getEntityBySeatId(this.getWeaponSeatID(this.getWeaponInfoById(wid), var17));
-                            if (var17.canUsePilot && !(var19 instanceof EntityPlayer)) { //&& !(entity instanceof mcheli.mob.MCH_EntityGunner)
-                                var19 = this.getEntityBySeatId(0);
+                        if (this.worldObj.isRemote && isUsed) {
+                            Vec3 wrv = MCH_Lib.RotVec3((double) 0.0F, (double) 0.0F, (double) -1.0F, -w.rotationYaw - yaw, -w.rotationPitch);
+                            Vec3 spv = w.getCurrentWeapon().getShotPos(this);
+                            this.spawnParticleMuzzleFlash(this.worldObj, w.getInfo(),
+                                this.posX + spv.xCoord,
+                                this.posY + spv.yCoord,
+                                this.posZ + spv.zCoord,
+                                wrv);
+                        }
+
+                        w.updateWeapon(this, isUsed, index);
+                        ++id;
+                    }
+
+                    w.update(this, isSelected, isWpnUsed);
+                    MCH_AircraftInfo.Weapon wi = this.getAcInfo().getWeaponById(wid);
+                    if (wi != null && !this.isDestroyed()) {
+                        Entity entity = this.getEntityBySeatId(this.getWeaponSeatID(this.getWeaponInfoById(wid), wi));
+                        if (wi.canUsePilot && !(entity instanceof EntityPlayer)) { // && !(entity instanceof MCH_EntityGunner)) {
+                            entity = this.getEntityBySeatId(0);
+                        }
+
+                        if (!(entity instanceof EntityPlayer)) { // && !(entity instanceof MCH_EntityGunner)) {
+                            w.rotationTurretYaw = this.getLastRiderYaw() - this.getRotYaw();
+                            if (this.getTowedChainEntity() != null || this.ridingEntity != null) {
+                                w.rotationYaw = 0.0F;
                             }
-
-
-                            if (var19 instanceof EntityPlayer) {
-                                float var22;
-                                if ((int) var17.minYaw != 0 || (int) var17.maxYaw != 0) {
-                                    var22 = var17.turret ? MathHelper.wrapAngleTo180_float(this.getLastRiderYaw()) - yaw : 0.0F;
-                                    ey = MathHelper.wrapAngleTo180_float(var19.rotationYaw - yaw - var17.defaultYaw - var22);
-                                    if (Math.abs((int) var17.minYaw) < 360 && Math.abs((int) var17.maxYaw) < 360) {
-                                        float var23 = MCH_Lib.RNG(ey, var17.minYaw, var17.maxYaw);
-                                        float wy = w.rotationYaw - var17.defaultYaw - var22;
-                                        if (var23 < wy) {
-                                            if (wy - var23 > 15.0F) {
-                                                wy -= 15.0F;
-                                            } else {
-                                                wy = var23;
-                                            }
-                                        } else if (var23 > wy) {
-                                            if (var23 - wy > 15.0F) {
-                                                wy += 15.0F;
-                                            } else {
-                                                wy = var23;
-                                            }
+                        } else {
+                            if ((int) wi.minYaw != 0 || (int) wi.maxYaw != 0) {
+                                float ty = wi.turret ? MathHelper.wrapAngleTo180_float(this.getLastRiderYaw()) - yaw : 0.0F;
+                                float ey = MathHelper.wrapAngleTo180_float(entity.rotationYaw - yaw - wi.defaultYaw - ty);
+                                if (Math.abs((int) wi.minYaw) < 360 && Math.abs((int) wi.maxYaw) < 360) {
+                                    float targetYaw = MCH_Lib.RNG(ey, wi.minYaw, wi.maxYaw);
+                                    float wy = w.rotationYaw - wi.defaultYaw - ty;
+                                    if (targetYaw < wy) {
+                                        if (wy - targetYaw > 15.0F) {
+                                            wy -= 15.0F;
+                                        } else {
+                                            wy = targetYaw;
                                         }
-
-                                        w.rotationYaw = wy + var17.defaultYaw + var22;
-                                    } else {
-                                        w.rotationYaw = ey + var22;
+                                    } else if (targetYaw > wy) {
+                                        if (targetYaw - wy > 15.0F) {
+                                            wy += 15.0F;
+                                        } else {
+                                            wy = targetYaw;
+                                        }
                                     }
-                                }
 
-                                var22 = MathHelper.wrapAngleTo180_float(var19.rotationPitch - pitch);
-                                w.rotationPitch = MCH_Lib.RNG(var22, var17.minPitch, var17.maxPitch);
-                                w.rotationTurretYaw = 0.0F;
-                            } else {
-                                w.rotationTurretYaw = this.getLastRiderYaw() - this.getRotYaw();
-                                if (this.ridingEntity != null) {
-                                    w.rotationYaw = 0.0F;
+                                    w.rotationYaw = wy + wi.defaultYaw + ty;
+                                } else {
+                                    w.rotationYaw = ey + ty;
                                 }
                             }
+
+                            float ep = MathHelper.wrapAngleTo180_float(entity.rotationPitch - pitch);
+                            w.rotationPitch = MCH_Lib.RNG(ep, wi.minPitch, wi.maxPitch);
+                            w.rotationTurretYaw = 0.0F;
                         }
-
-                        //if (!(entity instanceof EntityPlayer) && !(entity instanceof mcheli.mob.MCH_EntityGunner)) {
-                        ///* 5064 */             w.rotationTurretYaw = getLastRiderYaw() - getRotYaw();
-                        ///* 5065 */             if (this.ridingEntity != null) {
-                        ///* 5066 */               w.rotationYaw = 0.0F;
-                        ///*      */             }
-                        ///*      */           } else {
-                        //this is the worst fucking code i have ever dealt with
-
-                        ++wid;
-                        break;
                     }
                 }
 
@@ -5594,20 +5373,19 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         MCH_AircraftInfo.Weapon wi = this.getAcInfo().getWeaponById(wid);
                         if (wi != null) {
                             Entity entity = this.getEntityBySeatId(this.getWeaponSeatID(this.getWeaponInfoById(wid), wi));
-                            if (wi.canUsePilot && !(entity instanceof EntityPlayer)) { //&& !(entity instanceof mcheli.mob.MCH_EntityGunner)
-                                /* 5125 */
-                                entity = getEntityBySeatId(0);
-                                /*      */
+                            if (wi.canUsePilot && !(entity instanceof EntityPlayer)) { // && !(entity instanceof MCH_EntityGunner)) {
+                                entity = this.getEntityBySeatId(0);
                             }
 
-                            if (entity instanceof EntityPlayer) {
-                                float ep;
+                            if (!(entity instanceof EntityPlayer)) { // && !(entity instanceof MCH_EntityGunner)) {
+                                w.rotationTurretYaw = this.getLastRiderYaw() - this.getRotYaw();
+                            } else {
                                 if ((int) wi.minYaw != 0 || (int) wi.maxYaw != 0) {
-                                    ep = wi.turret ? MathHelper.wrapAngleTo180_float(this.getLastRiderYaw()) - yaw : 0.0F;
-                                    float ey = MathHelper.wrapAngleTo180_float(entity.rotationYaw - yaw - wi.defaultYaw - ep);
+                                    float ty = wi.turret ? MathHelper.wrapAngleTo180_float(this.getLastRiderYaw()) - yaw : 0.0F;
+                                    float ey = MathHelper.wrapAngleTo180_float(entity.rotationYaw - yaw - wi.defaultYaw - ty);
                                     if (Math.abs((int) wi.minYaw) < 360 && Math.abs((int) wi.maxYaw) < 360) {
                                         float targetYaw = MCH_Lib.RNG(ey, wi.minYaw, wi.maxYaw);
-                                        float wy = w.rotationYaw - wi.defaultYaw - ep;
+                                        float wy = w.rotationYaw - wi.defaultYaw - ty;
                                         if (targetYaw < wy) {
                                             if (wy - targetYaw > 15.0F) {
                                                 wy -= 15.0F;
@@ -5622,21 +5400,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                             }
                                         }
 
-                                        w.rotationYaw = wy + wi.defaultYaw + ep;
+                                        w.rotationYaw = wy + wi.defaultYaw + ty;
                                     } else {
-                                        w.rotationYaw = ey + ep;
+                                        w.rotationYaw = ey + ty;
                                     }
                                 }
 
-                                ep = MathHelper.wrapAngleTo180_float(entity.rotationPitch - pitch);
+                                float ep = MathHelper.wrapAngleTo180_float(entity.rotationPitch - pitch);
                                 w.rotationPitch = MCH_Lib.RNG(ep, wi.minPitch, wi.maxPitch);
                                 w.rotationTurretYaw = 0.0F;
-                            } else {
-                                w.rotationTurretYaw = this.getLastRiderYaw() - this.getRotYaw();
                             }
-
-                            //if (!(entity instanceof EntityPlayer) && !(entity instanceof mcheli.mob.MCH_EntityGunner)) {
-                            ///* 5129 */             w.rotationTurretYaw = getLastRiderYaw() - getRotYaw();
                         }
 
                         w.prevRotationYaw = w.rotationYaw;
@@ -5646,6 +5419,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
     }
+
 
     private void spawnParticleMuzzleFlash(World w, MCH_WeaponInfo wi, double px, double py, double pz, Vec3 wrv) {
         Iterator i$;
@@ -5744,31 +5518,15 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void initRotationYaw(float yaw) {
-        // Set the yaw for the current object and ensure consistency
         super.rotationYaw = yaw;
         super.prevRotationYaw = yaw;
         this.lastRiderYaw = yaw;
         this.lastSearchLightYaw = yaw;
-
-        // Log the initial yaw value for debugging
-        //System.out.println("Initializing rotation yaw to: " + yaw);
-
-        // Ensure the weapons array is not null before processing
         if (this.weapons != null) {
-            // Use an enhanced for-loop for better readability
-            for (MCH_WeaponSet weapon : this.weapons) {
-                // Ensure the weapon is not null before accessing its properties
-                if (weapon != null) {
-                    weapon.rotationYaw = weapon.defaultRotationYaw;
-                    weapon.rotationPitch = 0.0F;
-                } else {
-                    // Log a warning if a weapon in the array is null
-                    System.out.println("Warning: Null weapon encountered in weapons array.");
-                }
+            for (MCH_WeaponSet w : this.weapons) {
+                w.rotationYaw = w.defaultRotationYaw;
+                w.rotationPitch = 0.0F;
             }
-        } else {
-            // Log a warning if the weapons array is null
-            System.out.println("Warning: Weapons array is null.");
         }
     }
 
@@ -5794,23 +5552,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public abstract Item getItem();
 
     public MCH_BoundingBox[] createExtraBoundingBox() {
-        // Get the list of extra bounding boxes
         MCH_AircraftInfo acInfo = this.getAcInfo();
         if (acInfo == null || acInfo.extraBoundingBox == null) {
             return new MCH_BoundingBox[0];
         }
-
         List<MCH_BoundingBox> boundingBoxes = acInfo.extraBoundingBox;
-
-        // Initialize the array with the size of the list
         MCH_BoundingBox[] ar = new MCH_BoundingBox[boundingBoxes.size()];
-
-        // Iterate over the list and copy each bounding box to the array
         int i = 0;
         for (MCH_BoundingBox bb : boundingBoxes) {
             ar[i++] = bb.copy();
         }
-
         return ar;
     }
 
@@ -5819,40 +5570,29 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return list;
     }
 
-    private void forceChunkLoading() {
-        if (!super.worldObj.isRemote) {
-            // Request a chunk loading ticket
-            this.chunkTicket = ForgeChunkManager.requestTicket(MCH_MOD.instance, super.worldObj, ForgeChunkManager.Type.NORMAL);
-            if (this.chunkTicket != null) {
-                // Mark the chunk for loading
-                int chunkX = MathHelper.floor_double(super.posX) >> 4;
-                int chunkZ = MathHelper.floor_double(super.posZ) >> 4;
-                ForgeChunkManager.forceChunk(this.chunkTicket, new ChunkCoordIntPair(chunkX, chunkZ));
-            }
-        }
-    }
-
-
     public void updateUAV() {
-        if (this.isUAV() || this.isNewUAV()) {
-            if (super.worldObj.isRemote) {
-                int udx = this.getDataWatcher().getWatchableObjectInt(22);
-                if (udx > 0) {
+        if (this.isUAV()) {
+            if (this.worldObj.isRemote) {
+                int eid = this.getDataWatcher().getWatchableObjectInt(22);
+                if (eid > 0) {
                     if (this.uavStation == null) {
-                        Entity uavEntity = super.worldObj.getEntityByID(udx);
+                        Entity uavEntity = this.worldObj.getEntityByID(eid);
                         if (uavEntity instanceof MCH_EntityUavStation) {
                             this.uavStation = (MCH_EntityUavStation) uavEntity;
                             this.uavStation.setControlAircract(this);
                         }
                     }
                 } else if (this.uavStation != null) {
+                    this.uavStation.setControlAircract(null);
+                    this.uavStation = null;
                 }
             } else if (this.uavStation != null) {
-                double udx1 = super.posX - this.uavStation.posX;
-                double udz = super.posZ - this.uavStation.posZ;
-                if (udx1 * udx1 + udz * udz > 15625000.0D) {
+                double udx = this.posX - this.uavStation.posX;
+                double udz = this.posZ - this.uavStation.posZ;
+                if (udx * udx + udz * udz > 1024 * 1024) {
                     this.uavStation.setControlAircract(null);
                     this.setUavStation(null);
+                    this.attackEntityFrom(DamageSource.outOfWorld, this.getMaxHP() + 10);
                 }
             }
             if (this.uavStation != null && this.uavStation.isDead) {
@@ -5860,6 +5600,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
     }
+
 
     public void switchGunnerMode(boolean mode) {
         boolean debug_bk_mode = this.isGunnerMode;
@@ -5927,9 +5668,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         MovingObjectPosition hitResult = null;
         for (int i = 1; i <= numSegments; i++) {
             Vec3 dst = W_WorldFunc.getWorldVec3(this.worldObj,
-                    posX + targetX * i / numSegments,
-                    posY + targetY * i / numSegments,
-                    posZ + targetZ * i / numSegments);
+                posX + targetX * i / numSegments,
+                posY + targetY * i / numSegments,
+                posZ + targetZ * i / numSegments);
             List<MovingObjectPosition> hits = MCH_RayTracer.rayTraceAllBlocks(this.worldObj, src, dst, false, true, true);
             if (hits != null && !hits.isEmpty()) {
                 hitResult = hits.get(0);
@@ -5941,15 +5682,15 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         // 如果没有命中方块，则默认将远端目标作为命中点
         if (hitResult == null) {
             hitResult = new MovingObjectPosition(null,
-                    src.addVector(targetX, targetY, targetZ));
+                src.addVector(targetX, targetY, targetZ));
         }
 
         // 计算摄像机到命中点的距离并取整
         Vec3 hitVec = hitResult.hitVec;
         dist = (int) Math.sqrt(
-                (hitVec.xCoord - posX) * (hitVec.xCoord - posX) +
-                        (hitVec.yCoord - posY) * (hitVec.yCoord - posY) +
-                        (hitVec.zCoord - posZ) * (hitVec.zCoord - posZ)
+            (hitVec.xCoord - posX) * (hitVec.xCoord - posX) +
+                (hitVec.yCoord - posY) * (hitVec.yCoord - posY) +
+                (hitVec.zCoord - posZ) * (hitVec.zCoord - posZ)
         );
 
         wb.setAirburstDist(dist);
@@ -6093,7 +5834,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     private void setPartStatus(int n) {
-        this.getDataWatcher().updateObject(31, Integer.valueOf(n));
+        this.getDataWatcher().updateObject(31, n);
     }
 
     protected void initPartRotation(float yaw, float pitch) {
@@ -6405,22 +6146,23 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 -this.getRotPitch(),
                 -this.getRotRoll());
             double verticalAcc = acc.dotProduct(upVec);
-
-            // 计算瞬时 g 值：垂直加速度除以重力加上 1g:contentReference[oaicite:0]{index=0}
-            float instantG = (float)(verticalAcc / getAcInfo().gravity + 1.0D);
-
-            // 指数平滑：用之前的 smoothedGForce 和当前瞬时 g 按权重混合
-            float smoothing = 0.05F; // 平滑因子，可根据需要调整，越小越稳定
+            float instantG = (float) (verticalAcc / getAcInfo().gravity + 1.0D);
+            float smoothing = 0.05F;
             this.smoothedGForce = this.smoothedGForce * (1.0F - smoothing) + instantG * smoothing;
-
-            // 将平滑后的结果赋给 gForce 用于 HUD 显示
             this.gForce = this.smoothedGForce;
         } else {
-            // 没有前一帧速度，默认 1g
             this.gForce = 1.0F;
             this.smoothedGForce = 1.0F;
         }
         this.prevVelocity = currentVel;
+    }
+
+    private void onUpdatePositionSync() {
+        if (worldObj.isRemote) {
+            return;
+        }
+        //有bug
+        //MCH_MOD.getPacketHandler().sendToDimension(new PacketAircraftPositionSync(posX, posY, posZ, rotationYaw, rotationPitch, rotationRoll, getEntityId()), dimension);
     }
 
     public class WeaponBay {
