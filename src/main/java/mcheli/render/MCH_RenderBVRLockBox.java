@@ -68,7 +68,7 @@ public class MCH_RenderBVRLockBox {
                 double y = interpolate(entity.posY, entity.lastTickPosY, event.partialTicks) + 1;
                 double z = interpolate(entity.posZ, entity.lastTickPosZ, event.partialTicks);
                 Vec3 entityPos = Vec3.createVectorHelper(x, y, z);
-                double[] screenPos = worldToScreen(new Vector3f(entityPos));
+                double[] screenPos = worldToScreen(new Vector3f(entityPos), event.partialTicks);
                 double sx = screenPos[0];
                 double sy = screenPos[1];
                 boolean lock = false;
@@ -147,46 +147,51 @@ public class MCH_RenderBVRLockBox {
         return result;
     }
 
-    private double[] worldToScreen(Vector3f pos) {
-        EntityClientPlayerMP player = Minecraft.getMinecraft().thePlayer;
-        Vector3f playerPos = new Vector3f(RenderManager.renderPosX, RenderManager.renderPosY, RenderManager.renderPosZ);
+    public static double[] worldToScreen(Vector3f pos, float partialTicks) {
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityClientPlayerMP viewer = mc.thePlayer;
+        if (viewer == null) return new double[]{-1, -1, -1, -1};
+        Vector3f camPos = new Vector3f(
+            (float) RenderManager.renderPosX,
+            (float) RenderManager.renderPosY,
+            (float) RenderManager.renderPosZ
+        );
         Vector3f rPos = new Vector3f();
-        Vector3f.sub(pos, playerPos, rPos);
-        Vector3f lookVec = new Vector3f(player.getLookVec());
-        if(Math.toDegrees(Vector3f.angle(rPos, lookVec)) > 45) {
-            return new double[] {-1, -1, -1, -1};
-        }
-        // 计算相机坐标系
+        Vector3f.sub(pos, camPos, rPos);
+        Vec3 fwdV3 = viewer.getLook(partialTicks);
+        Vector3f F = new Vector3f((float) fwdV3.xCoord, (float) fwdV3.yCoord, (float) fwdV3.zCoord);
+        F.normalise();
         Vector3f worldUp = new Vector3f(0, 1, 0);
         Vector3f R = new Vector3f();
-        Vector3f.cross(lookVec, worldUp, R);
-        // 处理叉积为零的情况（如直视上方/下方）
-        if (R.lengthSquared() < 1e-5) {
-            float yawRad = (float) Math.toRadians(player.rotationYaw + 90);
-            R.set((float) Math.cos(yawRad), 0, (float) -Math.sin(yawRad));
+        Vector3f.cross(F, worldUp, R);
+        if (R.lengthSquared() < 1e-5f) {
+            float yawRad = (float) Math.toRadians(viewer.rotationYaw + 90.0f);
+            R.set((float) Math.cos(yawRad), 0f, (float) -Math.sin(yawRad));
         }
         R.normalise();
         Vector3f U = new Vector3f();
-        Vector3f.cross(R, lookVec, U);
+        Vector3f.cross(R, F, U);
         U.normalise();
-        // 分解相对坐标到相机轴
         float dx = Vector3f.dot(rPos, R);
         float dy = Vector3f.dot(rPos, U);
-        float dz = Vector3f.dot(rPos, lookVec);
+        float dz = Vector3f.dot(rPos, F);
         if (dz <= 0) return new double[]{-1, -1, -1, -1};
-        // 获取显示参数
-        ScaledResolution sc = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
-        float fov = Minecraft.getMinecraft().gameSettings.fovSetting;
-        double tanHalfFov = Math.tan(Math.toRadians(fov) * 0.5);
-        double aspect = (double) sc.getScaledWidth() / sc.getScaledHeight();
-        // 透视投影计算
-        double xProj = (dx / dz) / (aspect * tanHalfFov);
-        double yProj = (dy / dz) / tanHalfFov;
-        // 转换为屏幕坐标
-        double screenX = sc.getScaledWidth() / 2.0 + xProj * (sc.getScaledWidth() / 2.0);
-        double screenY = sc.getScaledHeight() / 2.0 - yProj * (sc.getScaledHeight() / 2.0);
-        return new double[]{screenX, screenY, screenX - sc.getScaledWidth() / 2.0, screenY - sc.getScaledHeight() / 2.0};
+        double fovDeg = mc.gameSettings.fovSetting;
+        double tanHalfFov = Math.tan(Math.toRadians(fovDeg) * 0.5);
+        double aspect = (double) mc.displayWidth / (double) mc.displayHeight;
+        double ndcX = (dx / dz) / (aspect * tanHalfFov);
+        double ndcY = (dy / dz) / (tanHalfFov);
+        ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        double cx = sc.getScaledWidth() * 0.5;
+        double cy = sc.getScaledHeight() * 0.5;
+        double screenX = cx + ndcX * cx;
+        double screenY = cy - ndcY * cy;
+        return new double[]{
+            screenX, screenY,
+            screenX - cx, screenY - cy
+        };
     }
+
 
     private void drawEntityMarker(double x, double y, boolean lock, float alpha) {
         prepareRenderState(lock, alpha);
@@ -220,7 +225,6 @@ public class MCH_RenderBVRLockBox {
         return old + (now - old) * partialTicks;
     }
 
-    // 修改后的渲染状态设置
     private void prepareRenderState(boolean lock, float alpha) {
         GL11.glEnable(3042);
         if(lock) {
@@ -238,53 +242,5 @@ public class MCH_RenderBVRLockBox {
         GL11.glDisable(3042);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
     }
-
-
-    //    public static Vector4f Multiply(Vector4f vec, float[] mat) {
-//        return new Vector4f(
-//                vec.x * mat[0] + vec.y * mat[4] + vec.z * mat[8] + vec.w * mat[12],
-//                vec.x * mat[1] + vec.y * mat[5] + vec.z * mat[9] + vec.w * mat[13],
-//                vec.x * mat[2] + vec.y * mat[6] + vec.z * mat[10] + vec.w * mat[14],
-//                vec.x * mat[3] + vec.y * mat[7] + vec.z * mat[11] + vec.w * mat[15]
-//        );
-//    }
-//
-//    public static float[] bufferToArray(FloatBuffer buffer) {
-//        if (buffer.capacity() < 16) {
-//            throw new IllegalArgumentException("FloatBuffer must have at least 16 elements.");
-//        }
-//        int originalPosition = buffer.position(); // 保存原始位置
-//        buffer.position(0); // 重置到起始位置
-//        float[] array = new float[16];
-//        buffer.get(array); // 读取16个元素
-//        buffer.position(originalPosition); // 恢复原始位置
-//        return array;
-//    }
-//
-//    public static int[] bufferToArray(IntBuffer buffer) {
-//        if (buffer.capacity() < 16) {
-//            throw new IllegalArgumentException("IntBuffer must have at least 16 elements.");
-//        }
-//        int originalPosition = buffer.position();
-//        buffer.position(0);
-//        int[] array = new int[16];
-//        buffer.get(array);
-//        buffer.position(originalPosition);
-//        return array;
-//    }
-
-//    private double[] worldToScreen(Vec3 pos) {
-//        Vector4f clipSpacePos = Multiply(new Vector4f((float) pos.xCoord, (float) pos.yCoord, (float) pos.zCoord, 1.0f), bufferToArray(MCH_RenderUtil.modelview));
-//        clipSpacePos = Multiply(clipSpacePos, bufferToArray(MCH_RenderUtil.projection));
-//        Vector3f ndcSpacePos = new Vector3f(clipSpacePos.x / clipSpacePos.w, clipSpacePos.y / clipSpacePos.w, clipSpacePos.z / clipSpacePos.w);
-//        int[] viewPort = bufferToArray(MCH_RenderUtil.viewport);
-//        if (ndcSpacePos.z < -1.0f || ndcSpacePos.z > 1.0f) {
-//            return new double[]{0, 0};
-//        }
-//        return new double[] {
-//                ((ndcSpacePos.x + 1.0f) / 2.0f) * viewPort[2],
-//                ((1.0f - ndcSpacePos.y) / 2.0f) * viewPort[3]
-//        };
-//    }
 
 }

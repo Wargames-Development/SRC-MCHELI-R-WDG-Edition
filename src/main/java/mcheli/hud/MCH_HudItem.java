@@ -305,6 +305,9 @@ public abstract class MCH_HudItem extends Gui {
             if (wb instanceof MCH_WeaponRailgun) {
                 railgun_time = ((MCH_WeaponRailgun) wb).getRailgunTime();
             }
+            if (wb instanceof MCH_WeaponASMissile) {
+                lock = ((MCH_WeaponASMissile) wb).getLockTime();
+            }
             has_airburst = wb.airburstDist == 0 ? 0 : 1;
         }
 

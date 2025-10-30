@@ -759,6 +759,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         this.setPosition(super.posX, super.posY, super.posZ);
+
+        onUpdateSpreader();
     }
 
     private void onUpdateAirburst() {
@@ -1101,6 +1103,36 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         decayFactor = decay.calculateDecayFactor(dist);
                     }
                     damageFactor *= decayFactor;
+                }
+                //药水效果
+                List<EntityLivingBase> livingList = new ArrayList<>();
+                if (m.entityHit instanceof EntityLivingBase) {
+                    livingList.add((EntityLivingBase) m.entityHit);
+                }
+                if (m.entityHit instanceof MCH_EntityAircraft) {
+                    MCH_EntityAircraft ac = (MCH_EntityAircraft) m.entityHit;
+                    if (ac.riddenByEntity instanceof EntityLivingBase) {
+                        livingList.add((EntityLivingBase) ac.riddenByEntity);
+                    }
+                    if (ac.getSeats() != null) {
+                        for (MCH_EntitySeat seat : ac.getSeats()) {
+                            if (seat.riddenByEntity instanceof EntityLivingBase) {
+                                livingList.add((EntityLivingBase) seat.riddenByEntity);
+                            }
+                        }
+                    }
+                }
+                for (EntityLivingBase livingBase : livingList) {
+                    float dist = 0;
+                    if (initPos != null) {
+                        dist = (float) initPos.distanceTo(hitVec);
+                    }
+                    for (MCH_PotionEffect effect : getInfo().potionEffect) {
+                        if ((effect.startDist < 0 && effect.endDist < 0)
+                            || (effect.startDist <= dist && dist < effect.endDist)) {
+                            livingBase.addPotionEffect(effect.potionEffect);
+                        }
+                    }
                 }
                 this.onImpactEntity(m.entityHit, damageFactor, hitVec);
                 this.piercing--;
@@ -1607,6 +1639,38 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 numLockedChaff++;
             } else if (closestTarget != null) {
                 targetEntity = closestTarget;
+            }
+        }
+    }
+
+
+    public void onUpdateSpreader() {
+        if (!super.worldObj.isRemote) {
+            if (this.getInfo().spawnBulletInAir && this.spawnedBulletNum < getInfo().spawnBulletMaxNum && !super.isDead) {
+                if (this.ticksExisted > 5 && this.ticksExisted % getInfo().spawnBulletIntervalTick == 0) {
+                    ++this.spawnedBulletNum;
+                    for (int i = 0; i < this.getInfo().spawnBulletPerNum; ++i) {
+                        double mX = 1e-6, mY = 1e-6, mZ = 1e-6, speed = 0.001;
+                        if(getInfo().spawnBulletInheritSpeed) {
+                            mX = motionX;
+                            mY = motionY;
+                            mZ = motionZ;
+                            speed = acceleration;
+                        }
+                        MCH_EntityRocket e = new MCH_EntityRocket(super.worldObj, posX, posY, posZ, mX, mY, mZ, rotationYaw, rotationPitch, speed);
+                        e.setName(getInfo().bombletModelName);
+                        e.setParameterFromWeapon(shootingAircraft, shootingEntity);
+                        e.setPower(e.getInfo().power);
+                        e.explosionPower = e.getInfo().explosion;
+                        e.explosionPowerInWater = e.getInfo().explosionInWater;
+                        float MOTION = this.getInfo().bombletDiff;
+                        e.motionX += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                        e.motionY += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                        e.motionZ += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+
+                        super.worldObj.spawnEntityInWorld(e);
+                    }
+                }
             }
         }
     }

@@ -18,6 +18,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.*;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MCH_WeaponLaser extends MCH_WeaponBase {
@@ -29,6 +30,86 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
         super.acceleration = 4.0F;
         super.explosionPower = 0;
         super.interval = 0;
+    }
+
+    public static boolean canHitByLaser(Entity entity, MCH_WeaponParam prm) {
+        if (entity == null || entity.isDead) return false;
+        if (entity instanceof MCH_EntityChain) return false;
+        if (entity instanceof MCH_EntityBaseBullet) {
+            MCH_EntityBaseBullet b = (MCH_EntityBaseBullet) entity;
+            if (b.getInfo() != null) {
+                if (!b.getInfo().canBeIntercepted) {
+                    return false;
+                }
+            }
+            if (W_Entity.isEqual(b.shootingAircraft, prm.entity)) return false;
+            if (W_Entity.isEqual(b.shootingEntity, prm.user)) return false;
+        }
+        if (entity instanceof MCH_EntitySeat) return false;
+        if (entity instanceof MCH_EntityHide) return false;
+        if (entity instanceof MCH_EntityHitBox) {
+            if (W_Entity.isEqual(((MCH_EntityHitBox) entity).parent, prm.entity)) return false;
+        }
+        if (W_Entity.isEqual(entity, prm.user)) return false;
+        if (W_Entity.isEqual(entity, prm.user.ridingEntity)) return false;
+        if (prm.entity instanceof MCH_EntityAircraft) {
+            if (W_Entity.isEqual(entity, prm.entity)) return false;
+            if (((MCH_EntityAircraft) prm.entity).isMountedEntity(entity)) return false;
+        }
+        return true;
+    }
+
+    public static MovingObjectPosition laserRaytrace(MCH_WeaponParam param, Vec3 start, Vec3 lookVec, Vec3 end) {
+        double maxDoubledDist = start.distanceTo(end);
+        Entity user = param.user;
+        Entity pointedEntity = null;
+        MovingObjectPosition result = MCH_RayTracer.rayTrace(user.worldObj, start, end);
+        double dist = maxDoubledDist;
+        if (result != null) {
+            dist = result.hitVec.distanceTo(start);
+        }
+        Vec3 hitVec = null;
+        float f1 = 1.0F;
+        List list = user.worldObj.getEntitiesWithinAABBExcludingEntity(user,
+            user.boundingBox.addCoord(lookVec.xCoord * maxDoubledDist, lookVec.yCoord * maxDoubledDist, lookVec.zCoord * maxDoubledDist).expand(f1, f1, f1));
+        double d2 = dist;
+
+        for (Object o : list) {
+            Entity entity = (Entity) o;
+            if (entity.canBeCollidedWith()
+                && canHitByLaser(entity, param)) {
+                float f2 = entity.getCollisionBorderSize();
+                AxisAlignedBB axisalignedbb = entity.boundingBox.expand(f2, f2, f2);
+                MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(start, end);
+                if (axisalignedbb.isVecInside(start)) {
+                    if (0.0D < d2 || d2 == 0.0D) {
+                        pointedEntity = entity;
+                        hitVec = movingobjectposition == null ? start : movingobjectposition.hitVec;
+                        d2 = 0.0D;
+                    }
+                } else if (movingobjectposition != null) {
+                    double d3 = start.distanceTo(movingobjectposition.hitVec);
+                    if (d3 < d2 || d2 == 0.0D) {
+                        if (entity == user.ridingEntity && !entity.canRiderInteract()) {
+                            if (d2 == 0.0D) {
+                                pointedEntity = entity;
+                                hitVec = movingobjectposition.hitVec;
+                            }
+                        } else {
+                            pointedEntity = entity;
+                            hitVec = movingobjectposition.hitVec;
+                            d2 = d3;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (pointedEntity != null && (d2 < dist || result == null)) {
+            result = new MovingObjectPosition(pointedEntity, hitVec);
+        }
+
+        return result;
     }
 
     @Override
@@ -73,7 +154,6 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
     private void updateLaserBB(MCH_WeaponParam prm, double tX, double tY, double tZ) {
     }
 
-
     private void onLaserStrike(World worldObj,
                                MCH_WeaponParam prm,
                                double tX, double tY, double tZ) {
@@ -105,7 +185,7 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
                     DamageSource ds = DamageSource.causeThrownDamage(prm.entity, prm.user);
                     float damage = MCH_Config.applyDamageVsEntity(hit, ds, power);
                     damage *= (this.getInfo() != null) ? this.getInfo().getDamageFactor(hit) : 1.0F;
-                    if(weaponInfo.enableBulletDecay) {
+                    if (weaponInfo.enableBulletDecay) {
                         float decayFactor = 1f;
                         float dist = (float) start.distanceTo(hitVec);
                         for (MCH_IBulletDecay decay : weaponInfo.bulletDecay) {
@@ -113,8 +193,33 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
                         }
                         damage *= decayFactor;
                     }
-                    if(hit instanceof EntityLivingBase) {
+                    //药水/火焰效果
+                    List<EntityLivingBase> livingList = new ArrayList<>();
+                    if (hit instanceof EntityLivingBase) {
                         hit.setFire(5);
+                        livingList.add((EntityLivingBase) hit);
+                    }
+                    if (hit instanceof MCH_EntityAircraft) {
+                        MCH_EntityAircraft ac = (MCH_EntityAircraft) hit;
+                        if (ac.riddenByEntity instanceof EntityLivingBase) {
+                            livingList.add((EntityLivingBase) ac.riddenByEntity);
+                        }
+                        if (ac.getSeats() != null) {
+                            for (MCH_EntitySeat seat : ac.getSeats()) {
+                                if (seat.riddenByEntity instanceof EntityLivingBase) {
+                                    livingList.add((EntityLivingBase) seat.riddenByEntity);
+                                }
+                            }
+                        }
+                    }
+                    for (EntityLivingBase livingBase : livingList) {
+                        float dist = (float) start.distanceTo(hitVec);
+                        for (MCH_PotionEffect effect : getInfo().potionEffect) {
+                            if ((effect.startDist < 0 && effect.endDist < 0)
+                                || (effect.startDist <= dist && dist < effect.endDist)) {
+                                livingBase.addPotionEffect(effect.potionEffect);
+                            }
+                        }
                     }
                     hit.attackEntityFrom(ds, damage);
                     if (prm.user instanceof EntityPlayer && prm.entity instanceof MCH_EntityAircraft) {
@@ -138,7 +243,6 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
         MCH_RenderLaser.addBeam(start, hit, argb, width, life, pulsate, weaponInfo.turningFactor);
     }
 
-
     @SideOnly(Side.CLIENT)
     public void spawnBlockPar(MovingObjectPosition raytraceResult) {
         for (int i = 0; i < getInfo().numParticlesFlak; i++) {
@@ -149,7 +253,7 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
 
             final double vx = (getInfo().flakParticlesDiff / 2.0) * rand.nextGaussian();
             final double vz = (getInfo().flakParticlesDiff / 2.0) * rand.nextGaussian();
-            final double vy = (getInfo().flakParticlesDiff)       * Math.abs(rand.nextGaussian());
+            final double vy = (getInfo().flakParticlesDiff) * Math.abs(rand.nextGaussian());
 
             EntityFX fxWhite = new EntityCloudFX(worldObj, px, py, pz, 0D, 0D, 0D);
             fxWhite.motionX += vx;
@@ -174,88 +278,6 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
             fxFlame.renderDistanceWeight = 500D;
             FMLClientHandler.instance().getClient().effectRenderer.addEffect(fxFlame);
         }
-    }
-
-
-    public static boolean canHitByLaser(Entity entity, MCH_WeaponParam prm) {
-        if (entity == null || entity.isDead) return false;
-        if (entity instanceof MCH_EntityChain) return false;
-        if (entity instanceof MCH_EntityBaseBullet) {
-            MCH_EntityBaseBullet b = (MCH_EntityBaseBullet) entity;
-            if (b.getInfo() != null) {
-                if (!b.getInfo().canBeIntercepted) {
-                    return false;
-                }
-            }
-            if (W_Entity.isEqual(b.shootingAircraft, prm.entity)) return false;
-            if (W_Entity.isEqual(b.shootingEntity, prm.user)) return false;
-        }
-        if (entity instanceof MCH_EntitySeat) return false;
-        if (entity instanceof MCH_EntityHide) return false;
-        if (entity instanceof MCH_EntityHitBox) {
-            if(W_Entity.isEqual(((MCH_EntityHitBox) entity).parent, prm.entity)) return false;
-        }
-        if (W_Entity.isEqual(entity, prm.user)) return false;
-        if (W_Entity.isEqual(entity, prm.user.ridingEntity)) return false;
-        if (prm.entity instanceof MCH_EntityAircraft) {
-            if (W_Entity.isEqual(entity, prm.entity)) return false;
-            if (((MCH_EntityAircraft) prm.entity).isMountedEntity(entity)) return false;
-        }
-        return true;
-    }
-
-
-    public static MovingObjectPosition laserRaytrace(MCH_WeaponParam param, Vec3 start, Vec3 lookVec, Vec3 end) {
-        double maxDoubledDist = start.distanceTo(end);
-        Entity user = param.user;
-        Entity pointedEntity = null;
-        MovingObjectPosition result = MCH_RayTracer.rayTrace(user.worldObj, start, end);
-        double dist = maxDoubledDist;
-        if(result != null) {
-            dist = result.hitVec.distanceTo(start);
-        }
-        Vec3 hitVec = null;
-        float f1 = 1.0F;
-        List list = user.worldObj.getEntitiesWithinAABBExcludingEntity(user,
-            user.boundingBox.addCoord(lookVec.xCoord * maxDoubledDist, lookVec.yCoord * maxDoubledDist, lookVec.zCoord * maxDoubledDist).expand(f1, f1, f1));
-        double d2 = dist;
-
-        for (Object o : list) {
-            Entity entity = (Entity) o;
-            if (entity.canBeCollidedWith()
-                && canHitByLaser(entity, param)) {
-                float f2 = entity.getCollisionBorderSize();
-                AxisAlignedBB axisalignedbb = entity.boundingBox.expand(f2, f2, f2);
-                MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(start, end);
-                if (axisalignedbb.isVecInside(start)) {
-                    if (0.0D < d2 || d2 == 0.0D) {
-                        pointedEntity = entity;
-                        hitVec = movingobjectposition == null ? start : movingobjectposition.hitVec;
-                        d2 = 0.0D;
-                    }
-                } else if (movingobjectposition != null) {
-                    double d3 = start.distanceTo(movingobjectposition.hitVec);
-                    if (d3 < d2 || d2 == 0.0D) {
-                        if (entity == user.ridingEntity && !entity.canRiderInteract()) {
-                            if (d2 == 0.0D) {
-                                pointedEntity = entity;
-                                hitVec = movingobjectposition.hitVec;
-                            }
-                        } else {
-                            pointedEntity = entity;
-                            hitVec = movingobjectposition.hitVec;
-                            d2 = d3;
-                        }
-                    }
-                }
-            }
-        }
-
-        if(pointedEntity != null && (d2 < dist || result == null)) {
-            result = new MovingObjectPosition(pointedEntity, hitVec);
-        }
-
-        return result;
     }
 
 

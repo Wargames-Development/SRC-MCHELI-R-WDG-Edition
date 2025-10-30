@@ -61,9 +61,9 @@ public class MCH_Parts {
       int currentStatus = this.dataWatcher.getWatchableObjectInt(this.dataIndex);
       int mask = 1 << this.shift;
       if(!stat) {
-         this.dataWatcher.updateObject(this.dataIndex, Integer.valueOf(currentStatus & ~mask));
+         this.dataWatcher.updateObject(this.dataIndex, currentStatus & ~mask);
       } else {
-         this.dataWatcher.updateObject(this.dataIndex, Integer.valueOf(currentStatus | mask));
+         this.dataWatcher.updateObject(this.dataIndex, currentStatus | mask);
       }
 
       this.status = stat;

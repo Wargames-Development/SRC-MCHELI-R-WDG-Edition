@@ -3,28 +3,19 @@ package mcheli.weapon;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.aircraft.MCH_EntityAircraft;
-import mcheli.wrapper.W_WorldFunc;
-import net.minecraft.block.Block;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
-import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import java.util.List;
 
-import static mcheli.MCH_RayTracer.rayTraceAllBlocks;
-
 public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
 
     public boolean isSpawnParticle = true;
-
     public boolean isTVMissile;
-
-    public double targetPosX;
-    public double targetPosY;
-    public double targetPosZ;
 
     public MCH_EntityTvMissile(World par1World) {
         super(par1World);
@@ -35,7 +26,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
     }
 
     public void setMotion(double targetX, double targetY, double targetZ) {
-        double d6 = (double)MathHelper.sqrt_double(targetX * targetX + targetY * targetY + targetZ * targetZ);
+        double d6 = MathHelper.sqrt_double(targetX * targetX + targetY * targetY + targetZ * targetZ);
         super.motionX = targetX * this.acceleration / d6;
         super.motionY = targetY * this.acceleration / d6;
         super.motionZ = targetZ * this.acceleration / d6;
@@ -76,7 +67,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
         if (!getInfo().laserGuidance) {
             if (e != null && !e.isDead) {
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
-                if(ac != null) {
+                if (ac != null) {
                     if (!isTVMissile || ac.getTVMissile() == this) {
                         float yaw = e.rotationYaw;
                         float pitch = e.rotationPitch;
@@ -93,23 +84,32 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
 
         //激光制导
         else {
-            double x,y,z;
+            double x, y, z;
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
-            if(ac != null && ac.getCurrentWeapon(e).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
+            if (ac != null && ac.getCurrentWeapon(e).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
                 MCH_WeaponTvMissile weaponTvMissile = (MCH_WeaponTvMissile) ac.getCurrentWeapon(e).getCurrentWeapon();
                 if (weaponTvMissile.guidanceSystem != null && weaponTvMissile.guidanceSystem.targeting) {
                     x = weaponTvMissile.guidanceSystem.targetPosX;
                     y = weaponTvMissile.guidanceSystem.targetPosY;
                     z = weaponTvMissile.guidanceSystem.targetPosZ;
-                    onLaserGuide(x, y, z);
+                    boolean jammed = false;
+                    double r = 5.0D;
+                    AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(x - r, y - r, z - r, x + r, y + r, z + r);
+                    List list = ac.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
+                    for (Object o : list) {
+                        MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
+                        if (veh != null && veh.getAcInfo() != null && veh.getAcInfo().hasPhotoelectricJammer) {
+                            jammed = true;
+                            break;
+                        }
+                    }
+                    if (!jammed) {
+                        onLaserGuide(x, y, z);
+                    }
                 }
             }
         }
-    }
 
-    @SideOnly(Side.CLIENT)
-    private Vec3 clientTarget() {
-        return Vec3.createVectorHelper(RenderManager.renderPosX, RenderManager.renderPosY, RenderManager.renderPosZ);
     }
 
     public void onLaserGuide(double x, double y, double z) {

@@ -35,10 +35,7 @@ import mcheli.plane.MCP_EntityPlane;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.plane.MCP_PlaneInfoManager;
 import mcheli.plane.MCP_RenderPlane;
-import mcheli.render.MCH_RenderBVRLockBox;
-import mcheli.render.MCH_RenderDamageIndicator;
-import mcheli.render.MCH_RenderMortarRadar;
-import mcheli.render.MCH_RenderRWR;
+import mcheli.render.*;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.tank.MCH_RenderTank;
 import mcheli.tank.MCH_TankInfo;
@@ -552,6 +549,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MinecraftForge.EVENT_BUS.register(new MCH_RenderMortarRadar());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderLaser());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderDamageIndicator());
+        MinecraftForge.EVENT_BUS.register(new MCH_RenderGPSPosition());
     }
 
     public void setCreativeDigDelay(int n) {

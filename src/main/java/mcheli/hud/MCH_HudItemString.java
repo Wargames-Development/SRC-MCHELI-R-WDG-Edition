@@ -113,6 +113,7 @@ public class MCH_HudItemString extends MCH_HudItem {
             case KEY_MAINTENANCE: return MCH_KeyName.getDescOrName(MCH_Config.KeyMaintenance.prmInt);
             case KEY_SWEEPWING: return MCH_KeyName.getDescOrName(MCH_Config.KeyZoom.prmInt);
             case KEY_CAMERAMODE: return MCH_KeyName.getDescOrName(MCH_Config.KeyCameraMode.prmInt);
+            case KEY_VTOL: return MCH_KeyName.getDescOrName(MCH_Config.KeyExtra.prmInt);
             case COOLDOWN_FLARE: return MCH_HudItem.ac.getFlareTick() / 20f;
             case COOLDOWN_CHAFF: return MCH_HudItem.ac.chaff.tick / 20f;
             case COOLDOWN_APS: return MCH_HudItem.ac.aps.tick / 20f;
