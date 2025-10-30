@@ -23,15 +23,15 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
     }
 
     public boolean shot(MCH_WeaponParam prm) {
-        //自毁
+        // Self-destruct behavior
         if (this.getInfo() != null && this.getInfo().destruct) {
             if (prm.entity instanceof MCH_EntityAircraft) {
                 MCH_EntityAircraft e1 = (MCH_EntityAircraft) prm.entity;
-                // 无人机且无座位：爆炸 + 自毁
+                // UAV with no seats: explode + self-destruct
                 if (e1.isUAV() && e1.getSeatNum() == 0) {
                     if (!super.worldObj.isRemote) {
                         MCH_ExplosionParam p = MCH_ExplosionParam.builder()
-                            .exploder(null) // 原代码就是 null
+                            .exploder(null) // Same as original (no explicit exploder)
                             .player(prm.user instanceof EntityPlayer ? (EntityPlayer) prm.user : null)
                             .x(e1.posX).y(e1.posY).z(e1.posZ)
                             .size((float) this.getInfo().explosion)
@@ -55,7 +55,7 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
                     }
                     e1.destruct();
                 }
-                // 非无人机：爆炸 + 额外伤害
+                // Non-UAV: explosion + additional damage
                 if (!e1.isUAV()) {
                     if (!super.worldObj.isRemote) {
                         MCH_ExplosionParam p = MCH_ExplosionParam.builder()

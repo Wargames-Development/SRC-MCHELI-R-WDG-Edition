@@ -24,23 +24,23 @@ public class MCH_RenderASMissile extends MCH_RenderBulletBase {
         if (entity instanceof MCH_EntityBaseBullet) {
             MCH_EntityBaseBullet aam = (MCH_EntityBaseBullet) entity;
             if (aam.getInfo() != null && aam.getInfo().enableExhaustFlare) {
-                // 插值计算速度向量
+                // Interpolate motion vector for smoother transition
                 double mx = aam.prevMotionX + (aam.motionX - aam.prevMotionX) * partialTicks;
                 double my = aam.prevMotionY + (aam.motionY - aam.prevMotionY) * partialTicks;
                 double mz = aam.prevMotionZ + (aam.motionZ - aam.prevMotionZ) * partialTicks;
                 double motionLen = Math.sqrt(mx * mx + my * my + mz * mz);
 
                 GL11.glPushMatrix();
-                // 移动到导弹位置
+                // Move to the missile’s position
                 GL11.glTranslated(posX, posY, posZ);
-                // 沿反方向偏移一定距离，让尾焰出现在模型尾部
+                // Offset slightly backward along the inverse of motion direction so the exhaust appears at the tail
                 if (motionLen > 0.0001D) {
                     double offset = 0.8D;
                     GL11.glTranslated(-mx / motionLen * offset,
                         -my / motionLen * offset,
                         -mz / motionLen * offset);
                 }
-                // Billboard：180°−playerViewY 和 −playerViewX 旋转，使四边形面对玩家:contentReference[oaicite:2]{index=2}。
+                // Billboard: rotate by (180° − playerViewY) and −playerViewX so the flare quad always faces the player
                 float viewYaw = this.renderManager.playerViewY;
                 float viewPitch = this.renderManager.playerViewX;
                 GL11.glRotatef(180.0F - viewYaw, 0.0F, 1.0F, 0.0F);

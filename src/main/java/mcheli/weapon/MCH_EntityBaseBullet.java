@@ -463,84 +463,84 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public void guidanceToTarget(double targetPosX, double targetPosY, double targetPosZ, float accelerationFactor) {
 
-        // 如果有结束寻的时间（tickEndHoming > 0）且当前已超过这个时间，停止寻的
+        // If there is an end-of-homing time (tickEndHoming > 0) and we have passed it, stop homing
         if (getInfo().tickEndHoming > 0 && ticksExisted > getInfo().tickEndHoming) {
             return;
         }
 
-        // 先判断是否存在有效的目标实体
+        // First, verify the target entity is valid
         if (targetEntity == null || targetEntity.isDead) {
             return;
         }
 
         //----------------------------------------------------------------------------
-        // 1. 如果需要预测目标位置，则根据目标当前速度做一个简单的预测
+        // 1. If target prediction is enabled, roughly predict the target position based on its current velocity
         //----------------------------------------------------------------------------
         if (getInfo().predictTargetPos) {
-            // 当前导弹到目标的距离（用来粗略估计“到达时间”）
+            // Current distance from missile to target (used to roughly estimate “time to impact”)
             double currentDistance = MathHelper.sqrt_double(
                     (targetPosX - posX) * (targetPosX - posX)
                             + (targetPosY - posY) * (targetPosY - posY)
                             + (targetPosZ - posZ) * (targetPosZ - posZ)
             );
 
-            // 当前导弹的速度（也可以根据历史帧或更复杂的模型来求平均速度）
+            // Current missile speed (could also be averaged over previous frames or modeled more precisely)
             double missileSpeed = MathHelper.sqrt_double(
                     motionX * motionX + motionY * motionY + motionZ * motionZ
             );
-            // 避免分母为0
+            // Avoid division by zero
             if (missileSpeed < 0.0001D) {
                 missileSpeed = this.acceleration;
-                // 或者用一个固定值替代，比如武器配置里的初速度
+                // Or use a fixed value, e.g., initial speed from weapon config
             }
 
-            // 粗略估算导弹到达目标的时间
+            // Roughly estimate time to reach the target
             double timeToTarget = currentDistance / missileSpeed;
 
-            // 根据目标速度，来对目标位置做一个简单的线性预测
+            // Linearly predict target position using its velocity
             double vx = targetEntity.motionX;
             double vy = targetEntity.motionY;
             double vz = targetEntity.motionZ;
 
-            // 这里你也可以考虑加速度、重力等更复杂的因子
+            // You may also consider acceleration, gravity, etc., for a more complex model
             targetPosX += vx * timeToTarget;
             targetPosY += vy * timeToTarget;
             targetPosZ += vz * timeToTarget;
         }
         //----------------------------------------------------------------------------
-        // 2. 计算目标位置与当前实体位置之间的差值
+        // 2. Compute the delta between target position and current entity position
         //----------------------------------------------------------------------------
         double tx = targetPosX - this.posX;
         double ty = targetPosY - this.posY;
         double tz = targetPosZ - this.posZ;
 
-        // 计算与目标的距离
+        // Compute distance to target
         double d = MathHelper.sqrt_double(tx * tx + ty * ty + tz * tz);
 
         //----------------------------------------------------------------------------
-        // 3. 根据距离和预设加速度计算导弹运动矢量分量
+        // 3. Compute missile motion vector components based on distance and configured acceleration
         //----------------------------------------------------------------------------
         double mx = tx * this.acceleration / d;
         double my = ty * this.acceleration / d;
         double mz = tz * this.acceleration / d;
 
-        // 计算导弹当前运动方向（水平分量）
+        // Compute current missile direction (with horizontal component)
         Vector3f missileDirection = new Vector3f(this.motionX, this.motionY, this.motionZ);
-        // 计算目标方向（在水平面上）
+        // Compute target direction (in the horizontal plane)
         Vector3f targetDirection = new Vector3f(tx, ty, tz);
 
-        // 计算导弹运动方向与目标方向之间的夹角
+        // Angle between missile motion direction and target direction
         double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
         double maxAllowedAngle = Math.toRadians(getInfo().maxDegreeOfMissile);
 
-        // 如果角度超过允许值，且不是顶攻模式（doingTopAttack），则解除锁定
+        // If angle exceeds the allowed limit and we are not in top-attack mode, break lock
         if (angle > maxAllowedAngle && !doingTopAttack) {
             setTargetEntity(null);
             return;
         }
 
         //----------------------------------------------------------------------------
-        // 4. 判断目标运动方向与导弹方向的夹角是否大于PD系统的允许阈值
+        // 4. Check if the angle between target velocity and missile direction exceeds the PD system threshold
         //----------------------------------------------------------------------------
         Vector3f targetVelocity = new Vector3f(
                 (float) targetEntity.motionX,
@@ -553,7 +553,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             return;
         }
 
-        // 如果是某些类型的空空导弹，且目标在地面上，则解锁
+        // If this is a type of AAM and the target is on the ground, unlock
         if (this instanceof MCH_EntityAAMissile
                 && MCH_WeaponGuidanceSystem.isEntityOnGround(targetEntity, weaponInfo.lockMinHeight)) {
             setTargetEntity(null);
@@ -561,20 +561,20 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         //----------------------------------------------------------------------------
-        // 5. 使用平滑加权平均值来更新当前实体的运动速度
+        // 5. Update the missile’s velocity using a smoothed weighted average
         //----------------------------------------------------------------------------
         this.motionX = this.motionX + (mx - this.motionX) * getInfo().turningFactor;
         this.motionY = this.motionY + (my - this.motionY) * getInfo().turningFactor;
         this.motionZ = this.motionZ + (mz - this.motionZ) * getInfo().turningFactor;
 
         //----------------------------------------------------------------------------
-        // 6. 更新导弹朝向（Yaw/Pitch）
+        // 6. Update missile orientation (Yaw/Pitch)
         //----------------------------------------------------------------------------
-        // Yaw：根据XZ平面速度方向计算
+        // Yaw: derived from velocity direction on the XZ plane
         double a = Math.atan2(this.motionZ, this.motionX);
         this.rotationYaw = (float) (a * 180.0D / Math.PI) - 90.0F;
 
-        // Pitch：根据Y方向与在XZ平面上的水平速度大小计算
+        // Pitch: derived from Y motion versus horizontal speed on the XZ plane
         double r = Math.sqrt(this.motionX * this.motionX + this.motionZ * this.motionZ);
         this.rotationPitch = -((float) (Math.atan2(this.motionY, r) * 180.0D / Math.PI));
     }
@@ -624,7 +624,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             checkAndLoadChunks();
         }
 
-        //更新锁定的目标
+        // Update locked target
         if (super.worldObj.isRemote && this.countOnUpdate == 0) {
             int f3 = this.getTargetEntityID();
             if (f3 > 0) {
@@ -632,7 +632,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
         }
 
-        //抗干扰
+        // Anti-flare (countermeasure) logic
         if (!worldObj.isRemote && antiFlareUse) {
             if (antiFlareTick > 0) {
                 antiFlareTick--;
@@ -1195,7 +1195,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     @SideOnly(Side.CLIENT)
     public void spawnIronCurtainParticle(MovingObjectPosition raytraceResult, int xTile, int yTile, int zTile) {
-        // 定义暗红色参数（RGB：0.5, 0.1, 0.1）
+        // Define dark red color parameters (RGB: 0.5, 0.1, 0.1)
         final float DARK_RED_R = 0.5f;
         final float DARK_RED_G = 0.1f;
         final float DARK_RED_B = 0.1f;
@@ -1213,11 +1213,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     this.worldObj.getBlockMetadata(xTile, yTile, zTile)
             );
 
-            // 覆盖原有颜色设置
+            // Override default color with dark red
             fx.setRBGColorF(DARK_RED_R, DARK_RED_G, DARK_RED_B); // 强制设置为暗红色
-            fx.multipleParticleScaleBy(scale * 0.8f); // 适当缩小粒子尺寸
+            fx.multipleParticleScaleBy(scale * 0.8f); // Slightly reduce particle size
 
-            // 调整运动参数
+            // Adjust motion parameters
             fx.motionX += getInfo().flakParticlesDiff * (rand.nextGaussian() * 0.5);
             fx.motionZ += getInfo().flakParticlesDiff * (rand.nextGaussian() * 0.5);
             fx.motionY += getInfo().flakParticlesDiff * Math.abs(rand.nextGaussian());
@@ -1233,7 +1233,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     raytraceResult.hitVec.zCoord + (rand.nextFloat() - 0.5D) * width,
                     0D, 0D, 0D
             ) {
-                // 重写渲染方法确保颜色固定
+                // Override render method to enforce fixed color
                 @Override
                 public void renderParticle(Tessellator tessellator, float partialTicks,
                                            float rotationX, float rotationZ, float rotationYZ, float rotationXY, float rotationXZ) {
@@ -1242,12 +1242,12 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
             };
 
-            // 设置粒子参数
+            // Set particle parameters
             obj.setRBGColorF(DARK_RED_R, DARK_RED_G, DARK_RED_B);
-            obj.motionX = rand.nextGaussian() / 100; // 增加运动速度
+            obj.motionX = rand.nextGaussian() / 100; // Increase movement speed
             obj.motionY = rand.nextGaussian() / 100;
             obj.motionZ = rand.nextGaussian() / 100;
-            obj.renderDistanceWeight = 350D; // 增加可见距离
+            obj.renderDistanceWeight = 350D; // Increase visible distance
 
             FMLClientHandler.instance().getClient().effectRenderer.addEffect(obj);
         }
@@ -1339,7 +1339,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             ? (EntityPlayer) this.shootingEntity
             : null;
         if (!inWater) {
-            //HBM爆炸效果
+            // HBM explosion effect
             if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
                 Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, null, x, y, z, getInfo().effectYield);
                 if (explosionNTInstance != null && !this.getInfo().disableDestroyBlock) {
@@ -1373,7 +1373,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .build();
                 result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
-            //普通爆炸效果
+            // Standard explosion effect
             else {
                 MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                     .exploder(this)
@@ -1398,7 +1398,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
         } else {
-            //水下爆炸
+            // Underwater explosion
             MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                 .exploder(this)
                 .player(creditedPlayer)
@@ -1515,16 +1515,16 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             double closestAngle = Double.MAX_VALUE;
             Entity closestTarget = null;
 
-            // 记录最近的箔条及其距离
+            // Track the nearest chaff and its distance
             double nearestChaffDistSq = Double.MAX_VALUE;
             Entity nearestChaff = null;
 
             for (Entity entity : list) {
-                // AA 导弹的目标判定
+                // Target selection for AA missiles
                 if (this instanceof MCH_EntityAAMissile) {
-                    // 发现箔条时先处理
+                    // Target selection for AA missiles
                     if (entity instanceof MCH_EntityChaff) {
-                        // 计算与导弹方向的夹角，确保在锁定范围内
+                        // Compute angle to the missile's direction; ensure it is within lock range
                         double dx = entity.posX - super.posX;
                         double dy = entity.posY - super.posY;
                         double dz = entity.posZ - super.posZ;
@@ -1537,14 +1537,14 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                             nearestChaff = entity;
                         }
                     }
-                    // 未发现箔条时按原有逻辑扫描飞机
+                    // If no chaff, scan for aircraft using the original logic
                     else if (entity instanceof MCH_EntityAircraft) {
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
                                 && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
                             continue;
                         }
-                        // 排除地面上的目标
+                        // Exclude targets on the ground
                         if (MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().lockMinHeight)) continue;
 
                         double dx = entity.posX - super.posX;
@@ -1560,9 +1560,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         }
                     }
                 }
-                // AT 导弹的逻辑不变…
+                // AT missile logic unchanged…
                 else if (this instanceof MCH_EntityATMissile) {
-                    // 保持原有地面目标选择逻辑
+                    // Keep original ground target selection logic
                     if (entity instanceof MCH_EntityAircraft) {
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
@@ -1601,7 +1601,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                 }
             }
-            // 优先锁定箔条
+            // Prefer locking onto chaff first
             if (nearestChaff != null) {
                 targetEntity = nearestChaff;
                 numLockedChaff++;

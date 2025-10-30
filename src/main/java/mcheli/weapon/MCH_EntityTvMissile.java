@@ -72,7 +72,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
     public void onUpdateMotion() {
         Entity e = super.shootingEntity;
 
-        //拖线制导
+        // Wire-guided
         if (!getInfo().laserGuidance) {
             if (e != null && !e.isDead) {
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
@@ -91,7 +91,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
             }
         }
 
-        //激光制导
+        // Laser-guided
         else {
             double x,y,z;
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);

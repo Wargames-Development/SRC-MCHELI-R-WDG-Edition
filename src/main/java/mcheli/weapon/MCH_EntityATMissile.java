@@ -103,10 +103,10 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
                     this.setDead();
                 } else if (this.getCountOnUpdate() > this.getInfo().rigidityTime) {
 
-                    //攻顶导弹逻辑
+                    // Top-attack missile logic
                     if (this.guidanceType == 1) {
                         float af = this.getCountOnUpdate() < getInfo().rigidityTime + getInfo().trajectoryParticleStartTick ? 0.5F : 1.0F;
-                        //攻顶向上运动
+                        // Climb upward for top-attack trajectory
                         if (this.getCountOnUpdate() <= getInfo().rigidityTime + 20) {
                             doingTopAttack = true;
                             this.guidanceToTarget(super.targetEntity.posX, super.shootingEntity.posY + 100.0D, super.targetEntity.posZ, af);
@@ -124,7 +124,7 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
                         }
                     }
 
-                    //非攻顶
+                    // Standard non-top-attack missile behavior
                     else {
                         if (this.getInfo().proximityFuseDist >= 0.1F && d < (double) this.getInfo().proximityFuseDist) {
                             MovingObjectPosition mop = new MovingObjectPosition(super.targetEntity);
@@ -138,6 +138,7 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
                     }
                 }
             } else {
+                // Perform radar target scanning if active radar is enabled
                 if(getInfo().activeRadar && ticksExisted % getInfo().scanInterval == 0) {
                     scanForTargets();
                 }
