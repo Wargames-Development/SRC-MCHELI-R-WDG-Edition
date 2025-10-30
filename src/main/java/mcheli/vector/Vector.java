@@ -44,73 +44,77 @@ import java.nio.FloatBuffer;
  */
 public abstract class Vector implements Serializable, ReadableVector {
 
-	/**
-	 * Constructor for Vector.
-	 */
-	protected Vector() {
-		super();
-	}
+    /**
+     * Constructor for Vector.
+     */
+    protected Vector() {
+        super();
+    }
 
-	/**
-	 * @return the length of the vector
-	 */
-	@Override
-	public final float length() {
-		return (float) Math.sqrt(lengthSquared());
-	}
-
-
-	/**
-	 * @return the length squared of the vector
-	 */
-	@Override
-	public abstract float lengthSquared();
-
-	/**
-	 * Load this vector from a FloatBuffer
-	 * @param buf The buffer to load it from, at the current position
-	 * @return this
-	 */
-	public abstract Vector load(FloatBuffer buf);
-
-	/**
-	 * Negate a vector
-	 * @return this
-	 */
-	public abstract Vector negate();
+    /**
+     * @return the length of the vector
+     */
+    @Override
+    public final float length() {
+        return (float) Math.sqrt(lengthSquared());
+    }
 
 
-	/**
-	 * Normalise this vector
-	 * @return this
-	 */
-	public final Vector normalise() {
-		float len = length();
-		if (len != 0.0f) {
-			float l = 1.0f / len;
-			return scale(l);
-		} else
-			return scale(0);
-			//throw new IllegalStateException("Zero length vector");
-	}
+    /**
+     * @return the length squared of the vector
+     */
+    @Override
+    public abstract float lengthSquared();
+
+    /**
+     * Load this vector from a FloatBuffer
+     *
+     * @param buf The buffer to load it from, at the current position
+     * @return this
+     */
+    public abstract Vector load(FloatBuffer buf);
+
+    /**
+     * Negate a vector
+     *
+     * @return this
+     */
+    public abstract Vector negate();
 
 
-	/**
-	 * Store this vector in a FloatBuffer
-	 * @param buf The buffer to store it in, at the current position
-	 * @return this
-	 */
-	@Override
-	public abstract Vector store(FloatBuffer buf);
+    /**
+     * Normalise this vector
+     *
+     * @return this
+     */
+    public final Vector normalise() {
+        float len = length();
+        if (len != 0.0f) {
+            float l = 1.0f / len;
+            return scale(l);
+        } else
+            return scale(0);
+        //throw new IllegalStateException("Zero length vector");
+    }
 
 
-	/**
-	 * Scale this vector
-	 * @param scale The scale factor
-	 * @return this
-	 */
-	public abstract Vector scale(float scale);
+    /**
+     * Store this vector in a FloatBuffer
+     *
+     * @param buf The buffer to store it in, at the current position
+     * @return this
+     */
+    @Override
+    public abstract Vector store(FloatBuffer buf);
 
+
+    /**
+     * Scale this vector
+     *
+     * @param scale The scale factor
+     * @return this
+     */
+    public abstract Vector scale(float scale);
 
 
 }

@@ -9,13 +9,14 @@ import net.minecraft.util.ResourceLocation;
 @SideOnly(Side.CLIENT)
 public class MCH_RenderNull extends W_Render {
 
-   public MCH_RenderNull() {
-      super.shadowSize = 0.0F;
-   }
+    public MCH_RenderNull() {
+        super.shadowSize = 0.0F;
+    }
 
-   public void doRender(Entity entity, double posX, double posY, double posZ, float par8, float tickTime) {}
+    public void doRender(Entity entity, double posX, double posY, double posZ, float par8, float tickTime) {
+    }
 
-   protected ResourceLocation getEntityTexture(Entity entity) {
-      return W_Render.TEX_DEFAULT;
-   }
+    protected ResourceLocation getEntityTexture(Entity entity) {
+        return W_Render.TEX_DEFAULT;
+    }
 }

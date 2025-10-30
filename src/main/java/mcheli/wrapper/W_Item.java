@@ -8,13 +8,11 @@
  */
 package mcheli.wrapper;
 
-import mcheli.wrapper.W_MOD;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
-import net.minecraft.util.RegistryNamespaced;
 
 public class W_Item
-extends Item {
+    extends Item {
     public W_Item(int par1) {
     }
 
@@ -25,11 +23,6 @@ extends Item {
         return i == null ? 0 : Item.itemRegistry.getIDForObject(i);
     }
 
-    public Item setTexture(String par1Str) {
-        this.setTextureName(W_MOD.DOMAIN + ":" + par1Str);
-        return this;
-    }
-
     public static Item getItemById(int i) {
         return Item.getItemById(i);
     }
@@ -38,7 +31,7 @@ extends Item {
         if (nm.indexOf(58) < 0) {
             nm = "minecraft:" + nm;
         }
-        return (Item)Item.itemRegistry.getObject(nm);
+        return (Item) Item.itemRegistry.getObject(nm);
     }
 
     public static String getNameForItem(Item item) {
@@ -47,6 +40,11 @@ extends Item {
 
     public static Item getItemFromBlock(Block block) {
         return Item.getItemFromBlock(block);
+    }
+
+    public Item setTexture(String par1Str) {
+        this.setTextureName(W_MOD.DOMAIN + ":" + par1Str);
+        return this;
     }
 }
 

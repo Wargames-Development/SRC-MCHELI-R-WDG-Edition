@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.entity.Entity
  *  net.minecraft.entity.item.EntityItem
@@ -15,15 +15,11 @@
  */
 package mcheli.wrapper;
 
-import java.util.Random;
 import mcheli.MCH_Lib;
-import mcheli.wrapper.W_Entity;
-import mcheli.wrapper.W_NBTTag;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -31,11 +27,11 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 
 public abstract class W_EntityContainer
-extends W_Entity
-implements IInventory {
+    extends W_Entity
+    implements IInventory {
     public static final int MAX_INVENTORY_SIZE = 54;
-    private ItemStack[] containerItems = new ItemStack[54];
     public boolean dropContentsWhenDead = true;
+    private ItemStack[] containerItems = new ItemStack[54];
 
     public W_EntityContainer(World par1World) {
         super(par1World);
@@ -101,7 +97,7 @@ implements IInventory {
     }
 
     public boolean isUseableByPlayer(EntityPlayer par1EntityPlayer) {
-        return this.isDead ? false : par1EntityPlayer.getDistanceSqToEntity((Entity)this) <= 64.0;
+        return this.isDead ? false : par1EntityPlayer.getDistanceSqToEntity((Entity) this) <= 64.0;
     }
 
     public void openChest() {
@@ -152,15 +148,15 @@ implements IInventory {
                         j = itemstack.stackSize;
                     }
                     itemstack.stackSize -= j;
-                    EntityItem entityitem = new EntityItem(this.worldObj, this.posX + (double)x, this.posY + (double)y, this.posZ + (double)z, new ItemStack(itemstack.getItem(), j, itemstack.getItemDamage()));
+                    EntityItem entityitem = new EntityItem(this.worldObj, this.posX + (double) x, this.posY + (double) y, this.posZ + (double) z, new ItemStack(itemstack.getItem(), j, itemstack.getItemDamage()));
                     if (itemstack.hasTagCompound()) {
-                        entityitem.getEntityItem().setTagCompound((NBTTagCompound)itemstack.getTagCompound().copy());
+                        entityitem.getEntityItem().setTagCompound((NBTTagCompound) itemstack.getTagCompound().copy());
                     }
                     float f3 = 0.05f;
-                    entityitem.motionX = (float)this.rand.nextGaussian() * f3;
-                    entityitem.motionY = (float)this.rand.nextGaussian() * f3 + 0.2f;
-                    entityitem.motionZ = (float)this.rand.nextGaussian() * f3;
-                    this.worldObj.spawnEntityInWorld((Entity)entityitem);
+                    entityitem.motionX = (float) this.rand.nextGaussian() * f3;
+                    entityitem.motionY = (float) this.rand.nextGaussian() * f3 + 0.2f;
+                    entityitem.motionZ = (float) this.rand.nextGaussian() * f3;
+                    this.worldObj.spawnEntityInWorld((Entity) entityitem);
                 }
             }
         }
@@ -172,11 +168,11 @@ implements IInventory {
         for (int i = 0; i < this.containerItems.length; ++i) {
             if (this.containerItems[i] == null) continue;
             NBTTagCompound nbttagcompound1 = new NBTTagCompound();
-            nbttagcompound1.setByte("Slot", (byte)i);
+            nbttagcompound1.setByte("Slot", (byte) i);
             this.containerItems[i].writeToNBT(nbttagcompound1);
-            nbttaglist.appendTag((NBTBase)nbttagcompound1);
+            nbttaglist.appendTag((NBTBase) nbttagcompound1);
         }
-        par1NBTTagCompound.setTag("Items", (NBTBase)nbttaglist);
+        par1NBTTagCompound.setTag("Items", (NBTBase) nbttaglist);
     }
 
     protected void readEntityFromNBT(NBTTagCompound par1NBTTagCompound) {
@@ -187,7 +183,7 @@ implements IInventory {
             NBTTagCompound nbttagcompound1 = W_NBTTag.tagAt(nbttaglist, i);
             int j = nbttagcompound1.getByte("Slot") & 255;
             if (j < 0 || j >= this.containerItems.length) continue;
-            this.containerItems[j] = ItemStack.loadItemStackFromNBT((NBTTagCompound)nbttagcompound1);
+            this.containerItems[j] = ItemStack.loadItemStackFromNBT((NBTTagCompound) nbttagcompound1);
         }
     }
 
@@ -198,7 +194,7 @@ implements IInventory {
 
     public boolean openInventory(EntityPlayer player) {
         if (!this.worldObj.isRemote && this.getSizeInventory() > 0) {
-            player.displayGUIChest((IInventory)this);
+            player.displayGUIChest((IInventory) this);
             return true;
         }
         return false;

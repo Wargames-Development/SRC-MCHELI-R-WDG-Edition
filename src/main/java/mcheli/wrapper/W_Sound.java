@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.client.audio.MovingSound
  *  net.minecraft.client.audio.PositionedSound
@@ -9,14 +9,12 @@
  */
 package mcheli.wrapper;
 
-import mcheli.wrapper.W_McClient;
 import net.minecraft.client.audio.MovingSound;
-import net.minecraft.client.audio.PositionedSound;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
 
 public class W_Sound
-extends MovingSound {
+    extends MovingSound {
     protected W_Sound(ResourceLocation r, float volume, float pitch, double x, double y, double z) {
         super(r);
         this.setVolumeAndPitch(volume, pitch);
@@ -55,9 +53,9 @@ extends MovingSound {
     }
 
     public void setPosition(double x, double y, double z) {
-        this.xPosF = (float)x;
-        this.yPosF = (float)y;
-        this.zPosF = (float)z;
+        this.xPosF = (float) x;
+        this.yPosF = (float) y;
+        this.zPosF = (float) z;
     }
 
     public void setPosition(Entity e) {

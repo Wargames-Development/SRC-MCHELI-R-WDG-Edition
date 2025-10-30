@@ -11,31 +11,31 @@ import org.lwjgl.opengl.GL11;
 @SideOnly(Side.CLIENT)
 public class MCH_GuiCommon extends MCH_AircraftCommonGui {
 
-   public int hitCount = 0;
+    public int hitCount = 0;
 
 
-   public MCH_GuiCommon(Minecraft minecraft) {
-      super(minecraft);
-   }
+    public MCH_GuiCommon(Minecraft minecraft) {
+        super(minecraft);
+    }
 
-   public boolean isDrawGui(EntityPlayer player) {
-      return true;
-   }
+    public boolean isDrawGui(EntityPlayer player) {
+        return true;
+    }
 
-   public void drawGui(EntityPlayer player, boolean isThirdPersonView) {
-      GL11.glLineWidth((float)MCH_Gui.scaleFactor);
-      this.drawHitBullet(this.hitCount, 15, -805306369);
-   }
+    public void drawGui(EntityPlayer player, boolean isThirdPersonView) {
+        GL11.glLineWidth((float) MCH_Gui.scaleFactor);
+        this.drawHitBullet(this.hitCount, 15, -805306369);
+    }
 
-   public void onTick() {
-      super.onTick();
-      if(this.hitCount > 0) {
-         --this.hitCount;
-      }
+    public void onTick() {
+        super.onTick();
+        if (this.hitCount > 0) {
+            --this.hitCount;
+        }
 
-   }
+    }
 
-   public void hitBullet() {
-      this.hitCount = 15;
-   }
+    public void hitBullet() {
+        this.hitCount = 15;
+    }
 }

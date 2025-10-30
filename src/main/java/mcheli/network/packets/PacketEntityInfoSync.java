@@ -20,7 +20,8 @@ public class PacketEntityInfoSync extends PacketBase {
     private List<MCH_EntityInfo> entities;
     private long snapshotSeq; // 新增：包级快照序号
 
-    public PacketEntityInfoSync() {}
+    public PacketEntityInfoSync() {
+    }
 
     public PacketEntityInfoSync(List<MCH_EntityInfo> entities, long snapshotSeq) {
         this.entities = entities;
@@ -52,16 +53,16 @@ public class PacketEntityInfoSync extends PacketBase {
         entities = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             entities.add(new MCH_EntityInfo(
-                    buf.readInt(),
-                    readUTF(buf),
-                    readUTF(buf),
-                    readUTF(buf),
-                    buf.readDouble(),
-                    buf.readDouble(),
-                    buf.readDouble(),
-                    buf.readDouble(),
-                    buf.readDouble(),
-                    buf.readDouble()
+                buf.readInt(),
+                readUTF(buf),
+                readUTF(buf),
+                readUTF(buf),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readDouble()
             ));
         }
     }

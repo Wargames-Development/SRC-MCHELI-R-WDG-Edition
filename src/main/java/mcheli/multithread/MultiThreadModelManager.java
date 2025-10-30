@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-
 public class MultiThreadModelManager {
 
 
@@ -33,20 +32,20 @@ public class MultiThreadModelManager {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         CompletableFuture<Void> heliFuture = CompletableFuture.runAsync(() ->
-                        MCH_HeliInfoManager.map.keySet().forEach(key -> proxy.registerModelsHeli((String) key, false)), executor)
-                .thenRun(() -> completion("helicopter"));
+                MCH_HeliInfoManager.map.keySet().forEach(key -> proxy.registerModelsHeli((String) key, false)), executor)
+            .thenRun(() -> completion("helicopter"));
 
         CompletableFuture<Void> planeFuture = CompletableFuture.runAsync(() ->
-                        MCP_PlaneInfoManager.map.keySet().forEach(key -> proxy.registerModelsPlane((String) key, false)), executor)
-                .thenRun(() -> completion("plane"));
+                MCP_PlaneInfoManager.map.keySet().forEach(key -> proxy.registerModelsPlane((String) key, false)), executor)
+            .thenRun(() -> completion("plane"));
 
         CompletableFuture<Void> tankFuture = CompletableFuture.runAsync(() ->
-                        MCH_TankInfoManager.map.keySet().forEach(key -> proxy.registerModelsTank((String) key, false)), executor)
-                .thenRun(() -> completion("tank"));
+                MCH_TankInfoManager.map.keySet().forEach(key -> proxy.registerModelsTank((String) key, false)), executor)
+            .thenRun(() -> completion("tank"));
 
         CompletableFuture<Void> vehicleFuture = CompletableFuture.runAsync(() ->
-                        MCH_VehicleInfoManager.map.keySet().forEach(key -> proxy.registerModelsVehicle((String) key, false)), executor)
-                .thenRun(() -> completion("vehicle"));
+                MCH_VehicleInfoManager.map.keySet().forEach(key -> proxy.registerModelsVehicle((String) key, false)), executor)
+            .thenRun(() -> completion("vehicle"));
 
         CompletableFuture<Void> bulletFuture = CompletableFuture.runAsync(() -> {
             proxy.registerModels_Bullet();
@@ -54,11 +53,11 @@ public class MultiThreadModelManager {
         }, executor).thenRun(() -> completion("bullet"));
 
         CompletableFuture<Void> throwableFuture = CompletableFuture.runAsync(MCH_ClientProxy::registerModels_Throwable, executor)
-                .thenRun(() -> completion("throwable"));
+            .thenRun(() -> completion("throwable"));
 
         // Wait for all tasks to complete before shutting down the executor
         CompletableFuture<Void> allTasks = CompletableFuture.allOf(
-                heliFuture, planeFuture, tankFuture, vehicleFuture, bulletFuture, throwableFuture
+            heliFuture, planeFuture, tankFuture, vehicleFuture, bulletFuture, throwableFuture
         );
 
         // Ensure proper shutdown after completion
@@ -72,6 +71,7 @@ public class MultiThreadModelManager {
             return null;
         });
     }
+
     private static void loadDefaultBulletModels(MCH_ClientProxy proxy) {
         MCH_ClientProxy.registerModels_Bullet();
         MCH_DefaultBulletModels.Bullet = proxy.loadBulletModel("bullet");
@@ -82,7 +82,6 @@ public class MultiThreadModelManager {
         MCH_DefaultBulletModels.Rocket = proxy.loadBulletModel("rocket");
         MCH_DefaultBulletModels.Torpedo = proxy.loadBulletModel("torpedo");
     }
-
 
 
     public static void completion(String type) {

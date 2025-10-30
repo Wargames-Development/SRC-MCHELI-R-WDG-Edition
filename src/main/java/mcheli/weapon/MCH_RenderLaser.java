@@ -26,8 +26,8 @@ public class MCH_RenderLaser {
     public static void addBeam(Vec3 start, Vec3 end, int argb, float width, int lifeTicks, boolean pulsate, double renderStartDist) {
         float a = ((argb >>> 24) & 0xFF) / 255.0f;
         float r = ((argb >>> 16) & 0xFF) / 255.0f;
-        float g = ((argb >>>  8) & 0xFF) / 255.0f;
-        float b = ((argb       ) & 0xFF) / 255.0f;
+        float g = ((argb >>> 8) & 0xFF) / 255.0f;
+        float b = ((argb) & 0xFF) / 255.0f;
         beams.add(new Beam(
             Vec3.createVectorHelper(start.xCoord, start.yCoord, start.zCoord),
             Vec3.createVectorHelper(end.xCoord, end.yCoord, end.zCoord),
@@ -102,7 +102,7 @@ public class MCH_RenderLaser {
         double dy = e.yCoord - s.yCoord;
         double dz = e.zCoord - s.zCoord;
 
-        double lengthSq = dx*dx + dy*dy + dz*dz;
+        double lengthSq = dx * dx + dy * dy + dz * dz;
         if (lengthSq < 1.0E-8) return;
         double length = Math.sqrt(lengthSq);
         Vec3 adjustedStart = s;
@@ -118,7 +118,7 @@ public class MCH_RenderLaser {
                 dx = e.xCoord - adjustedStart.xCoord;
                 dy = e.yCoord - adjustedStart.yCoord;
                 dz = e.zCoord - adjustedStart.zCoord;
-                lengthSq = dx*dx + dy*dy + dz*dz;
+                lengthSq = dx * dx + dy * dy + dz * dz;
                 length = Math.sqrt(lengthSq);
                 if (length < 1.0E-8) return;
             }
@@ -126,7 +126,7 @@ public class MCH_RenderLaser {
         float width = b.width;
         if (b.pulsate) {
             double pulse = 0.7 + 0.3 * Math.sin((worldTime + partialTicks) * 0.4);
-            width *= (float)pulse;
+            width *= (float) pulse;
         }
         Minecraft mc = Minecraft.getMinecraft();
         EntityLivingBase viewer = mc.renderViewEntity;
@@ -138,12 +138,12 @@ public class MCH_RenderLaser {
         double crossX = dirY * lookVec.zCoord - dirZ * lookVec.yCoord;
         double crossY = dirZ * lookVec.xCoord - dirX * lookVec.zCoord;
         double crossZ = dirX * lookVec.yCoord - dirY * lookVec.xCoord;
-        double crossLength = Math.sqrt(crossX*crossX + crossY*crossY + crossZ*crossZ);
+        double crossLength = Math.sqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
         if (crossLength < 1.0E-8) {
             crossX = -dirZ;
             crossY = 0;
             crossZ = dirX;
-            crossLength = Math.sqrt(crossX*crossX + crossY*crossY + crossZ*crossZ);
+            crossLength = Math.sqrt(crossX * crossX + crossY * crossY + crossZ * crossZ);
             if (crossLength < 1.0E-8) return;
         }
         crossX /= crossLength;

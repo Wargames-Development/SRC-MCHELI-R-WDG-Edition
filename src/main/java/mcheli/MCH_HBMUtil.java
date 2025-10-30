@@ -34,7 +34,7 @@ public class MCH_HBMUtil {
     }
 
     public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return null;
         }
         try {
@@ -49,7 +49,7 @@ public class MCH_HBMUtil {
     }
 
     public static void EntityNukeTorex_statFac(World world, double posX, double posY, double posZ, float nukeYield) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return;
         }
         try {
@@ -63,7 +63,7 @@ public class MCH_HBMUtil {
     }
 
     public static void ExplosionChaos_spawnClorine(World world, double posX, double posY, double posZ, float chemYield) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return;
         }
         try {
@@ -77,18 +77,17 @@ public class MCH_HBMUtil {
     }
 
     public static void ExplosionCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return;
         }
         try {
             if (explosionCreatorClass != null) {
                 Method composeEffectMethod;
-                if(explosionBlockSize<5) {
+                if (explosionBlockSize < 5) {
                     composeEffectMethod = explosionCreatorClass.getMethod("composeEffectSmall", World.class, double.class, double.class, double.class);
-                } else if (explosionBlockSize<10) {
+                } else if (explosionBlockSize < 10) {
                     composeEffectMethod = explosionCreatorClass.getMethod("composeEffectStandard", World.class, double.class, double.class, double.class);
-                }
-                else {
+                } else {
                     composeEffectMethod = explosionCreatorClass.getMethod("composeEffectLarge", World.class, double.class, double.class, double.class);
                 }
                 composeEffectMethod.invoke(null, world, posX, posY, posZ);
@@ -97,20 +96,21 @@ public class MCH_HBMUtil {
             e.printStackTrace();
         }
     }
+
     public static void ExplosionSmallCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return;
         }
         try {
             if (explosionSmallCreatorClass != null) {
                 Method composeEffectMethod;
                 composeEffectMethod = explosionSmallCreatorClass.getMethod("composeEffect", World.class, double.class, double.class, double.class, int.class, float.class, float.class);
-                if(explosionBlockSize<3) {
-                    composeEffectMethod.invoke(null, world, posX, posY, posZ,5, 1F, 0.5F);
-                } else if (explosionBlockSize<10) {
-                    composeEffectMethod.invoke(null, world, posX, posY, posZ,10, 1F, 0.5F);                }
-                else {
-                    composeEffectMethod.invoke(null, world, posX, posY, posZ,15, 3.5F, 1.25F);
+                if (explosionBlockSize < 3) {
+                    composeEffectMethod.invoke(null, world, posX, posY, posZ, 5, 1F, 0.5F);
+                } else if (explosionBlockSize < 10) {
+                    composeEffectMethod.invoke(null, world, posX, posY, posZ, 10, 1F, 0.5F);
+                } else {
+                    composeEffectMethod.invoke(null, world, posX, posY, posZ, 15, 3.5F, 1.25F);
                 }
             }
         } catch (Exception e) {
@@ -119,7 +119,7 @@ public class MCH_HBMUtil {
     }
 
     public static Object ExplosionNT_instance_init(World world, Entity entity, double posX, double posY, double posZ, float explosionPower) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return null;
         }
         try {
@@ -135,7 +135,7 @@ public class MCH_HBMUtil {
     }
 
     public static void ExplosionNT_instance_overrideResolutionAndExplode(Object explosionNTInstance, int resolution) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return;
         }
         try {
@@ -149,8 +149,9 @@ public class MCH_HBMUtil {
             e.printStackTrace();
         }
     }
+
     public static void ExplosionNT_instance_addAttrib(Object explosionNTInstance, String attrib) {
-        if(!isHBMLoaded) {
+        if (!isHBMLoaded) {
             return;
         }
         try {
@@ -158,7 +159,7 @@ public class MCH_HBMUtil {
                 Class<?> exAttribClass = Class.forName("com.hbm.explosion.ExplosionNT$ExAttrib");
                 Object Attrib = Enum.valueOf((Class<Enum>) exAttribClass, attrib);
                 Method addAttribMethod = explosionNTClass.getMethod("addAttrib", exAttribClass);
-                addAttribMethod.invoke(explosionNTInstance,Attrib);
+                addAttribMethod.invoke(explosionNTInstance, Attrib);
             }
         } catch (Exception e) {
             e.printStackTrace();

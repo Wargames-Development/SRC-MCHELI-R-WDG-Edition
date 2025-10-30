@@ -8,8 +8,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 
-import java.util.HashMap;
-
 public class MCH_DamageFactor {
 
     public float damageVsLiving = 1f;
@@ -25,11 +23,10 @@ public class MCH_DamageFactor {
         else if (entity instanceof EntityLivingBase) return damageVsLiving;
         else if (entity instanceof MCP_EntityPlane) {
             MCP_EntityPlane plane = (MCP_EntityPlane) entity;
-            if(plane.getAcInfo() != null && plane.getAcInfo().isFloat) {
+            if (plane.getAcInfo() != null && plane.getAcInfo().isFloat) {
                 return damageVsShip;
             } else return damageVsPlane;
-        }
-        else if (entity instanceof MCH_EntityHeli) return damageVsHeli;
+        } else if (entity instanceof MCH_EntityHeli) return damageVsHeli;
         else if (entity instanceof MCH_EntityTank) return damageVsTank;
         else if (entity instanceof MCH_EntityVehicle) return damageVsVehicle;
         return 1.0f;

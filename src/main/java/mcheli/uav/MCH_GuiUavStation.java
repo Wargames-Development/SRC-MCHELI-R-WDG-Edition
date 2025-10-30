@@ -86,9 +86,9 @@ public class MCH_GuiUavStation extends W_GuiContainer {
                 this.buttonContinue.enabled = false;
             } else {
                 int[] pos1 = new int[]{
-                        this.uavStation.posUavX,
-                        this.uavStation.posUavY,
-                        this.uavStation.posUavZ
+                    this.uavStation.posUavX,
+                    this.uavStation.posUavY,
+                    this.uavStation.posUavZ
                 };
                 // i 表示坐标索引（0=x,1=y,2=z），j 表示 BTN 数组的索引
                 int i = btn.id >> 4 & 15;
@@ -114,8 +114,8 @@ public class MCH_GuiUavStation extends W_GuiContainer {
                 }
                 // 若有改变则发送更新
                 if (this.uavStation.posUavX != pos1[0]
-                        || this.uavStation.posUavY != pos1[1]
-                        || this.uavStation.posUavZ != pos1[2]) {
+                    || this.uavStation.posUavY != pos1[1]
+                    || this.uavStation.posUavZ != pos1[2]) {
 
                     MCH_UavPacketStatus data = new MCH_UavPacketStatus();
                     data.posUavX = (byte) pos1[0];

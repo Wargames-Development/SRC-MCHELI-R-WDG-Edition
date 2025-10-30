@@ -11,8 +11,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.Vec3;
 
 public class PacketDamageIndicator extends PacketBase {
-    public double relativeHitPosX , relativeHitPosY, relativeHitPosZ;
-    public double relativeDirX , relativeDirY, relativeDirZ;
+    public double relativeHitPosX, relativeHitPosY, relativeHitPosZ;
+    public double relativeDirX, relativeDirY, relativeDirZ;
     public String weaponName;
     public String hitBoxName;
     public double damage;
@@ -57,8 +57,8 @@ public class PacketDamageIndicator extends PacketBase {
         relativeDirX = data.readDouble();
         relativeDirY = data.readDouble();
         relativeDirZ = data.readDouble();
-        weaponName =  readUTF(data);
-        hitBoxName =  readUTF(data);
+        weaponName = readUTF(data);
+        hitBoxName = readUTF(data);
         damage = data.readDouble();
         acId = data.readInt();
     }
@@ -72,8 +72,8 @@ public class PacketDamageIndicator extends PacketBase {
         Vec3 relHitPos = Vec3.createVectorHelper(relativeHitPosX, relativeHitPosY, relativeHitPosZ);
         Vec3 relDir = Vec3.createVectorHelper(relativeDirX, relativeDirY, relativeDirZ);
         Entity e = clientPlayer.worldObj.getEntityByID(acId);
-        if(e instanceof MCH_EntityAircraft) {
-            MCH_DamageIndicator damageIndicator = new MCH_DamageIndicator(relHitPos, relDir, weaponName, hitBoxName , damage);
+        if (e instanceof MCH_EntityAircraft) {
+            MCH_DamageIndicator damageIndicator = new MCH_DamageIndicator(relHitPos, relDir, weaponName, hitBoxName, damage);
             ((MCH_EntityAircraft) e).damageIndicatorList.add(damageIndicator);
         }
     }

@@ -32,18 +32,18 @@ public class MCH_EntityInfo {
 
     public static MCH_EntityInfo createInfo(Entity e) {
         String name = e.getCommandSenderName();
-        if(e instanceof MCH_EntityAircraft) {
+        if (e instanceof MCH_EntityAircraft) {
             MCH_EntityAircraft ac = (MCH_EntityAircraft) e;
-            if(ac.getAcInfo() != null) {
+            if (ac.getAcInfo() != null) {
                 name = ac.getAcInfo().name;
             }
         }
         return new MCH_EntityInfo(e.getEntityId(),
-                e.worldObj.getWorldInfo().getWorldName(),
-                name,
-                e.getClass().getName(),
-                e.posX, e.posY, e.posZ,
-                e.lastTickPosX, e.lastTickPosY, e.lastTickPosZ
+            e.worldObj.getWorldInfo().getWorldName(),
+            name,
+            e.getClass().getName(),
+            e.posX, e.posY, e.posZ,
+            e.lastTickPosX, e.lastTickPosY, e.lastTickPosZ
         );
     }
 

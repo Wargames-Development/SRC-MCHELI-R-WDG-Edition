@@ -30,10 +30,6 @@ import java.util.List;
 public class MCH_RenderDamageIndicator {
 
     /**
-     * 模型自旋角度，用于让模型缓慢旋转展示。
-     */
-    private static float spinYaw = 0.0F;
-    /**
      * 模型渲染时用于计算缩放的像素基准值。调整此值可以改变模型在框中的大小。
      */
     private static final double BOX_PIXELS = 220.0;
@@ -41,7 +37,6 @@ public class MCH_RenderDamageIndicator {
      * 额外的缩放比例，用于微调模型大小。
      */
     private static final float EXTRA_ZOOM = 1.2F;
-
     /**
      * 渲染区域相对于屏幕右上角的水平偏移像素。
      * 调整此值可以让HUD离开屏幕边缘，避免被截断。
@@ -52,20 +47,15 @@ public class MCH_RenderDamageIndicator {
      * 调整此值可以让HUD离开屏幕边缘，避免被截断。
      */
     private static final int verticalOffset = 30;
-
-    @SubscribeEvent
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
-        if(true) {
-            return;
-        }
-        render(Minecraft.getMinecraft(), event.partialTicks);
-    }
+    /**
+     * 模型自旋角度，用于让模型缓慢旋转展示。
+     */
+    private static float spinYaw = 0.0F;
 
     /**
      * 主渲染入口。玩家骑乘载具时在HUD上绘制模型和伤害指示器。
      *
-     * @param mc          客户端实例
+     * @param mc           客户端实例
      * @param partialTicks 渲染补间因子
      */
     public static void render(Minecraft mc, float partialTicks) {
@@ -315,5 +305,14 @@ public class MCH_RenderDamageIndicator {
             GL11.glVertex3d(x, 0, z);
         }
         GL11.glEnd();
+    }
+
+    @SubscribeEvent
+    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
+        if (true) {
+            return;
+        }
+        render(Minecraft.getMinecraft(), event.partialTicks);
     }
 }

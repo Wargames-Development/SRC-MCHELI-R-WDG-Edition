@@ -8,18 +8,15 @@
  */
 package mcheli.wrapper;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Set;
-
 import mcheli.MCH_I18n;
 import mcheli.MCH_Lib;
 import mcheli.MCH_OutputFile;
 import net.minecraft.block.Block;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.item.Item;
 import net.minecraft.stats.Achievement;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class W_LanguageRegistry {
 
@@ -44,10 +41,10 @@ public class W_LanguageRegistry {
             map.get(lang).add(o + "=" + name);
         }
         if (o instanceof Item) {
-            map.get(lang).add(((Item)o).getUnlocalizedName() + ".name=" + name);
+            map.get(lang).add(((Item) o).getUnlocalizedName() + ".name=" + name);
         }
         if (o instanceof Block) {
-            map.get(lang).add(((Block)o).getUnlocalizedName() + ".name=" + name);
+            map.get(lang).add(((Block) o).getUnlocalizedName() + ".name=" + name);
         } else if (o instanceof Achievement) {
             map.get(lang).add("achievement." + key + "=" + name);
             map.get(lang).add("achievement." + key + ".desc=" + desc);

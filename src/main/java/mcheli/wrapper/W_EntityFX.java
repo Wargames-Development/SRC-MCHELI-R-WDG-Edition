@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.client.particle.EntityFX
  *  net.minecraft.entity.Entity
@@ -11,13 +11,12 @@
 package mcheli.wrapper;
 
 import net.minecraft.client.particle.EntityFX;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
 public abstract class W_EntityFX
-extends EntityFX {
+    extends EntityFX {
     public W_EntityFX(World par1World, double par2, double par4, double par6) {
         super(par1World, par2, par4, par6);
     }

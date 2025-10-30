@@ -2,7 +2,10 @@ package mcheli.multiplay;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import mcheli.*;
+import mcheli.MCH_Config;
+import mcheli.MCH_FMURUtil;
+import mcheli.MCH_MarkEntityPos;
+import mcheli.MCH_ServerSettings;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.gui.MCH_Gui;

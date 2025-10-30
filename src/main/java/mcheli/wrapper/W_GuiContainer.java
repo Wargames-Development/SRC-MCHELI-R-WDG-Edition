@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.client.Minecraft
  *  net.minecraft.client.gui.FontRenderer
@@ -16,20 +16,15 @@
  */
 package mcheli.wrapper;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.client.renderer.entity.RenderItem;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.inventory.Container;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
 public abstract class W_GuiContainer
-extends GuiContainer {
+    extends GuiContainer {
     public W_GuiContainer(Container par1Container) {
         super(par1Container);
     }
@@ -45,8 +40,8 @@ extends GuiContainer {
         if (font == null) {
             font = this.fontRendererObj;
         }
-        GL11.glEnable((int)2929);
-        GL11.glEnable((int)2896);
+        GL11.glEnable((int) 2929);
+        GL11.glEnable((int) 2896);
         GuiScreen.itemRender.renderItemAndEffectIntoGUI(font, this.mc.getTextureManager(), item, x, y);
         GuiScreen.itemRender.renderItemOverlayIntoGUI(font, this.mc.getTextureManager(), item, x, y, null);
         this.zLevel = 0.0f;

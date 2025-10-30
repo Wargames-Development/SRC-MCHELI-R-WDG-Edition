@@ -74,6 +74,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public int antiFlareTick;
     public int numLockedChaff = 0;
     public int airburstDist = 0;
+    public Vec3 initPos;
     boolean doingTopAttack = false;
     boolean speedAddedFromAircraft = false;
     private int countOnUpdate;
@@ -84,7 +85,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private List<ChunkCoordIntPair> loadedChunks = new ArrayList<>();
     private double airburstTravelled = 0.0D;
     private boolean airburstTriggered = false;
-    public Vec3 initPos;
 
     public MCH_EntityBaseBullet(World par1World) {
         super(par1World);
@@ -158,15 +158,15 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
             loadedChunks.clear();
             ChunkCoordIntPair[] neighboringChunks = {
-                    new ChunkCoordIntPair(chunkX, chunkZ),
-                    new ChunkCoordIntPair(chunkX + 1, chunkZ),
-                    new ChunkCoordIntPair(chunkX - 1, chunkZ),
-                    new ChunkCoordIntPair(chunkX, chunkZ + 1),
-                    new ChunkCoordIntPair(chunkX, chunkZ - 1),
-                    new ChunkCoordIntPair(chunkX + 1, chunkZ + 1),
-                    new ChunkCoordIntPair(chunkX - 1, chunkZ - 1),
-                    new ChunkCoordIntPair(chunkX + 1, chunkZ - 1),
-                    new ChunkCoordIntPair(chunkX - 1, chunkZ + 1)
+                new ChunkCoordIntPair(chunkX, chunkZ),
+                new ChunkCoordIntPair(chunkX + 1, chunkZ),
+                new ChunkCoordIntPair(chunkX - 1, chunkZ),
+                new ChunkCoordIntPair(chunkX, chunkZ + 1),
+                new ChunkCoordIntPair(chunkX, chunkZ - 1),
+                new ChunkCoordIntPair(chunkX + 1, chunkZ + 1),
+                new ChunkCoordIntPair(chunkX - 1, chunkZ - 1),
+                new ChunkCoordIntPair(chunkX + 1, chunkZ - 1),
+                new ChunkCoordIntPair(chunkX - 1, chunkZ + 1)
             };
             for (ChunkCoordIntPair chunk : neighboringChunks) {
                 loadedChunks.add(chunk);
@@ -184,10 +184,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             int nextChunkX = currentChunkX + (motionX > 0 ? 1 : (motionX < 0 ? -1 : 0));
             int nextChunkZ = currentChunkZ + (motionZ > 0 ? 1 : (motionZ < 0 ? -1 : 0));
             ChunkCoordIntPair[] chunksToLoad = {
-                    new ChunkCoordIntPair(currentChunkX, currentChunkZ),
-                    new ChunkCoordIntPair(nextChunkX, currentChunkZ),
-                    new ChunkCoordIntPair(currentChunkX, nextChunkZ),
-                    new ChunkCoordIntPair(nextChunkX, nextChunkZ)
+                new ChunkCoordIntPair(currentChunkX, currentChunkZ),
+                new ChunkCoordIntPair(nextChunkX, currentChunkZ),
+                new ChunkCoordIntPair(currentChunkX, nextChunkZ),
+                new ChunkCoordIntPair(nextChunkX, nextChunkZ)
             };
             for (ChunkCoordIntPair chunk : chunksToLoad) {
                 if (!loadedChunks.contains(chunk)) {
@@ -441,7 +441,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         double mz = tz * accel / d;
 
         Vector3f missileDirection = new Vector3f(this.motionX, this.motionY, this.motionZ);
-        Vector3f targetDirection  = new Vector3f(tx, ty, tz);
+        Vector3f targetDirection = new Vector3f(tx, ty, tz);
         double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
         double maxAllowedAngle = Math.toRadians(getInfo().maxDegreeOfMissile);
         if (angle > maxAllowedAngle) {
@@ -480,14 +480,14 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (getInfo().predictTargetPos) {
             // 当前导弹到目标的距离（用来粗略估计“到达时间”）
             double currentDistance = MathHelper.sqrt_double(
-                    (targetPosX - posX) * (targetPosX - posX)
-                            + (targetPosY - posY) * (targetPosY - posY)
-                            + (targetPosZ - posZ) * (targetPosZ - posZ)
+                (targetPosX - posX) * (targetPosX - posX)
+                    + (targetPosY - posY) * (targetPosY - posY)
+                    + (targetPosZ - posZ) * (targetPosZ - posZ)
             );
 
             // 当前导弹的速度（也可以根据历史帧或更复杂的模型来求平均速度）
             double missileSpeed = MathHelper.sqrt_double(
-                    motionX * motionX + motionY * motionY + motionZ * motionZ
+                motionX * motionX + motionY * motionY + motionZ * motionZ
             );
             // 避免分母为0
             if (missileSpeed < 0.0001D) {
@@ -544,9 +544,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         // 4. 判断目标运动方向与导弹方向的夹角是否大于PD系统的允许阈值
         //----------------------------------------------------------------------------
         Vector3f targetVelocity = new Vector3f(
-                (float) targetEntity.motionX,
-                (float) targetEntity.motionY,
-                (float) targetEntity.motionZ
+            (float) targetEntity.motionX,
+            (float) targetEntity.motionY,
+            (float) targetEntity.motionZ
         );
         double velocityAngle = Math.abs(Vector3f.angle(missileDirection, targetVelocity));
         if (velocityAngle > getInfo().pdHDNMaxDegree) {
@@ -556,7 +556,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
         // 如果是某些类型的空空导弹，且目标在地面上，则解锁
         if (this instanceof MCH_EntityAAMissile
-                && MCH_WeaponGuidanceSystem.isEntityOnGround(targetEntity, weaponInfo.lockMinHeight)) {
+            && MCH_WeaponGuidanceSystem.isEntityOnGround(targetEntity, weaponInfo.lockMinHeight)) {
             setTargetEntity(null);
             return;
         }
@@ -790,7 +790,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             if (!this.worldObj.isRemote) {
                 if (this.getInfo().explosion > 0) {
                     this.newExplosion(ex, ey, ez, getInfo().explosionAirburst,
-                            (float) this.getInfo().explosionBlock, false);
+                        (float) this.getInfo().explosionBlock, false);
                 } else if (this.explosionPower < 0) {
                     this.playExplosionSound();
                 }
@@ -801,8 +801,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
                 if (this.getInfo() != null) {
                     PacketPlaySound.sendSoundPacket(
-                            ex, ey, ez, this.getInfo().hitSoundRange, this.dimension,
-                            this.getInfo().hitSound, true);
+                        ex, ey, ez, this.getInfo().hitSoundRange, this.dimension,
+                        this.getInfo().hitSound, true);
                 }
 
                 this.setDead();
@@ -989,7 +989,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
             }
 
-            if(result != null) {
+            if (result != null) {
                 dir = Vec3.createVectorHelper(result.hitVec.xCoord - this.posX, result.hitVec.yCoord - this.posY, result.hitVec.zCoord - this.posZ);
                 double d = 1.0;
                 if (mx != 0.0) {
@@ -1097,7 +1097,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
 
                 Vec3 hitVec = Vec3.createVectorHelper(m.hitVec.xCoord, m.hitVec.yCoord, m.hitVec.zCoord);
-                if(weaponInfo != null && weaponInfo.enableBulletDecay && initPos != null) {
+                if (weaponInfo != null && weaponInfo.enableBulletDecay && initPos != null) {
                     float decayFactor = 1f;
                     float dist = (float) initPos.distanceTo(hitVec);
                     for (MCH_IBulletDecay decay : weaponInfo.bulletDecay) {
@@ -1237,13 +1237,13 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         float scale = 1.0F;
         for (int i = 0; i < num; i++) {
             EntityDiggingFX fx = new EntityDiggingFX(
-                    this.worldObj,
-                    raytraceResult.hitVec.xCoord + (rand.nextFloat() - 0.5D) * width,
-                    raytraceResult.hitVec.yCoord + 0.1D,
-                    raytraceResult.hitVec.zCoord + (rand.nextFloat() - 0.5D) * width,
-                    0, 0, 0,
-                    worldObj.getBlock(xTile, yTile, zTile),
-                    this.worldObj.getBlockMetadata(xTile, yTile, zTile)
+                this.worldObj,
+                raytraceResult.hitVec.xCoord + (rand.nextFloat() - 0.5D) * width,
+                raytraceResult.hitVec.yCoord + 0.1D,
+                raytraceResult.hitVec.zCoord + (rand.nextFloat() - 0.5D) * width,
+                0, 0, 0,
+                worldObj.getBlock(xTile, yTile, zTile),
+                this.worldObj.getBlockMetadata(xTile, yTile, zTile)
             );
 
             // 覆盖原有颜色设置
@@ -1260,11 +1260,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
         for (int i = 0; i < 50 + getInfo().flakParticlesDiff; i++) {
             EntityCloudFX obj = new EntityCloudFX(
-                    worldObj,
-                    raytraceResult.hitVec.xCoord + (rand.nextFloat() - 0.5D) * width,
-                    raytraceResult.hitVec.yCoord + rand.nextGaussian() * height,
-                    raytraceResult.hitVec.zCoord + (rand.nextFloat() - 0.5D) * width,
-                    0D, 0D, 0D
+                worldObj,
+                raytraceResult.hitVec.xCoord + (rand.nextFloat() - 0.5D) * width,
+                raytraceResult.hitVec.yCoord + rand.nextGaussian() * height,
+                raytraceResult.hitVec.zCoord + (rand.nextFloat() - 0.5D) * width,
+                0D, 0D, 0D
             ) {
                 // 重写渲染方法确保颜色固定
                 @Override
@@ -1292,11 +1292,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         float scale = 1.0F;
         for (int i = 0; i < num; i++) {
             EntityDiggingFX fx = (new EntityDiggingFX(this.worldObj,
-                    raytraceResult.hitVec.xCoord + (rand.nextFloat() - 0.5D) * width,
-                    raytraceResult.hitVec.yCoord + 0.1D,
-                    raytraceResult.hitVec.zCoord + (rand.nextFloat() - 0.5D) * width,
-                    0, 0, 0, worldObj.getBlock(xTile, yTile, zTile),
-                    this.worldObj.getBlockMetadata(xTile, yTile, zTile))).applyRenderColor(this.worldObj.getBlockMetadata(xTile, yTile, zTile));
+                raytraceResult.hitVec.xCoord + (rand.nextFloat() - 0.5D) * width,
+                raytraceResult.hitVec.yCoord + 0.1D,
+                raytraceResult.hitVec.zCoord + (rand.nextFloat() - 0.5D) * width,
+                0, 0, 0, worldObj.getBlock(xTile, yTile, zTile),
+                this.worldObj.getBlockMetadata(xTile, yTile, zTile))).applyRenderColor(this.worldObj.getBlockMetadata(xTile, yTile, zTile));
             fx.motionX += getInfo().flakParticlesDiff / 2 * rand.nextGaussian();
             fx.motionZ += getInfo().flakParticlesDiff / 2 * rand.nextGaussian();
             fx.motionY += getInfo().flakParticlesDiff * Math.abs(rand.nextGaussian());
@@ -1306,9 +1306,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
         for (int i = 0; i < getInfo().numParticlesFlak; i++) {
             EntityFX obj = new EntityCloudFX(worldObj,
-                    raytraceResult.hitVec.xCoord + rand.nextGaussian(),
-                    raytraceResult.hitVec.yCoord + rand.nextGaussian(),
-                    raytraceResult.hitVec.zCoord + rand.nextGaussian(), 0D, 0D, 0D);
+                raytraceResult.hitVec.xCoord + rand.nextGaussian(),
+                raytraceResult.hitVec.yCoord + rand.nextGaussian(),
+                raytraceResult.hitVec.zCoord + rand.nextGaussian(), 0D, 0D, 0D);
             obj.motionX = rand.nextGaussian() / 200;
             obj.motionY = rand.nextGaussian() / 200;
             obj.motionZ = rand.nextGaussian() / 200;
@@ -1539,9 +1539,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         Vector3f missileDirection = new Vector3f((float) super.motionX, (float) super.motionY, (float) super.motionZ);
         double range = getInfo().maxLockOnRange;
         List<Entity> list = worldObj.getEntitiesWithinAABB(
-                Entity.class,
-                AxisAlignedBB.getBoundingBox(posX - range, posY - range, posZ - range,
-                        posX + range, posY + range, posZ + range)
+            Entity.class,
+            AxisAlignedBB.getBoundingBox(posX - range, posY - range, posZ - range,
+                posX + range, posY + range, posZ + range)
         );
 
         if (list != null && !list.isEmpty()) {
@@ -1574,7 +1574,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     else if (entity instanceof MCH_EntityAircraft) {
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
-                                && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
+                            && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
                             continue;
                         }
                         // 排除地面上的目标
@@ -1599,7 +1599,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     if (entity instanceof MCH_EntityAircraft) {
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
-                                && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
+                            && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
                             continue;
                         }
                         boolean isTargetOnGround = MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().lockMinHeight);
@@ -1652,7 +1652,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     ++this.spawnedBulletNum;
                     for (int i = 0; i < this.getInfo().spawnBulletPerNum; ++i) {
                         double mX = 1e-6, mY = 1e-6, mZ = 1e-6, speed = 0.001;
-                        if(getInfo().spawnBulletInheritSpeed) {
+                        if (getInfo().spawnBulletInheritSpeed) {
                             mX = motionX;
                             mY = motionY;
                             mZ = motionZ;

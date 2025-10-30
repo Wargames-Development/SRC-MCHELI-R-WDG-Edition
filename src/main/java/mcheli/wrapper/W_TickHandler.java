@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  cpw.mods.fml.common.eventhandler.SubscribeEvent
  *  cpw.mods.fml.common.gameevent.TickEvent
@@ -15,13 +15,11 @@ package mcheli.wrapper;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-import mcheli.wrapper.ITickHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
 public abstract class W_TickHandler
-implements ITickHandler {
+    implements ITickHandler {
     protected Minecraft mc;
 
     public W_TickHandler(Minecraft m) {
@@ -79,7 +77,7 @@ implements ITickHandler {
     static enum TickType {
         RENDER,
         CLIENT;
-        
+
 
         private TickType() {
         }

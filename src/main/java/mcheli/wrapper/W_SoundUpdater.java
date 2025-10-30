@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.client.Minecraft
  *  net.minecraft.client.audio.ISound
@@ -10,7 +10,6 @@
  */
 package mcheli.wrapper;
 
-import mcheli.wrapper.W_Sound;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.SoundHandler;
@@ -37,18 +36,18 @@ public class W_SoundUpdater {
     public void playEntitySound(String name, Entity entity, float volume, float pitch, boolean par5) {
         if (this.isValidSound()) {
             this.es.setSoundParam(entity, volume, pitch);
-            this.theSoundHnadler.playSound((ISound)this.es);
+            this.theSoundHnadler.playSound((ISound) this.es);
         }
     }
 
     public void stopEntitySound(Entity entity) {
         if (this.isValidSound()) {
-            this.theSoundHnadler.stopSound((ISound)this.es);
+            this.theSoundHnadler.stopSound((ISound) this.es);
         }
     }
 
     public boolean isEntitySoundPlaying(Entity entity) {
-        return this.isValidSound() ? this.theSoundHnadler.isSoundPlaying((ISound)this.es) : false;
+        return this.isValidSound() ? this.theSoundHnadler.isSoundPlaying((ISound) this.es) : false;
     }
 
     public void setEntitySoundPitch(Entity entity, float pitch) {

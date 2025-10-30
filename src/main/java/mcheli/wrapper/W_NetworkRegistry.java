@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  cpw.mods.fml.common.network.IGuiHandler
  *  cpw.mods.fml.common.network.NetworkRegistry
@@ -12,11 +12,7 @@ package mcheli.wrapper;
 
 import cpw.mods.fml.common.network.IGuiHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.relauncher.Side;
-import mcheli.wrapper.W_Network;
-import mcheli.wrapper.W_PacketBase;
-import mcheli.wrapper.W_PacketHandler;
 import net.minecraft.entity.player.EntityPlayer;
 
 public class W_NetworkRegistry {

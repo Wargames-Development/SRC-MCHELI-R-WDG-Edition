@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.block.Block
  *  net.minecraft.block.material.Material
@@ -16,7 +16,7 @@ public class W_Particle {
     public static String getParticleTileCrackName(World w, int blockX, int blockY, int blockZ) {
         Block block = w.getBlock(blockX, blockY, blockZ);
         if (block.getMaterial() != Material.air) {
-            return "blockcrack_" + Block.getIdFromBlock((Block)block) + "_" + w.getBlockMetadata(blockX, blockY, blockZ);
+            return "blockcrack_" + Block.getIdFromBlock((Block) block) + "_" + w.getBlockMetadata(blockX, blockY, blockZ);
         }
         return "";
     }
@@ -24,7 +24,7 @@ public class W_Particle {
     public static String getParticleTileDustName(World w, int blockX, int blockY, int blockZ) {
         Block block = w.getBlock(blockX, blockY, blockZ);
         if (block.getMaterial() != Material.air) {
-            return "blockdust_" + Block.getIdFromBlock((Block)block) + "_" + w.getBlockMetadata(blockX, blockY, blockZ);
+            return "blockdust_" + Block.getIdFromBlock((Block) block) + "_" + w.getBlockMetadata(blockX, blockY, blockZ);
         }
         return "";
     }

@@ -52,9 +52,9 @@ public class PacketLockTargetBVR extends PacketBase {
     public void handleServerSide(EntityPlayerMP playerEntity) {
         for (WorldServer world : MinecraftServer.getServer().worldServers) {
             for (Entity entity : (List<Entity>) world.loadedEntityList) {
-                if(entity.getEntityId() == mslId && entity instanceof MCH_EntityAAMissile) {
+                if (entity.getEntityId() == mslId && entity instanceof MCH_EntityAAMissile) {
                     MCH_EntityAAMissile aa = (MCH_EntityAAMissile) entity;
-                    if(posY <= 0) {
+                    if (posY <= 0) {
                         aa.passiveRadarBVRLocking = false;
                     } else {
                         aa.passiveRadarBVRLocking = true;

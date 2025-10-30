@@ -39,7 +39,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -52,12 +51,12 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
+    public static final float hitTotalDamageScaleOrigin = 2.0f;
     public static MCH_ClientCommonTickHandler instance;
     public static int cameraMode = 0;
     public static MCH_EntityAircraft ridingAircraft = null;
@@ -69,7 +68,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public static float hitTotalDamage;
     public static int hitTotalDamageClearCountdown;
     public static float hitTotalDamageScale = 2.0f;
-    public static final float hitTotalDamageScaleOrigin = 2.0f;
     public static List<HitMessage> hitList = new ArrayList<>();
     private static double prevMouseDeltaX;
     private static double prevMouseDeltaY;
@@ -131,7 +129,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             inv = -inv;
         }
 
-        MCH_Config var10000 = MCH_MOD.config;
         if (MCH_Config.InvertMouse.prmBool) {
             inv = -inv;
         }
@@ -143,7 +140,27 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         return 40.0D;
     }
 
+    public static void addHitMessage(HitMessage message) {
+        int maxMessage = 5;
+        if (hitList.size() >= maxMessage) {
+            hitList.remove(0);
+        }
+        hitList.add(message);
+    }
 
+    public static void addTotalDamage(float damage) {
+        if (damage < 5) {
+        } else if (damage < 12) {
+            hitTotalDamageScale = 2.2f;
+        } else if (damage < 35) {
+            hitTotalDamageScale = 2.4f;
+        } else if (damage < 60) {
+            hitTotalDamageScale = 2.6f;
+        } else {
+            hitTotalDamageScale = 2.8f;
+        }
+        hitTotalDamage += damage;
+    }
 
     public void updatekeybind(MCH_Config config) {
         this.KeyCamDistUp = new MCH_Key(MCH_Config.KeyCameraDistUp.prmInt);
@@ -152,17 +169,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         this.KeyMultiplayManager = new MCH_Key(MCH_Config.KeyMultiplayManager.prmInt);
         this.Keys = new MCH_Key[]{this.KeyCamDistUp, this.KeyCamDistDown, this.KeyScoreboard, this.KeyMultiplayManager};
         MCH_ClientTickHandlerBase[] arr$ = this.ticks;
-        int len$ = arr$.length;
 
-        for (int i$ = 0; i$ < len$; ++i$) {
-            MCH_ClientTickHandlerBase t = arr$[i$];
+        for (MCH_ClientTickHandlerBase t : arr$) {
             t.updateKeybind(config);
         }
 
-    }
-
-    public String getLabel() {
-        return null;
     }
 
     public void onTick() {
@@ -200,7 +211,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 label85:
                 {
                     if (super.mc.isSingleplayer()) {
-                        MCH_Config var10000 = MCH_MOD.config;
                         if (!MCH_Config.DebugLog) {
                             break label85;
                         }
@@ -268,7 +278,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 hitTotalDamage = 0;
             }
         }
-        if(hitTotalDamageScale > hitTotalDamageScaleOrigin) {
+        if (hitTotalDamageScale > hitTotalDamageScaleOrigin) {
             hitTotalDamageScale *= 0.95f;
             hitTotalDamageScale = Math.max(hitTotalDamageScale, hitTotalDamageScaleOrigin);
         }
@@ -302,18 +312,17 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         if (super.mc.inGameHasFocus && Display.isActive() && super.mc.currentScreen == null) {
             if (stickMode) {
                 if (Math.abs(mouseRollDeltaX) < getMaxStickLength() * 0.2D) {
-                    mouseRollDeltaX *= (double) (1.0F - 0.15F * partialTicks);
+                    mouseRollDeltaX *= 1.0F - 0.15F * partialTicks;
                 }
 
                 if (Math.abs(mouseRollDeltaY) < getMaxStickLength() * 0.2D) {
-                    mouseRollDeltaY *= (double) (1.0F - 0.15F * partialTicks);
+                    mouseRollDeltaY *= 1.0F - 0.15F * partialTicks;
                 }
             }
 
             super.mc.mouseHelper.mouseXYChange();
             float f1 = super.mc.gameSettings.mouseSensitivity * 0.6F + 0.2F;
             float f2 = f1 * f1 * f1 * 8.0F;
-            MCH_Config var10000 = MCH_MOD.config;
             double ms = MCH_Config.MouseSensitivity.prmDouble * 0.1D;
             mouseDeltaX = ms * (double) super.mc.mouseHelper.deltaX * (double) f2;
             mouseDeltaY = ms * (double) super.mc.mouseHelper.deltaY * (double) f2;
@@ -322,7 +331,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 inv = -1;
             }
 
-            var10000 = MCH_MOD.config;
             if (MCH_Config.InvertMouse.prmBool) {
                 inv *= -1;
             }
@@ -331,7 +339,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             mouseRollDeltaY += mouseDeltaY * (double) inv;
             double dist = mouseRollDeltaX * mouseRollDeltaX + mouseRollDeltaY * mouseRollDeltaY;
             if (dist > 1.0D) {
-                dist = (double) MathHelper.sqrt_double(dist);
+                dist = MathHelper.sqrt_double(dist);
                 double d = dist;
                 if (dist > getMaxStickLength()) {
                     d = getMaxStickLength();
@@ -354,12 +362,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         MCH_ClientEventHook.haveSearchLightAircraft.clear();
         if (super.mc != null && super.mc.theWorld != null) {
-            Iterator player = Minecraft.getMinecraft().theWorld.loadedEntityList.iterator();
-
-            while (player.hasNext()) {
-                Object currentItemstack = player.next();
+            for (Object currentItemstack : Minecraft.getMinecraft().theWorld.loadedEntityList) {
                 if (currentItemstack instanceof MCH_EntityAircraft && ((MCH_EntityAircraft) currentItemstack).haveSearchLight()) {
-                    MCH_ClientEventHook.haveSearchLightAircraft.add((MCH_EntityAircraft) currentItemstack);
+                    MCH_ClientEventHook.haveSearchLightAircraft.add(currentItemstack);
                 }
             }
         }
@@ -395,14 +400,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 }
 
                 boolean var20 = false;
-                MCH_Config var10000;
                 if (var19 instanceof MCH_EntityHeli) {
-                    var10000 = MCH_MOD.config;
                     var20 = MCH_Config.MouseControlStickModeHeli.prmBool;
                 }
 
                 if (var19 instanceof MCP_EntityPlane) {
-                    var10000 = MCH_MOD.config;
                     var20 = MCH_Config.MouseControlStickModePlane.prmBool;
                 }
 
@@ -426,7 +428,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     if (var26 != null && var26.fixRot && var19.getIsGunnerMode(var17) && !var19.isGunnerLookMode(var17)) {
                         var22 = true;
                         var23 = var26.fixYaw;
-                        //System.out.println("yaw1");
                         var25 = var26.fixPitch;
                         mouseRollDeltaX *= 0.0D;
                         mouseRollDeltaY *= 0.0D;
@@ -436,7 +437,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         MCH_AircraftInfo.CameraPosition var28 = var19.getCameraPosInfo();
                         if (var28 != null) {
                             var23 = var28.yaw;
-                            //System.out.println("yaw2");
                             var25 = var28.pitch;
                         }
                     }
@@ -448,7 +448,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     }
 
                     var19.setupAllRiderRenderPosition(partialTicks, var17);
-                    double var29 = (double) MathHelper.sqrt_double(mouseRollDeltaX * mouseRollDeltaX + mouseRollDeltaY * mouseRollDeltaY);
+                    double var29 = MathHelper.sqrt_double(mouseRollDeltaX * mouseRollDeltaX + mouseRollDeltaY * mouseRollDeltaY);
                     if (!var20 || var29 < getMaxStickLength() * 0.1D) {
                         mouseRollDeltaX *= 0.95D;
                         mouseRollDeltaY *= 0.95D;
@@ -456,7 +456,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
                     p = MathHelper.wrapAngleTo180_float(var19.getRotRoll());
                     r = MathHelper.wrapAngleTo180_float(var19.getRotYaw() - var17.rotationYaw);
-                    //System.out.println("yaw3");
                     p *= MathHelper.cos((float) ((double) r * 3.141592653589793D / 180.0D));
                     if (var19.getTVMissile() != null && W_Lib.isClientPlayer(var19.getTVMissile().shootingEntity) && var19.getIsGunnerMode(var17)) {
                         p = 0.0F;
@@ -485,11 +484,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         mouseDeltaY *= ws != null && ws.getInfo() != null ? (double) ws.getInfo().cameraRotationSpeedPitch : 1.0D;
                         var17.setAngles((float) mouseDeltaX, (float) mouseDeltaY);
                         float y = var19.getRotYaw();
-                        //System.out.println("yaw4");
                         p = var19.getRotPitch();
                         r = var19.getRotRoll();
                         var19.setRotYaw(var19.calcRotYaw(partialTicks));
-                        //System.out.println("yaw5");
                         var19.setRotPitch(var19.calcRotPitch(partialTicks));
                         var19.setRotRoll(var19.calcRotRoll(partialTicks));
                         float revRoll = 0.0F;
@@ -638,7 +635,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
 
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
-            if(!hitList.isEmpty() && hitTotalDamage > 0) {
+            if (!hitList.isEmpty() && hitTotalDamage > 0) {
                 int x = (int) (i * 0.6f);
                 int y = (int) (j * 0.4f);
                 GL11.glPushMatrix();
@@ -667,7 +664,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             }
         }
     }
-
 
     public void onRenderTickPost(float partialTicks) {
         if (this.mc.thePlayer != null) {
@@ -701,28 +697,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         } else {
             return false;
         }
-    }
-
-    public static void addHitMessage(HitMessage message) {
-        int maxMessage = 5;
-        if (hitList.size() >= maxMessage) {
-            hitList.remove(0);
-        }
-        hitList.add(message);
-    }
-
-    public static void addTotalDamage(float damage) {
-        if(damage < 5) {
-        } else if(damage < 12) {
-            hitTotalDamageScale = 2.2f;
-        } else if(damage < 35) {
-            hitTotalDamageScale = 2.4f;
-        } else if(damage < 60) {
-            hitTotalDamageScale = 2.6f;
-        } else {
-            hitTotalDamageScale = 2.8f;
-        }
-        hitTotalDamage += damage;
     }
 
     public static class HitMessage {

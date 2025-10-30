@@ -1039,11 +1039,11 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                                     this.bbZmax = (float) Math.min(this.bbZmax, var49.boundingBox.maxZ);
                                                                                 } else if (s.length >= 7) {
                                                                                     MCH_BoundingBox bb = new MCH_BoundingBox(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]),
-                                                                                            this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]));
-                                                                                    if(s.length >= 8) {
+                                                                                        this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]));
+                                                                                    if (s.length >= 8) {
                                                                                         bb.setBoundingBoxType(EnumBoundingBoxType.valueOf(s[7]));
                                                                                     }
-                                                                                    if(s.length >= 9) {
+                                                                                    if (s.length >= 9) {
                                                                                         bb.setBoundingBoxName(s[8]);
                                                                                     }
                                                                                     this.extraBoundingBox.add(bb);

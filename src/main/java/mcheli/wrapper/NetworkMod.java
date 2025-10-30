@@ -3,8 +3,6 @@
  */
 package mcheli.wrapper;
 
-import java.lang.annotation.Annotation;
-
 public @interface NetworkMod {
     public boolean clientSideRequired();
 

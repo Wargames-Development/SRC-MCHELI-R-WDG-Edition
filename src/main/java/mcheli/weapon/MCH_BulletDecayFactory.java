@@ -10,7 +10,7 @@ public class MCH_BulletDecayFactory {
             case "Segmented":
                 List<MCH_BulletDecaySegmented.DecaySegment> segments = new ArrayList<>();
 
-                for(int i = 0; i < args.length; i += 2) {
+                for (int i = 0; i < args.length; i += 2) {
                     float startDistance = Float.parseFloat(args[i]);
                     float decayFactor = Float.parseFloat(args[i + 1]);
                     MCH_BulletDecaySegmented.DecaySegment segment = new MCH_BulletDecaySegmented.DecaySegment(startDistance, decayFactor);
