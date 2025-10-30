@@ -64,7 +64,7 @@ import java.util.Iterator;
 
 @Mod(
     modid = "mcheli",
-    name = "MCH-Reforged",
+    name = "MCH-Reforged-WDG-Edition",
     dependencies = "required-after:Forge@[10.13.2.1230,)"
 )
 @NetworkMod(

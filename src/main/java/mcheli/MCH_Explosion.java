@@ -126,63 +126,63 @@ public class MCH_Explosion extends Explosion {
             MCH_ParticlesUtil.DEF_spawnParticle("largeexplode", explosionX, explosionY, explosionZ, 1.0D, 0.0D, 0.0D, 10.0F);
         }
 
-        // 如果需要生成冒烟效果
+        // If smoke effects should be generated
         if (isSmoking) {
-            // 遍历受到爆炸影响的所有方块位置
+            // Iterate through all affected block positions
             Iterator<ChunkPosition> blockPosIterator = affectedBlockPositions.iterator();
             int spawnCount = 0;
-            // 根据爆炸大小确定可以生成的曳光弹数量
+            // Determine how many flares can be spawned based on explosion size
             int remainingFlares = (int) Math.max(explosionSize - 1, 10);
 
             while (blockPosIterator.hasNext()) {
-                // 获取当前块坐标
+                // Get the current block coordinates
                 ChunkPosition pos = blockPosIterator.next();
                 int blockX = W_ChunkPosition.getChunkPosX(pos);
                 int blockY = W_ChunkPosition.getChunkPosY(pos);
                 int blockZ = W_ChunkPosition.getChunkPosZ(pos);
-                // 更新方块ID（返回值未使用，但可能触发内部逻辑）
+                // Update block ID (return value unused, but may trigger internal logic)
                 W_WorldFunc.getBlockId(world, blockX, blockY, blockZ);
                 spawnCount++;
 
-                // 在方块内部随机生成粒子位置
+                // Generate random particle position within the block
                 double randX = blockX + world.rand.nextFloat();
                 double randY = blockY + world.rand.nextFloat();
                 double randZ = blockZ + world.rand.nextFloat();
 
-                // 计算从爆炸中心到粒子位置的向量
+                // Compute the vector from the explosion center to the particle
                 double dirX = randX - explosionX;
                 double dirY = randY - explosionY;
                 double dirZ = randZ - explosionZ;
 
-                // 归一化该向量
+                // Normalize the vector
                 double distance = MathHelper.sqrt_double(dirX * dirX + dirY * dirY + dirZ * dirZ);
                 dirX /= distance;
                 dirY /= distance;
                 dirZ /= distance;
 
-                // 计算与距离和爆炸规模相关的速度缩放因子，并加入随机性
+                // Compute velocity scaling factor based on distance and explosion size, adding randomness
                 double velocityScale = 0.5D / (distance / explosionSize + 0.1D);
                 velocityScale *= world.rand.nextFloat() * world.rand.nextFloat() + 0.3F;
 
-                // 应用缩放因子以获得实际运动速度
+                // Apply scaling to get actual movement speed
                 dirX *= velocityScale * 0.5D;
                 dirY *= velocityScale * 0.5D;
                 dirZ *= velocityScale * 0.5D;
 
-                // 计算爆炸中心到随机粒子位置的中点，用作发射源
+                // Compute midpoint between explosion center and random particle location as emission point
                 double particleX = (randX + explosionX) / 2.0D;
                 double particleY = (randY + explosionY) / 2.0D;
                 double particleZ = (randZ + explosionZ) / 2.0D;
 
-                // 随机角度，用于生成曳光弹和碎片运动的方向
+                // Random angle for flare and debris direction
                 double angle = Math.PI * world.rand.nextInt(360) / 180.0D;
 
-                // 大爆炸时生成曳光弹，数量受 remainingFlares 限制
+                // For large explosions, generate flares (limited by remainingFlares)
                 if (explosionSize >= 6.0F && remainingFlares > 0) {
-                    // 计算曳光弹的速度系数，受爆炸大小和随机数影响
+                    // Compute flare speed coefficient based on explosion size and randomness
                     double flareSpeed = Math.min(explosionSize / 16.0F, 0.6D) *
                         (0.5F + world.rand.nextFloat() * 0.5F);
-                    // 创建并发射曳光弹实体
+                    // Create and spawn a flare entity
                     world.spawnEntityInWorld(
                         new MCH_EntityFlare(
                             world,
@@ -200,12 +200,12 @@ public class MCH_Explosion extends Explosion {
                     remainingFlares--;
                 }
 
-                // 每处理四个方块位置，就生成一束碎块尘埃粒子
+                // Every 4 blocks processed, generate a burst of debris dust particles
                 if (spawnCount % 4 == 0) {
-                    // 根据爆炸大小计算尘埃粒子的速度尺度
+                    // Compute dust particle velocity scale based on explosion size
                     float dustVelocity = Math.min(explosionSize / 3.0F, 2.0F) *
                         (0.5F + world.rand.nextFloat() * 0.5F);
-                    // 生成碎块尘埃粒子
+                    // Spawn debris dust particles
                     MCH_ParticlesUtil.spawnParticleTileDust(
                         world,
                         (int) (particleX + 0.5D),
@@ -222,10 +222,10 @@ public class MCH_Explosion extends Explosion {
                     );
                 }
 
-                // 根据爆炸大小确定生成爆炸粒子的间隔
+                // Determine particle spawn interval based on explosion size
                 int modInterval = (int) (Math.max(explosionSize, 4.0F));
                 if (explosionSize <= 1.0F || spawnCount % modInterval == 0) {
-                    // 随机调整粒子的速度方向以增加多样性
+                    // Randomly adjust velocity direction for variation
                     if (world.rand.nextBoolean()) {
                         dirY *= 4.0D;
                         dirX *= 0.1D;
@@ -236,7 +236,7 @@ public class MCH_Explosion extends Explosion {
                         dirZ *= 2.0D;
                     }
 
-                    // 创建爆炸粒子参数对象
+                    // Create explosion particle parameters
                     MCH_ParticleParam particle = new MCH_ParticleParam(
                         world,
                         "explode",
@@ -248,14 +248,14 @@ public class MCH_Explosion extends Explosion {
                         dirZ,
                         explosionSize < 8.0F ? (explosionSize < 2.0F ? 1.5F : explosionSize * 1.5F) : 12.0F
                     );
-                    // 为粒子随机设置颜色值（RGB通道）
+                    // Randomize particle color (RGB channels)
                     particle.r = particle.g = particle.b =
                         0.3F + world.rand.nextFloat() * 0.4F;
                     particle.r += 0.1F;
                     particle.g += 0.05F;
                     particle.a = 0.4F + world.rand.nextFloat() * 0.4F;
 
-                    // 随机设置粒子的生命周期
+                    // Randomize particle lifespan
                     particle.age = 5 + world.rand.nextInt(10);
                     particle.age = (int) ((float) particle.age *
                         (Math.max(explosionSize / 2, 6.0F)));
@@ -263,7 +263,7 @@ public class MCH_Explosion extends Explosion {
                     particle.diffusible = true;
 
 
-                    // 发射爆炸粒子
+                    // Spawn explosion particle
                     MCH_ParticlesUtil.spawnParticle(particle);
                 }
             }
@@ -390,7 +390,8 @@ public class MCH_Explosion extends Explosion {
     }
 
     /**
-     * 某些实体不参与 result 统计与日志，保持与原版一致的排除项
+     * Certain entities are excluded from result calculations and logging —
+     * this maintains consistency with vanilla behavior.
      */
     private static boolean isIgnorableEntity(Entity e) {
         return (e instanceof EntityItem)
@@ -400,7 +401,8 @@ public class MCH_Explosion extends Explosion {
     }
 
     /**
-     * 不同目标类型的伤害倍率（原逻辑抽取成函数，便于维护）
+     * Damage multipliers for different target types —
+     * extracted into a dedicated method for easier maintenance.
      */
     private static float applyTypeMultipliers(Entity e, float damage, MCH_ExplosionParam param) {
         if (e instanceof EntityPlayer) {
@@ -425,7 +427,8 @@ public class MCH_Explosion extends Explosion {
     }
 
     /**
-     * 计算点到 AABB 的最小欧氏距离（在盒内则为 0）
+     * Calculates the minimum Euclidean distance from a point to an AABB (Axis-Aligned Bounding Box).
+     * Returns 0 if the point lies inside the box.
      */
     private static double distancePointToAABB(double px, double py, double pz, net.minecraft.util.AxisAlignedBB bb) {
         double dx = 0.0D;
@@ -446,7 +449,7 @@ public class MCH_Explosion extends Explosion {
 
     @Override
     public void doExplosionA() {
-        // === 1) 采样射线，收集会受影响的方块（供 doExplosionB 真正处理） ===
+        // === 1) Sample explosion rays to collect affected blocks (used later by doExplosionB for actual processing) ===
         final int RAYS = 16;
         final double STEP = 0.30000001192092896D;
         final Set<ChunkPosition> affected = new HashSet<>();
@@ -454,12 +457,12 @@ public class MCH_Explosion extends Explosion {
         for (int xi = 0; xi < RAYS; xi++) {
             for (int yi = 0; yi < RAYS; yi++) {
                 for (int zi = 0; zi < RAYS; zi++) {
-                    // 只在“立方体表面”发射射线（减少重复）
+                    // Only emit rays from the surface of the cube (to avoid redundant directions)
                     if (xi != 0 && xi != RAYS - 1 && yi != 0 && yi != RAYS - 1 && zi != 0 && zi != RAYS - 1) {
                         continue;
                     }
 
-                    // 将 [0,RAYS-1] 映射到 [-1,1]，得到方向向量
+                    // Map [0, RAYS-1] to [-1, 1] to obtain a normalized direction vector
                     double dx = xi / (RAYS - 1.0D) * 2.0D - 1.0D;
                     double dy = yi / (RAYS - 1.0D) * 2.0D - 1.0D;
                     double dz = zi / (RAYS - 1.0D) * 2.0D - 1.0D;
@@ -473,7 +476,7 @@ public class MCH_Explosion extends Explosion {
                     double py = this.explosionY;
                     double pz = this.explosionZ;
 
-                    // 沿射线行进，衰减爆轰强度并记录方块
+                    // March along the ray, attenuating the blast power and recording affected blocks
                     for (float step = 0.3F; blast > 0.0F; blast -= 0.22500001F) {
                         final int bx = MathHelper.floor_double(px);
                         final int by = MathHelper.floor_double(py);
@@ -484,22 +487,27 @@ public class MCH_Explosion extends Explosion {
                             final Block block = W_WorldFunc.getBlock(this.world, bx, by, bz);
                             float resistance;
                             if (this.exploder != null) {
+                                // Compute explosion resistance based on the exploder entity (e.g., missile, TNT, etc.)
                                 resistance = W_Entity.getBlockExplosionResistance(this.exploder, this, this.world, bx, by, bz, block);
                             } else {
+                                // Fallback: query block’s own resistance
                                 resistance = block.getExplosionResistance(this.exploder, this.world, bx, by, bz,
                                     this.explosionX, this.explosionY, this.explosionZ);
                             }
+                            // Reduce blast strength more severely in water environments
                             if (param.isInWater) {
                                 resistance *= this.world.rand.nextFloat() * 0.2F + 0.2F;
                             }
                             blast -= (resistance + 0.3F) * 0.3F;
                         }
 
+                        // Record block as affected if blast strength remains and the explosion is allowed to affect it
                         if (blast > 0.0F && (this.exploder == null ||
                             W_Entity.shouldExplodeBlock(this.exploder, this, this.world, bx, by, bz, blockId, blast))) {
                             affected.add(new ChunkPosition(bx, by, bz));
                         }
 
+                        // Advance the ray
                         px += dx * STEP;
                         py += dy * STEP;
                         pz += dz * STEP;
@@ -509,10 +517,11 @@ public class MCH_Explosion extends Explosion {
         }
         this.affectedBlockPositions.addAll(affected);
 
-        // === 2) 处理实体伤害与击退 ===
+        // === 2) Handle entity damage and knockback ===
         final float sizeBefore = this.explosionSize;
-        this.explosionSize *= 2.0F; // 原版做法：扩大一次半径用于实体搜索
+        this.explosionSize *= 2.0F; // Vanilla behavior: double radius for entity search
 
+        // Define the search bounding box around the explosion
         final int minX = MathHelper.floor_double(this.explosionX - this.explosionSize - 1.0D);
         final int maxX = MathHelper.floor_double(this.explosionX + this.explosionSize + 1.0D);
         final int minY = MathHelper.floor_double(this.explosionY - this.explosionSize - 1.0D);
@@ -520,22 +529,24 @@ public class MCH_Explosion extends Explosion {
         final int minZ = MathHelper.floor_double(this.explosionZ - this.explosionSize - 1.0D);
         final int maxZ = MathHelper.floor_double(this.explosionZ + this.explosionSize + 1.0D);
 
+        // Collect all entities within the explosion’s influence area
         final List list = this.world.getEntitiesWithinAABBExcludingEntity(
             this.exploder, W_AxisAlignedBB.getAABB(minX, minY, minZ, maxX, maxY, maxZ));
 
+        // Explosion center as a vector
         final Vec3 center = W_WorldFunc.getWorldVec3(this.world, this.explosionX, this.explosionY, this.explosionZ);
 
-        // 伤害归属：如果由玩家引发，设置为玩家（保持原有行为）
+        // Attribute explosion ownership: if triggered by a player, assign to that player
         this.exploder = param.player;
 
-        // “点爆”基础伤害：在 rDist=0、无遮挡 时的理论伤害（用于直击实体）
+        // Base “point-blank” damage — theoretical damage at rDist=0 with no obstruction (for direct hits)
         final float pointBlankBase = (float) ((int) (8.0D * (double) this.explosionSize + 1.0D));
 
-        // === 2.1 普通实体（排除直击对象） ===
+        // === 2.1 Process indirect entities (excluding direct-hit targets) ===
         for (Object o : list) {
             final Entity e = (Entity) o;
 
-            // 排除“直击实体”，它将被单独处理
+            // Skip direct-hit entity; handled separately below
             if (param.directAttackEntity != null && W_Entity.isEqual(e, param.directAttackEntity)) {
                 continue;
             }
@@ -556,7 +567,7 @@ public class MCH_Explosion extends Explosion {
             vy /= vLen;
             vz /= vLen;
 
-            // 用于击退/向量登记的遮挡+距离因子（保持原版感觉）
+            // Occlusion + distance factor used for knockback vector calculation (keeps vanilla-like behavior)
             double density = this.getBlockDensity(center, e.boundingBox);
             final double attenForKnock = (1.0D - rDist) * density;
             final double attenForDamage = Math.max(0.0D, attenForKnock);
@@ -569,16 +580,16 @@ public class MCH_Explosion extends Explosion {
                 MCH_Lib.DbgLog(this.world, "MCH_Explosion.doExplosionA:Damage=%.1f:HitEntity=%s", damage, e.getClass());
             }
 
-            // 统一应用伤害免疫/配置
+            // Apply global damage immunity and configuration-based modifiers
             MCH_Lib.applyEntityHurtResistantTimeConfig(e);
             DamageSource ds = DamageSource.setExplosionSource(this);
             damage = MCH_Config.applyDamageVsEntity(e, ds, damage);
             damage = applyTypeMultipliers(e, damage, param);
 
-            // 施加伤害
+            // Apply calculated damage to the entity
             e.attackEntityFrom(ds, damage);
 
-            // 击退与向量登记
+            // Apply knockback and record resulting motion vector
             final double kb = EnchantmentProtection.func_92092_a(e, attenForKnock);
             if (e instanceof EntityLivingBase) {
                 e.motionX += vx * kb * 0.4D;
@@ -589,7 +600,7 @@ public class MCH_Explosion extends Explosion {
                 this.field_77288_k.put(e, W_WorldFunc.getWorldVec3(this.world, vx * attenForKnock, vy * attenForKnock, vz * attenForKnock));
             }
 
-            // 点燃：保持原行为（随“中心距离”线性）
+            // Ignite nearby entities — maintains vanilla-style behavior (scales linearly with distance from explosion center)
             if (damage > 0.0F && param.countSetFireEntity > 0) {
                 final double fireFactor = 1.0D - vLen / (double) this.explosionSize;
                 if (fireFactor > 0.0D) {
@@ -598,15 +609,16 @@ public class MCH_Explosion extends Explosion {
             }
         }
 
-        // === 2.2 直击实体：单独固定伤害 ===
+        // === 2.2 Direct-hit entity: handled separately with fixed damage ===
         if (param.directAttackEntity != null && !isIgnorableEntity(param.directAttackEntity)) {
             final Entity e = param.directAttackEntity;
 
-            // 用“爆点到 AABB 的最小距离”来计算击退/点燃的衰减（伤害固定为点爆，不衰减）
+            // Use minimum distance from explosion center to AABB to calculate knockback/fire attenuation
+            // (damage remains fixed, does not attenuate)
             final double minDistToBox = distancePointToAABB(this.explosionX, this.explosionY, this.explosionZ, e.boundingBox);
             final double rDistBox = Math.min(1.0D, minDistToBox / (double) this.explosionSize);
 
-            // 方向向量仍用“爆心 -> 眼睛高度”的方向
+            // Direction vector from explosion center to target eye height
             double vx = e.posX - this.explosionX;
             double vy = e.posY + (double) e.getEyeHeight() - this.explosionY;
             double vz = e.posZ - this.explosionZ;
@@ -617,11 +629,11 @@ public class MCH_Explosion extends Explosion {
                 vz /= vLen;
             }
 
-            // 击退/登记按距离+遮挡（但不影响“固定伤害”）
+            // Knockback and vector registration factor — affected by distance and occlusion
             double density = this.getBlockDensity(center, e.boundingBox);
             final double attenForKnock = (1.0D - rDistBox) * density;
 
-            // === 固定伤害：点爆伤害，不随距离/遮挡衰减 ===
+            // === Fixed damage: point-blank damage not reduced by distance or occlusion ===
             float damage = pointBlankBase;
 
             if (this.result != null) {
@@ -629,16 +641,16 @@ public class MCH_Explosion extends Explosion {
                 MCH_Lib.DbgLog(this.world, "MCH_Explosion.doExplosionA:Damage=%.1f:DirectHit=%s", damage, e.getClass());
             }
 
-            // 统一应用伤害免疫/配置
+            // Apply global immunity and configuration-based modifiers
             MCH_Lib.applyEntityHurtResistantTimeConfig(e);
             DamageSource ds = DamageSource.setExplosionSource(this);
             damage = MCH_Config.applyDamageVsEntity(e, ds, damage);
             damage = applyTypeMultipliers(e, damage, param);
 
-            // 施加伤害（固定伤害）
+            // Apply fixed damage
             e.attackEntityFrom(ds, damage);
 
-            // 击退与向量登记：随 rDistBox 与遮挡衰减
+            // Apply knockback and record motion vector (attenuated by rDistBox and occlusion)
             final double kb = EnchantmentProtection.func_92092_a(e, attenForKnock);
             if (e instanceof EntityLivingBase) {
                 e.motionX += vx * kb * 0.4D;
@@ -649,16 +661,16 @@ public class MCH_Explosion extends Explosion {
                 this.field_77288_k.put(e, W_WorldFunc.getWorldVec3(this.world, vx * attenForKnock, vy * attenForKnock, vz * attenForKnock));
             }
 
-            // 点燃：用 AABB 距离做线性系数，可更贴近“贴脸爆”表现
+            // Ignite based on AABB distance factor for more realistic close-range fire behavior
             if (damage > 0.0F && param.countSetFireEntity > 0) {
-                final double fireFactor = 1.0D - rDistBox; // 基于对 AABB 的最小距离
+                final double fireFactor = 1.0D - rDistBox; // derived from minimum AABB distance
                 if (fireFactor > 0.0D) {
                     e.setFire((int) (fireFactor * (double) param.countSetFireEntity));
                 }
             }
         }
 
-        // 还原爆炸半径
+        // Restore original explosion radius
         this.explosionSize = sizeBefore;
     }
 
