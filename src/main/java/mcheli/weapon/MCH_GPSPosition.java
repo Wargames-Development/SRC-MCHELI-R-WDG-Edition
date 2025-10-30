@@ -12,8 +12,9 @@ import java.util.Map;
 public class MCH_GPSPosition {
 
     public static Map<Integer, MCH_GPSPosition> currentGPSPositions = new HashMap<>();
-    @SideOnly(Side.CLIENT)
+
     public static MCH_GPSPosition currentClientGPSPosition = new MCH_GPSPosition(0, 0, 0);
+
     public double x, y, z;
     public Entity owner;
     public boolean isActive = false;
@@ -28,11 +29,6 @@ public class MCH_GPSPosition {
         if (owner.worldObj.isRemote) {
             clientSet(x, y, z, isActive, owner);
             MCH_MOD.getPacketHandler().sendToServer(new PacketGPSPositionReset(x, y, z, isActive, owner.getEntityId()));
-        } else {
-            MCH_GPSPosition gpsPosition = new MCH_GPSPosition(x, y, z);
-            gpsPosition.isActive = isActive;
-            gpsPosition.owner = owner;
-            currentGPSPositions.put(owner.getEntityId(), gpsPosition);
         }
     }
 

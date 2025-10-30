@@ -15,6 +15,7 @@ import net.minecraft.client.particle.EntityFX;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.*;
 import net.minecraft.world.World;
 
@@ -201,8 +202,8 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
                     }
                     if (hit instanceof MCH_EntityAircraft) {
                         MCH_EntityAircraft ac = (MCH_EntityAircraft) hit;
-                        if (ac.riddenByEntity instanceof EntityLivingBase) {
-                            livingList.add((EntityLivingBase) ac.riddenByEntity);
+                        if (ac.getRiddenByEntity() instanceof EntityLivingBase) {
+                            livingList.add((EntityLivingBase) ac.getRiddenByEntity());
                         }
                         if (ac.getSeats() != null) {
                             for (MCH_EntitySeat seat : ac.getSeats()) {
@@ -217,7 +218,7 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
                         for (MCH_PotionEffect effect : getInfo().potionEffect) {
                             if ((effect.startDist < 0 && effect.endDist < 0)
                                 || (effect.startDist <= dist && dist < effect.endDist)) {
-                                livingBase.addPotionEffect(effect.potionEffect);
+                                livingBase.addPotionEffect(new PotionEffect(effect.potionEffect));
                             }
                         }
                     }
