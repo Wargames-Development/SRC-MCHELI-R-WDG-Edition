@@ -33,6 +33,7 @@ import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.*;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
@@ -1130,7 +1131,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     for (MCH_PotionEffect effect : getInfo().potionEffect) {
                         if ((effect.startDist < 0 && effect.endDist < 0)
                             || (effect.startDist <= dist && dist < effect.endDist)) {
-                            livingBase.addPotionEffect(effect.potionEffect);
+                            livingBase.addPotionEffect(new PotionEffect(effect.potionEffect));
                         }
                     }
                 }

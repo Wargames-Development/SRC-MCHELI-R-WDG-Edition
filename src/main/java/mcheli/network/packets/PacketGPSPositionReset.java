@@ -46,7 +46,10 @@ public class PacketGPSPositionReset extends PacketBase {
 
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
-        MCH_GPSPosition.set(targetPosX, targetPosY, targetPosZ, isActive, playerEntity);
+        MCH_GPSPosition gpsPosition = new MCH_GPSPosition(targetPosX, targetPosY, targetPosZ);
+        gpsPosition.isActive = isActive;
+        gpsPosition.owner = playerEntity;
+        MCH_GPSPosition.currentGPSPositions.put(playerEntity.getEntityId(), gpsPosition);
     }
 
     @Override

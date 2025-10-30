@@ -10,10 +10,10 @@ import net.minecraft.world.World;
 
 public class MCH_Camera {
 
-    public static int currentCameraMode = 0;
     public static final int MODE_NORMAL = 0;
     public static final int MODE_NIGHTVISION = 1;
     public static final int MODE_THERMALVISION = 2;
+    public static int currentCameraMode = 0;
     private final World worldObj;
     public double posX;
     public double posY;

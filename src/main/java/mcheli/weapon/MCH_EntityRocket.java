@@ -27,8 +27,7 @@ public class MCH_EntityRocket extends MCH_EntityBaseBullet {
          e.setName(this.getName());
          e.setParameterFromWeapon(this, super.shootingAircraft, super.shootingEntity);
          float MOTION = this.getInfo().bombletDiff;
-         float RANDOM = 1.2F;
-         e.motionX += ((double)super.rand.nextFloat() - 0.5D) * (double)MOTION;
+          e.motionX += ((double)super.rand.nextFloat() - 0.5D) * (double)MOTION;
          e.motionY += ((double)super.rand.nextFloat() - 0.5D) * (double)MOTION;
          e.motionZ += ((double)super.rand.nextFloat() - 0.5D) * (double)MOTION;
          e.setBomblet();

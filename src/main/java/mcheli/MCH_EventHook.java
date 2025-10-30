@@ -59,13 +59,13 @@ public class MCH_EventHook extends W_EventHook {
          b1 |= Float.isNaN(e.rotationYaw);
          b1 |= Float.isNaN(e.prevRotationYaw);
          if(b1) {
-            MCH_Lib.Log(event.entity, "### EntityJoinWorldEvent Error:Player invalid rotation yaw(" + e.rotationYaw + ")", new Object[0]);
+            MCH_Lib.Log(event.entity, "### EntityJoinWorldEvent Error:Player invalid rotation yaw(" + e.rotationYaw + ")");
             e.rotationYaw = 0.0F;
             e.prevRotationYaw = 0.0F;
          }
 
          if(!e.worldObj.isRemote && event.entity instanceof EntityPlayerMP) {
-            MCH_Lib.DbgLog(false, "EntityJoinWorldEvent:" + event.entity, new Object[0]);
+            MCH_Lib.DbgLog(false, "EntityJoinWorldEvent:" + event.entity);
             MCH_PacketNotifyServerSettings.send((EntityPlayerMP)event.entity);
          }
       }
