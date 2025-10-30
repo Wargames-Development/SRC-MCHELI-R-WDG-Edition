@@ -150,7 +150,7 @@ public class MCH_ItemWrench extends W_Item {
 //           player.posY + player.getEyeHeight(),
 //           player.posZ);
 //
-//        // 终点：沿视线 100 米处
+//        // End point: 100 meters (≈100 blocks) along the line of sight
 //       final double range = 100.0D; // 100 米 ≈ 100 方块
 //       Vec3 look = player.getLook(1.0F); // 单位向量
 //       Vec3 end  = start.addVector(look.xCoord * range,
