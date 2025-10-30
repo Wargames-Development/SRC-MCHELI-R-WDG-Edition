@@ -1,35 +1,24 @@
 package mcheli.weapon;
 
-import mcheli.aircraft.MCH_EntityAircraft;
-import mcheli.flare.MCH_EntityChaff;
-import mcheli.vector.Vector3f;
-import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-
 public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker {
 
-   public boolean passiveRadarBVRLocking = false;
-   public int passiveRadarBVRLockingPosX = 0;
-   public int passiveRadarBVRLockingPosY = 0;
-   public int passiveRadarBVRLockingPosZ = 0;
+    public boolean passiveRadarBVRLocking = false;
+    public int passiveRadarBVRLockingPosX = 0;
+    public int passiveRadarBVRLockingPosY = 0;
+    public int passiveRadarBVRLockingPosZ = 0;
 
-   public MCH_EntityAAMissile(World par1World) {
-      super(par1World);
-      super.targetEntity = null;
-   }
+    public MCH_EntityAAMissile(World par1World) {
+        super(par1World);
+        super.targetEntity = null;
+    }
 
-   public MCH_EntityAAMissile(World par1World, double posX, double posY, double posZ, double targetX, double targetY, double targetZ, float yaw, float pitch, double acceleration) {
-      super(par1World, posX, posY, posZ, targetX, targetY, targetZ, yaw, pitch, acceleration);
-   }
+    public MCH_EntityAAMissile(World par1World, double posX, double posY, double posZ, double targetX, double targetY, double targetZ, float yaw, float pitch, double acceleration) {
+        super(par1World, posX, posY, posZ, targetX, targetY, targetZ, yaw, pitch, acceleration);
+    }
 
     @Override
     public void onUpdate() {
@@ -68,13 +57,12 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
     }
 
 
+    public MCH_BulletModel getDefaultBulletModel() {
+        return MCH_DefaultBulletModels.AAMissile;
+    }
 
-   public MCH_BulletModel getDefaultBulletModel() {
-      return MCH_DefaultBulletModels.AAMissile;
-   }
-
-   @Override
-   public boolean canLockEntity(Entity var1) {
-      return false;
-   }
+    @Override
+    public boolean canLockEntity(Entity var1) {
+        return false;
+    }
 }

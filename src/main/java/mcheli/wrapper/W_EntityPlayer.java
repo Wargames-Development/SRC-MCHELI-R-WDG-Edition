@@ -16,21 +16,17 @@
  */
 package mcheli.wrapper;
 
-import com.mojang.authlib.GameProfile;
-import mcheli.wrapper.W_EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.IChatComponent;
 import net.minecraft.world.World;
 
 public abstract class W_EntityPlayer
-extends EntityPlayer {
+    extends EntityPlayer {
 
     public W_EntityPlayer(World par1World, EntityPlayer player) {
         super(par1World, player.getGameProfile());
@@ -41,7 +37,7 @@ extends EntityPlayer {
             if (p.worldObj.isRemote) {
                 W_EntityPlayerSP.closeScreen(p);
             } else if (p instanceof EntityPlayerMP) {
-                ((EntityPlayerMP)p).closeScreen();
+                ((EntityPlayerMP) p).closeScreen();
             }
         }
     }

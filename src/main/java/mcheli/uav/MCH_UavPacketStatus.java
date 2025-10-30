@@ -1,9 +1,10 @@
 package mcheli.uav;
 
 import com.google.common.io.ByteArrayDataInput;
+import mcheli.MCH_Packet;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
-import mcheli.MCH_Packet;
 
 public class MCH_UavPacketStatus extends MCH_Packet {
 
@@ -34,7 +35,7 @@ public class MCH_UavPacketStatus extends MCH_Packet {
             dos.writeByte(this.posUavX);
             dos.writeByte(this.posUavY);
             dos.writeByte(this.posUavZ);
-            dos.writeByte(this.continueControl?1:0);
+            dos.writeByte(this.continueControl ? 1 : 0);
         } catch (IOException var3) {
             var3.printStackTrace();
         }

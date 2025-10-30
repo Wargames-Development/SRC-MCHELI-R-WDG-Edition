@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.block.Block
  *  net.minecraft.block.material.Material
@@ -11,8 +11,6 @@
  */
 package mcheli.wrapper;
 
-import mcheli.wrapper.W_Block;
-import mcheli.wrapper.W_MOD;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
@@ -38,7 +36,7 @@ public class W_WorldFunc {
     }
 
     public static int getBlockId(World w, int x, int y, int z) {
-        return Block.getIdFromBlock((Block)w.getBlock(x, y, z));
+        return Block.getIdFromBlock((Block) w.getBlock(x, y, z));
     }
 
     public static Block getBlock(World w, int x, int y, int z) {
@@ -54,7 +52,7 @@ public class W_WorldFunc {
     }
 
     public static boolean isEqualBlock(World w, int x, int y, int z, Block block) {
-        return Block.isEqualTo((Block)w.getBlock(x, y, z), (Block)block);
+        return Block.isEqualTo((Block) w.getBlock(x, y, z), (Block) block);
     }
 
     public static MovingObjectPosition clip(World w, Vec3 par1Vec3, Vec3 par2Vec3) {
@@ -82,7 +80,7 @@ public class W_WorldFunc {
     }
 
     public static Vec3 getWorldVec3(World w, double x, double y, double z) {
-        return Vec3.createVectorHelper((double)x, (double)y, (double)z);
+        return Vec3.createVectorHelper((double) x, (double) y, (double) z);
     }
 
     public static Vec3 getWorldVec3EntityPos(Entity e) {

@@ -1,13 +1,11 @@
 package mcheli.weapon;
 
-import mcheli.MCH_Camera;
 import mcheli.MCH_Color;
 import mcheli.wrapper.W_Block;
 import mcheli.wrapper.W_MOD;
 import mcheli.wrapper.W_Render;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.block.Block;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;

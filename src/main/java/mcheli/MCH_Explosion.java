@@ -753,6 +753,7 @@ public class MCH_Explosion extends Explosion {
 
         public boolean hitEntity = false;
         public MCH_Explosion explosion;
+
         public ExplosionResult(MCH_Explosion explosion) {
             this.explosion = explosion;
         }

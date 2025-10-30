@@ -51,7 +51,7 @@ public class MCH_Maintenance {
             if (this.useTick > 0) {
                 --this.useTick;
             }
-            if(this.useTick > 0) {
+            if (this.useTick > 0) {
                 this.onUsing();
             }
             if (!this.isUsing() && this.aircraft.getEntityData().getBoolean("MaintenanceUsing")) {
@@ -61,7 +61,7 @@ public class MCH_Maintenance {
     }
 
     private void onUsing() {
-        if(!aircraft.isDead){
+        if (!aircraft.isDead) {
             aircraft.repair(aircraft.getMaxHP() / 100);
         }
     }

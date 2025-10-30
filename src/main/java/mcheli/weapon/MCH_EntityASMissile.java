@@ -44,7 +44,7 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet {
             }
 
             if (!super.worldObj.isRemote && !super.isDead && targeting && this.getCountOnUpdate() > this.getInfo().rigidityTime) {
-                 guidanceToPos(targetPosX, targetPosY, targetPosZ);
+                guidanceToPos(targetPosX, targetPosY, targetPosZ);
             }
         } else if (!super.worldObj.isRemote) {
             this.setDead();

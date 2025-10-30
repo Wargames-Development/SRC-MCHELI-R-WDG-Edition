@@ -158,7 +158,8 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("pos_y", ac.posY);
         updateVarMapItem("pos_z", ac.posZ);
         updateVarMapItem("motion_x", ac.motionX);
-        updateVarMapItem("motion_y", ac.motionY);        updateVarMapItem("motion_z", ac.motionZ);
+        updateVarMapItem("motion_y", ac.motionY);
+        updateVarMapItem("motion_z", ac.motionZ);
         updateVarMapItem("speed", Math.sqrt(ac.motionX * ac.motionX + ac.motionY * ac.motionY + ac.motionZ * ac.motionZ));
         updateVarMapItem("fuel", ac.getFuelP());
         updateVarMapItem("low_fuel", isLowFuel(ac));
@@ -193,10 +194,10 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("missile_lock_dist", ac.missileDetector != null ? ac.missileDetector.missileLockDist : 0.0D);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
         updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
-        if(ac instanceof MCP_EntityPlane) {
+        if (ac instanceof MCP_EntityPlane) {
             MCP_PlaneInfo info = ((MCP_EntityPlane) ac).getPlaneInfo();
             updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);
-            if(((MCP_EntityPlane) ac).partWing != null) {
+            if (((MCP_EntityPlane) ac).partWing != null) {
                 updateVarMapItem("is_sweepwing_fold", ((MCP_EntityPlane) ac).partWing.isOFF() ? 1.0D : 0.0D);
             } else {
                 updateVarMapItem("is_sweepwing_fold", 0.0D);

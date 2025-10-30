@@ -28,18 +28,18 @@ import java.util.*;
 public class MCH_Multiplay {
 
     public static final MCH_TargetType[][] ENTITY_SPOT_TABLE = new MCH_TargetType[][]
-            {
-                    {MCH_TargetType.NONE, MCH_TargetType.NONE}, //0
-                    {MCH_TargetType.OTHER_MOB, MCH_TargetType.OTHER_MOB}, //1
-                    {MCH_TargetType.MONSTER, MCH_TargetType.MONSTER}, //2
-                    {MCH_TargetType.NONE, MCH_TargetType.NO_TEAM_PLAYER}, //3
-                    {MCH_TargetType.NONE, MCH_TargetType.SAME_TEAM_PLAYER}, //4
-                    {MCH_TargetType.NONE, MCH_TargetType.OTHER_TEAM_PLAYER}, //5
-                    {MCH_TargetType.NONE, MCH_TargetType.NONE}, //6
-                    {MCH_TargetType.NONE, MCH_TargetType.NO_TEAM_PLAYER}, //7
-                    {MCH_TargetType.NONE, MCH_TargetType.SAME_TEAM_PLAYER}, //8
-                    {MCH_TargetType.NONE, MCH_TargetType.OTHER_TEAM_PLAYER}//9
-            };
+        {
+            {MCH_TargetType.NONE, MCH_TargetType.NONE}, //0
+            {MCH_TargetType.OTHER_MOB, MCH_TargetType.OTHER_MOB}, //1
+            {MCH_TargetType.MONSTER, MCH_TargetType.MONSTER}, //2
+            {MCH_TargetType.NONE, MCH_TargetType.NO_TEAM_PLAYER}, //3
+            {MCH_TargetType.NONE, MCH_TargetType.SAME_TEAM_PLAYER}, //4
+            {MCH_TargetType.NONE, MCH_TargetType.OTHER_TEAM_PLAYER}, //5
+            {MCH_TargetType.NONE, MCH_TargetType.NONE}, //6
+            {MCH_TargetType.NONE, MCH_TargetType.NO_TEAM_PLAYER}, //7
+            {MCH_TargetType.NONE, MCH_TargetType.SAME_TEAM_PLAYER}, //8
+            {MCH_TargetType.NONE, MCH_TargetType.OTHER_TEAM_PLAYER}//9
+        };
 
 
 //    public static boolean canSpotEntityWithFilter(int filter, Entity entity) {
@@ -49,29 +49,29 @@ public class MCH_Multiplay {
 //                                (entity instanceof EntityLivingBase && (isMonster(entity) ? (filter & 2) != 0 : (filter & 1) != 0))) : (filter & 8) != 0));
 //    }
 
-   public static boolean canSpotEntityWithFilter(int filter, Entity entity) {
-      if (entity instanceof MCP_EntityPlane) {
-         return (filter & 32) != 0;
-      } else if (entity instanceof MCH_EntityHeli) {
-         return (filter & 16) != 0;
-      } else if (!(entity instanceof MCH_EntityVehicle) && !(entity instanceof MCH_EntityTank)) {
-         if (entity instanceof EntityPlayer || MCH_FMURUtil.isSoldier(entity)) {
-            return (filter & 4) != 0;
-         } else if (entity instanceof EntityLivingBase) {
-            if (isMonster(entity)) {
-               return (filter & 2) != 0;
-            } else {
-               return (filter & 1) != 0;
+    public static boolean canSpotEntityWithFilter(int filter, Entity entity) {
+        if (entity instanceof MCP_EntityPlane) {
+            return (filter & 32) != 0;
+        } else if (entity instanceof MCH_EntityHeli) {
+            return (filter & 16) != 0;
+        } else if (!(entity instanceof MCH_EntityVehicle) && !(entity instanceof MCH_EntityTank)) {
+            if (entity instanceof EntityPlayer || MCH_FMURUtil.isSoldier(entity)) {
+                return (filter & 4) != 0;
+            } else if (entity instanceof EntityLivingBase) {
+                if (isMonster(entity)) {
+                    return (filter & 2) != 0;
+                } else {
+                    return (filter & 1) != 0;
+                }
             }
-         }
-      } else {
-         return (filter & 8) != 0;
-      }
-      return false;
-   }
+        } else {
+            return (filter & 8) != 0;
+        }
+        return false;
+    }
 
 
-   public static boolean isMonster(Entity entity) {
+    public static boolean isMonster(Entity entity) {
         return entity.getClass().toString().toLowerCase().contains("monster");
     }
 
@@ -101,26 +101,26 @@ public class MCH_Multiplay {
                         row = 5;
                     }
                 } else if (MCH_FMURUtil.isSoldier(target)) {
-                   Team t = MCH_FMURUtil.getSoldierTeam(target);
-                   if (t == null) {
-                      row = 3;
-                   } else if (spotter.isOnTeam(t)) {
-                      row = 4;
-                   } else {
-                      row = 5;
-                   }
+                    Team t = MCH_FMURUtil.getSoldierTeam(target);
+                    if (t == null) {
+                        row = 3;
+                    } else if (spotter.isOnTeam(t)) {
+                        row = 4;
+                    } else {
+                        row = 5;
+                    }
                 } else if (target instanceof MCH_EntityAircraft) {
-                   MCH_EntityAircraft ret1 = (MCH_EntityAircraft) target;
-                   EntityPlayer vs = ret1.getFirstMountPlayer();
-                   if (vs == null) {
-                      row = 6;
-                   } else if (vs.getTeam() == null) {
-                      row = 7;
-                   } else if (spotter.isOnSameTeam(vs)) {
-                      row = 8;
-                   } else {
-                      row = 9;
-                   }
+                    MCH_EntityAircraft ret1 = (MCH_EntityAircraft) target;
+                    EntityPlayer vs = ret1.getFirstMountPlayer();
+                    if (vs == null) {
+                        row = 6;
+                    } else if (vs.getTeam() == null) {
+                        row = 7;
+                    } else if (spotter.isOnSameTeam(vs)) {
+                        row = 8;
+                    } else {
+                        row = 9;
+                    }
                 }
             } else if (target instanceof EntityPlayer || target instanceof MCH_EntityAircraft) {
                 row = 0;

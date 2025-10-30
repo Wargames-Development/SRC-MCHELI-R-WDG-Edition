@@ -10,19 +10,21 @@ import net.minecraft.world.World;
 public class MCH_DummyEntityPlayer extends W_EntityPlayer {
 
 
-   public MCH_DummyEntityPlayer(World world, EntityPlayer player) {
-      super(world, player);
-   }
+    public MCH_DummyEntityPlayer(World world, EntityPlayer player) {
+        super(world, player);
+    }
 
-   public void addChatMessage(IChatComponent var1) {}
+    public void addChatMessage(IChatComponent var1) {
+    }
 
-   public boolean canCommandSenderUseCommand(int var1, String var2) {
-      return false;
-   }
+    public boolean canCommandSenderUseCommand(int var1, String var2) {
+        return false;
+    }
 
-   public ChunkCoordinates getPlayerCoordinates() {
-      return null;
-   }
+    public ChunkCoordinates getPlayerCoordinates() {
+        return null;
+    }
 
-   public void sendChatToPlayer(ChatMessageComponent chatmessagecomponent) {}
+    public void sendChatToPlayer(ChatMessageComponent chatmessagecomponent) {
+    }
 }

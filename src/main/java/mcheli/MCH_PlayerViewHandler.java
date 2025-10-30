@@ -2,8 +2,6 @@ package mcheli;
 
 import net.minecraft.client.Minecraft;
 
-import java.util.Random;
-
 public class MCH_PlayerViewHandler {
 
     /**
@@ -32,7 +30,7 @@ public class MCH_PlayerViewHandler {
      */
     public static void onUpdate() {
 
-        if(minecraft.thePlayer == null) {
+        if (minecraft.thePlayer == null) {
             return;
         }
 

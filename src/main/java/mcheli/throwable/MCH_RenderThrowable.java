@@ -15,9 +15,13 @@ import org.lwjgl.opengl.GL11;
 @SideOnly(Side.CLIENT)
 public class MCH_RenderThrowable extends W_Render {
 
-    /** 光晕半径 */
+    /**
+     * 光晕半径
+     */
     private static final float _RADIUS = 6.0F;
-    /** 光晕亮度 */
+    /**
+     * 光晕亮度
+     */
     private static final float BRIGHTNESS = 1.0F;
 
     public MCH_RenderThrowable() {
@@ -71,7 +75,8 @@ public class MCH_RenderThrowable extends W_Render {
 
     /**
      * 渲染圆形光晕 - 热成像模式下禁用透明度
-     * @param entity 实体
+     *
+     * @param entity       实体
      * @param partialTicks 部分刻
      */
     private void renderLight(Entity entity, float partialTicks) {
@@ -153,8 +158,12 @@ public class MCH_RenderThrowable extends W_Render {
             }
 
             // 应用亮度
-            innerRed *= BRIGHTNESS; innerGreen *= BRIGHTNESS; innerBlue *= BRIGHTNESS;
-            outerRed *= BRIGHTNESS; outerGreen *= BRIGHTNESS; outerBlue *= BRIGHTNESS;
+            innerRed *= BRIGHTNESS;
+            innerGreen *= BRIGHTNESS;
+            innerBlue *= BRIGHTNESS;
+            outerRed *= BRIGHTNESS;
+            outerGreen *= BRIGHTNESS;
+            outerBlue *= BRIGHTNESS;
 
             tessellator.startDrawing(GL11.GL_QUAD_STRIP);
 

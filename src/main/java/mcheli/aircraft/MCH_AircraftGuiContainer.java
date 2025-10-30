@@ -1,25 +1,16 @@
 package mcheli.aircraft;
 
-import java.util.List;
 import mcheli.MCH_Lib;
-import mcheli.aircraft.MCH_AircraftInventory;
-import mcheli.aircraft.MCH_EntityAircraft;
-import mcheli.aircraft.MCH_ItemFuel;
 import mcheli.parachute.MCH_ItemParachute;
 import mcheli.uav.MCH_EntityUavStation;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
 
 public class MCH_AircraftGuiContainer
-extends Container {
+    extends Container {
     public final EntityPlayer player;
     public final MCH_EntityAircraft aircraft;
 
@@ -28,23 +19,23 @@ extends Container {
         this.aircraft = ac;
         MCH_AircraftInventory iv = this.aircraft.getGuiInventory();
         iv.getClass();
-        this.addSlotToContainer(new Slot((IInventory)iv, 0, 10, 30));
+        this.addSlotToContainer(new Slot((IInventory) iv, 0, 10, 30));
         iv.getClass();
-        this.addSlotToContainer(new Slot((IInventory)iv, 1, 10, 48));
+        this.addSlotToContainer(new Slot((IInventory) iv, 1, 10, 48));
         iv.getClass();
-        this.addSlotToContainer(new Slot((IInventory)iv, 2, 10, 66));
+        this.addSlotToContainer(new Slot((IInventory) iv, 2, 10, 66));
         int num = this.aircraft.getNumEjectionSeat();
         for (int i = 0; i < num; ++i) {
             iv.getClass();
-            this.addSlotToContainer(new Slot((IInventory)iv, 3 + i, 10 + 18 * i, 105));
+            this.addSlotToContainer(new Slot((IInventory) iv, 3 + i, 10 + 18 * i, 105));
         }
         for (int y = 0; y < 3; ++y) {
             for (int x = 0; x < 9; ++x) {
-                this.addSlotToContainer(new Slot((IInventory)player.inventory, 9 + x + y * 9, 25 + x * 18, 135 + y * 18));
+                this.addSlotToContainer(new Slot((IInventory) player.inventory, 9 + x + y * 9, 25 + x * 18, 135 + y * 18));
             }
         }
         for (int x = 0; x < 9; ++x) {
-            this.addSlotToContainer(new Slot((IInventory)player.inventory, x, 25 + x * 18, 195));
+            this.addSlotToContainer(new Slot((IInventory) player.inventory, x, 25 + x * 18, 195));
         }
     }
 
@@ -65,8 +56,8 @@ extends Container {
             return true;
         }
         if (this.aircraft.isUAV() && (us = this.aircraft.getUavStation()) != null) {
-            double x = us.posX + (double)us.posUavX;
-            double z = us.posZ + (double)us.posUavZ;
+            double x = us.posX + (double) us.posUavX;
+            double z = us.posZ + (double) us.posUavZ;
             if (this.aircraft.posX < x + 10.0 && this.aircraft.posX > x - 10.0 && this.aircraft.posZ < z + 10.0 && this.aircraft.posZ > z - 10.0) {
                 return true;
             }
@@ -75,25 +66,28 @@ extends Container {
     }
 
     public ItemStack transferStackInSlot(EntityPlayer player, int slotIndex) {
-        block6 : {
+        block6:
+        {
             Slot slot;
             ItemStack itemStack;
             MCH_AircraftInventory iv;
-            block7 : {
-                block5 : {
+            block7:
+            {
+                block5:
+                {
                     iv = this.aircraft.getGuiInventory();
-                    slot = (Slot)this.inventorySlots.get(slotIndex);
+                    slot = (Slot) this.inventorySlots.get(slotIndex);
                     if (slot == null) {
                         return null;
                     }
                     itemStack = slot.getStack();
-                    MCH_Lib.DbgLog(player.worldObj, "transferStackInSlot : %d :" + (Object)itemStack, slotIndex);
+                    MCH_Lib.DbgLog(player.worldObj, "transferStackInSlot : %d :" + (Object) itemStack, slotIndex);
                     if (itemStack == null) {
                         return null;
                     }
                     if (slotIndex >= this.getInventoryStartIndex()) break block5;
                     for (int i = this.getInventoryStartIndex(); i < this.inventorySlots.size(); ++i) {
-                        Slot playerSlot = (Slot)this.inventorySlots.get(i);
+                        Slot playerSlot = (Slot) this.inventorySlots.get(i);
                         if (playerSlot.getStack() != null) continue;
                         playerSlot.putStack(itemStack);
                         slot.putStack(null);

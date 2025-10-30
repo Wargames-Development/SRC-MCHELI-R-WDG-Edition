@@ -45,9 +45,9 @@ public class PacketLaserGuidanceTargeting extends PacketBase {
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
         MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(playerEntity);
-        if(ac != null && ac.getCurrentWeapon(playerEntity).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
+        if (ac != null && ac.getCurrentWeapon(playerEntity).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
             MCH_WeaponTvMissile weaponTvMissile = (MCH_WeaponTvMissile) ac.getCurrentWeapon(playerEntity).getCurrentWeapon();
-            if(weaponTvMissile.guidanceSystem != null) {
+            if (weaponTvMissile.guidanceSystem != null) {
                 weaponTvMissile.guidanceSystem.targeting = targeting;
                 weaponTvMissile.guidanceSystem.targetPosX = targetPosX;
                 weaponTvMissile.guidanceSystem.targetPosY = targetPosY;

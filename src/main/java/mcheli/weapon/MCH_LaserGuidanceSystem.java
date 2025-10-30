@@ -22,7 +22,6 @@ import static mcheli.MCH_RayTracer.rayTraceAllBlocks;
 public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
 
     public World worldObj;
-    protected Entity user;
     public double targetPosX;
     public double targetPosY;
     public double targetPosZ;
@@ -30,6 +29,7 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
     @SideOnly(Side.CLIENT)
     public MCH_EntityLockBox lockBox;
     public boolean hasLaserGuidancePod = true;
+    protected Entity user;
 
     @Override
     public double getLockPosX() {
@@ -49,26 +49,26 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
     @Override
     public void update() {
 
-        if(worldObj.isRemote) {
+        if (worldObj.isRemote) {
 
-            if(!targeting) return;
+            if (!targeting) return;
 
             float yaw;
             float pitch;
             MCH_EntityAircraft ac = null; //玩家乘坐的实体
-            if(user.ridingEntity instanceof MCH_EntityAircraft) {
-                ac = (MCH_EntityAircraft)user.ridingEntity;
-            } else if(user.ridingEntity instanceof MCH_EntitySeat) {
-                ac = ((MCH_EntitySeat)user.ridingEntity).getParent();
-            } else if(user.ridingEntity instanceof MCH_EntityUavStation) {
-                ac = ((MCH_EntityUavStation)user.ridingEntity).getControlAircract();
+            if (user.ridingEntity instanceof MCH_EntityAircraft) {
+                ac = (MCH_EntityAircraft) user.ridingEntity;
+            } else if (user.ridingEntity instanceof MCH_EntitySeat) {
+                ac = ((MCH_EntitySeat) user.ridingEntity).getParent();
+            } else if (user.ridingEntity instanceof MCH_EntityUavStation) {
+                ac = ((MCH_EntityUavStation) user.ridingEntity).getControlAircract();
             }
 
             if (hasLaserGuidancePod) {
                 yaw = user.rotationYaw;  // 获取玩家的偏航角度
                 pitch = user.rotationPitch;  // 获取玩家的俯仰角度
             } else {
-                if(ac == null) return;
+                if (ac == null) return;
                 yaw = ac.rotationYaw;
                 pitch = ac.rotationPitch;
             }
@@ -97,7 +97,7 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             double posY = RenderManager.renderPosY;
             double posZ = RenderManager.renderPosZ;
 
-            if(ac != null) {
+            if (ac != null) {
 //                if (!ac.isUAV()) {
 //                    double interpolatedPosX = ac.prevPosX + (ac.posX - ac.prevPosX) * 0.5;
 //                    double interpolatedPosY = ac.prevPosY + (ac.posY - ac.prevPosY) * 0.5;
@@ -124,9 +124,9 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             for (int i = 1; i <= numSegments; i++) {
                 // 计算当前分段的目标点，确保每段都从上一个段的终点开始
                 Vec3 currentDst = W_WorldFunc.getWorldVec3(this.worldObj,
-                        posX + targetX * i / numSegments,
-                        posY + targetY * i / numSegments,
-                        posZ + targetZ * i / numSegments);
+                    posX + targetX * i / numSegments,
+                    posY + targetY * i / numSegments,
+                    posZ + targetZ * i / numSegments);
 
                 // 执行射线检测
                 List<MovingObjectPosition> hitResults = rayTraceAllBlocks(this.worldObj, src, currentDst, false, true, true);
@@ -150,9 +150,9 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             targetPosY = hitResult.hitVec.yCoord;
             targetPosZ = hitResult.hitVec.zCoord;
 
-            MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX,targetPosY,targetPosZ));
+            MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX, targetPosY, targetPosZ));
 
-            if(lockBox != null) {
+            if (lockBox != null) {
                 lockBox.setPosition(targetPosX, targetPosY, targetPosZ);
             } else {
                 lockBox = new MCH_EntityLockBox(worldObj);

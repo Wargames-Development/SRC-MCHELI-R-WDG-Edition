@@ -1,6 +1,5 @@
 package mcheli;
 
-import com.flansmod.api.FMUR_API;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -14,7 +13,10 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.WorldServer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MCH_EntityInfoManager {
@@ -83,7 +85,7 @@ public class MCH_EntityInfoManager {
     }
 
     private boolean shouldTrack(WorldServer w, Entity entity) {
-        if(entity.isDead) {
+        if (entity.isDead) {
             return false;
         }
         if (MCH_FMURUtil.isSoldier(entity) || entity instanceof EntityPlayer || entity instanceof MCH_IEntityLockChecker) {

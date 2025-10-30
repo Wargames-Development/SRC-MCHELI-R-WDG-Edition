@@ -5,13 +5,8 @@ import io.netty.channel.ChannelHandlerContext;
 import mcheli.MCH_ClientCommonTickHandler;
 import mcheli.MCH_I18n;
 import mcheli.network.PacketBase;
-import mcheli.weapon.MCH_EntityBaseBullet;
-import mcheli.wrapper.W_Entity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-
-import java.util.Objects;
 
 public class PacketBoundingBoxHit extends PacketBase {
     public int targetID;
@@ -54,9 +49,9 @@ public class PacketBoundingBoxHit extends PacketBase {
         MCH_ClientCommonTickHandler.hitDisplayCountdown = 40;
         MCH_ClientCommonTickHandler.hitTotalDamageClearCountdown = 60;
         MCH_ClientCommonTickHandler.HitMessage hitMessage = new MCH_ClientCommonTickHandler.HitMessage();
-        if(damageType == 0) {
+        if (damageType == 0) {
             hitMessage.hitDisplay = name;
-        } else if(damageType == 1) {
+        } else if (damageType == 1) {
             hitMessage.hitDisplay = MCH_I18n.format("message.mcheli.overpressure");
         }
         hitMessage.hitDamage = damage;

@@ -32,8 +32,8 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
     @Override
     public void update(int countWait) {
         super.update(countWait);
-        if(this.worldObj != null && this.worldObj.isRemote) {
-            if(this.lockCount != this.prevLockCount) {
+        if (this.worldObj != null && this.worldObj.isRemote) {
+            if (this.lockCount != this.prevLockCount) {
                 this.prevLockCount = this.lockCount;
             } else {
                 this.lockCount = this.prevLockCount = 0;
@@ -44,7 +44,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
 
     @SideOnly(Side.CLIENT)
     public void stopLockSound() {
-        if(lockSound != null) {
+        if (lockSound != null) {
             Minecraft.getMinecraft().getSoundHandler().stopSound(lockSound);
             lockSound = null;
         }
@@ -55,18 +55,18 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
     public void playLockSound(float x, float y, float z) {
         if (lockSound == null) {
             //lockSound = PositionedSoundRecord.func_147674_a(new ResourceLocation("mcheli:" + getInfo().railgunSound), 1.0F);
-            lockSound = new PositionedSoundRecord(new ResourceLocation("mcheli:" + getInfo().railgunSound),  10.0F, 1.0F, x, y, z);
+            lockSound = new PositionedSoundRecord(new ResourceLocation("mcheli:" + getInfo().railgunSound), 10.0F, 1.0F, x, y, z);
             Minecraft.getMinecraft().getSoundHandler().playSound(lockSound);
         }
     }
 
     public boolean railGunShot(MCH_WeaponParam prm) {
-        if(!super.worldObj.isRemote) {
-            float yaw,pitch;
-            if(prm.entity instanceof MCH_EntityTank) {
+        if (!super.worldObj.isRemote) {
+            float yaw, pitch;
+            if (prm.entity instanceof MCH_EntityTank) {
                 MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                yaw = prm.user.rotationYaw ;
-                pitch = prm.user.rotationPitch ;
+                yaw = prm.user.rotationYaw;
+                pitch = prm.user.rotationPitch;
                 yaw += prm.randYaw;
                 pitch += prm.randPitch;
                 int wid = tank.getCurrentWeaponID(prm.user);
@@ -75,7 +75,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
                 float maxPitch = w == null ? tank.getAcInfo().maxRotationPitch : w.maxPitch;
                 float playerYaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() - yaw);
                 float playerPitch = tank.getRotPitch() * MathHelper.cos((float) (playerYaw * Math.PI / 180.0D))
-                        + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
+                    + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
                 float playerYawRel = MathHelper.wrapAngleTo180_float(yaw - tank.getRotYaw());
                 float yawLimit = (w == null ? 360F : w.maxYaw);
                 float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
@@ -107,7 +107,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
     // 处理射击事件
     @Override
     public boolean shot(MCH_WeaponParam prm) {
-        if(!super.worldObj.isRemote) {
+        if (!super.worldObj.isRemote) {
             return railGunShot(prm);
         } else {
             if (lockCount <= weaponInfo.lockTime) {

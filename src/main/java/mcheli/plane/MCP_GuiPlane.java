@@ -4,7 +4,6 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
 import mcheli.MCH_KeyName;
-import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_AircraftCommonGui;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.gui.MCH_Gui;

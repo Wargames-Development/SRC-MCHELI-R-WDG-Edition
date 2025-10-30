@@ -67,13 +67,13 @@ public abstract class MCH_EntityGuidanceSystem implements MCH_IGuidanceSystem {
         return false;
     }
 
-    protected abstract void setLockCountMax(int i);
-
     protected abstract boolean lock(Entity user);
 
     protected abstract int getLockCount();
 
     protected abstract int getLockCountMax();
+
+    protected abstract void setLockCountMax(int i);
 
     protected abstract Entity getLastLockEntity();
 }

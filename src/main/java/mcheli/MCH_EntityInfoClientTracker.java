@@ -15,25 +15,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MCH_EntityInfoClientTracker {
 
-    /** 可调：心跳缺席的毫秒阈值（例如 5s） */
-    public static long EXPIRATION_MS = 1_000L;
-    /** 可调：心跳缺席的序号阈值（以服务器 tick 计数，20TPS 下 100≈5s） */
-    public static long MISSING_SEQ_THRESHOLD = 20L;
-    /** 可调：清理扫描的 Tick 周期（例如每 10 个客户端 Tick 扫描一次） */
-    public static int CLEANUP_TICK_INTERVAL = 10;
-
-    private static final class Tracked {
-        MCH_EntityInfo info;
-        long lastSeenMillis;
-        long lastSeenSeq;
-        Tracked(MCH_EntityInfo info, long now, long seq) {
-            this.info = info;
-            this.lastSeenMillis = now;
-            this.lastSeenSeq = seq;
-        }
-    }
-
     private static final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
+    /**
+     * 可调：心跳缺席的毫秒阈值（例如 5s）
+     */
+    public static long EXPIRATION_MS = 1_000L;
+    /**
+     * 可调：心跳缺席的序号阈值（以服务器 tick 计数，20TPS 下 100≈5s）
+     */
+    public static long MISSING_SEQ_THRESHOLD = 20L;
+    /**
+     * 可调：清理扫描的 Tick 周期（例如每 10 个客户端 Tick 扫描一次）
+     */
+    public static int CLEANUP_TICK_INTERVAL = 10;
     private static volatile long lastAppliedSeq = -1L;    // 已应用的最新快照序号
     private static volatile long latestSeqObserved = -1L; // 最近接收到的最大序号（用于缺席判断）
     private static int clientTickCounter = 0;
@@ -43,7 +37,9 @@ public class MCH_EntityInfoClientTracker {
         FMLCommonHandler.instance().bus().register(new ClientTicker());
     }
 
-    /** 由网络包回调调用：应用一批实体并记录快照序号 */
+    /**
+     * 由网络包回调调用：应用一批实体并记录快照序号
+     */
     public static void updateEntities(List<MCH_EntityInfo> infos, long snapshotSeq) {
         // 乱序/迟到包保护
         if (snapshotSeq < lastAppliedSeq) {
@@ -67,7 +63,9 @@ public class MCH_EntityInfoClientTracker {
         lastAppliedSeq = snapshotSeq;
     }
 
-    /** 兼容旧接口：不再使用服务端 REMOVE 包，这里保留以防外部调用 */
+    /**
+     * 兼容旧接口：不再使用服务端 REMOVE 包，这里保留以防外部调用
+     */
     @Deprecated
     public static void removeEntities(List<MCH_EntityInfo> infos) {
         for (MCH_EntityInfo info : infos) {
@@ -88,7 +86,9 @@ public class MCH_EntityInfoClientTracker {
         return Collections.unmodifiableCollection(out);
     }
 
-    /** 定期扫描：缺席过久（时间或序号）则删除 */
+    /**
+     * 定期扫描：缺席过久（时间或序号）则删除
+     */
     private static void cleanupExpired() {
         if (tracked.isEmpty()) return;
 
@@ -109,7 +109,21 @@ public class MCH_EntityInfoClientTracker {
         }
     }
 
-    /** ※ 注意：必须是 public 才能被 ASMEventHandler 访问 */
+    private static final class Tracked {
+        MCH_EntityInfo info;
+        long lastSeenMillis;
+        long lastSeenSeq;
+
+        Tracked(MCH_EntityInfo info, long now, long seq) {
+            this.info = info;
+            this.lastSeenMillis = now;
+            this.lastSeenSeq = seq;
+        }
+    }
+
+    /**
+     * ※ 注意：必须是 public 才能被 ASMEventHandler 访问
+     */
     public static class ClientTicker {
         @SubscribeEvent
         public void onClientTick(TickEvent.ClientTickEvent event) {

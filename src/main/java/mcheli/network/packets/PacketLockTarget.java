@@ -37,16 +37,16 @@ public class PacketLockTarget extends PacketBase {
     public void handleServerSide(EntityPlayerMP playerEntity) {
         MCH_EntityBaseBullet bullet = null;
         Entity target = null;
-        for(Object obj : playerEntity.worldObj.loadedEntityList) {
-            if(obj instanceof MCH_EntityBaseBullet && ((Entity)obj).getEntityId() == entityID) {
+        for (Object obj : playerEntity.worldObj.loadedEntityList) {
+            if (obj instanceof MCH_EntityBaseBullet && ((Entity) obj).getEntityId() == entityID) {
                 bullet = (MCH_EntityBaseBullet) obj;
             }
-            if(((Entity)obj).getEntityId() == targetID) {
+            if (((Entity) obj).getEntityId() == targetID) {
                 target = (Entity) obj;
             }
         }
         if (bullet != null) {
-            if(!W_Entity.isEqual(bullet.shootingEntity, playerEntity)) {
+            if (!W_Entity.isEqual(bullet.shootingEntity, playerEntity)) {
                 return;
             }
             bullet.setTargetEntity(target);

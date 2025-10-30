@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.client.entity.EntityPlayerSP
  *  net.minecraft.entity.Entity
@@ -13,7 +13,7 @@ import net.minecraft.entity.Entity;
 public class W_EntityPlayerSP {
     public static void closeScreen(Entity p) {
         if (p instanceof EntityPlayerSP) {
-            ((EntityPlayerSP)p).closeScreen();
+            ((EntityPlayerSP) p).closeScreen();
         }
     }
 }

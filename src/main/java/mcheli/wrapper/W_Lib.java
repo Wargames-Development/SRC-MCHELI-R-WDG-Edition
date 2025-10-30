@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  net.minecraft.entity.Entity
  *  net.minecraft.entity.EntityLivingBase
@@ -9,13 +9,10 @@
  */
 package mcheli.wrapper;
 
-import mcheli.MCH_CommonProxy;
 import mcheli.MCH_MOD;
-import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.world.World;
 
 public class W_Lib {
     public static boolean isEntityLivingBase(Entity entity) {
@@ -23,7 +20,7 @@ public class W_Lib {
     }
 
     public static EntityLivingBase castEntityLivingBase(Object entity) {
-        return (EntityLivingBase)entity;
+        return (EntityLivingBase) entity;
     }
 
     public static Class getEntityLivingBaseClass() {
@@ -34,7 +31,7 @@ public class W_Lib {
         if (entity == null) {
             return 0.0;
         }
-        return entity instanceof EntityLivingBase ? (double)((EntityLivingBase)entity).moveForward : 0.0;
+        return entity instanceof EntityLivingBase ? (double) ((EntityLivingBase) entity).moveForward : 0.0;
     }
 
     public static boolean isClientPlayer(Entity entity) {

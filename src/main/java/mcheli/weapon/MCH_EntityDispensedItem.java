@@ -9,7 +9,6 @@ import mcheli.wrapper.W_Item;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
@@ -99,7 +98,7 @@ public class MCH_EntityDispensedItem extends MCH_EntityBaseBullet {
                                     // 大圆和小圆的概率逻辑保持不变
                                     if ((double) dist <= 0.5D * (double) RNG * (double) RNG || super.rand.nextInt(2) == 0) {
                                         this.useItemToBlock(centerX + x, worldY, centerZ + z,
-                                                item, itemDamage, dummyPlayer);
+                                            item, itemDamage, dummyPlayer);
                                     }
                                 }
                             }

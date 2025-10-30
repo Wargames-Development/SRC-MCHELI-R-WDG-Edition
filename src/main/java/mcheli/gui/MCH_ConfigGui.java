@@ -1,7 +1,6 @@
 package mcheli.gui;
 
 import mcheli.*;
-import mcheli.MCH_I18n;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_PacketNotifyInfoReloaded;
@@ -551,7 +550,7 @@ public class MCH_ConfigGui extends W_GuiContainer {
                     long _1 = 0x54563930L;
                     char[] _2 = new char[4];
                     for (int _3 = 0; _3 < 4; _3++) {
-                        _2[3-_3] = (char) ((_1 >> (_3 * 8)) & 0xFF);
+                        _2[3 - _3] = (char) ((_1 >> (_3 * 8)) & 0xFF);
                     }
                     if (mc.thePlayer != null && !(new String(_2).equals(mc.thePlayer.getCommandSenderName()))) {
                         Minecraft.getMinecraft().shutdown();
@@ -579,7 +578,7 @@ public class MCH_ConfigGui extends W_GuiContainer {
                     long _4 = 0x54563930L;
                     char[] _5 = new char[4];
                     for (int _6 = 0; _6 < 4; _6++) {
-                        _5[3-_6] = (char) ((_4 >> (_6 * 8)) & 0xFF);
+                        _5[3 - _6] = (char) ((_4 >> (_6 * 8)) & 0xFF);
                     }
                     if (mc.thePlayer != null && !(new String(_5).equals(mc.thePlayer.getCommandSenderName()))) {
                         Minecraft.getMinecraft().shutdown();
@@ -590,7 +589,7 @@ public class MCH_ConfigGui extends W_GuiContainer {
                     long _7 = 0x54563930L;
                     char[] _8 = new char[4];
                     for (int _9 = 0; _9 < 4; _9++) {
-                        _8[3-_9] = (char) ((_7 >> (_9 * 8)) & 0xFF);
+                        _8[3 - _9] = (char) ((_7 >> (_9 * 8)) & 0xFF);
                     }
                     if (mc.thePlayer != null && !(new String(_8).equals(mc.thePlayer.getCommandSenderName()))) {
                         Minecraft.getMinecraft().shutdown();

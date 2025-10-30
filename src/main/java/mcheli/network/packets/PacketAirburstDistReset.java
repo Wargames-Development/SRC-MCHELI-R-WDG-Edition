@@ -2,7 +2,6 @@ package mcheli.network.packets;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import mcheli.MCH_Lib;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.PacketBase;
 import mcheli.weapon.MCH_WeaponBase;
@@ -40,11 +39,11 @@ public class PacketAirburstDistReset extends PacketBase {
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
         Entity e = playerEntity.worldObj.getEntityByID(acId);
-        if(e instanceof MCH_EntityAircraft) {
+        if (e instanceof MCH_EntityAircraft) {
             MCH_EntityAircraft aircraft = (MCH_EntityAircraft) e;
-            if(aircraft.getCurrentWeapon(playerEntity) != null) {
+            if (aircraft.getCurrentWeapon(playerEntity) != null) {
                 MCH_WeaponSet ws = aircraft.getCurrentWeapon(playerEntity);
-                if(ws.getCurrentWeapon() != null) {
+                if (ws.getCurrentWeapon() != null) {
                     MCH_WeaponBase wb = ws.getCurrentWeapon();
                     wb.setAirburstDist(dist);
                 }

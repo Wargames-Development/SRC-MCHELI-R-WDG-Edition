@@ -44,9 +44,9 @@ public class PacketMissileLockType extends PacketBase {
     @Override
     public void handleClientSide(EntityPlayer clientPlayer) {
         Entity e = clientPlayer.ridingEntity;
-        if(e instanceof MCH_EntityAircraft) {
-            MCH_EntityAircraft ac = (MCH_EntityAircraft)e;
-            if(ac.missileDetector != null) {
+        if (e instanceof MCH_EntityAircraft) {
+            MCH_EntityAircraft ac = (MCH_EntityAircraft) e;
+            if (ac.missileDetector != null) {
                 ac.missileDetector.missileLockType = this.missileLockType;
                 ac.missileDetector.vehicleLockType = this.vehicleLockType;
                 ac.missileDetector.missileLockDist = this.missileLockDist;

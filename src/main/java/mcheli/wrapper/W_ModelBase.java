@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_123.
- * 
+ *
  * Could not load the following classes:
  *  cpw.mods.fml.common.FMLLog
  *  net.minecraft.client.model.ModelBase
@@ -23,7 +23,7 @@ import net.minecraftforge.client.model.IModelCustomLoader;
 import net.minecraftforge.client.model.ModelFormatException;
 
 public abstract class W_ModelBase
-extends ModelBase {
+    extends ModelBase {
     private static IModelCustomLoader objLoader = new W_ObjModelLoader();
     private static IModelCustomLoader mqoLoader = new W_MqoModelLoader();
 
@@ -32,7 +32,7 @@ extends ModelBase {
         String path = resource.getResourcePath();
         int i = path.lastIndexOf(46);
         if (i == -1) {
-            FMLLog.severe((String)"The resource name %s is not valid", (Object[])new Object[]{resource});
+            FMLLog.severe((String) "The resource name %s is not valid", (Object[]) new Object[]{resource});
             throw new IllegalArgumentException("The resource name is not valid");
         }
         String test = path.substring(i);
@@ -42,7 +42,7 @@ extends ModelBase {
         if (path.substring(i).equalsIgnoreCase(".obj")) {
             return objLoader.loadInstance(resource);
         }
-        return AdvancedModelLoader.loadModel((ResourceLocation)resource);
+        return AdvancedModelLoader.loadModel((ResourceLocation) resource);
     }
 }
 

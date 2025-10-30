@@ -1,14 +1,7 @@
 package mcheli.weapon;
 
-import mcheli.aircraft.MCH_EntityAircraft;
-import mcheli.vector.Vector3f;
-import mcheli.wrapper.W_Entity;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
-
-import java.util.List;
 
 public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
 
@@ -138,7 +131,7 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
                     }
                 }
             } else {
-                if(getInfo().activeRadar && ticksExisted % getInfo().scanInterval == 0) {
+                if (getInfo().activeRadar && ticksExisted % getInfo().scanInterval == 0) {
                     scanForTargets();
                 }
             }

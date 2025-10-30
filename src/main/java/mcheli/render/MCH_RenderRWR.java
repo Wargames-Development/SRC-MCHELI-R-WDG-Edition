@@ -52,15 +52,15 @@ public class MCH_RenderRWR {
 
         //获取玩家机载武器
         MCH_EntityAircraft ac = null;
-        if(player.ridingEntity instanceof MCH_EntityAircraft) {
-            ac = (MCH_EntityAircraft)player.ridingEntity;
-        } else if(player.ridingEntity instanceof MCH_EntitySeat) {
-            ac = ((MCH_EntitySeat)player.ridingEntity).getParent();
-        } else if(player.ridingEntity instanceof MCH_EntityUavStation) {
-            ac = ((MCH_EntityUavStation)player.ridingEntity).getControlAircract();
+        if (player.ridingEntity instanceof MCH_EntityAircraft) {
+            ac = (MCH_EntityAircraft) player.ridingEntity;
+        } else if (player.ridingEntity instanceof MCH_EntitySeat) {
+            ac = ((MCH_EntitySeat) player.ridingEntity).getParent();
+        } else if (player.ridingEntity instanceof MCH_EntityUavStation) {
+            ac = ((MCH_EntityUavStation) player.ridingEntity).getControlAircract();
         }
 
-        if(ac == null) {
+        if (ac == null) {
             return;
         }
         if (!ac.getAcInfo().hasRWR) {
@@ -79,9 +79,9 @@ public class MCH_RenderRWR {
         {
 
             ResourceLocation rwr;
-            if(ac instanceof MCP_EntityPlane) {
+            if (ac instanceof MCP_EntityPlane) {
                 rwr = RWR;
-                if(ac.getAcInfo().isFloat) {
+                if (ac.getAcInfo().isFloat) {
                     rwr = RWR_FAC;
                     RWR_SIZE = 160;
                     RWR_CENTER_X = 220;
@@ -110,8 +110,8 @@ public class MCH_RenderRWR {
 
             // 新增实体渲染逻辑
             double circleRadius = sc.getScaledHeight() * (RWR_SIZE / SCREEN_HEIGHT_ADAPT_CONSTANT) / 2.0;
-            for(MCH_EntityInfo entity : getServerLoadedEntity()) {
-                if(!isValidEntity(entity, player, MIN_DISTANCE)) continue;
+            for (MCH_EntityInfo entity : getServerLoadedEntity()) {
+                if (!isValidEntity(entity, player, MIN_DISTANCE)) continue;
 
                 // 计算插值位置
                 double xPos = interpolate(entity.posX, entity.lastTickPosX, event.partialTicks);
@@ -120,9 +120,9 @@ public class MCH_RenderRWR {
 
                 // 计算相对向量
                 Vec3 delta = Vec3.createVectorHelper(
-                        xPos - (player.posX + (player.posX - player.lastTickPosX) * event.partialTicks),
-                        yPos - (player.posY + (player.posY - player.lastTickPosY) * event.partialTicks),
-                        zPos - (player.posZ + (player.posZ - player.lastTickPosZ) * event.partialTicks)
+                    xPos - (player.posX + (player.posX - player.lastTickPosX) * event.partialTicks),
+                    yPos - (player.posY + (player.posY - player.lastTickPosY) * event.partialTicks),
+                    zPos - (player.posZ + (player.posZ - player.lastTickPosZ) * event.partialTicks)
                 );
 
                 Vec3 lookVec = getDirection(ac, event.partialTicks);
@@ -131,10 +131,10 @@ public class MCH_RenderRWR {
 
                 double dot = lookHorizontal.dotProduct(deltaHorizontal);
                 double angle = Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, dot))));
-                if(lookHorizontal.crossProduct(deltaHorizontal).yCoord < 0) angle = -angle;
+                if (lookHorizontal.crossProduct(deltaHorizontal).yCoord < 0) angle = -angle;
 
                 // 计算距离相关参数
-                double distance = Math.sqrt(delta.xCoord*delta.xCoord + delta.yCoord*delta.yCoord + delta.zCoord*delta.zCoord);
+                double distance = Math.sqrt(delta.xCoord * delta.xCoord + delta.yCoord * delta.yCoord + delta.zCoord * delta.zCoord);
                 double radiusRatio = Math.min(Math.max((distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0), 1); // 100-1000米映射到0-1
                 double renderRadius = MIN_RADIUS + (circleRadius - MIN_RADIUS) * radiusRatio; // 20像素到最大半径
 
@@ -149,10 +149,10 @@ public class MCH_RenderRWR {
                 int color = rwrResult.color;
                 int textWidth = Minecraft.getMinecraft().fontRenderer.getStringWidth(text);
                 Minecraft.getMinecraft().fontRenderer.drawString(
-                        text,
-                        (int)(markerX - textWidth/2),
-                        (int)(markerY - 4),
-                        color, true
+                    text,
+                    (int) (markerX - textWidth / 2),
+                    (int) (markerY - 4),
+                    color, true
                 );
             }
         }
@@ -166,17 +166,16 @@ public class MCH_RenderRWR {
         float f4;
 
         if (factor == 1.0F) {
-            f1 = MathHelper.cos(-e.rotationYaw * 0.017453292F - (float)Math.PI);
-            f2 = MathHelper.sin(-e.rotationYaw * 0.017453292F - (float)Math.PI);
+            f1 = MathHelper.cos(-e.rotationYaw * 0.017453292F - (float) Math.PI);
+            f2 = MathHelper.sin(-e.rotationYaw * 0.017453292F - (float) Math.PI);
             f3 = -MathHelper.cos(-e.rotationPitch * 0.017453292F);
             f4 = MathHelper.sin(-e.rotationPitch * 0.017453292F);
             return Vec3.createVectorHelper(f2 * f3, f4, f1 * f3);
-        }
-        else {
+        } else {
             f1 = e.prevRotationPitch + (e.rotationPitch - e.prevRotationPitch) * factor;
             f2 = e.prevRotationYaw + (e.rotationYaw - e.prevRotationYaw) * factor;
-            f3 = MathHelper.cos(-f2 * 0.017453292F - (float)Math.PI);
-            f4 = MathHelper.sin(-f2 * 0.017453292F - (float)Math.PI);
+            f3 = MathHelper.cos(-f2 * 0.017453292F - (float) Math.PI);
+            f4 = MathHelper.sin(-f2 * 0.017453292F - (float) Math.PI);
             float f5 = -MathHelper.cos(-f1 * 0.017453292F);
             float f6 = MathHelper.sin(-f1 * 0.017453292F);
             return Vec3.createVectorHelper(f4 * f5, f6, f3 * f5);
@@ -187,10 +186,10 @@ public class MCH_RenderRWR {
     // 新增实体校验方法
     private boolean isValidEntity(MCH_EntityInfo entity, EntityPlayer player, double minDist) {
         if (entity.entityClassName.contains("MCH_EntityChaff") || entity.entityClassName.contains("MCH_EntityFlare")
-                || entity.entityClassName.contains("EntityPlayer") || entity.entityClassName.contains("EntitySoldier")) {
+            || entity.entityClassName.contains("EntityPlayer") || entity.entityClassName.contains("EntitySoldier")) {
             return false;
         }
-        if(entity.getDistanceSqToEntity(player) < minDist * minDist) {
+        if (entity.getDistanceSqToEntity(player) < minDist * minDist) {
             return false;
         }
         return true;
@@ -198,16 +197,16 @@ public class MCH_RenderRWR {
 
     private MCH_RWRResult getTargetTypeOnRadar(MCH_EntityInfo entity, MCH_EntityAircraft ac) {
         int color = 0x00FF00;
-        if(ac instanceof MCH_EntityTank
+        if (ac instanceof MCH_EntityTank
             || (ac instanceof MCP_EntityPlane && ac.getAcInfo().isFloat)) {
             color = 0xFFCC00;
         }
         switch (ac.getAcInfo().rwrType) {
             case DIGITAL: {
-                if(entity.entityClassName.contains("MCH_EntityHeli")
-                || entity.entityClassName.contains("MCP_EntityPlane")
-                || entity.entityClassName.contains("MCH_EntityTank")
-                || entity.entityClassName.contains("MCH_EntityVehicle")) {
+                if (entity.entityClassName.contains("MCH_EntityHeli")
+                    || entity.entityClassName.contains("MCP_EntityPlane")
+                    || entity.entityClassName.contains("MCH_EntityTank")
+                    || entity.entityClassName.contains("MCH_EntityVehicle")) {
                     return new MCH_RWRResult(ac.getNameOnMyRadar(entity), color);
                 } else {
                     return new MCH_RWRResult("MSL", 0xFF0000);
