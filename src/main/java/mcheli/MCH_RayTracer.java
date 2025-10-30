@@ -1,21 +1,12 @@
 package mcheli;
 
-import mcheli.aircraft.MCH_EntityHide;
-import mcheli.aircraft.MCH_EntityHitBox;
-import mcheli.aircraft.MCH_EntitySeat;
-import mcheli.weapon.MCH_WeaponLaser;
-import mcheli.weapon.MCH_WeaponParam;
 import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class MCH_RayTracer {
 

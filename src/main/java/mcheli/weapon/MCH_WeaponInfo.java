@@ -3,8 +3,10 @@ package mcheli.weapon;
 import mcheli.MCH_BaseInfo;
 import mcheli.MCH_Color;
 import mcheli.MCH_DamageFactor;
+import mcheli.MCH_PotionEffect;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.PotionEffect;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,9 +122,13 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 是否为雷达弹，会受到箔条干扰
      */
     public boolean isRadarMissile = false;
-    //弹药导引头最大导引角度
+    /**
+     * 弹药导引头最大导引角度
+     */
     public int maxDegreeOfMissile = 60;
-    //脱锁延时，-1为永远锁定
+    /**
+     * 脱锁延时，-1为永远锁定
+     */
     public int tickEndHoming = -1;
     /**
      * 最大锁定距离
@@ -272,9 +278,21 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float explosionDamageVsTank = 1f;
     public float explosionDamageVsHeli = 1f;
     public float explosionDamageVsShip = 1f;
+    /**
+     * HBM特效阻止破坏方块
+     */
     public boolean disableDestroyBlock = true;
+    /**
+     * 弹药是否能被拦截
+     */
     public boolean canBeIntercepted = false;
+    /**
+     * 是否为可编程空爆弹
+     */
     public boolean canAirburst = false;
+    /**
+     * 可编程空爆弹触发空爆时的爆炸范围
+     */
     public int explosionAirburst;
     /**
      * hud自定义字段，用于指示准星hud
@@ -317,6 +335,24 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public List<MCH_IBulletDecay> bulletDecay = new ArrayList<>();
     public boolean enableBulletDecay;
 
+    /**
+     * 被子弹击中时的药水效果
+     */
+    public List<MCH_PotionEffect> potionEffect = new ArrayList<>();
+
+    /**
+     * 是否为GPS导弹
+     */
+    public boolean isGPSMissile = false;
+
+    /**
+     * 霰弹数量
+     */
+    public int canister = -1;
+    /**
+     * 霰弹种类 0为位置散布 1为角度散布
+     */
+    public int canisterType = 0;
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -463,11 +499,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.gravityInWater = this.toFloat(data, -50.0F, 50.0F);
         } else if (item.equalsIgnoreCase("VelocityInWater")) {
             this.velocityInWater = this.toFloat(data);
-        } else if (item.compareTo("explosion") == 0) {
+        } else if (item.equalsIgnoreCase("explosion")) {
             this.explosion = this.toInt(data, 0, 50);
         } else if (item.equalsIgnoreCase("explosionBlock")) {
             this.explosionBlock = this.toInt(data, 0, 100);
-        } else if (item.compareTo("explosioninwater") == 0) {
+        } else if (item.equalsIgnoreCase("explosioninwater")) {
             this.explosionInWater = this.toInt(data, 0, 50);
         } else if (item.equalsIgnoreCase("ExplosionAltitude")) {
             this.explosionAltitude = this.toInt(data, 0, 100);
@@ -477,7 +513,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.delayFuse = this.toInt(data, 0, 100000);
         } else if (item.equalsIgnoreCase("Bound")) {
             this.bound = this.toFloat(data, 0.0F, 100000.0F);
-        } else if (item.compareTo("flaming") == 0) {
+        } else if (item.equalsIgnoreCase("flaming")) {
             this.flaming = this.toBool(data);
         } else if (item.equalsIgnoreCase("DisplayMortarDistance")) {
             this.displayMortarDistance = this.toBool(data);
@@ -516,7 +552,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.chemYield = this.toInt(data, 0, 100000);
             } else if (item.equalsIgnoreCase("EffectYield")) {
                 this.effectYield = this.toInt(data, 0, 100000);
-            }else if (item.equalsIgnoreCase("NukeEffectOnly")) {
+            } else if (item.equalsIgnoreCase("NukeEffectOnly")) {
                 this.nukeEffectOnly = this.toBool(data);
             } else if (item.equalsIgnoreCase("MaxDegreeOfMissile")) {
                 this.maxDegreeOfMissile = this.toInt(data, 0, 100000);
@@ -590,27 +626,27 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.enableBVR = this.toBool(data);
             } else if (item.equalsIgnoreCase("MinRangeBVR")) {
                 this.minRangeBVR = this.toInt(data);
-            }else if (item.equalsIgnoreCase("PredictTargetPos")) {
+            } else if (item.equalsIgnoreCase("PredictTargetPos")) {
                 this.predictTargetPos = this.toBool(data);
-            }else if (item.equalsIgnoreCase("HitSound")) {
+            } else if (item.equalsIgnoreCase("HitSound")) {
                 this.hitSound = data.toLowerCase().trim();
-            }else if (item.equalsIgnoreCase("HitSoundIron")) {
+            } else if (item.equalsIgnoreCase("HitSoundIron")) {
                 this.hitSoundIron = data.toLowerCase().trim();
-            }else if (item.equalsIgnoreCase("HitSoundRange")) {
+            } else if (item.equalsIgnoreCase("HitSoundRange")) {
                 this.hitSoundRange = this.toInt(data);
-            }else if (item.equalsIgnoreCase("NumLockedChaffMax")) {
+            } else if (item.equalsIgnoreCase("NumLockedChaffMax")) {
                 this.numLockedChaffMax = this.toInt(data);
-            }else if (item.equalsIgnoreCase("ExplosionDamageVsLiving")) {
+            } else if (item.equalsIgnoreCase("ExplosionDamageVsLiving")) {
                 this.explosionDamageVsLiving = this.toFloat(data);
-            }else if (item.equalsIgnoreCase("ExplosionDamageVsPlayer")) {
+            } else if (item.equalsIgnoreCase("ExplosionDamageVsPlayer")) {
                 this.explosionDamageVsPlayer = this.toFloat(data);
-            }else if (item.equalsIgnoreCase("ExplosionDamageVsPlane")) {
+            } else if (item.equalsIgnoreCase("ExplosionDamageVsPlane")) {
                 this.explosionDamageVsPlane = this.toFloat(data);
-            }else if (item.equalsIgnoreCase("ExplosionDamageVsVehicle")) {
+            } else if (item.equalsIgnoreCase("ExplosionDamageVsVehicle")) {
                 this.explosionDamageVsVehicle = this.toFloat(data);
-            }else if (item.equalsIgnoreCase("ExplosionDamageVsTank")) {
+            } else if (item.equalsIgnoreCase("ExplosionDamageVsTank")) {
                 this.explosionDamageVsTank = this.toFloat(data);
-            }else if (item.equalsIgnoreCase("ExplosionDamageVsHeli")) {
+            } else if (item.equalsIgnoreCase("ExplosionDamageVsHeli")) {
                 this.explosionDamageVsHeli = this.toFloat(data);
             } else if (item.equalsIgnoreCase("ExplosionDamageVsShip")) {
                 this.explosionDamageVsShip = this.toFloat(data);
@@ -626,41 +662,59 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.explosionAirburst = this.toInt(data, 0, 50);
             } else if (item.equalsIgnoreCase("CrossType")) {
                 this.crossType = this.toInt(data);
-            } else if(item.equalsIgnoreCase("EnableMortarRadar")) {
+            } else if (item.equalsIgnoreCase("EnableMortarRadar")) {
                 this.hasMortarRadar = this.toBool(data);
-            } else if(item.equalsIgnoreCase("MortarRadarMaxDist")) {
+            } else if (item.equalsIgnoreCase("MortarRadarMaxDist")) {
                 this.mortarRadarMaxDist = this.toDouble(data);
-            } else if(item.equalsIgnoreCase("MarkerRocketSpawnNum")) {
+            } else if (item.equalsIgnoreCase("MarkerRocketSpawnNum")) {
                 this.markerRocketSpawnNum = this.toInt(data);
-            } else if(item.equalsIgnoreCase("MarkerRocketSpawnDiff")) {
+            } else if (item.equalsIgnoreCase("MarkerRocketSpawnDiff")) {
                 this.markerRocketSpawnDiff = this.toInt(data);
-            } else if(item.equalsIgnoreCase("MarkerRocketSpawnHeight")) {
+            } else if (item.equalsIgnoreCase("MarkerRocketSpawnHeight")) {
                 this.markerRocketSpawnHeight = this.toInt(data);
-            } else if(item.equalsIgnoreCase("MarkerRocketSpawnSpeed")) {
+            } else if (item.equalsIgnoreCase("MarkerRocketSpawnSpeed")) {
                 this.markerRocketSpawnSpeed = this.toInt(data);
-            } else if(item.equalsIgnoreCase("EnableExhaustFlare")) {
+            } else if (item.equalsIgnoreCase("EnableExhaustFlare")) {
                 this.enableExhaustFlare = this.toBool(data);
-            } else if(item.equalsIgnoreCase("SpawnBulletInAir")) {
+            } else if (item.equalsIgnoreCase("SpawnBulletInAir")) {
                 this.spawnBulletInAir = this.toBool(data);
-            } else if(item.equalsIgnoreCase("SpawnBulletMaxNum")) {
+            } else if (item.equalsIgnoreCase("SpawnBulletMaxNum")) {
                 this.spawnBulletMaxNum = this.toInt(data);
-            } else if(item.equalsIgnoreCase("SpawnBulletIntervalTick")) {
+            } else if (item.equalsIgnoreCase("SpawnBulletIntervalTick")) {
                 this.spawnBulletIntervalTick = this.toInt(data);
-            } else if(item.equalsIgnoreCase("SpawnBulletPerNum")) {
+            } else if (item.equalsIgnoreCase("SpawnBulletPerNum")) {
                 this.spawnBulletPerNum = this.toInt(data);
-            } else if(item.equalsIgnoreCase("SpawnBulletInheritSpeed")) {
+            } else if (item.equalsIgnoreCase("SpawnBulletInheritSpeed")) {
                 this.spawnBulletInheritSpeed = this.toBool(data);
-            } else if(item.equalsIgnoreCase("BulletDecay")) {
+            } else if (item.equalsIgnoreCase("AddPotionEffect")) {
+                String[] split = data.split("\\s*,\\s*");
+                int potionID = Integer.parseInt(split[0]);
+                int duration = Integer.parseInt(split[1]);
+                int amplifier = Integer.parseInt(split[2]);
+                int startDist = -1;
+                int endDist = -1;
+                if (split.length == 5) {
+                    startDist = Integer.parseInt(split[3]);
+                    endDist = Integer.parseInt(split[4]);
+                }
+                this.potionEffect.add(new MCH_PotionEffect(new PotionEffect(potionID, duration, amplifier, false), startDist, endDist));
+            } else if (item.equalsIgnoreCase("BulletDecay")) {
                 String[] split = data.split("\\s*,\\s*");
                 String bulletDecayType = split[0];
                 String[] args = new String[split.length - 1];
                 System.arraycopy(split, 1, args, 0, args.length);
                 this.bulletDecay.add(MCH_BulletDecayFactory.createBulletDecay(bulletDecayType, args));
                 this.enableBulletDecay = true;
+            } else if (item.equalsIgnoreCase("IsGPSMissile")) {
+                this.isGPSMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("Canister")) {
+                this.canister = this.toInt(data);
+            } else if (item.equalsIgnoreCase("CanisterType")) {
+                this.canisterType = this.toInt(data);
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {
-                    if(this.damageFactor == null) {
+                    if (this.damageFactor == null) {
                         this.damageFactor = new MCH_DamageFactor();
                     }
                     String eType = s[0].toLowerCase();
@@ -690,9 +744,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                             break;
                     }
                 }
-            }
-
-            else if (item.compareTo("reloadtime") == 0) {
+            } else if (item.compareTo("reloadtime") == 0) {
                 this.reloadTime = this.toInt(data, 3, 1000);
             } else if (item.compareTo("round") == 0) {
                 this.round = this.toInt(data, 1, 30000);

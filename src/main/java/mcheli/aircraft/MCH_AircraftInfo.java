@@ -221,6 +221,11 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public float armorExplosionDamageMultiplier = 1.0f;
 
+    /**
+     * 是否有光电干扰机，不会被激光弹锁定
+     */
+    public boolean hasPhotoelectricJammer = false;
+
     private List textureNameList;
     private String lastWeaponType = "";
     private int lastWeaponIndex = -1;
@@ -621,7 +626,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 weaponGroupType = this.toInt(data);
             } else if (item.equalsIgnoreCase("ArmorExplosionDamageMultiplier")) {
                 armorExplosionDamageMultiplier = this.toFloat(data);
-            }else if (item.equalsIgnoreCase("RWRType")) {
+            } else if (item.equalsIgnoreCase("HasPhotoelectricJammer")) {
+                hasPhotoelectricJammer = this.toBool(data);
+            } else if (item.equalsIgnoreCase("RWRType")) {
                 try {
                     this.rwrType = EnumRWRType.valueOf(data);
                 } catch (Exception e) {

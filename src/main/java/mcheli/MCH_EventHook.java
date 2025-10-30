@@ -36,8 +36,7 @@ public class MCH_EventHook extends W_EventHook {
 
    public void entitySpawn(EntityJoinWorldEvent event) {
       if(W_Lib.isEntityLivingBase(event.entity) && !W_EntityPlayer.isPlayer(event.entity)) {
-         MCH_Config var10002 = MCH_MOD.config;
-         event.entity.renderDistanceWeight *= MCH_Config.MobRenderDistanceWeight.prmDouble;
+          event.entity.renderDistanceWeight *= MCH_Config.MobRenderDistanceWeight.prmDouble;
       } else if(event.entity instanceof MCH_EntityAircraft) {
          MCH_EntityAircraft b = (MCH_EntityAircraft)event.entity;
          if(!b.worldObj.isRemote && !b.isCreatedSeats()) {

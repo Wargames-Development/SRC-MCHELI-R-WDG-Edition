@@ -42,7 +42,7 @@ public class MCH_EntityInfoManager {
         // 收集应跟踪的实体，写入（覆盖）快照
         for (WorldServer world : MinecraftServer.getServer().worldServers) {
             @SuppressWarnings("unchecked")
-            List<Entity> loaded = (List<Entity>) world.loadedEntityList;
+            List<Entity> loaded = world.loadedEntityList;
             for (Entity entity : loaded) {
                 if (shouldTrack(world, entity)) {
                     serverEntities.put(entity.getEntityId(), MCH_EntityInfo.createInfo(entity));
@@ -72,7 +72,7 @@ public class MCH_EntityInfoManager {
     private Entity serverGetEntity(int entityId) {
         for (WorldServer world : MinecraftServer.getServer().worldServers) {
             @SuppressWarnings("unchecked")
-            List<Entity> loaded = (List<Entity>) world.loadedEntityList;
+            List<Entity> loaded = world.loadedEntityList;
             for (Entity entity : loaded) {
                 if (entity.getEntityId() == entityId) {
                     return entity;

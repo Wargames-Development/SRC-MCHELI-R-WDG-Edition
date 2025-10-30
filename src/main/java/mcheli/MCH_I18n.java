@@ -8,6 +8,8 @@ public class MCH_I18n {
     public static void register() {
         addTranslation("message.mcheli.overpressure", "en_US", "Overpressure");
         addTranslation("message.mcheli.overpressure", "zh_CN", "超压");
+        addTranslation("message.mcheli.jamming", "en_US", "JAMMING");
+        addTranslation("message.mcheli.jamming", "zh_CN", "干扰");
 
         addTranslation("gui.mcheli.title_mod_options", "en_US", "MCH-Reforged MOD Options");
         addTranslation("gui.mcheli.title_mod_options", "zh_CN", "MCH-Reforged 模组选项");
