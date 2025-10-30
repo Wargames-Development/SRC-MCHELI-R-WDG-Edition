@@ -71,8 +71,8 @@ public class MCH_API {
         for (MCH_EntitySeat seat : seats) {
             if (seat != null) {
                 if (seat.riddenByEntity == null
-                        && !aircraft.isMountedEntity(player)
-                        && aircraft.canRideSeatOrRack(seatId, player)) {
+                    && !aircraft.isMountedEntity(player)
+                    && aircraft.canRideSeatOrRack(seatId, player)) {
                     if (!(aircraft.getSeatInfo(seatId) instanceof MCH_SeatRackInfo)) {
                         if (!aircraft.worldObj.isRemote) {
                             player.mountEntity(seat);
