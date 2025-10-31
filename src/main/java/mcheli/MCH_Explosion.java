@@ -26,8 +26,44 @@ import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 
 import java.util.*;
+import java.lang.reflect.Method;
+import cpw.mods.fml.common.Loader;
 
 public class MCH_Explosion extends Explosion {
+
+    // ---- yRadar (hfr) hook cache ----
+    private static volatile boolean HFR_RESOLVED = false;
+    private static volatile boolean HFR_PRESENT = false;
+    private static volatile Method HFR_ALLOW_MCHELI_BLOCK_DAMAGE = null;
+
+    /** Returns true if block damage should be SKIPPED at (x,y,z). */
+    private static boolean shouldSkipBlockDamageForYRadar(net.minecraft.world.World world, double x, double y, double z) {
+        if (world == null || world.isRemote) return false;
+
+        if (!HFR_RESOLVED) {
+            HFR_PRESENT = cpw.mods.fml.common.Loader.isModLoaded("hfr");
+            if (HFR_PRESENT) {
+                try {
+                    Class<?> ce = Class.forName("com.hfr.clowder.ClowderEvents");
+                    HFR_ALLOW_MCHELI_BLOCK_DAMAGE =
+                            ce.getMethod("shouldAllowMCHeliBlockDamage",
+                                    net.minecraft.world.World.class, double.class, double.class, double.class);
+                } catch (Throwable t) {
+                    HFR_ALLOW_MCHELI_BLOCK_DAMAGE = null;
+                }
+            }
+            HFR_RESOLVED = true;
+        }
+
+        if (!HFR_PRESENT || HFR_ALLOW_MCHELI_BLOCK_DAMAGE == null) return false;
+
+        try {
+            Object allow = HFR_ALLOW_MCHELI_BLOCK_DAMAGE.invoke(null, world, x, y, z);
+            if (allow instanceof Boolean) return !((Boolean) allow); // FALSE => skip edits
+        } catch (Throwable t) { /* fail-open */ }
+        return false;
+    }
+
 
     private static Random explosionRNG = new Random();
     public World world;
@@ -446,7 +482,8 @@ public class MCH_Explosion extends Explosion {
 
     @Override
     public void doExplosionA() {
-        // === 1) 采样射线，收集会受影响的方块（供 doExplosionB 真正处理） ===
+        final boolean skipBlocks = (!this.world.isRemote) && shouldSkipBlockDamageForYRadar(this.world, this.explosionX, this.explosionY, this.explosionZ);
+        // === 1) Sample explosion rays to collect affected blocks (used later by doExplosionB for actual processing) ===
         final int RAYS = 16;
         final double STEP = 0.30000001192092896D;
         final Set<ChunkPosition> affected = new HashSet<>();
@@ -497,7 +534,7 @@ public class MCH_Explosion extends Explosion {
 
                         if (blast > 0.0F && (this.exploder == null ||
                             W_Entity.shouldExplodeBlock(this.exploder, this, this.world, bx, by, bz, blockId, blast))) {
-                            affected.add(new ChunkPosition(bx, by, bz));
+                            if (!skipBlocks) { affected.add(new ChunkPosition(bx, by, bz)); }
                         }
 
                         px += dx * STEP;
@@ -692,6 +729,40 @@ public class MCH_Explosion extends Explosion {
     }
 
     public void doExplosionB(boolean par1) {
+
+        // yRadar: if we decided to skip block edits entirely at this center, clear edits.
+        if (!this.world.isRemote && this.param.isDestroyBlock && (super.isSmoking || super.isFlaming)) {
+            if (shouldSkipBlockDamageForYRadar(this.world, super.explosionX, super.explosionY, super.explosionZ)) {
+                super.isSmoking = false;
+                super.isFlaming = false;
+                super.affectedBlockPositions.clear();
+            }
+        }
+
+        // yRadar: border safety net — if ANY affected block lies in protected territory, cancel edits.
+        if (!this.world.isRemote && this.param.isDestroyBlock && (super.isSmoking || super.isFlaming) && HFR_PRESENT && HFR_ALLOW_MCHELI_BLOCK_DAMAGE != null) {
+            boolean hitProtected = false;
+            try {
+                for (Object obj : super.affectedBlockPositions) {
+                    net.minecraft.world.ChunkPosition p = (net.minecraft.world.ChunkPosition) obj;
+                    Object allow = HFR_ALLOW_MCHELI_BLOCK_DAMAGE.invoke(
+                            null,
+                            this.world,
+                            (double) mcheli.wrapper.W_ChunkPosition.getChunkPosX(p) + 0.5D,
+                            (double) mcheli.wrapper.W_ChunkPosition.getChunkPosY(p) + 0.5D,
+                            (double) mcheli.wrapper.W_ChunkPosition.getChunkPosZ(p) + 0.5D
+                    );
+                    if (allow instanceof Boolean && !((Boolean) allow)) { hitProtected = true; break; }
+                }
+            } catch (Throwable t) { /* fail-open */ }
+
+            if (hitProtected) {
+                super.isSmoking = false;
+                super.isFlaming = false;
+                super.affectedBlockPositions.clear();
+            }
+        }
+
         if (param.isPlaySound) {
             W_WorldFunc.DEF_playSoundEffect(this.world, super.explosionX, super.explosionY, super.explosionZ, "random.explode", 4.0F, (1.0F + (this.world.rand.nextFloat() - this.world.rand.nextFloat()) * 0.2F) * 0.7F);
         }
