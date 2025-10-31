@@ -10,24 +10,24 @@ import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
 
 public class MCH_RenderGPSPosition {
 
     private static final ResourceLocation GPS_POS = new ResourceLocation(W_MOD.DOMAIN, "textures/GPSPosition.png");
-    private static final int ICON_SIZE = 24;
+    private static final int ICON_SIZE_PX = 24; // 以像素为基准的目标尺寸
 
     @SubscribeEvent
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
-
+    public void onRenderWorldLast(RenderWorldLastEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
         if (player == null || mc.theWorld == null) return;
 
+        // —— 载具判定（与原逻辑一致）——
         MCH_EntityAircraft ac = null;
         if (player.ridingEntity instanceof MCH_EntityAircraft) {
             ac = (MCH_EntityAircraft) player.ridingEntity;
@@ -36,101 +36,107 @@ public class MCH_RenderGPSPosition {
         } else if (player.ridingEntity instanceof MCH_EntityUavStation) {
             ac = ((MCH_EntityUavStation) player.ridingEntity).getControlAircract();
         }
-        if (ac == null) {
-            return;
-        }
+        if (ac == null) return;
 
-        // 没有激活就不渲染
         MCH_GPSPosition gps = MCH_GPSPosition.currentClientGPSPosition;
         if (gps == null || !gps.isActive()) return;
 
-        ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        // —— 世界/相机坐标 ——
+        final double gx = gps.x, gy = gps.y, gz = gps.z;
+        RenderManager rm = RenderManager.instance;
+        final double camX = rm.viewerPosX, camY = rm.viewerPosY, camZ = rm.viewerPosZ;
+        final double x = gx - camX, y = gy - camY, z = gz - camZ;
 
-        // 投影到屏幕
-        double[] screenPos = MCH_RenderBVRLockBox.worldToScreen(new Vector3f((float) gps.x, (float) gps.y, (float) gps.z), event.partialTicks);
-        double sx = screenPos[0];
-        double sy = screenPos[1];
-        double ox = screenPos[2];
-        double oy = screenPos[3];
+        // —— 视线夹角用于透明度/锁定 ——
+        double px = player.prevPosX + (player.posX - player.prevPosX) * event.partialTicks;
+        double py = player.prevPosY + (player.posY - player.prevPosY) * event.partialTicks + player.getEyeHeight();
+        double pz = player.prevPosZ + (player.posZ - player.prevPosZ) * event.partialTicks;
 
-        if (sx < 0 || sy < 0) return; // 在镜头后方
+        double vx = gx - px, vy = gy - py, vz = gz - pz;
+        double vlen = Math.sqrt(vx*vx + vy*vy + vz*vz);
+        if (vlen < 1e-4) return;
+        vx /= vlen; vy /= vlen; vz /= vlen;
 
-        // 依据相对屏幕中心距离设置透明度与边缘夹取
-        float alpha = 0.1f;
+        Vector3f look = new Vector3f((float)player.getLookVec().xCoord, (float)player.getLookVec().yCoord, (float)player.getLookVec().zCoord);
+        double dot = Math.max(-1.0, Math.min(1.0, vx*look.x + vy*look.y + vz*look.z));
+        double angleDeg = Math.toDegrees(Math.acos(dot));
+
+        float alpha;
         boolean inLock = false;
+        if (angleDeg <= 1.5) { alpha = 1.0f; inLock = true; }
+        else if (angleDeg <= 3.0)  alpha = 1.0f;
+        else if (angleDeg <= 6.0)  alpha = 0.8f;
+        else if (angleDeg <= 9.0)  alpha = 0.6f;
+        else                       alpha = 0.4f; // 最小透明度 0.4
 
-        double distScreen = ox * ox + oy * oy;
-        // 这些阈值与 BVR 一致（按屏幕高度比例缩放）
-        double h = sc.getScaledHeight();
-        if (distScreen < Math.pow(0.038 * h, 2)) {          // ~20 px
-            alpha = 1.0f;
-            inLock = true; // 中心圈
-        } else if (distScreen < Math.pow(0.076 * h, 2)) {   // ~40 px
-            alpha = 1.0f;
-        } else if (distScreen < Math.pow(0.152 * h, 2)) {   // ~80 px
-            alpha = 0.8f;
-        } else if (distScreen < Math.pow(0.228 * h, 2)) {   // ~120 px
-            alpha = 0.6f;
-        } else if (distScreen < Math.pow(0.288 * h, 2)) {   // ~150 px
-            alpha = 0.4f;
-        } else if (distScreen > Math.pow(0.384 * h, 2)) {   // > ~200 px，夹到边缘
-            double distance = Math.sqrt(distScreen);
-            double ratio = 200.0 / distance; // 与 BVR 一样夹取到半径≈200px
-            sx = sc.getScaledWidth() / 2.0 + ox * ratio;
-            sy = sc.getScaledHeight() / 2.0 + oy * ratio;
-            alpha = 0.2f;
-        }
+        // —— 基于 FOV 的恒定像素大小 ——
+        ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        double dist = Math.sqrt(x*x + y*y + z*z);
+        double fovDeg = mc.gameSettings.fovSetting;
+        double fovRad = Math.toRadians(fovDeg);
+        float sPerPixel = (float)((2.0 * dist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
 
-        // 渲染
+        // —— 取得视角 roll（度）并在 billboard 后抵消 ——
+        float rollDeg = getViewRollDeg(mc, ac, event.partialTicks); // 正负方向以 MCH 的右手坐标为准
+        // 如果无法获取则返回 0
+
+        // —— 渲染 ——
         GL11.glPushMatrix();
         {
-            drawGPSMarker(sx, sy, inLock, alpha);
+            GL11.glTranslated(x, y + 0.2, z);
 
-            // 距离文字（接近中心时更明显）
-            if (alpha >= 0.6f) {
-                double dist = player.getDistance(gps.x, gps.y, gps.z);
-                int color = inLock ? 0xFF0000 : 0x00FF00;
-                Minecraft.getMinecraft().fontRenderer.drawString(
-                    String.format("[GPS %.1fm]", dist),
-                    (int) (sx - 20), (int) (sy + 12), color
-                );
-            }
+            // billboard 朝向 yaw、pitch：
+            GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
+            GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
+
+            // 关键：抵消相机 roll，让图标始终“屏幕正立”
+            GL11.glRotatef(-rollDeg, 0.0F, 0.0F, 1.0F);
+
+            // 以像素为单位渲染
+            GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
+
+            // 始终可见
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthMask(false);
+
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDisable(GL11.GL_LIGHTING);
+
+            // 图标
+            if (inLock) GL11.glColor4f(1.0F, 0F, 0F, 1.0F);
+            else        GL11.glColor4f(0F, 1.0F, 0F, alpha);
+
+            Minecraft.getMinecraft().getTextureManager().bindTexture(GPS_POS);
+            Tessellator tess = Tessellator.instance;
+            float half = ICON_SIZE_PX * 0.5f;
+            tess.startDrawingQuads();
+            tess.addVertexWithUV(-half,  half, 0, 0, 1);
+            tess.addVertexWithUV( half,  half, 0, 1, 1);
+            tess.addVertexWithUV( half, -half, 0, 1, 0);
+            tess.addVertexWithUV(-half, -half, 0, 0, 0);
+            tess.draw();
+
+            // 文字（固定像素大小）
+            String text = String.format("[GPS %.1fm]", player.getDistance((float)gx, (float)gy, (float)gz));
+            int color = inLock ? 0xFF0000 : 0x00FF00;
+            GL11.glTranslatef(0.0F, ICON_SIZE_PX * 0.5f + 8.0f, 0.0F);
+            int fw = mc.fontRenderer.getStringWidth(text);
+            mc.fontRenderer.drawString(text, -fw / 2, 0, color, false);
+
+            // 还原
+            GL11.glEnable(GL11.GL_LIGHTING);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glDepthMask(true);
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glColor4f(1F, 1F, 1F, 1F);
         }
         GL11.glPopMatrix();
     }
 
-    private void drawGPSMarker(double x, double y, boolean inLock, float alpha) {
-        prepareRenderState(inLock, alpha);
-        Minecraft.getMinecraft().renderEngine.bindTexture(GPS_POS);
-
-        Tessellator tess = Tessellator.instance;
-        tess.startDrawingQuads();
-        double halfSize = ICON_SIZE / 2.0;
-
-        tess.addVertexWithUV(x - halfSize, y + halfSize, 0, 0, 1);
-        tess.addVertexWithUV(x + halfSize, y + halfSize, 0, 1, 1);
-        tess.addVertexWithUV(x + halfSize, y - halfSize, 0, 1, 0);
-        tess.addVertexWithUV(x - halfSize, y - halfSize, 0, 0, 0);
-
-        tess.draw();
-        restoreRenderState();
+    private float getViewRollDeg(Minecraft mc, MCH_EntityAircraft ac, float partialTicks) {
+        return -ac.rotationRoll;
     }
 
-    private void prepareRenderState(boolean lock, float alpha) {
-        GL11.glEnable(GL11.GL_BLEND);
-        if (lock) {
-            GL11.glColor4f(1.0F, 0F, 0F, 1.0F); // 中心圈高亮红色
-        } else {
-            GL11.glColor4f(0F, 1.0F, 0F, alpha); // 其他为绿色且带透明度
-        }
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-    }
 
-    private void restoreRenderState() {
-        int srcBlend = GL11.glGetInteger(3041); // GL_BLEND_SRC
-        int dstBlend = GL11.glGetInteger(3040); // GL_BLEND_DST
-        GL11.glBlendFunc(srcBlend, dstBlend);
-        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glColor4f(1F, 1F, 1F, 1F);
-    }
 }

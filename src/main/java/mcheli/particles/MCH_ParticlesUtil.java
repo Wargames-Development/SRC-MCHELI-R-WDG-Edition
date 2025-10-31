@@ -198,6 +198,7 @@ public class MCH_ParticlesUtil {
                     }
 
                     if (entityfx != null) {
+                        entityfx.renderDistanceWeight = 600;
                         mc.effectRenderer.addEffect(entityfx);
                     }
 
@@ -229,6 +230,7 @@ public class MCH_ParticlesUtil {
             entityFX.isEffectedWind = p.isEffectWind;
             entityFX.diffusible = p.diffusible;
             entityFX.toWhite = p.toWhite;
+            entityFX.renderDistanceWeight = 600;
 
             if (p.diffusible) {
                 entityFX.setParticleScale(p.size * 0.2F);
