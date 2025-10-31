@@ -32,6 +32,7 @@ import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vehicle.MCH_ClientVehicleTickHandler;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vehicle.MCH_GuiVehicle;
+import mcheli.weapon.MCH_GPSPosition;
 import mcheli.weapon.MCH_RenderLaser;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
@@ -39,12 +40,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
+import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.opengl.Display;
@@ -57,6 +62,7 @@ import java.util.List;
 public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static final float hitTotalDamageScaleOrigin = 2.0f;
+    private static final ResourceLocation cross3rd = new ResourceLocation(W_MOD.DOMAIN, "textures/3rdCross.png");
     public static MCH_ClientCommonTickHandler instance;
     public static int cameraMode = 0;
     public static MCH_EntityAircraft ridingAircraft = null;
@@ -69,6 +75,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public static int hitTotalDamageClearCountdown;
     public static float hitTotalDamageScale = 2.0f;
     public static List<HitMessage> hitList = new ArrayList<>();
+    public static boolean enableNew3rdCamera = true;
+    public static boolean showVehicleCrossHair = false;
+    @SideOnly(Side.CLIENT)
+    public static EntityLivingBase camera;
     private static double prevMouseDeltaX;
     private static double prevMouseDeltaY;
     private static double mouseDeltaX = 0.0D;
@@ -96,7 +106,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public MCH_Key KeyCamDistDown;
     public MCH_Key KeyScoreboard;
     public MCH_Key KeyMultiplayManager;
-    int debugcnt;
 
     public MCH_ClientCommonTickHandler(Minecraft minecraft, MCH_Config config) {
         super(minecraft);
@@ -177,6 +186,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onTick() {
+        Minecraft minecraft = Minecraft.getMinecraft();
         MCH_ClientTickHandlerBase.initRotLimit();
         MCH_Key[] player = this.Keys;
         int inOtherGui = player.length;
@@ -285,6 +295,29 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         if (var7 != null && var7.ridingEntity == null) {
             MCH_Camera.currentCameraMode = 0;
+        }
+
+        //第三人称摄像机视角
+        if (enableNew3rdCamera
+            && minecraft.thePlayer.ridingEntity instanceof MCH_EntityAircraft
+            && minecraft.gameSettings.thirdPersonView != 0) {
+            if (camera == null) {
+                camera = new MCH_3rdCamera(minecraft.theWorld, (MCH_EntityAircraft) minecraft.thePlayer.ridingEntity);
+                minecraft.thePlayer.worldObj.spawnEntityInWorld(camera);
+            }
+            minecraft.renderViewEntity = camera;
+            showVehicleCrossHair = true;
+        } else {
+            if (camera != null) {
+                camera.setDead();
+                camera = null;
+            }
+            showVehicleCrossHair = false;
+        }
+
+        //GPS
+        if(minecraft.thePlayer.ridingEntity == null) {
+            MCH_GPSPosition.currentClientGPSPosition.isActive = false;
         }
 
         MCH_RenderLaser.tickBeams();
@@ -606,7 +639,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     @SubscribeEvent
     public void onRenderGameOverlayEvent(RenderGameOverlayEvent event) {
         float partialTicks = event.partialTicks;
-        //If main config is set to false, blanket disable crosshairs (client synced)
         if (event.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS && mc.thePlayer == null) {
             event.setCanceled(true);
             return;
@@ -619,8 +651,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HELMET) {
             Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
-            //Otherwise, fall back to weapon config settings (default false)
-            if (this.mc.currentScreen == null || this.mc.currentScreen instanceof GuiChat || this.mc.currentScreen.getClass().toString().indexOf("GuiDriveableController") >= 0) {
+            if (this.mc.currentScreen == null || this.mc.currentScreen instanceof GuiChat || this.mc.currentScreen.getClass().toString().contains("GuiDriveableController")) {
                 for (MCH_Gui gui : this.guis) {
                     if (drawGui(gui, partialTicks))
                         break;
@@ -632,8 +663,39 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     MCH_GuiScoreboard.drawList(this.mc, this.mc.fontRenderer, false);
                 drawGui(this.gui_Title, partialTicks);
             }
+
+            //渲染第三人称准心
+            if (minecraft.thePlayer != null && showVehicleCrossHair) {
+                final int scrW = scaledresolution.getScaledWidth();
+                final int scrH = scaledresolution.getScaledHeight();
+                final float cx = scrW * 0.5f;
+                final float cy = scrH * 0.5f;
+                final float sizePx = 32.0f;
+                final float half = sizePx * 0.5f;
+                GL11.glPushMatrix();
+                GL11.glEnable(GL11.GL_BLEND);
+                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                GL11.glDisable(GL11.GL_DEPTH_TEST);
+                GL11.glDepthMask(false);
+
+                GL11.glTranslatef(cx, cy, 0.0f);
+
+                mc.getTextureManager().bindTexture(cross3rd);
+                Tessellator t = Tessellator.instance;
+                t.startDrawingQuads();
+                t.addVertexWithUV(-half, half, 0, 0, 1);
+                t.addVertexWithUV(half, half, 0, 1, 1);
+                t.addVertexWithUV(half, -half, 0, 1, 0);
+                t.addVertexWithUV(-half, -half, 0, 0, 0);
+                t.draw();
+                GL11.glDepthMask(true);
+                GL11.glEnable(GL11.GL_DEPTH_TEST);
+                GL11.glDisable(GL11.GL_BLEND);
+                GL11.glPopMatrix();
+            }
         }
 
+        //渲染命中信息
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
             if (!hitList.isEmpty() && hitTotalDamage > 0) {
                 int x = (int) (i * 0.6f);

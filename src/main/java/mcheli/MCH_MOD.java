@@ -106,7 +106,7 @@ public class MCH_MOD {
     public static MCH_ItemWrench itemWrench;
     public static MCH_ItemRangeFinder itemRangeFinder;
     //public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
-    // /*     */   public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
+    //public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
@@ -251,12 +251,6 @@ public class MCH_MOD {
 
     @EventHandler
     public void PreInit(FMLPreInitializationEvent evt) {
-
-        // try {
-        //    ZipInputStream zis = new ZipInputStream(new FileInputStream("path/to/your/assets.zip"));
-        //    ZipEntry entry = zis.getNextEntry();
-        // }
-        //sorry but we're gonna need a loader mod to unzip this crap
 
         VER = Loader.instance().activeModContainer().getVersion();
         MCH_Lib.init();
