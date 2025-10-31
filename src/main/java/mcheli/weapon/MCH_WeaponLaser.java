@@ -207,7 +207,7 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
                         }
                         if (ac.getSeats() != null) {
                             for (MCH_EntitySeat seat : ac.getSeats()) {
-                                if (seat.riddenByEntity instanceof EntityLivingBase) {
+                                if (seat != null && seat.riddenByEntity instanceof EntityLivingBase) {
                                     livingList.add((EntityLivingBase) seat.riddenByEntity);
                                 }
                             }

@@ -1117,7 +1117,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                     if (ac.getSeats() != null) {
                         for (MCH_EntitySeat seat : ac.getSeats()) {
-                            if (seat.riddenByEntity instanceof EntityLivingBase) {
+                            if (seat != null && seat.riddenByEntity instanceof EntityLivingBase) {
                                 livingList.add((EntityLivingBase) seat.riddenByEntity);
                             }
                         }

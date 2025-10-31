@@ -46,10 +46,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.Potion;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
-import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.opengl.Display;
@@ -316,7 +316,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
 
         //GPS
-        if(minecraft.thePlayer.ridingEntity == null) {
+        if (minecraft.thePlayer.ridingEntity == null) {
             MCH_GPSPosition.currentClientGPSPosition.isActive = false;
         }
 
@@ -645,12 +645,42 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
 
         Minecraft minecraft = Minecraft.getMinecraft();
+        EntityPlayer player = minecraft.thePlayer;
         ScaledResolution scaledresolution = new ScaledResolution(minecraft, minecraft.displayWidth, minecraft.displayHeight);
         int i = scaledresolution.getScaledWidth();
         int j = scaledresolution.getScaledHeight();
 
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HELMET) {
             Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
+
+            //渲染失明效果
+            if (player != null && player.isPotionActive(Potion.blindness)
+                && (player.ridingEntity instanceof MCH_EntityAircraft || player.ridingEntity instanceof MCH_EntitySeat || player.ridingEntity instanceof MCH_EntityUavStation)) {
+                int amp = player.getActivePotionEffect(Potion.blindness).getAmplifier();
+                int dur = player.getActivePotionEffect(Potion.blindness).getDuration();
+                float alpha = 0.85f + Math.min(0.06f * (amp + 1), 0.17f);
+                if (dur < 40) alpha *= (dur / 40.0f);
+                GL11.glPushMatrix();
+                GL11.glDisable(GL11.GL_DEPTH_TEST);
+                GL11.glDepthMask(false);
+                GL11.glEnable(GL11.GL_BLEND);
+                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                GL11.glDisable(GL11.GL_TEXTURE_2D);
+                Tessellator t = Tessellator.instance;
+                t.startDrawingQuads();
+                t.setColorRGBA(0, 0, 0, (int) (Math.max(0.0f, Math.min(0.98f, alpha)) * 255));
+                t.addVertex(0, j, 0);
+                t.addVertex(i, j, 0);
+                t.addVertex(i, 0, 0);
+                t.addVertex(0, 0, 0);
+                t.draw();
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glDisable(GL11.GL_BLEND);
+                GL11.glDepthMask(true);
+                GL11.glEnable(GL11.GL_DEPTH_TEST);
+                GL11.glPopMatrix();
+            }
+
             if (this.mc.currentScreen == null || this.mc.currentScreen instanceof GuiChat || this.mc.currentScreen.getClass().toString().contains("GuiDriveableController")) {
                 for (MCH_Gui gui : this.guis) {
                     if (drawGui(gui, partialTicks))
@@ -665,7 +695,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             }
 
             //渲染第三人称准心
-            if (minecraft.thePlayer != null && showVehicleCrossHair) {
+            if (player != null && showVehicleCrossHair) {
                 final int scrW = scaledresolution.getScaledWidth();
                 final int scrH = scaledresolution.getScaledHeight();
                 final float cx = scrW * 0.5f;
