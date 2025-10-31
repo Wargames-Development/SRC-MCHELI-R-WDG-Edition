@@ -25,6 +25,7 @@ import mcheli.weapon.*;
 import mcheli.wrapper.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
@@ -1761,7 +1762,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.lastRiddenByEntity = this.getRiddenByEntity();
         this.lastRidingEntity = this.getRidingEntity();
         this.prevPosition.put(Vec3.createVectorHelper(super.posX, super.posY, super.posZ));
-        this.onUpdatePositionSync();
     }
 
     private void updateNoCollisionEntities() {
@@ -3461,6 +3461,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public int getClientPositionDelayCorrection() {
+        if(Minecraft.getMinecraft().thePlayer == this.riddenByEntity) {
+            return 7;
+        }
         return 0;
     }
 
@@ -6155,14 +6158,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.smoothedGForce = 1.0F;
         }
         this.prevVelocity = currentVel;
-    }
-
-    private void onUpdatePositionSync() {
-        if (worldObj.isRemote) {
-            return;
-        }
-        //有bug
-        //MCH_MOD.getPacketHandler().sendToDimension(new PacketAircraftPositionSync(posX, posY, posZ, rotationYaw, rotationPitch, rotationRoll, getEntityId()), dimension);
     }
 
     public class WeaponBay {

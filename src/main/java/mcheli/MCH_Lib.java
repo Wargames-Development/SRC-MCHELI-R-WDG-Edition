@@ -437,7 +437,6 @@ public class MCH_Lib {
     }
 
     public static void setRenderViewEntity(EntityLivingBase entity) {
-        MCH_Config var10000 = MCH_MOD.config;
         if (MCH_Config.ReplaceRenderViewEntity.prmBool) {
             W_McClient.setRenderEntity(entity);
         }
