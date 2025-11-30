@@ -81,7 +81,7 @@ public class MCH_MOD {
     public static final String MOD_CH = "MCHeli_CH";
     public static final PacketHandler newPacketHandler = new PacketHandler();
     public static final MCH_EntityInfoManager entityInfoManager = new MCH_EntityInfoManager();
-    public static String VER = "0.1.1_X2";
+    public static String VER = "0.1.2_X3";
     @Instance("mcheli")
     public static MCH_MOD instance;
     @SidedProxy(
