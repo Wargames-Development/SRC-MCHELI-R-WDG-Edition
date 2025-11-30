@@ -25,6 +25,8 @@ Further changes are being made in the act of connection with our Wargames Editio
 
 - Added to the api section a new explosions manager to link with yRadar,
   - Updated the explosion manager to always pass through the gate to fully block any block damage when it shouldn't be allowed.
+- Updated IR and Radar (Active & Passive) to ignore animals, players and non-mcheli vehicles from being locked onto.
+- Adjusted versioning system and mod to FML reject based on mcmod.info mismatches + Updated versioning and mcmod.info's contents to properly reference the up to date mod.
 
 ### Coming Soon:
 
