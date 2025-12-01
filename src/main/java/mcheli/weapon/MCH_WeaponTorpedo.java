@@ -16,10 +16,6 @@ public class MCH_WeaponTorpedo extends MCH_WeaponBase {
         super.explosionPower = 8;
         super.power = 35;
         super.interval = -100;
-        if (w.isRemote) {
-            super.interval -= 10;
-        }
-
     }
 
     public boolean shot(MCH_WeaponParam prm) {

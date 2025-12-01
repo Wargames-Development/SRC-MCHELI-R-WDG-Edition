@@ -48,14 +48,14 @@ public class MCH_HBMUtil {
         return null;
     }
 
-    public static void EntityNukeTorex_statFac(World world, double posX, double posY, double posZ, float nukeYield) {
+    public static void EntityNukeTorex_statFac(World world, double posX, double posY, double posZ, float nukeYield, int type) {
         if (!isHBMLoaded) {
             return;
         }
         try {
             if (nukeTorexClass != null) {
-                Method statFacMethod = nukeTorexClass.getMethod("statFacStandard", World.class, double.class, double.class, double.class, float.class);
-                statFacMethod.invoke(null, world, posX, posY, posZ, nukeYield);
+                Method statFacMethod = nukeTorexClass.getMethod("statFac", World.class, double.class, double.class, double.class, float.class, int.class);
+                statFacMethod.invoke(null, world, posX, posY, posZ, nukeYield, type);
             }
         } catch (Exception e) {
             e.printStackTrace();

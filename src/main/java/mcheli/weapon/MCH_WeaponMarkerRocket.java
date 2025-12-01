@@ -15,10 +15,6 @@ public class MCH_WeaponMarkerRocket extends MCH_WeaponBase {
         super.explosionPower = 0;
         super.power = 0;
         super.interval = 60;
-        if (w.isRemote) {
-            super.interval += 10;
-        }
-
     }
 
     public boolean shot(MCH_WeaponParam prm) {

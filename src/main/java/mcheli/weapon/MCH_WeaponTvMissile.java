@@ -30,9 +30,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         super.acceleration = 2.0F;
         super.explosionPower = 4;
         super.interval = -100;
-        if (w.isRemote) {
-            super.interval -= 10;
-        }
 
         super.numMode = 2;
         this.lastShotEntity = null;

@@ -99,16 +99,18 @@ public class MCH_WeaponCreator {
                         ++((MCH_WeaponBase) weapon).interval;
                     } else if (((MCH_WeaponBase) weapon).interval < 7) {
                         ((MCH_WeaponBase) weapon).interval += 2;
-                    } else if (((MCH_WeaponBase) weapon).interval < 10) {
-                        ((MCH_WeaponBase) weapon).interval += 3;
-                    } else if (((MCH_WeaponBase) weapon).interval < 20) {
-                        ((MCH_WeaponBase) weapon).interval += 6;
-                    } else {
-                        ((MCH_WeaponBase) weapon).interval += 10;
-                        if (((MCH_WeaponBase) weapon).interval >= 40) {
-                            ((MCH_WeaponBase) weapon).interval = -((MCH_WeaponBase) weapon).interval;
-                        }
                     }
+
+//                    else if (((MCH_WeaponBase) weapon).interval < 10) {
+//                        ((MCH_WeaponBase) weapon).interval += 3;
+//                    } else if (((MCH_WeaponBase) weapon).interval < 20) {
+//                        ((MCH_WeaponBase) weapon).interval += 6;
+//                    } else {
+//                        ((MCH_WeaponBase) weapon).interval += 10;
+//                        if (((MCH_WeaponBase) weapon).interval >= 40) {
+//                            ((MCH_WeaponBase) weapon).interval = -((MCH_WeaponBase) weapon).interval;
+//                        }
+//                    }
 
                     ++((MCH_WeaponBase) weapon).heatCount;
                     ((MCH_WeaponBase) weapon).cartridge = info.cartridge;

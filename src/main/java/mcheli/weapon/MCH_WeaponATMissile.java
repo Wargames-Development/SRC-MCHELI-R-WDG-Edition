@@ -17,10 +17,6 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
         super.acceleration = 2.0F;
         super.explosionPower = 4;
         super.interval = 5;
-        if (w.isRemote) {
-            super.interval += 5;
-        }
-
         super.numMode = 2;
         super.guidanceSystem.canLockOnGround = true;
         super.guidanceSystem.ridableOnly = wi.ridableOnly;

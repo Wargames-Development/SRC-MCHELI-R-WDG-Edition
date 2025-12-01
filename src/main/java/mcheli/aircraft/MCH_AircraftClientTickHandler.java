@@ -1,9 +1,7 @@
 package mcheli.aircraft;
 
-import mcheli.MCH_ClientTickHandlerBase;
-import mcheli.MCH_Config;
-import mcheli.MCH_Key;
-import mcheli.MCH_PacketIndOpenScreen;
+import mcheli.*;
+import mcheli.network.packets.PacketUseWeapon;
 import mcheli.wrapper.W_Network;
 import mcheli.wrapper.W_PacketBase;
 import net.minecraft.client.Minecraft;
@@ -262,16 +260,16 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 ac.switchWeapon((Entity) player, pc.switchWeapon);
                 send = true;
             } else if (this.KeySwWeaponMode.isKeyDown()) {
-                ac.switchCurrentWeaponMode((Entity) player);
+                ac.switchCurrentWeaponMode(player);
             } else if (this.KeyUseWeapon.isKeyPress()) {
-                if (ac.useCurrentWeapon((Entity) player)) {
-                    pc.useWeapon = true;
-                    pc.useWeaponOption1 = ac.getCurrentWeapon((Entity) player).getLastUsedOptionParameter1();
-                    pc.useWeaponOption2 = ac.getCurrentWeapon((Entity) player).getLastUsedOptionParameter2();
-                    pc.useWeaponPosX = ac.prevPosX;
-                    pc.useWeaponPosY = ac.prevPosY;
-                    pc.useWeaponPosZ = ac.prevPosZ;
-                    send = true;
+                if (ac.useCurrentWeapon(player)) {
+                    MCH_MOD.getPacketHandler().sendToServer(new PacketUseWeapon(
+                        ac.getCurrentWeapon(player).getLastUsedOptionParameter1(),
+                        ac.getCurrentWeapon(player).getLastUsedOptionParameter2(),
+                        ac.prevPosX,
+                        ac.prevPosY,
+                        ac.prevPosZ
+                    ));
                 }
             }
 
