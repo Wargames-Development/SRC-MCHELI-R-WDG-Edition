@@ -13,12 +13,6 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
     public byte switchCameraMode = 0;
     public byte switchWeapon = -1;
     public byte useFlareType = 0;
-    public boolean useWeapon = false;
-    public int useWeaponOption1 = 0;
-    public int useWeaponOption2 = 0;
-    public double useWeaponPosX = 0.0D;
-    public double useWeaponPosY = 0.0D;
-    public double useWeaponPosZ = 0.0D;
     public boolean throttleUp = false;
     public boolean throttleDown = false;
     public boolean moveLeft = false;
@@ -38,7 +32,6 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
     public void readData(ByteArrayDataInput data) {
         try {
             short e = data.readShort();
-            this.useWeapon = this.getBit(e, 0);
             this.throttleUp = this.getBit(e, 1);
             this.throttleDown = this.getBit(e, 2);
             this.moveLeft = this.getBit(e, 3);
@@ -56,13 +49,6 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
             this.useFlareType = (byte) (e >> 0 & 15);
             this.switchMode = data.readByte();
             this.switchWeapon = data.readByte();
-            if (this.useWeapon) {
-                this.useWeaponOption1 = data.readInt();
-                this.useWeaponOption2 = data.readInt();
-                this.useWeaponPosX = data.readDouble();
-                this.useWeaponPosY = data.readDouble();
-                this.useWeaponPosZ = data.readDouble();
-            }
 
             e = (short) data.readByte();
             this.switchCameraMode = (byte) (e >> 6 & 3);
@@ -78,7 +64,7 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
     public void writeData(DataOutputStream dos) {
         try {
             byte e = 0;
-            short e1 = this.setBit(e, 0, this.useWeapon);
+            short e1 = this.setBit(e, 0, false);
             e1 = this.setBit(e1, 1, this.throttleUp);
             e1 = this.setBit(e1, 2, this.throttleDown);
             e1 = this.setBit(e1, 3, this.moveLeft);
@@ -95,14 +81,6 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
             dos.writeByte(e1);
             dos.writeByte(this.switchMode);
             dos.writeByte(this.switchWeapon);
-            if (this.useWeapon) {
-                dos.writeInt(this.useWeaponOption1);
-                dos.writeInt(this.useWeaponOption2);
-                dos.writeDouble(this.useWeaponPosX);
-                dos.writeDouble(this.useWeaponPosY);
-                dos.writeDouble(this.useWeaponPosZ);
-            }
-
             e1 = (short) ((byte) ((this.switchCameraMode & 3) << 6 | (this.switchHatch & 3) << 4 | (this.switchFreeLook & 3) << 2 | (this.switchGear & 3) << 0));
             dos.writeByte(e1);
         } catch (IOException var3) {

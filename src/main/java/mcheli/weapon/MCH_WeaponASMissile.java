@@ -2,6 +2,7 @@ package mcheli.weapon;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.MCH_3rdCamera;
 import mcheli.MCH_Lib;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.MCH_RayTracer;
@@ -11,6 +12,7 @@ import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
@@ -31,9 +33,6 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         this.explosionPower = 9;   // 爆炸威力
         this.power = 40;           // 武器威力
         this.interval = -350;      // 射击间隔
-        if (world.isRemote) {
-            this.interval -= 10;     // 如果是客户端，减少射击间隔
-        }
     }
 
     public boolean isCooldownCountReloadTime() {
@@ -160,6 +159,11 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 (float) prm.user.posX, (float) prm.user.posY, (float) prm.user.posZ));
         float yaw = prm.user.rotationYaw;
         float pitch = prm.user.rotationPitch;
+        if(Minecraft.getMinecraft().gameSettings.thirdPersonView != 0) {
+            EntityLivingBase e = Minecraft.getMinecraft().renderViewEntity;
+            yaw = e.rotationYaw;
+            pitch = e.rotationPitch;
+        }
         double targetX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
         double targetZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
         double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);

@@ -11,10 +11,6 @@ public class MCH_WeaponTargetingPod extends MCH_WeaponBase {
     public MCH_WeaponTargetingPod(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
         super.interval = -90;
-        if (w.isRemote) {
-            super.interval -= 10;
-        }
-
     }
 
     public boolean shot(MCH_WeaponParam prm) {

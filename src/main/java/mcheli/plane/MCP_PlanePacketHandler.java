@@ -70,16 +70,6 @@ public class MCP_PlanePacketHandler {
                         plane.switchWeapon(player, pc.switchWeapon);
                     }
 
-                    if (pc.useWeapon) {
-                        MCH_WeaponParam prm = new MCH_WeaponParam();
-                        prm.entity = plane;
-                        prm.user = player;
-                        prm.setPosAndRot(pc.useWeaponPosX, pc.useWeaponPosY, pc.useWeaponPosZ, 0.0F, 0.0F);
-                        prm.option1 = pc.useWeaponOption1;
-                        prm.option2 = pc.useWeaponOption2;
-                        plane.useCurrentWeapon(prm);
-                    }
-
                     if (plane.isPilot(player)) {
                         plane.throttleUp = pc.throttleUp;
                         plane.throttleDown = pc.throttleDown;

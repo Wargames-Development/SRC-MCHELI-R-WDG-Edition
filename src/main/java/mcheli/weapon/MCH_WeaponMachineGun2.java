@@ -15,7 +15,6 @@ public class MCH_WeaponMachineGun2 extends MCH_WeaponBase {
         super.power = 16;
         super.acceleration = 4.0F;
         super.explosionPower = 1;
-        super.interval = 2;
         super.numMode = 2;
     }
 

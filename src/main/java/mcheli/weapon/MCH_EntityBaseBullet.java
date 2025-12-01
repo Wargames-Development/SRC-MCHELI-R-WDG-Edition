@@ -728,15 +728,17 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     double dirY = motionY / currentSpeed;
                     double dirZ = motionZ / currentSpeed;
 
-                    motionX += dirX * getInfo().speedFactor;
-                    motionY += dirY * getInfo().speedFactor;
-                    motionZ += dirZ * getInfo().speedFactor;
+                    super.motionX += dirX * getInfo().speedFactor;
+                    super.motionY += dirY * getInfo().speedFactor;
+                    super.motionZ += dirZ * getInfo().speedFactor;
 
                     acceleration += getInfo().speedFactor;
                 }
             }
 
             super.motionY += this.getGravity();
+            super.motionX -= getInfo().dragInAir;
+            super.motionZ -= getInfo().dragInAir;
         } else {
             super.motionY += this.getGravityInWater();
         }
@@ -1354,6 +1356,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             .damageVsTank(getInfo().explosionDamageVsTank)
             .damageVsVehicle(getInfo().explosionDamageVsVehicle)
             .damageVsShip(getInfo().explosionDamageVsShip)
+            .explosionThroughWall(getInfo().explosionThroughWall)
             .build();
         MCH_Explosion.ExplosionResult result = MCH_Explosion.newExplosion(super.worldObj, param);
         if (result != null && result.hitEntity) {
@@ -1403,6 +1406,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .damageVsTank(getInfo().explosionDamageVsTank)
                     .damageVsVehicle(getInfo().explosionDamageVsVehicle)
                     .damageVsShip(getInfo().explosionDamageVsShip)
+                    .explosionThroughWall(getInfo().explosionThroughWall)
                     .build();
                 result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
@@ -1427,6 +1431,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .damageVsTank(getInfo().explosionDamageVsTank)
                     .damageVsVehicle(getInfo().explosionDamageVsVehicle)
                     .damageVsShip(getInfo().explosionDamageVsShip)
+                    .explosionThroughWall(getInfo().explosionThroughWall)
                     .build();
                 result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
@@ -1451,6 +1456,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 .damageVsTank(getInfo().explosionDamageVsTank)
                 .damageVsVehicle(getInfo().explosionDamageVsVehicle)
                 .damageVsShip(getInfo().explosionDamageVsShip)
+                .explosionThroughWall(getInfo().explosionThroughWall)
                 .build();
             result = MCH_Explosion.newExplosion(super.worldObj, param);
         }
@@ -1459,7 +1465,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             if (!this.getInfo().nukeEffectOnly) {
                 worldObj.spawnEntityInWorld((Entity) MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5));
             }
-            MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield);
+            //EntityNukeTorex.statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, 0);
+            MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, getInfo().effectYield);
         }
 
         if (this.getInfo().chemYield > 0 && MCH_HBMUtil.isHBMLoaded) {

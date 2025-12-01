@@ -16,10 +16,6 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
         super.explosionPower = 9;
         super.power = 35;
         super.interval = -90;
-        if (w.isRemote) {
-            super.interval -= 10;
-        }
-
     }
 
     public boolean shot(MCH_WeaponParam prm) {

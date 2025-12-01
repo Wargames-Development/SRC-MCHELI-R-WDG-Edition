@@ -16,10 +16,6 @@ public class MCH_WeaponRocket extends MCH_WeaponBase {
         super.explosionPower = 3;
         super.power = 22;
         super.interval = 5;
-        if (w.isRemote) {
-            super.interval += 2;
-        }
-
     }
 
     public String getName() {
