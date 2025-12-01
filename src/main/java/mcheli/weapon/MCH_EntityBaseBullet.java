@@ -719,26 +719,25 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         if (!this.isInWater()) {
+
+            double currentSpeed = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
+            if (currentSpeed == 0) currentSpeed = 0.000001F;
+
+            double dirX = motionX / currentSpeed;
+            double dirY = motionY / currentSpeed;
+            double dirZ = motionZ / currentSpeed;
+
             if (ticksExisted > getInfo().speedFactorStartTick
                 && ticksExisted < getInfo().speedFactorEndTick) {
-
-                double currentSpeed = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
-                if (currentSpeed > 0.0D) {
-                    double dirX = motionX / currentSpeed;
-                    double dirY = motionY / currentSpeed;
-                    double dirZ = motionZ / currentSpeed;
-
-                    super.motionX += dirX * getInfo().speedFactor;
-                    super.motionY += dirY * getInfo().speedFactor;
-                    super.motionZ += dirZ * getInfo().speedFactor;
-
-                    acceleration += getInfo().speedFactor;
-                }
+                super.motionX += dirX * getInfo().speedFactor;
+                super.motionY += dirY * getInfo().speedFactor;
+                super.motionZ += dirZ * getInfo().speedFactor;
+                acceleration += getInfo().speedFactor;
             }
 
             super.motionY += this.getGravity();
-            super.motionX -= getInfo().dragInAir;
-            super.motionZ -= getInfo().dragInAir;
+            super.motionX -= dirX * getInfo().dragInAir;
+            super.motionZ -= dirZ * getInfo().dragInAir;
         } else {
             super.motionY += this.getGravityInWater();
         }
