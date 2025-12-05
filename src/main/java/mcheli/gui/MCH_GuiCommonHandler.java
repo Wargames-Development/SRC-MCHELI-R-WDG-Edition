@@ -63,6 +63,11 @@ public class MCH_GuiCommonHandler implements IGuiHandler {
                     }
                 }
 
+                // NEW: only allow players who can use /scoreboard (ops)
+                if (!player.canCommandSenderUseCommand(2, "scoreboard")) {
+                    return null;
+                }
+
                 return new MCH_ContainerScoreboard(player);
         }
 
@@ -97,6 +102,10 @@ public class MCH_GuiCommonHandler implements IGuiHandler {
             case 4:
                 return new MCH_DraftingTableGui(player, x, y, z);
             case 5:
+                // Mirror the server check so non-ops don’t even get the GUI client-side
+                if (!player.canCommandSenderUseCommand(2, "scoreboard")) {
+                    return null;
+                }
                 return new MCH_GuiScoreboard(player);
         }
 
