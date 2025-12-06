@@ -79,16 +79,6 @@ public class MCH_HeliPacketHandler {
                         heli.switchWeapon(player, pc.switchWeapon);
                     }
 
-                    if (pc.useWeapon) {
-                        MCH_WeaponParam e = new MCH_WeaponParam();
-                        e.entity = heli;
-                        e.user = player;
-                        e.setPosAndRot(pc.useWeaponPosX, pc.useWeaponPosY, pc.useWeaponPosZ, 0.0F, 0.0F);
-                        e.option1 = pc.useWeaponOption1;
-                        e.option2 = pc.useWeaponOption2;
-                        heli.useCurrentWeapon(e);
-                    }
-
                     if (heli.isPilot(player)) {
                         heli.throttleUp = pc.throttleUp;
                         heli.throttleDown = pc.throttleDown;

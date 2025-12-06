@@ -428,6 +428,7 @@ public class MCH_MOD {
         EntityRegistry.registerModEntity(MCH_EntityThrowable.class, "MCH.E.Throwable", 400, this, 330, 10, true);
         EntityRegistry.registerModEntity(MCH_EntityLockBox.class, "MCH.E.LockBox", 401, this, 32, 20, false);
         EntityRegistry.registerModEntity(MCH_EntityChaff.class, "MCH.E.Chaff", 402, this, 330, 10, true);
+        EntityRegistry.registerModEntity(EntityNukeTorex.class, "MCH.E.Nuke", 403, this, 1000, 20, false);
     }
 
     @EventHandler

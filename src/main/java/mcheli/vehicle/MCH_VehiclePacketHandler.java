@@ -31,16 +31,6 @@ public class MCH_VehiclePacketHandler {
                         vehicle.switchWeapon(player, pc.switchWeapon);
                     }
 
-                    if (pc.useWeapon) {
-                        MCH_WeaponParam e = new MCH_WeaponParam();
-                        e.entity = vehicle;
-                        e.user = player;
-                        e.setPosAndRot(pc.useWeaponPosX, pc.useWeaponPosY, pc.useWeaponPosZ, 0.0F, 0.0F);
-                        e.option1 = pc.useWeaponOption1;
-                        e.option2 = pc.useWeaponOption2;
-                        vehicle.useCurrentWeapon(e);
-                    }
-
                     if (vehicle.isPilot(player)) {
                         vehicle.throttleUp = pc.throttleUp;
                         vehicle.throttleDown = pc.throttleDown;
