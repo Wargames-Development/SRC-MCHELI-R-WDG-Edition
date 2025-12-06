@@ -557,7 +557,7 @@ public class MCH_Explosion extends Explosion {
             vz /= vLen;
 
             // 用于击退/向量登记的遮挡+距离因子（保持原版感觉）
-            double density = this.getBlockDensity(center, e.boundingBox);
+            double density = param.explosionThroughWall ? 1.0D : this.getBlockDensity(center, e.boundingBox);
             final double attenForKnock = (1.0D - rDist) * density;
             final double attenForDamage = Math.max(0.0D, attenForKnock);
 
@@ -618,7 +618,7 @@ public class MCH_Explosion extends Explosion {
             }
 
             // 击退/登记按距离+遮挡（但不影响“固定伤害”）
-            double density = this.getBlockDensity(center, e.boundingBox);
+            double density = param.explosionThroughWall ? 1.0D : this.getBlockDensity(center, e.boundingBox);
             final double attenForKnock = (1.0D - rDistBox) * density;
 
             // === 固定伤害：点爆伤害，不随距离/遮挡衰减 ===
@@ -685,7 +685,7 @@ public class MCH_Explosion extends Explosion {
                 }
             }
 
-            return (double) ((float) i / (float) j);
+            return (float) i / (float) j;
         } else {
             return 0.0D;
         }

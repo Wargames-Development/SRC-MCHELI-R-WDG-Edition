@@ -862,17 +862,6 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
         super.rotDestroyedYaw = 0.0F;
     }
 
-    public void performActionIfWeightTypeIsOne() {
-        // Check if TankInfo exists and weightType is 1
-        if (this.getTankInfo() != null && this.getTankInfo().weightType == 1) {
-            System.out.println("Weight type is 1.");
-
-        }
-    }
-
-    public int getClientPositionDelayCorrection() {
-        return this.getTankInfo() == null ? 7 : (this.getTankInfo().weightType == 1 ? 2 : 7);
-    }
 
     protected void onUpdate_Client() {
 //      if(this.getRiddenByEntity() != null && W_Lib.isClientPlayer(this.getRiddenByEntity())) {

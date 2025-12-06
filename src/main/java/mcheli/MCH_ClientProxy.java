@@ -149,6 +149,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityThrowable.class, new MCH_RenderThrowable());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityLockBox.class, new MCH_RenderLockBox());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityChaff.class, new MCH_RenderChaff());
+        RenderingRegistry.registerEntityRenderingHandler(EntityNukeTorex.class, new RenderTorex());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemJavelin, new MCH_ItemLightWeaponRender());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemStinger, new MCH_ItemLightWeaponRender());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.invisibleItem, new MCH_InvisibleItemRender());

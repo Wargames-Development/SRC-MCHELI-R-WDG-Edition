@@ -278,6 +278,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float explosionDamageVsTank = 1f;
     public float explosionDamageVsHeli = 1f;
     public float explosionDamageVsShip = 1f;
+    public boolean explosionThroughWall;
     /**
      * HBM特效阻止破坏方块
      */
@@ -353,6 +354,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 霰弹种类 0为位置散布 1为角度散布
      */
     public int canisterType = 0;
+
+    /**
+     * 空气阻力，在x和z方向，正值减速，负值加速
+     */
+    public double dragInAir = 0;
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -650,6 +656,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.explosionDamageVsHeli = this.toFloat(data);
             } else if (item.equalsIgnoreCase("ExplosionDamageVsShip")) {
                 this.explosionDamageVsShip = this.toFloat(data);
+            } else if (item.equalsIgnoreCase("ExplosionThroughWall")) {
+                this.explosionThroughWall = this.toBool(data);
             } else if (item.equalsIgnoreCase("DisableDestroyBlock")) {
                 this.disableDestroyBlock = this.toBool(data);
             } else if (item.equalsIgnoreCase("RailgunSound")) {
@@ -711,6 +719,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.canister = this.toInt(data);
             } else if (item.equalsIgnoreCase("CanisterType")) {
                 this.canisterType = this.toInt(data);
+            } else if (item.equalsIgnoreCase("DragInAir")) {
+                this.dragInAir = this.toDouble(data);
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {

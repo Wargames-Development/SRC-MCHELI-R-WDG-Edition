@@ -63,16 +63,6 @@ public class MCH_TankPacketHandler {
                         tank.switchWeapon(player, pc.switchWeapon);
                     }
 
-                    if (pc.useWeapon) {
-                        MCH_WeaponParam dx = new MCH_WeaponParam();
-                        dx.entity = tank;
-                        dx.user = player;
-                        dx.setPosAndRot(pc.useWeaponPosX, pc.useWeaponPosY, pc.useWeaponPosZ, 0.0F, 0.0F);
-                        dx.option1 = pc.useWeaponOption1;
-                        dx.option2 = pc.useWeaponOption2;
-                        tank.useCurrentWeapon(dx);
-                    }
-
                     if (tank.isPilot(player)) {
                         tank.throttleUp = pc.throttleUp;
                         tank.throttleDown = pc.throttleDown;

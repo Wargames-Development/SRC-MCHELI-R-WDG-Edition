@@ -27,10 +27,6 @@ public class MCH_WeaponCAS extends MCH_WeaponBase {
         super.explosionPower = 2;
         super.power = 32;
         super.interval = -300;
-        if (w.isRemote) {
-            super.interval -= 10;
-        }
-
         this.targetPosX = 0.0D;
         this.targetPosY = 0.0D;
         this.targetPosZ = 0.0D;
