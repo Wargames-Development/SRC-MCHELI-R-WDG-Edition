@@ -93,6 +93,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                         missile.targetPosX = gpsPosition.x;
                         missile.targetPosY = gpsPosition.y;
                         missile.targetPosZ = gpsPosition.z;
+                        missile.originTargetPosX = gpsPosition.x;
+                        missile.originTargetPosY = gpsPosition.y;
+                        missile.originTargetPosZ = gpsPosition.z;
                         missile.targeting = true;
                     }
                 }
@@ -140,6 +143,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 missile.targetPosX = hitResult.hitVec.xCoord;
                 missile.targetPosY = hitResult.hitVec.yCoord;
                 missile.targetPosZ = hitResult.hitVec.zCoord;
+                missile.originTargetPosX = hitResult.hitVec.xCoord;
+                missile.originTargetPosY = hitResult.hitVec.yCoord;
+                missile.originTargetPosZ = hitResult.hitVec.zCoord;
                 missile.targeting = true;
                 this.worldObj.spawnEntityInWorld(missile);
                 playSound(prm.entity);

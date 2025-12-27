@@ -3,7 +3,6 @@ package mcheli.plane;
 import com.google.common.io.ByteArrayDataInput;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
-import mcheli.weapon.MCH_WeaponParam;
 import net.minecraft.entity.player.EntityPlayer;
 
 public class MCP_PlanePacketHandler {
@@ -91,6 +90,10 @@ public class MCP_PlanePacketHandler {
 
                     if (pc.useAPS) {
                         plane.useAPS(player);
+                    }
+
+                    if (pc.useECMJammer) {
+                        plane.useECMJammer(player);
                     }
 
                     if (pc.openGui) {

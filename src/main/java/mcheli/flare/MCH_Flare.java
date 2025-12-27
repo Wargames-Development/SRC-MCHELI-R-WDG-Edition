@@ -43,7 +43,7 @@ public class MCH_Flare {
             FLARE_DATA[6] = new MCH_Flare.FlareParam(3, 5, 30 + delay, 2000, 6);
             FLARE_DATA[7] = FLARE_DATA[1];
             FLARE_DATA[8] = FLARE_DATA[1];
-            FLARE_DATA[9] = FLARE_DATA[1];
+            FLARE_DATA[9] = new MCH_Flare.FlareParam(0, 1, 400 + delay, 100, 0);
         }
 
     }

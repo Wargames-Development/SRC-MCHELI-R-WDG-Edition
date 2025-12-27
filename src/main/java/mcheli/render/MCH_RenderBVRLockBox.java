@@ -14,11 +14,11 @@ import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
-import net.minecraft.world.World;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 public class MCH_RenderBVRLockBox {
-
     private static final ResourceLocation FRAME = new ResourceLocation(W_MOD.DOMAIN, "textures/BVRLockBox.png");
     private static final ResourceLocation MSL = new ResourceLocation(W_MOD.DOMAIN, "textures/MSL.png");
     private static final int BOX_SIZE = 24;
@@ -78,19 +77,39 @@ public class MCH_RenderBVRLockBox {
         };
     }
 
-    @SubscribeEvent
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
+    private static double calculateAngle(Entity viewer, double x, double y, double z) {
+        double dx = x - viewer.posX;
+        double dy = y - viewer.posY;
+        double dz = z - viewer.posZ;
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist < 1e-6) {
+            return 0.0;
+        }
+        dx /= dist;
+        dy /= dist;
+        dz /= dist;
+        double yawRad = Math.toRadians(viewer.rotationYaw);
+        double pitchRad = Math.toRadians(viewer.rotationPitch);
+        double fx = -Math.sin(yawRad) * Math.cos(pitchRad);
+        double fy = -Math.sin(pitchRad);
+        double fz = Math.cos(yawRad) * Math.cos(pitchRad);
+        double fLen = Math.sqrt(fx * fx + fy * fy + fz * fz);
+        if (fLen > 1e-6) {
+            fx /= fLen;
+            fy /= fLen;
+            fz /= fLen;
+        }
+        double dot = dx * fx + dy * fy + dz * fz;
+        dot = Math.max(-1.0, Math.min(1.0, dot));
+        return Math.toDegrees(Math.acos(dot));
+    }
 
-        //获取基本信息
+    @SubscribeEvent
+    public void onRenderWorldLast(RenderWorldLastEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
-        World world = mc.theWorld;
-        ScaledResolution sc = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
-        if (player == null || world == null) return;
+        if (player == null || mc.theWorld == null) return;
         if (mc.gameSettings.thirdPersonView != 0) return;
-
-        //获取玩家机载武器
         MCH_EntityAircraft ac = null;
         if (player.ridingEntity instanceof MCH_EntityAircraft) {
             ac = (MCH_EntityAircraft) player.ridingEntity;
@@ -103,70 +122,93 @@ public class MCH_RenderBVRLockBox {
             return;
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
         if (wi == null || !wi.enableBVR) return;
-
-        //开始渲染
-        GL11.glPushMatrix();
-        {
-            List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
-            for (MCH_EntityInfo entity : entities) {
-                if (!canRenderEntity(entity, player, wi)) continue;
-                double x = interpolate(entity.posX, entity.lastTickPosX, event.partialTicks);
-                double y = interpolate(entity.posY, entity.lastTickPosY, event.partialTicks) + 1;
-                double z = interpolate(entity.posZ, entity.lastTickPosZ, event.partialTicks);
-                Vec3 entityPos = Vec3.createVectorHelper(x, y, z);
-                double[] screenPos = worldToScreen(new Vector3f(entityPos), event.partialTicks);
-                double sx = screenPos[0];
-                double sy = screenPos[1];
-                boolean lock = false;
-                if (sx > 0 && sy > 0) {
-                    float alpha = 0.1f;
-                    double ox = screenPos[2];
-                    double oy = screenPos[3];
-                    double distScreen = ox * ox + oy * oy;
-                    if (distScreen < Math.pow(0.038 * sc.getScaledHeight(), 2)) { // 20
-                        alpha = 1f;
-                        currentLockedEntities.put(entity.entityId, entity);
-                        lock = true;
-                    } else if (distScreen < Math.pow(0.076 * sc.getScaledHeight(), 2)) { // 40
-                        alpha = 1f;
-                    } else if (distScreen < Math.pow(0.152 * sc.getScaledHeight(), 2)) { // 80
-                        alpha = 0.8f;
-                    } else if (distScreen < Math.pow(0.228 * sc.getScaledHeight(), 2)) { // 120
-                        alpha = 0.6f;
-                    } else if (distScreen < Math.pow(0.288 * sc.getScaledHeight(), 2)) { // 150
-                        alpha = 0.4f;
-                    } else if (distScreen > Math.pow(0.384 * sc.getScaledHeight(), 2)) { // 200
-                        double distance = Math.sqrt(distScreen);
-                        double ratio = 200 / distance;
-                        sx = sc.getScaledWidth() / 2.0 + ox * ratio;
-                        sy = sc.getScaledHeight() / 2.0 + oy * ratio;
-                        alpha = 0.2f;
-                    }
-                    if (entity.entityClassName.contains("MCH_EntityAAMissile")) {
-                        if (player.getDistanceSq(x, y, z) < 1000 * 1000 && alpha > 0.4) {
-                            drawMSLMarker(sx, sy, true, alpha);
-                            Minecraft.getMinecraft().fontRenderer.drawString(
-                                String.format("[MSL %.1fm]", player.getDistance(x, y, z)),
-                                (int) (sx - 20), (int) (sy + 12), 0xFF0000
-                            );
-                        }
-                    } else {
-                        drawEntityMarker(sx, sy, lock, alpha);
-                        if (alpha >= 0.6f) {
-                            Minecraft.getMinecraft().fontRenderer.drawString(
-                                String.format("[%s %.1fm]", ac.getNameOnMyRadar(entity), player.getDistance(x, y, z)),
-                                (int) (sx - 20), (int) (sy + 12),
-                                lock ? 0xFF0000 : 0x00FF00
-                            );
-                        }
-                    }
-                    if (!lock) {
-                        currentLockedEntities.clear();
-                    }
+        RenderManager rm = RenderManager.instance;
+        final double camX = rm.viewerPosX;
+        final double camY = rm.viewerPosY;
+        final double camZ = rm.viewerPosZ;
+        float partialTicks = event.partialTicks;
+        ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        double fovDeg = mc.gameSettings.fovSetting;
+        double fovRad = Math.toRadians(fovDeg);
+        float rollDeg = getViewRollDeg(mc, ac, partialTicks);
+        List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
+        for (MCH_EntityInfo entity : entities) {
+            if (!canRenderEntity(entity, player, wi)) continue;
+            double gx = interpolate(entity.posX, entity.lastTickPosX, partialTicks);
+            double gy = interpolate(entity.posY, entity.lastTickPosY, partialTicks) + 1;
+            double gz = interpolate(entity.posZ, entity.lastTickPosZ, partialTicks);
+            double x = gx - camX;
+            double y = gy - camY;
+            double z = gz - camZ;
+            double distSq = (gx - ac.posX) * (gx - ac.posX) + (gy - ac.posY) * (gy - ac.posY) + (gz - ac.posZ) * (gz - ac.posZ);
+            double dist = Math.sqrt(distSq);
+            double angle = calculateAngle(wi.enableHMS ? player : ac, gx, gy, gz);
+            boolean isMSL = entity.entityClassName.contains("MCH_EntityAAMissile");
+            boolean lock = false;
+            float alpha = 0.4f;
+            if (angle <= 90) {
+                alpha = 1.0f;
+                if (!isMSL) currentLockedEntities.put(entity.entityId, entity);
+                if (distSq <= wi.maxLockOnRange * wi.maxLockOnRange && angle <= wi.maxLockOnAngle) {
+                    lock = true;
                 }
+            } else if (angle <= 100.0) alpha = 1.0f;
+            else if (angle <= 110.0) alpha = 0.8f;
+            else if (angle <= 120.0) alpha = 0.6f;
+            else alpha = 0.4f;
+            if (isMSL && (dist >= 1000 || alpha <= 0.4)) continue;
+            double vdist = Math.sqrt(x * x + y * y + z * z);
+            if (vdist < 1e-4) continue;
+            float sPerPixel = (float) ((2.0 * vdist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
+            String text;
+            int color;
+            if (isMSL) {
+                text = String.format("[MSL %.1fm]", dist);
+                color = 0xFF0000;
+            } else {
+                text = String.format("[%s %.1fm]", ac.getNameOnMyRadar(entity), dist);
+                color = lock ? 0xFF0000 : 0x00FF00;
+            }
+            boolean drawText = isMSL || (alpha >= 0.6f);
+            GL11.glPushMatrix();
+            {
+                GL11.glTranslated(x, y + 0.2, z);
+                GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
+                GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
+                GL11.glRotatef(-rollDeg, 0.0F, 0.0F, 1.0F);
+                GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
+                GL11.glDisable(GL11.GL_DEPTH_TEST);
+                GL11.glDepthMask(false);
+                GL11.glEnable(GL11.GL_BLEND);
+                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                GL11.glDisable(GL11.GL_LIGHTING);
+                if (isMSL || lock) GL11.glColor4f(1.0F, 0F, 0F, alpha);
+                else GL11.glColor4f(0F, 1.0F, 0F, alpha);
+                Minecraft.getMinecraft().getTextureManager().bindTexture(isMSL ? MSL : FRAME);
+                Tessellator tess = Tessellator.instance;
+                float half = BOX_SIZE * 0.5f;
+                tess.startDrawingQuads();
+                tess.addVertexWithUV(-half, half, 0, 0, 1);
+                tess.addVertexWithUV(half, half, 0, 1, 1);
+                tess.addVertexWithUV(half, -half, 0, 1, 0);
+                tess.addVertexWithUV(-half, -half, 0, 0, 0);
+                tess.draw();
+                if (drawText) {
+                    GL11.glTranslatef(0.0F, BOX_SIZE * 0.5f + 8.0f, 0.0F);
+                    int fw = mc.fontRenderer.getStringWidth(text);
+                    mc.fontRenderer.drawString(text, -fw / 2, 0, color, false);
+                }
+                GL11.glEnable(GL11.GL_LIGHTING);
+                GL11.glDisable(GL11.GL_BLEND);
+                GL11.glDepthMask(true);
+                GL11.glEnable(GL11.GL_DEPTH_TEST);
+                GL11.glColor4f(1F, 1F, 1F, 1F);
+            }
+            GL11.glPopMatrix();
+            if (!lock) {
+                currentLockedEntities.clear();
             }
         }
-        GL11.glPopMatrix();
     }
 
     public List<MCH_EntityInfo> getServerLoadedEntity() {
@@ -193,54 +235,11 @@ public class MCH_RenderBVRLockBox {
         return result;
     }
 
-    private void drawEntityMarker(double x, double y, boolean lock, float alpha) {
-        prepareRenderState(lock, alpha);
-        Minecraft.getMinecraft().renderEngine.bindTexture(FRAME);
-        Tessellator tess = Tessellator.instance;
-        tess.startDrawingQuads();
-        double halfSize = BOX_SIZE / 2.0;
-        tess.addVertexWithUV(x - halfSize, y + halfSize, 0, 0, 1);
-        tess.addVertexWithUV(x + halfSize, y + halfSize, 0, 1, 1);
-        tess.addVertexWithUV(x + halfSize, y - halfSize, 0, 1, 0);
-        tess.addVertexWithUV(x - halfSize, y - halfSize, 0, 0, 0);
-        tess.draw();
-        restoreRenderState();
-    }
-
-    private void drawMSLMarker(double x, double y, boolean lock, float alpha) {
-        prepareRenderState(lock, alpha);
-        Minecraft.getMinecraft().renderEngine.bindTexture(MSL);
-        Tessellator tess = Tessellator.instance;
-        tess.startDrawingQuads();
-        double halfSize = BOX_SIZE / 2.0;
-        tess.addVertexWithUV(x - halfSize, y + halfSize, 0, 0, 1);
-        tess.addVertexWithUV(x + halfSize, y + halfSize, 0, 1, 1);
-        tess.addVertexWithUV(x + halfSize, y - halfSize, 0, 1, 0);
-        tess.addVertexWithUV(x - halfSize, y - halfSize, 0, 0, 0);
-        tess.draw();
-        restoreRenderState();
-    }
-
     private double interpolate(double now, double old, float partialTicks) {
         return old + (now - old) * partialTicks;
     }
 
-    private void prepareRenderState(boolean lock, float alpha) {
-        GL11.glEnable(3042);
-        if (lock) {
-            GL11.glColor4f(1.0F, 0F, 0F, 1.0F);
-        } else {
-            GL11.glColor4f(0F, 1.0F, 0F, alpha);
-        }
-        GL11.glBlendFunc(770, 771);
+    private float getViewRollDeg(Minecraft mc, MCH_EntityAircraft ac, float partialTicks) {
+        return -ac.rotationRoll;
     }
-
-    private void restoreRenderState() {
-        int srcBlend = GL11.glGetInteger(3041);
-        int dstBlend = GL11.glGetInteger(3040);
-        GL11.glBlendFunc(srcBlend, dstBlend);
-        GL11.glDisable(3042);
-        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-    }
-
 }

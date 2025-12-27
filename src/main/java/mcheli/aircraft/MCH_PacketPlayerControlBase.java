@@ -28,6 +28,7 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
     public boolean useChaff = false;
     public boolean useMaintenance = false;
     public boolean useAPS = false;
+    public boolean useECMJammer = false;
 
     public void readData(ByteArrayDataInput data) {
         try {
@@ -43,6 +44,7 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
             this.useChaff = this.getBit(e, 9);
             this.useMaintenance = this.getBit(e, 10);
             this.useAPS = this.getBit(e, 11);
+            this.useECMJammer = this.getBit(e, 12);
             e = (short) data.readByte();
             this.putDownRack = (byte) (e >> 6 & 3);
             this.isUnmount = (byte) (e >> 4 & 3);
@@ -76,6 +78,7 @@ public abstract class MCH_PacketPlayerControlBase extends MCH_Packet {
             e1 = this.setBit(e1, 9, this.useChaff);
             e1 = this.setBit(e1, 10, this.useMaintenance);
             e1 = this.setBit(e1, 11, this.useAPS);
+            e1 = this.setBit(e1, 12, this.useECMJammer);
             dos.writeShort(e1);
             e1 = (short) ((byte) ((this.putDownRack & 3) << 6 | (this.isUnmount & 3) << 4 | this.useFlareType & 15));
             dos.writeByte(e1);

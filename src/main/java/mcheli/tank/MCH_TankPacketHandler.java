@@ -3,7 +3,6 @@ package mcheli.tank;
 import com.google.common.io.ByteArrayDataInput;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
-import mcheli.weapon.MCH_WeaponParam;
 import net.minecraft.entity.player.EntityPlayer;
 
 public class MCH_TankPacketHandler {
@@ -91,6 +90,10 @@ public class MCH_TankPacketHandler {
 
                     if (pc.useAPS) {
                         tank.useAPS(player);
+                    }
+
+                    if (pc.useECMJammer) {
+                        tank.useECMJammer(player);
                     }
 
                     if (pc.openGui) {

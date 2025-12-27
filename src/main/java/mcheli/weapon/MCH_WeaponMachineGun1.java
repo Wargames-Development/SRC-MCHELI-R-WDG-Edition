@@ -1,14 +1,21 @@
 package mcheli.weapon;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Lib;
+import mcheli.MCH_MOD;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.aircraft.MCH_AircraftInfo;
+import mcheli.network.packets.PacketLaserGuidanceTargeting;
 import mcheli.tank.MCH_EntityTank;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
+
+    public MCH_LaserGuidanceSystem guidanceSystem;
 
     public MCH_WeaponMachineGun1(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
@@ -16,6 +23,27 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
         super.acceleration = 4.0F;
         super.explosionPower = 0;
         super.interval = 0;
+        if (getInfo().laserGuidance) {
+            this.guidanceSystem = new MCH_LaserGuidanceSystem();
+            guidanceSystem.worldObj = w;
+            guidanceSystem.hasLaserGuidancePod = wi.hasLaserGuidancePod;
+            guidanceSystem.lockEntity = wi.lockEntity;
+            guidanceSystem.cameraFollowLockEntity = wi.cameraFollowLockEntity;
+            guidanceSystem.cameraFollowStrength = wi.cameraFollowStrength;
+            if (w.isRemote) {
+                initGuidanceSystemClient();
+            }
+        }
+    }
+
+    @SideOnly(Side.CLIENT)
+    public void initGuidanceSystemClient() {
+        guidanceSystem.user = Minecraft.getMinecraft().thePlayer;
+    }
+
+    @Override
+    public MCH_LaserGuidanceSystem getGuidanceSystem() {
+        return this.guidanceSystem;
     }
 
     public boolean shot(MCH_WeaponParam prm) {
@@ -124,6 +152,29 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
             MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
         }
         return true;
+    }
+
+    @Override
+    public boolean lock(MCH_WeaponParam prm) {
+        if (super.worldObj.isRemote) {
+            if (guidanceSystem != null) {
+                this.guidanceSystem.targeting = true;
+                this.guidanceSystem.update();
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onUnlock(MCH_WeaponParam prm) {
+        if (super.worldObj.isRemote) {
+            if (guidanceSystem != null) {
+                this.guidanceSystem.targeting = false;
+                if (super.tick % 3 == 0) {
+                    MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
+                }
+            }
+        }
     }
 
 }

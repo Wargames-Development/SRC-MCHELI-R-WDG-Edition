@@ -4,7 +4,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
-public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker {
+public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker, MCH_IMissile {
 
     public boolean passiveRadarBVRLocking = false;
     public int passiveRadarBVRLockingPosX = 0;

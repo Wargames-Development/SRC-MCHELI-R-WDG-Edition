@@ -120,6 +120,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
         registerPacket(PacketBoundingBoxHit.class);
         registerPacket(PacketChaffUse.class);
         registerPacket(PacketDamageIndicator.class);
+        registerPacket(PacketECMJammerUse.class);
         registerPacket(PacketEntityInfoSync.class);
         registerPacket(PacketGPSPositionReset.class);
         registerPacket(PacketIronCurtainUse.class);
