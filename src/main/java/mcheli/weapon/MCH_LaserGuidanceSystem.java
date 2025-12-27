@@ -3,13 +3,22 @@ package mcheli.weapon;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_MOD;
+import mcheli.MCH_PlayerViewHandler;
+import mcheli.MCH_RayTracer;
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.aircraft.MCH_EntityHide;
+import mcheli.aircraft.MCH_EntityHitBox;
 import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.chain.MCH_EntityChain;
+import mcheli.flare.MCH_EntityChaff;
 import mcheli.network.packets.PacketLaserGuidanceTargeting;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
+import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
@@ -28,7 +37,11 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
     public boolean targeting = false;
     @SideOnly(Side.CLIENT)
     public MCH_EntityLockBox lockBox;
+    public MCH_WeaponParam param;
     public boolean hasLaserGuidancePod = true;
+    public boolean lockEntity = false;
+    public boolean cameraFollowLockEntity = false;
+    public float cameraFollowStrength = 0.3f;
     protected Entity user;
 
     @Override
@@ -79,37 +92,13 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
 
             // 计算方向的距离
-            double dist = MathHelper.sqrt_double(targetX * targetX + targetY * targetY + targetZ * targetZ);
             double maxDist = 1500.0;
-            double segmentLength = 100.0;  // 每段的长度
-            int numSegments = (int) (maxDist / segmentLength);  // 计算需要的段数
-
-            // 在客户端和服务器端都将目标方向进行归一化处理
-            targetX = targetX * maxDist / dist;
-            targetY = targetY * maxDist / dist;
-            targetZ = targetZ * maxDist / dist;
-
-//            double posX = user.posX;
-//            double posY = user.posY + user.getEyeHeight();
-//            double posZ = user.posZ;
 
             double posX = RenderManager.renderPosX;
             double posY = RenderManager.renderPosY;
             double posZ = RenderManager.renderPosZ;
 
             if (ac != null) {
-//                if (!ac.isUAV()) {
-//                    double interpolatedPosX = ac.prevPosX + (ac.posX - ac.prevPosX) * 0.5;
-//                    double interpolatedPosY = ac.prevPosY + (ac.posY - ac.prevPosY) * 0.5;
-//                    double interpolatedPosZ = ac.prevPosZ + (ac.posZ - ac.prevPosZ) * 0.5;
-//                    posX = interpolatedPosX;
-//                    posY = interpolatedPosY;
-//                    posZ = interpolatedPosZ;
-//                } else {
-//                    posX = RenderManager.renderPosX;
-//                    posY = RenderManager.renderPosY;
-//                    posZ = RenderManager.renderPosZ;
-//                }
                 posX = RenderManager.renderPosX;
                 posY = RenderManager.renderPosY;
                 posZ = RenderManager.renderPosZ;
@@ -117,38 +106,48 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
 
             // 计算发射源
             Vec3 src = W_WorldFunc.getWorldVec3(this.worldObj, posX, posY, posZ);
+            Vec3 look = Vec3.createVectorHelper(targetX, targetY, targetZ);
+            Vec3 end = src.addVector(look.xCoord * maxDist, look.yCoord * maxDist, look.zCoord * maxDist);
 
             // 射线检测
-            MovingObjectPosition hitResult = null;
+            MovingObjectPosition hitResult;
 
-            for (int i = 1; i <= numSegments; i++) {
-                // 计算当前分段的目标点，确保每段都从上一个段的终点开始
-                Vec3 currentDst = W_WorldFunc.getWorldVec3(this.worldObj,
-                    posX + targetX * i / numSegments,
-                    posY + targetY * i / numSegments,
-                    posZ + targetZ * i / numSegments);
-
-                // 执行射线检测
-                List<MovingObjectPosition> hitResults = rayTraceAllBlocks(this.worldObj, src, currentDst, false, true, true);
-
-                if (hitResults != null && !hitResults.isEmpty()) {
-                    hitResult = hitResults.get(0);
-                    break;  // 找到碰撞结果后，退出循环
-                }
-
-                // 更新src为当前检测的dst
-                src = currentDst;  // 当前段的dst成为下一段的src
+            if(lockEntity) {
+                hitResult = laserRaytrace(user, ac, src, look, end);
+            } else {
+                hitResult = MCH_RayTracer.rayTrace(worldObj, src, end);
             }
 
             // 如果没有检测到碰撞，则返回默认的目标位置
             if (hitResult == null) {
-                hitResult = new MovingObjectPosition(null, src.addVector(targetX, targetY, targetZ));  // 使用目标点作为默认值
+                hitResult = new MovingObjectPosition(null, end);  // 使用目标点作为默认值
             }
 
-            // 设置导弹的目标位置
-            targetPosX = hitResult.hitVec.xCoord;
-            targetPosY = hitResult.hitVec.yCoord;
-            targetPosZ = hitResult.hitVec.zCoord;
+            if(hitResult.entityHit != null) {
+                boolean jamming = false;
+                //无法锁定释放烟雾弹的地面载具
+                if(hitResult.entityHit instanceof MCH_EntityTank && ((MCH_EntityTank) hitResult.entityHit).isFlareUsing()) {
+                    targetPosX = hitResult.hitVec.xCoord;
+                    targetPosY = hitResult.hitVec.yCoord;
+                    targetPosZ = hitResult.hitVec.zCoord;
+                    jamming = true;
+                }
+
+                if(!jamming) {
+                    targetPosX = hitResult.entityHit.posX;
+                    targetPosY = hitResult.entityHit.posY + hitResult.entityHit.height / 2;
+                    targetPosZ = hitResult.entityHit.posZ;
+                    //让玩家的视角跟随锁定的实体
+                    if (cameraFollowLockEntity) {
+                        MCH_PlayerViewHandler.updatePlayerViewDirection(user, targetPosX, targetPosY, targetPosZ, cameraFollowStrength);
+                    }
+                }
+
+            } else {
+                targetPosX = hitResult.hitVec.xCoord;
+                targetPosY = hitResult.hitVec.yCoord;
+                targetPosZ = hitResult.hitVec.zCoord;
+            }
 
             MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX, targetPosY, targetPosZ));
 
@@ -160,4 +159,65 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             }
         }
     }
+
+    public static boolean canHitByLaser(Entity entity, Entity user, Entity ac) {
+        if (entity == null) return false;
+        if (W_Entity.isEqual(entity, ac)) return false;
+        if (W_Entity.isEqual(entity, user.ridingEntity)) return false;
+        if (entity instanceof MCH_EntityChaff) return true;
+        return entity instanceof MCH_EntityAircraft;
+    }
+
+    public static MovingObjectPosition laserRaytrace(Entity user, Entity ac, Vec3 start, Vec3 lookVec, Vec3 end) {
+        double distance = start.distanceTo(end);
+        Entity pointedEntity = null;
+        MovingObjectPosition result = MCH_RayTracer.rayTrace(user.worldObj, start, end);
+        double dist = distance;
+        if (result != null) {
+            dist = result.hitVec.distanceTo(start);
+        }
+        Vec3 hitVec = null;
+        float f1 = 1.0F;
+        List list = user.worldObj.getEntitiesWithinAABBExcludingEntity(user,
+            user.boundingBox.addCoord(lookVec.xCoord * distance, lookVec.yCoord * distance, lookVec.zCoord * distance).expand(f1, f1, f1));
+        double d2 = dist;
+
+        for (Object o : list) {
+            Entity entity = (Entity) o;
+            if (entity.canBeCollidedWith()
+                && canHitByLaser(entity, user, ac)) {
+                float f2 = entity.getCollisionBorderSize();
+                AxisAlignedBB axisalignedbb = entity.boundingBox.expand(f2, f2, f2);
+                MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(start, end);
+                if (axisalignedbb.isVecInside(start)) {
+                    if (0.0D < d2 || d2 == 0.0D) {
+                        pointedEntity = entity;
+                        hitVec = movingobjectposition == null ? start : movingobjectposition.hitVec;
+                        d2 = 0.0D;
+                    }
+                } else if (movingobjectposition != null) {
+                    double d3 = start.distanceTo(movingobjectposition.hitVec);
+                    if (d3 < d2 || d2 == 0.0D) {
+                        if (entity == user.ridingEntity && !entity.canRiderInteract()) {
+                            if (d2 == 0.0D) {
+                                pointedEntity = entity;
+                                hitVec = movingobjectposition.hitVec;
+                            }
+                        } else {
+                            pointedEntity = entity;
+                            hitVec = movingobjectposition.hitVec;
+                            d2 = d3;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (pointedEntity != null && (d2 < dist || result == null)) {
+            result = new MovingObjectPosition(pointedEntity, hitVec);
+        }
+
+        return result;
+    }
+
 }

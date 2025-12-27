@@ -67,7 +67,7 @@ public class MCH_RenderLockBox extends W_Render {
                 List list = player.worldObj.getEntitiesWithinAABB(mcheli.aircraft.MCH_EntityAircraft.class, aabb);
                 for (Object o : list) {
                     MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
-                    if (veh != null && veh.getAcInfo() != null && veh.getAcInfo().hasPhotoelectricJammer) {
+                    if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isECMJammerUsing())) {
                         jammed = true;
                         break;
                     }
@@ -81,7 +81,6 @@ public class MCH_RenderLockBox extends W_Render {
             GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
             GL11.glScalef(-0.02666667F, -0.02666667F, 0.02666667F);
             GL11.glDisable(2896);
-            GL11.glTranslatef(0.0F, 9.374999F, 0.0F);
             GL11.glDepthMask(false);
             GL11.glEnable(3042);
             GL11.glBlendFunc(770, 771);
@@ -111,17 +110,17 @@ public class MCH_RenderLockBox extends W_Render {
                 tessellator.setColorRGBA_F(0.0F, 1.0F, 0.0F, 1.0F);
             }
 
-            tessellator.addVertex(-size - 1.0F, 0.0D, 0.0D);
-            tessellator.addVertex(-size - 1.0F, size * 2.0F, 0.0D);
-            tessellator.addVertex(size + 1.0F, size * 2.0F, 0.0D);
-            tessellator.addVertex(size + 1.0F, 0.0D, 0.0D);
+            tessellator.addVertex(-size - 1.0F, -size, 0.0D);
+            tessellator.addVertex(-size - 1.0F, size, 0.0D);
+            tessellator.addVertex(size + 1.0F, size, 0.0D);
+            tessellator.addVertex(size + 1.0F, -size, 0.0D);
             tessellator.draw();
 
             if (distance > 10) {
                 FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
                 {
                     GL11.glPushMatrix();
-                    GL11.glTranslatef(0.0F, size * 2.0F + 1.0F, 0.0F);
+                    GL11.glTranslatef(0.0F, size + 1.0F, 0.0F);
                     float fontSize = 5.0F + (float) ((distance - 10.0D) / (300.0D - 10.0D)) * (40.0F - 5.0F);
                     fontSize = Math.max(5.0F, Math.min(40.0F, fontSize));
                     String text;

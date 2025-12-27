@@ -155,6 +155,8 @@ public class MCH_HudItemString extends MCH_HudItem {
                 return MCH_KeyName.getDescOrName(MCH_Config.KeyAPS.prmInt);
             case KEY_MAINTENANCE:
                 return MCH_KeyName.getDescOrName(MCH_Config.KeyMaintenance.prmInt);
+            case KEY_ECM_JAMMER:
+                return MCH_KeyName.getDescOrName(MCH_Config.KeyECMJammer.prmInt);
             case KEY_SWEEPWING:
                 return MCH_KeyName.getDescOrName(MCH_Config.KeyZoom.prmInt);
             case KEY_CAMERAMODE:
@@ -169,6 +171,8 @@ public class MCH_HudItemString extends MCH_HudItem {
                 return MCH_HudItem.ac.aps.tick / 20f;
             case COOLDOWN_MAINTENANCE:
                 return MCH_HudItem.ac.maintenance.tick / 20f;
+            case COOLDOWN_ECM_JAMMER:
+                return MCH_HudItem.ac.ecmJammer.tick / 20f;
             case G_FORCE:
                 return String.format("%.1fG", MCH_HudItem.ac.gForce);
             default:

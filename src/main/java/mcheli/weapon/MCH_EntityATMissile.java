@@ -1,9 +1,10 @@
 package mcheli.weapon;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
-public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
+public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker, MCH_IMissile {
 
     public int guidanceType = 0;
 
@@ -141,5 +142,10 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
 
     public MCH_BulletModel getDefaultBulletModel() {
         return MCH_DefaultBulletModels.ATMissile;
+    }
+
+    @Override
+    public boolean canLockEntity(Entity var1) {
+        return false;
     }
 }

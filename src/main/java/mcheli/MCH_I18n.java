@@ -174,6 +174,8 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.key.maintenance", "zh_CN", "快速维修");
         addTranslation("gui.mcheli.key.aps", "en_US", "APS");
         addTranslation("gui.mcheli.key.aps", "zh_CN", "主动防御系统");
+        addTranslation("gui.mcheli.key.ecm_jammer", "en_US", "ECM Jammer");
+        addTranslation("gui.mcheli.key.ecm_jammer", "zh_CN", "电子战干扰系统");
         addTranslation("gui.mcheli.key.reset_airburst_dist", "en_US", "Reset Airburst Dist");
         addTranslation("gui.mcheli.key.reset_airburst_dist", "zh_CN", "重置空爆距离");
         addTranslation("gui.mcheli.key.key_reset", "en_US", "Reset");

@@ -8,10 +8,11 @@ import net.minecraft.world.World;
 
 import java.util.List;
 
-public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
+public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker, MCH_IMissile {
 
     public boolean isSpawnParticle = true;
     public boolean isTVMissile;
+    public boolean targeting = true;
 
     public MCH_EntityTvMissile(World par1World) {
         super(par1World);
@@ -59,6 +60,8 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
     public void onUpdateMotion() {
         Entity e = super.shootingEntity;
 
+        if(!targeting) return;
+
         //拖线制导
         if (!getInfo().laserGuidance) {
             if (e != null && !e.isDead) {
@@ -94,7 +97,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
                     List list = ac.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
                     for (Object o : list) {
                         MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
-                        if (veh != null && veh.getAcInfo() != null && veh.getAcInfo().hasPhotoelectricJammer) {
+                        if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isECMJammerUsing())) {
                             jammed = true;
                             break;
                         }
@@ -134,4 +137,8 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet {
     }
 
 
+    @Override
+    public boolean canLockEntity(Entity var1) {
+        return false;
+    }
 }

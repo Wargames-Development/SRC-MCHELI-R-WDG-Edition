@@ -360,6 +360,34 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      */
     public double dragInAir = 0;
 
+    /**
+     * 激光/GPS导弹可以锁定实体
+     */
+    public boolean lockEntity = false;
+
+    /**
+     * 让视角跟随锁定实体
+     */
+    public boolean cameraFollowLockEntity = false;
+    /**
+     * 吸附强度，0.1-1.0
+     */
+    public float cameraFollowStrength = 0.3f;
+
+    /**
+     * 反辐射导弹
+     */
+    public boolean antiRadiationMissile = false;
+
+    /**
+     * 半主动弹，需要载机引导才能命中
+     */
+    public boolean semiActiveRadar = false;
+    /**
+     * 是否允许头瞄
+     */
+    public boolean enableHMS = true;
+
     public MCH_WeaponInfo(String name) {
         this.name = name;
         this.displayName = name;
@@ -721,6 +749,18 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.canisterType = this.toInt(data);
             } else if (item.equalsIgnoreCase("DragInAir")) {
                 this.dragInAir = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("LockEntity")) {
+                this.lockEntity = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CameraFollowLockEntity")) {
+                this.cameraFollowLockEntity = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CameraFollowStrength")) {
+                this.cameraFollowStrength = this.toFloat(data);
+            } else if (item.equalsIgnoreCase("AntiRadiationMissile")) {
+                this.antiRadiationMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("SemiActiveRadar")) {
+                this.semiActiveRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableHMS")) {
+                this.enableHMS = this.toBool(data);
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {

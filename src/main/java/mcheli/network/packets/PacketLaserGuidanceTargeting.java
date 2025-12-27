@@ -4,6 +4,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.PacketBase;
+import mcheli.weapon.MCH_LaserGuidanceSystem;
+import mcheli.weapon.MCH_WeaponBase;
+import mcheli.weapon.MCH_WeaponBomb;
 import mcheli.weapon.MCH_WeaponTvMissile;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -45,13 +48,14 @@ public class PacketLaserGuidanceTargeting extends PacketBase {
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
         MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(playerEntity);
-        if (ac != null && ac.getCurrentWeapon(playerEntity).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
-            MCH_WeaponTvMissile weaponTvMissile = (MCH_WeaponTvMissile) ac.getCurrentWeapon(playerEntity).getCurrentWeapon();
-            if (weaponTvMissile.guidanceSystem != null) {
-                weaponTvMissile.guidanceSystem.targeting = targeting;
-                weaponTvMissile.guidanceSystem.targetPosX = targetPosX;
-                weaponTvMissile.guidanceSystem.targetPosY = targetPosY;
-                weaponTvMissile.guidanceSystem.targetPosZ = targetPosZ;
+        if (ac != null && ac.getCurrentWeapon(playerEntity).getCurrentWeapon() instanceof MCH_WeaponBase) {
+            MCH_WeaponBase weapon = ac.getCurrentWeapon(playerEntity).getCurrentWeapon();
+            if (weapon.getGuidanceSystem() instanceof MCH_LaserGuidanceSystem) {
+                MCH_LaserGuidanceSystem system = (MCH_LaserGuidanceSystem) weapon.getGuidanceSystem();
+                system.targeting = targeting;
+                system.targetPosX = targetPosX;
+                system.targetPosY = targetPosY;
+                system.targetPosZ = targetPosZ;
             }
         }
     }
