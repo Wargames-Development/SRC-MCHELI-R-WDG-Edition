@@ -120,15 +120,7 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
                     //非攻顶
                     else {
-                        if (this.getInfo().proximityFuseDist >= 0.1F && d < (double) this.getInfo().proximityFuseDist) {
-                            MovingObjectPosition mop = new MovingObjectPosition(super.targetEntity);
-                            super.posX = (super.targetEntity.posX + super.posX) / 2.0D;
-                            super.posY = (super.targetEntity.posY + super.posY) / 2.0D;
-                            super.posZ = (super.targetEntity.posZ + super.posZ) / 2.0D;
-                            this.onImpact(mop, 1.0F);
-                        } else {
-                            this.guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
-                        }
+                        this.guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
                     }
                 }
             } else {

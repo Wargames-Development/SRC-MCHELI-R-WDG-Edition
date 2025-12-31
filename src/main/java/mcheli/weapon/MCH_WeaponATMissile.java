@@ -83,7 +83,7 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                 } else if (yaw < -180.0F) {
                     yaw += 360.0F;
                 }
-                e.setName(super.name);
+                e.setInfoByName(super.name);
                 e.setParameterFromWeapon(this, prm.entity, prm.user);
                 e.guidanceType = prm.option2;
                 super.worldObj.spawnEntityInWorld(e);
@@ -123,7 +123,7 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                     } else if (yaw < -180.0F) {
                         yaw += 360.0F;
                     }
-                    e.setName(super.name);
+                    e.setInfoByName(super.name);
                     e.setParameterFromWeapon(this, prm.entity, prm.user);
                     e.setTargetEntity(tgtEnt);
                     e.guidanceType = prm.option2;

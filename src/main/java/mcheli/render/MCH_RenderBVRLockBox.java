@@ -8,6 +8,7 @@ import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponInfoManager;
 import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
@@ -134,6 +135,9 @@ public class MCH_RenderBVRLockBox {
         List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
         for (MCH_EntityInfo entity : entities) {
             if (!canRenderEntity(entity, player, wi)) continue;
+            if(ac.jammingTick > 0) {
+                continue;
+            }
             double gx = interpolate(entity.posX, entity.lastTickPosX, partialTicks);
             double gy = interpolate(entity.posY, entity.lastTickPosY, partialTicks) + 1;
             double gz = interpolate(entity.posZ, entity.lastTickPosZ, partialTicks);
@@ -143,7 +147,8 @@ public class MCH_RenderBVRLockBox {
             double distSq = (gx - ac.posX) * (gx - ac.posX) + (gy - ac.posY) * (gy - ac.posY) + (gz - ac.posZ) * (gz - ac.posZ);
             double dist = Math.sqrt(distSq);
             double angle = calculateAngle(wi.enableHMS ? player : ac, gx, gy, gz);
-            boolean isMSL = entity.entityClassName.contains("MCH_EntityAAMissile");
+            MCH_RWRResult rwrResult = getTargetTypeOnRadar(entity, ac);
+            boolean isMSL = isMissile(entity.entityClassName);
             boolean lock = false;
             float alpha = 0.4f;
             if (angle <= 90) {
@@ -155,18 +160,18 @@ public class MCH_RenderBVRLockBox {
             } else if (angle <= 100.0) alpha = 1.0f;
             else if (angle <= 110.0) alpha = 0.8f;
             else if (angle <= 120.0) alpha = 0.6f;
-            else alpha = 0.4f;
-            if (isMSL && (dist >= 1000 || alpha <= 0.4)) continue;
+            if (isMSL && dist >= 1000) continue;
             double vdist = Math.sqrt(x * x + y * y + z * z);
             if (vdist < 1e-4) continue;
             float sPerPixel = (float) ((2.0 * vdist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
             String text;
             int color;
+            if("".equals(rwrResult.name)) continue;
             if (isMSL) {
-                text = String.format("[MSL %.1fm]", dist);
+                text = String.format("[%s %.1fm]", rwrResult.name, dist);
                 color = 0xFF0000;
             } else {
-                text = String.format("[%s %.1fm]", ac.getNameOnMyRadar(entity), dist);
+                text = String.format("[%s %.1fm]", rwrResult.name, dist);
                 color = lock ? 0xFF0000 : 0x00FF00;
             }
             boolean drawText = isMSL || (alpha >= 0.6f);
@@ -217,6 +222,7 @@ public class MCH_RenderBVRLockBox {
 
     private boolean canRenderEntity(MCH_EntityInfo entity, EntityPlayer player, MCH_WeaponInfo wi) {
         boolean result = false;
+        double distSq = entity.getDistanceSqToEntity(player);
         if (entity.entityClassName.contains("MCP_EntityPlane")) {
             if (entity.getDistanceSqToEntity(player) > wi.minRangeBVR * wi.minRangeBVR) {
                 return true;
@@ -229,7 +235,7 @@ public class MCH_RenderBVRLockBox {
             if (entity.getDistanceSqToEntity(player) > wi.minRangeBVR * wi.minRangeBVR) {
                 return true;
             }
-        } else if (entity.entityClassName.contains("MCH_EntityAAMissile") && entity.getDistanceSqToEntity(player) > 100 * 100) {
+        } else if (isMissile(entity.entityClassName) && distSq > 20 * 20 && distSq < 300 * 300) {
             return true;
         }
         return result;
@@ -241,5 +247,36 @@ public class MCH_RenderBVRLockBox {
 
     private float getViewRollDeg(Minecraft mc, MCH_EntityAircraft ac, float partialTicks) {
         return -ac.rotationRoll;
+    }
+
+    public MCH_RWRResult getTargetTypeOnRadar(MCH_EntityInfo entity, MCH_EntityAircraft ac) {
+        int color = 0x00FF00;
+        switch (ac.getAcInfo().rwrType) {
+            case DIGITAL: {
+                if (isVehicle(entity.entityClassName)) {
+                    return new MCH_RWRResult(ac.getNameOnMyRadar(entity), color);
+                } else if (isMissile(entity.entityClassName)) {
+                    MCH_WeaponInfo wi = MCH_WeaponInfoManager.get(entity.entityName);
+                    if (wi != null) {
+                        return new MCH_RWRResult(wi.nameOnRWR, 0xFF0000);
+                    }
+                }
+            }
+        }
+        return new MCH_RWRResult("?", 0x00FF00);
+    }
+
+    public boolean isVehicle(String className) {
+        return className.contains("MCH_EntityHeli")
+            || className.contains("MCP_EntityPlane")
+            || className.contains("MCH_EntityTank")
+            || className.contains("MCH_EntityVehicle");
+    }
+
+    public boolean isMissile(String className) {
+        return className.contains("MCH_EntityAAMissile")
+            || className.contains("MCH_EntityASMissile")
+            || className.contains("MCH_EntityATMissile")
+            || className.contains("MCH_EntityTvMissile");
     }
 }

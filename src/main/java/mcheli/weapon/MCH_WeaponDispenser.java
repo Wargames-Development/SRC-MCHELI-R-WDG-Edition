@@ -48,7 +48,7 @@ public class MCH_WeaponDispenser extends MCH_WeaponBase {
             double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
 
             MCH_EntityDispensedItem e = new MCH_EntityDispensedItem(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, super.acceleration);
-            e.setName(super.name);
+            e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
             e.posX += e.motionX * 0.5D;
             e.posY += e.motionY * 0.5D;

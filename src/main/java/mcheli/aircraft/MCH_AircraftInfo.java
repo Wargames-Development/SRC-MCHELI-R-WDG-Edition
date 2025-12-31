@@ -206,6 +206,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public int apsRange = 8;
     /**
+     * 电子干扰类型，0为机载电子干扰，1为机载电子攻击
+     */
+    public int ecmJammerType = 0;
+    /**
      * 电子干扰生效时长
      */
     public int ecmJammerUseTime = 100;
@@ -469,7 +473,6 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 throw new Exception();
             } else {
                 if (this.itemID <= 0) {
-                    ;
                 }
 
                 for (var10 = 0; var10 < this.partWeaponBay.size(); ++var10) {
@@ -561,6 +564,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
 
     public MCH_AircraftInfo.WeaponSet getWeaponSetById(int id) {
         return id >= 0 && id < this.weaponSetList.size() ? (MCH_AircraftInfo.WeaponSet) this.weaponSetList.get(id) : null;
+    }
+
+    public String getWeaponSetNameById(int id) {
+        return id >= 0 && id < this.weaponSetList.size() ? ((WeaponSet) this.weaponSetList.get(id)).type : null;
     }
 
     public MCH_AircraftInfo.Weapon getWeaponById(int id) {
@@ -936,6 +943,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             apsRange = this.toInt(data, 0, 100);
                                                         } else if (item.equalsIgnoreCase("HasECMJammer")) {
                                                             ecmJammer = new ECMJammer();
+                                                        } else if (item.equalsIgnoreCase("ECMJammerType")) {
+                                                            ecmJammerType = this.toInt(data);
                                                         } else if (item.equalsIgnoreCase("ECMJammerUseTime")) {
                                                             ecmJammerUseTime = this.toInt(data, 0, 10000);
                                                         } else if (item.equalsIgnoreCase("ECMJammerWaitTime")) {

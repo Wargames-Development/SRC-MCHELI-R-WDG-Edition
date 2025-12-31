@@ -184,6 +184,51 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.key.key_on", "zh_CN", "开启");
         addTranslation("gui.mcheli.key.key_off", "en_US", "OFF");
         addTranslation("gui.mcheli.key.key_off", "zh_CN", "关闭");
+
+        addTranslation("aircraft.info.hold_shift", "en_US", "Hold \u00a7b\u00a7o%s\u00a7r\u00a77 to see more data");
+        addTranslation("aircraft.info.hold_shift", "zh_CN", "按住 \u00a7b\u00a7o%s\u00a7r\u00a77 查看更多数据");
+        addTranslation("aircraft.info.max_hp", "en_US", "Max HP");
+        addTranslation("aircraft.info.max_hp", "zh_CN", "最大血量");
+        addTranslation("aircraft.info.engine_shutdown_threshold", "en_US", "Engine Shutdown Threshold");
+        addTranslation("aircraft.info.engine_shutdown_threshold", "zh_CN", "瘫痪阈值");
+        addTranslation("aircraft.info.armor_min_damage", "en_US", "Armor Min Damage");
+        addTranslation("aircraft.info.armor_min_damage", "zh_CN", "装甲最小伤害");
+        addTranslation("aircraft.info.armor_max_damage", "en_US", "Armor Max Damage");
+        addTranslation("aircraft.info.armor_max_damage", "zh_CN", "装甲最大伤害");
+        addTranslation("aircraft.info.armor_damage_factor", "en_US", "Armor Damage Factor");
+        addTranslation("aircraft.info.armor_damage_factor", "zh_CN", "装甲伤害系数");
+        addTranslation("aircraft.info.throttle_up_down", "en_US", "Throttle Factor");
+        addTranslation("aircraft.info.throttle_up_down", "zh_CN", "油门加速系数");
+        addTranslation("aircraft.info.camera_zoom", "en_US", "Camera Max Zoom");
+        addTranslation("aircraft.info.camera_zoom", "zh_CN", "相机最大变焦");
+        addTranslation("aircraft.info.stealth", "en_US", "Stealth Factor");
+        addTranslation("aircraft.info.stealth", "zh_CN", "隐身系数");
+        addTranslation("aircraft.info.speed", "en_US", "Max Speed");
+        addTranslation("aircraft.info.speed", "zh_CN", "最大速度");
+        addTranslation("aircraft.info.radar_type", "en_US", "Radar Type");
+        addTranslation("aircraft.info.radar_type", "zh_CN", "雷达类型");
+        addTranslation("aircraft.info.rwr_type", "en_US", "RWR Type");
+        addTranslation("aircraft.info.rwr_type", "zh_CN", "RWR类型");
+        addTranslation("aircraft.info.armor_explosion_damage_multiplier", "en_US", "Armor Explosion Damage Factor");
+        addTranslation("aircraft.info.armor_explosion_damage_multiplier", "zh_CN", "装甲爆炸伤害倍率");
+        addTranslation("aircraft.info.flare", "en_US", "[Flare]");
+        addTranslation("aircraft.info.flare", "zh_CN", "[热焰弹]");
+        addTranslation("aircraft.info.chaff", "en_US", "[Chaff]");
+        addTranslation("aircraft.info.chaff", "zh_CN", "[干扰箔]");
+        addTranslation("aircraft.info.aps", "en_US", "[APS]");
+        addTranslation("aircraft.info.aps", "zh_CN", "[主动防御系统]");
+        addTranslation("aircraft.info.maintenance", "en_US", "[Maintenance]");
+        addTranslation("aircraft.info.maintenance", "zh_CN", "[紧急维修系统]");
+        addTranslation("aircraft.info.photoelectric_jammer", "en_US", "[Photoelectric Jammer]");
+        addTranslation("aircraft.info.photoelectric_jammer", "zh_CN", "[光电干扰机]");
+        addTranslation("aircraft.info.rwr", "en_US", "[RWR]");
+        addTranslation("aircraft.info.rwr", "zh_CN", "[雷达告警接收器]");
+        addTranslation("aircraft.info.dircm", "en_US", "[DIRCM System]");
+        addTranslation("aircraft.info.dircm", "zh_CN", "[DIRCM系统]");
+        addTranslation("aircraft.info.weapon_list", "en_US", "Weapon List");
+        addTranslation("aircraft.info.weapon_list", "zh_CN", "武器列表");
+        addTranslation("aircraft.info.no_weapon", "en_US", "No Armament");
+        addTranslation("aircraft.info.no_weapon", "zh_CN", "无武装");
     }
 
     private static void addTranslation(Object key, String lang, String value) {

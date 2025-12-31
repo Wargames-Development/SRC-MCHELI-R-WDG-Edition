@@ -88,7 +88,7 @@ public class MCH_WeaponMachineGun2 extends MCH_WeaponBase {
             double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
             MCH_EntityBullet e = new MCH_EntityBullet(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, super.acceleration);
             e.setAirburstDist(this.airburstDist);
-            e.setName(super.name);
+            e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
             if (this.getInfo().modeNum < 2) {
                 e.explosionPower = super.explosionPower;

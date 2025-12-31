@@ -48,7 +48,7 @@ public class MCH_WeaponMarkerRocket extends MCH_WeaponBase {
             double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
             double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
             MCH_EntityMarkerRocket e = new MCH_EntityMarkerRocket(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, super.acceleration);
-            e.setName(super.name);
+            e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
             e.setMarkerStatus(1);
             super.worldObj.spawnEntityInWorld(e);

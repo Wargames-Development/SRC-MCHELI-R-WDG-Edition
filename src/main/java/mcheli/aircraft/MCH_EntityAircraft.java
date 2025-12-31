@@ -224,6 +224,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private double lastCalcLandInDistanceCount;
     private double lastLandInDistance;
     private boolean switchSeat = false;
+    public int jammingTick = 0;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -1550,6 +1551,23 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
         if (ecmJammerUseTime > 0) {
             ecmJammerUseTime--;
+        }
+        if (jammingTick > 0) {
+            jammingTick--;
+        }
+
+        if(!worldObj.isRemote) {
+            int hpPer = getHP() * 100 / getMaxHP();
+            if(hpPer > 5 && hpPer < getAcInfo().engineShutdownThreshold) {
+                if(ticksExisted % 20 == 0) {
+                    W_WorldFunc.MOD_playSoundAtEntity(this, "low_health", 1.0F, 1.0F);
+                }
+            }
+            if (!isDestroyed() && hpPer <= 5) {
+                if (ticksExisted % 15 == 0) {
+                    W_WorldFunc.MOD_playSoundAtEntity(this, "no_health", 1.0F, 1.0F);
+                }
+            }
         }
 
         this.prevCurrentThrottle = this.getCurrentThrottle();
@@ -3239,7 +3257,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean useECMJammer(Entity e) {
         if (this.getAcInfo() != null && this.getAcInfo().haveECMJammer()) {
-            if (this.ecmJammer.onUse()) {
+            if (this.ecmJammer.onUse(e)) {
                 return true;
             }
             return false;
