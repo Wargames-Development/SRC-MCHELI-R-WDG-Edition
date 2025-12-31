@@ -10,6 +10,7 @@ import mcheli.aircraft.MCH_PacketStatusRequest;
 import mcheli.aircraft.MCH_Parts;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.weapon.MCH_WeaponGuidanceSystem;
 import mcheli.wrapper.W_Block;
 import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_Lib;
@@ -797,6 +798,12 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                 super.motionY += v.yCoord * (double) throttle1 / 2.0D;
             } else {
                 super.motionY += v.yCoord * (double) throttle1 / 8.0D;
+            }
+        }
+
+        if(!MCH_WeaponGuidanceSystem.isEntityOnGround(this, 15)) {
+            if (this.canFoldLandingGear()) {
+                this.foldLandingGear();
             }
         }
 
