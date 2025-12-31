@@ -157,7 +157,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     send = true;
                 }
             }
-            if (this.KeyGearUpDown.isKeyDown() && ac.getAcInfo().haveLandingGear())
+            if (this.KeyGearUpDown.isKeyDown() && ac.getAcInfo().haveLandingGear()) {
                 if (ac.canFoldLandingGear()) {
                     pc.switchGear = 1;
                     send = true;
@@ -165,6 +165,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     pc.switchGear = 2;
                     send = true;
                 }
+            }
             if (this.KeyFreeLook.isKeyDown())
                 if (ac.canSwitchFreeLook()) {
                     pc.switchFreeLook = (byte) (ac.isFreeLookMode() ? 2 : 1);
