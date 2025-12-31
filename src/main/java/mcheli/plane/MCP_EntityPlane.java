@@ -1,5 +1,7 @@
 package mcheli.plane;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.aircraft.MCH_AircraftInfo;
@@ -32,6 +34,16 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     public float prevRotationRotor;
     public float addkeyRotValue;
     private MCP_PlaneInfo planeInfo = null;
+
+    public float prevRotationExhaustFlameX;
+    public float prevRotationExhaustFlameY;
+    public float prevRotationExhaustFlameZ;
+    public float rotationExhaustFlameX;
+    public float rotationExhaustFlameY;
+    public float rotationExhaustFlameZ;
+
+    @SideOnly(Side.CLIENT)
+    public ExhaustAnimState exhaustAnimState;
 
 
     public MCP_EntityPlane(World world) {
@@ -321,6 +333,8 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                 rot = 1.0F - 0.1F * partialTicks;
                 this.setRotRoll(this.getRotRoll() * rot);
             }
+
+            this.updateExhaustFlameRotation(partialTicks);
 
         }
     }
@@ -1071,4 +1085,29 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     public float getPrevWingRotation() {
         return this.partWing != null ? this.partWing.prevRotation : 0.0F;
     }
+
+    private void updateExhaustFlameRotation(float partialTicks) {
+        this.prevRotationExhaustFlameY = this.rotationExhaustFlameY;
+        float key = 0.0F;
+        if (this.moveLeft && !this.moveRight) key = -1.0F;
+        if (this.moveRight && !this.moveLeft) key =  1.0F;
+        float target = key;
+        float follow = 0.1F * partialTicks;
+        if (follow > 1.0F) follow = 1.0F;
+        this.rotationExhaustFlameY += (target - this.rotationExhaustFlameY) * follow;
+        if (this.rotationExhaustFlameY >  1.0F) this.rotationExhaustFlameY =  1.0F;
+        if (this.rotationExhaustFlameY < -1.0F) this.rotationExhaustFlameY = -1.0F;
+        this.prevRotationExhaustFlameX = this.rotationExhaustFlameX;
+        this.prevRotationExhaustFlameZ = this.rotationExhaustFlameZ;
+    }
+
+    public static class ExhaustAnimState {
+        final int[] frame;
+        final int[] tick;
+        ExhaustAnimState(int n) {
+            this.frame = new int[n];
+            this.tick = new int[n];
+        }
+    }
+
 }

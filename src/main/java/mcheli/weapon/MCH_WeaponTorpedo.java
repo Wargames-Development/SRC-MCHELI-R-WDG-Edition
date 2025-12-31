@@ -36,7 +36,7 @@ public class MCH_WeaponTorpedo extends MCH_WeaponBase {
             mz = mz * (double) this.getInfo().acceleration + prm.entity.motionZ;
             super.acceleration = MathHelper.sqrt_double(mx * mx + my * my + mz * mz);
             MCH_EntityTorpedo e = new MCH_EntityTorpedo(super.worldObj, prm.posX, prm.posY, prm.posZ, mx, my, mz, yaw, 0.0F, (double) super.acceleration);
-            e.setName(super.name);
+            e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
             e.motionX = mx;
             e.motionY = my;
@@ -79,7 +79,7 @@ public class MCH_WeaponTorpedo extends MCH_WeaponBase {
                 mz = mz * (double) this.getInfo().acceleration + prm.entity.motionZ;
                 super.acceleration = MathHelper.sqrt_double(mx * mx + my * my + mz * mz);
                 MCH_EntityTorpedo e = new MCH_EntityTorpedo(super.worldObj, prm.posX, prm.posY, prm.posZ, prm.entity.motionX, prm.entity.motionY, prm.entity.motionZ, yaw, 0.0F, (double) super.acceleration);
-                e.setName(super.name);
+                e.setInfoByName(super.name);
                 e.setParameterFromWeapon(this, prm.entity, prm.user);
                 e.targetPosX = m.hitVec.xCoord;
                 e.targetPosY = m.hitVec.yCoord;

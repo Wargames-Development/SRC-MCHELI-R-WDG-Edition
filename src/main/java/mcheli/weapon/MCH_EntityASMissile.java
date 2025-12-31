@@ -79,7 +79,7 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
         if (!super.worldObj.isRemote) {
             MCH_EntityASMissile e = new MCH_EntityASMissile(super.worldObj, super.posX, super.posY, super.posZ, super.motionX, super.motionY, super.motionZ, (float) super.rand.nextInt(360), 0.0F, super.acceleration);
             e.setParameterFromWeapon(this, super.shootingAircraft, super.shootingEntity);
-            e.setName(this.getName());
+            e.setInfoByName(this.getName());
             float MOTION = 0.5F;
             float RANDOM = this.getInfo().bombletDiff;
             e.motionX = super.motionX * 0.5D + (double) ((super.rand.nextFloat() - 0.5F) * RANDOM);

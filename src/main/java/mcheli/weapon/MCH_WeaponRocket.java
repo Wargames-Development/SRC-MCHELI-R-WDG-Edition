@@ -54,7 +54,7 @@ public class MCH_WeaponRocket extends MCH_WeaponBase {
             double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
             MCH_EntityRocket e = new MCH_EntityRocket(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, super.acceleration);
             e.setAirburstDist(this.airburstDist);
-            e.setName(super.name);
+            e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
             if (prm.option1 == 0 && super.numMode > 1) {
                 e.piercing = 0;

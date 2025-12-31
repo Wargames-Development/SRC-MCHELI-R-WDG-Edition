@@ -143,7 +143,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         }
 
         MCH_EntityTvMissile e = new MCH_EntityTvMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) acr);
-        e.setName(super.name);
+        e.setInfoByName(super.name);
         e.setTVMissile(isTVGuided);
         e.setParameterFromWeapon(this, prm.entity, prm.user);
         this.lastShotEntity = prm.entity;

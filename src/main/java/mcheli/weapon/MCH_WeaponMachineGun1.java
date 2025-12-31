@@ -84,7 +84,7 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
 
                 MCH_EntityBullet e = new MCH_EntityBullet(super.worldObj, x, y, z, baseTXX, baseTYY, baseTZZ, yaw, pitch, super.acceleration);
                 e.setAirburstDist(this.airburstDist);
-                e.setName(super.name);
+                e.setInfoByName(super.name);
                 e.setParameterFromWeapon(this, prm.entity, prm.user);
                 e.posX += e.motionX * 0.5D;
                 e.posY += e.motionY * 0.5D;
@@ -139,7 +139,7 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
 
                 MCH_EntityBullet e = new MCH_EntityBullet(super.worldObj, x, y, z, tX, tY, tZ, useYaw, usePitch, super.acceleration);
                 e.setAirburstDist(this.airburstDist);
-                e.setName(super.name);
+                e.setInfoByName(super.name);
                 e.setParameterFromWeapon(this, prm.entity, prm.user);
                 e.posX += e.motionX * 0.5D;
                 e.posY += e.motionY * 0.5D;

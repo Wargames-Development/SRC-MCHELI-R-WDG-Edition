@@ -8,11 +8,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class MCH_WeaponInfo extends MCH_BaseInfo {
+
     public static Random rand = new Random();
     public final String name;
     public String explosionType;
@@ -329,6 +328,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int spawnBulletIntervalTick = 20;
     public int spawnBulletPerNum = 1;
     public boolean spawnBulletInheritSpeed;
+    public boolean destructAfterSpawnBullet;
 
     /**
      * 子弹伤害衰减
@@ -387,6 +387,26 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 是否允许头瞄
      */
     public boolean enableHMS = true;
+
+    /**
+     * 弹药在RWR上面显示什么
+     */
+    public String nameOnRWR = "MSL";
+
+    /**
+     * 多久启用近炸引信，-1永不启用
+     */
+    public int proximityFuseTick = -1;
+
+    /**
+     * 近炸伤害
+     */
+    public float proximityFuseDamage = 0;
+
+    /**
+     * 近炸高度
+     */
+    public int proximityFuseHeight = 20;
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -722,6 +742,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.spawnBulletPerNum = this.toInt(data);
             } else if (item.equalsIgnoreCase("SpawnBulletInheritSpeed")) {
                 this.spawnBulletInheritSpeed = this.toBool(data);
+            } else if (item.equalsIgnoreCase("DestructAfterSpawnBullet")) {
+                this.destructAfterSpawnBullet = this.toBool(data);
             } else if (item.equalsIgnoreCase("AddPotionEffect")) {
                 String[] split = data.split("\\s*,\\s*");
                 int potionID = Integer.parseInt(split[0]);
@@ -761,6 +783,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.semiActiveRadar = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableHMS")) {
                 this.enableHMS = this.toBool(data);
+            } else if (item.equalsIgnoreCase("NameOnRWR")) {
+                String name = data.trim();
+                this.nameOnRWR = "NULL".equals(name) ? "" : name;
+            } else if (item.equalsIgnoreCase("ProximityFuseTick")) {
+                this.proximityFuseTick = this.toInt(data);
+            } else if (item.equalsIgnoreCase("ProximityFuseDamage")) {
+                this.proximityFuseDamage = this.toFloat(data);
+            } else if (item.equalsIgnoreCase("ProximityFuseHeight")) {
+                this.proximityFuseHeight = this.toInt(data);
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {

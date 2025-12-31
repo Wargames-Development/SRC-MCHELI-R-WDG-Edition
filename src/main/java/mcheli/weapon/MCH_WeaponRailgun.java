@@ -91,7 +91,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
             double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
             MCH_EntityBullet e = new MCH_EntityBullet(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, super.acceleration);
             e.setAirburstDist(this.airburstDist);
-            e.setName(super.name);
+            e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
             e.posX += e.motionX * 0.5D;
             e.posY += e.motionY * 0.5D;

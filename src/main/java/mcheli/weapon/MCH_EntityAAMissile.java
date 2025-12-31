@@ -36,17 +36,9 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 double d = x * x + y * y + z * z;
 
                 if (d > 3422500.0D) {
-                    this.setDead();
-                } else if (this.getCountOnUpdate() > this.getInfo().rigidityTime) {
-                    if (this.getInfo().proximityFuseDist >= 0.1F && d * d < (double) this.getInfo().proximityFuseDist) {
-                        MovingObjectPosition mop = new MovingObjectPosition(super.targetEntity);
-                        super.posX = (super.targetEntity.posX + super.posX) / 2.0D;
-                        super.posY = (super.targetEntity.posY + super.posY) / 2.0D;
-                        super.posZ = (super.targetEntity.posZ + super.posZ) / 2.0D;
-                        this.onImpact(mop, 1.0F);
-                    } else {
-                        this.guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
-                    }
+                    setDead();
+                } else if (getCountOnUpdate() > getInfo().rigidityTime) {
+                    guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
                 }
             } else {
                 if (getInfo().activeRadar && ticksExisted % getInfo().scanInterval == 0) {

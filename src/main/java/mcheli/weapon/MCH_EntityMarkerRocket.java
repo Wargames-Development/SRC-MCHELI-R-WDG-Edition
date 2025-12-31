@@ -77,7 +77,7 @@ public class MCH_EntityMarkerRocket extends MCH_EntityBaseBullet {
                             getInfo().markerRocketSpawnHeight + super.rand.nextFloat() * 10.0F + (float) (i * 30),
                             super.posZ + (double) ((super.rand.nextFloat() - 0.5F) * getInfo().markerRocketSpawnDiff),
                             0.0D, -0.5D, 0.0D, 0.0F, 90.0F, getInfo().markerRocketSpawnSpeed);
-                        e.setName(this.getName());
+                        e.setInfoByName(this.getName());
                         e.explosionPower = this.getInfo().explosion;
                         e.explosionPowerInWater = this.getInfo().explosionInWater;
                         e.setPower(getInfo().power);

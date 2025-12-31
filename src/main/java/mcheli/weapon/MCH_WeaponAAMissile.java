@@ -68,12 +68,12 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                 double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
                 MCH_EntityAAMissile e = new MCH_EntityAAMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) super.acceleration);
-                if (yaw > 180.0F) {//so we are just basically defining yaw to like not go 360 mlg mode right hopefully pray to god it works okay
+                if (yaw > 180.0F) {
                     yaw -= 360.0F;
                 } else if (yaw < -180.0F) {
                     yaw += 360.0F;
                 }
-                e.setName(super.name);
+                e.setInfoByName(super.name);
                 e.setParameterFromWeapon(this, prm.entity, prm.user);
                 super.worldObj.spawnEntityInWorld(e);
                 result = true;
@@ -107,12 +107,12 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                     double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                     double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
                     MCH_EntityAAMissile e = new MCH_EntityAAMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) super.acceleration);
-                    if (yaw > 180.0F) {//so we are just basically defining yaw to like not go 360 mlg mode right hopefully pray to god it works okay
+                    if (yaw > 180.0F) {
                         yaw -= 360.0F;
                     } else if (yaw < -180.0F) {
                         yaw += 360.0F;
                     }
-                    e.setName(super.name);
+                    e.setInfoByName(super.name);
                     e.setParameterFromWeapon(this, prm.entity, prm.user);
                     e.setTargetEntity(tgtEnt);
                     super.worldObj.spawnEntityInWorld(e);

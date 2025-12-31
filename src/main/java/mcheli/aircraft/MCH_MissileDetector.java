@@ -83,13 +83,15 @@ public class MCH_MissileDetector {
                         LockResult result = isLockedByMissile();
                         if (this.alertCount == 0 && (isLocked || result.isLock)) {
                             this.alertCount = 20;
-                            if (result.isRadarMissile) {
-                                W_WorldFunc.MOD_playSoundAtEntity(var4, "alert_radar", 3.0F, 1.0F);
-                            } else {
-                                W_WorldFunc.MOD_playSoundAtEntity(var4, "alert", 3.0F, 1.0F);
+                            if(ac.jammingTick <= 0) {
+                                if (result.isRadarMissile) {
+                                    W_WorldFunc.MOD_playSoundAtEntity(var4, "alert_radar", 3.0F, 1.0F);
+                                } else if (result.isHeetseeker) {
+                                    W_WorldFunc.MOD_playSoundAtEntity(var4, "alert", 3.0F, 1.0F);
+                                }
                             }
                         }
-                        if (result.isLock) {
+                        if (result.isLock && ac.jammingTick <= 0) {
 
                             if (result.dist < 50) {
                                 missileLockDist = 1;
@@ -220,7 +222,7 @@ public class MCH_MissileDetector {
         for (Object o : list) {
             MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
             if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
-                if (msl.getInfo().antiRadiationMissile) {
+                if (msl.getInfo().isRadarMissile || msl.getInfo().antiRadiationMissile) {
                     msl.setTargetEntity(null);
                 }
             }

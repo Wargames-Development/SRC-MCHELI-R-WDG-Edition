@@ -2,8 +2,13 @@ package mcheli.flare;
 
 import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.network.PacketBase;
 import mcheli.network.packets.PacketECMJammerUse;
 import mcheli.wrapper.W_McClient;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 
 public class MCH_ECMJammer {
@@ -26,7 +31,7 @@ public class MCH_ECMJammer {
         this.aircraft = ac;
     }
 
-    public boolean onUse() {
+    public boolean onUse(Entity e) {
         boolean result = false;
         if (worldObj.isRemote) {
             if (tick == 0) {
@@ -39,8 +44,20 @@ public class MCH_ECMJammer {
             result = true;
             tick = waitTime;
             useTick = useTime;
-            MCH_MOD.getPacketHandler().sendToAll(new PacketECMJammerUse(aircraft.getEntityId(), useTick));
-            aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
+            int jammingTime = 180;
+            if(e instanceof EntityPlayer) {
+                aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
+                if (aircraft.getAcInfo().ecmJammerType == 1) {
+                    for (Entity entity : worldObj.getLoadedEntityList()) {
+                        if (entity instanceof MCH_EntityAircraft && entity.ridingEntity instanceof EntityPlayerMP
+                            && !((EntityPlayerMP) entity.ridingEntity).isOnSameTeam((EntityPlayer) e)) {
+                            ((MCH_EntityAircraft) entity).jammingTick = jammingTime;
+                            MCH_MOD.getPacketHandler().sendTo(
+                                new PacketECMJammerUse(aircraft.getEntityId(), useTick, aircraft.getAcInfo().ecmJammerType, jammingTime), (EntityPlayerMP) entity.ridingEntity);
+                        }
+                    }
+                }
+            }
         }
         return result;
     }
@@ -63,6 +80,7 @@ public class MCH_ECMJammer {
     }
 
     private void onUsing() {
+
     }
 
 
