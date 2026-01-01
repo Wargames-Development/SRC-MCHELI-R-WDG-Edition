@@ -33,7 +33,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
     public boolean shot(MCH_WeaponParam prm) {
         boolean result = false;
         if (!super.worldObj.isRemote) {
-            if (getInfo().passiveRadar || getInfo().activeRadar) {
+            if (getInfo().passiveRadar || getInfo().activeRadar || getInfo().semiActiveRadar) {
                 this.playSound(prm.entity);
 
                 float yaw, pitch;
@@ -120,7 +120,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 }
             }
         } else {
-            if (getInfo().passiveRadar || getInfo().activeRadar) {
+            if (getInfo().passiveRadar || getInfo().activeRadar || getInfo().semiActiveRadar) {
                 result = true;
             } else if (super.guidanceSystem.lock(prm.user) && super.guidanceSystem.lastLockEntity != null) {
                 result = true;

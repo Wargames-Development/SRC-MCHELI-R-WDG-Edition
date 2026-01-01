@@ -56,6 +56,9 @@ public class MCH_ECMJammer {
                                 new PacketECMJammerUse(aircraft.getEntityId(), useTick, aircraft.getAcInfo().ecmJammerType, jammingTime), (EntityPlayerMP) entity.ridingEntity);
                         }
                     }
+                } else {
+                    MCH_MOD.getPacketHandler().sendToAll(
+                        new PacketECMJammerUse(aircraft.getEntityId(), useTick, aircraft.getAcInfo().ecmJammerType, jammingTime));
                 }
             }
         }

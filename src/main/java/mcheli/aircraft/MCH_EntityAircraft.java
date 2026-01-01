@@ -6144,6 +6144,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public String getNameOnOtherRadar(MCH_EntityAircraft other) {
         switch (other.getAcInfo().radarType) {
+            case ADVANCED_AA:
+                return getAcInfo().nameOnAdvancedAARadar;
             case MODERN_AA:
                 return getAcInfo().nameOnModernAARadar;
             case EARLY_AA:
@@ -6158,6 +6160,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public String getNameOnMyRadar(MCH_EntityAircraft other) {
         switch (getAcInfo().radarType) {
+            case ADVANCED_AA:
+                return other.getAcInfo().nameOnAdvancedAARadar;
             case MODERN_AA:
                 return other.getAcInfo().nameOnModernAARadar;
             case EARLY_AA:
@@ -6174,6 +6178,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         MCH_AircraftInfo info = MCH_AircraftInfo.allAircraftInfo.getOrDefault(other.entityName, null);
         if (info != null) {
             switch (getAcInfo().radarType) {
+                case ADVANCED_AA:
+                    return info.nameOnAdvancedAARadar;
                 case MODERN_AA:
                     return info.nameOnModernAARadar;
                 case EARLY_AA:

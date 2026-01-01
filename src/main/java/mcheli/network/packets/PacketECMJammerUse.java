@@ -51,7 +51,7 @@ public class PacketECMJammerUse extends PacketBase {
     public void handleClientSide(EntityPlayer clientPlayer) {
         Entity e = clientPlayer.worldObj.getEntityByID(acId);
         if (e instanceof MCH_EntityAircraft) {
-            if(type == 0){
+            if(type == 0 || type == 2){
                 ((MCH_EntityAircraft) e).ecmJammerUseTime = time;
             } else if (type == 1){
                 ((MCH_EntityAircraft) e).ecmJammerUseTime = time;

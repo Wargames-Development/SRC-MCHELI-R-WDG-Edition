@@ -154,6 +154,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public String nameOnModernAARadar = "";
     /**
+     * 当前载具在高级对空雷达中显示的名字
+     */
+    public String nameOnAdvancedAARadar = "";
+    /**
      * 当前载具在早期对空雷达中显示的名字
      */
     public String nameOnEarlyAARadar = "";
@@ -652,13 +656,15 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                     this.rwrType = EnumRWRType.DIGITAL;
                 }
             } else if (item.equalsIgnoreCase("NameOnModernAARadar")) {
-                nameOnModernAARadar = data;
+                nameOnModernAARadar = data.trim();
+            } else if (item.equalsIgnoreCase("NameOnAdvancedAARadar")) {
+                nameOnAdvancedAARadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnEarlyAARadar")) {
-                nameOnEarlyAARadar = data;
+                nameOnEarlyAARadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnModernASRadar")) {
-                nameOnModernASRadar = data;
+                nameOnModernASRadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnEarlyASRadar")) {
-                nameOnEarlyASRadar = data;
+                nameOnEarlyASRadar = data.trim();
             } else if (item.equalsIgnoreCase("ExplosionSizeByCrash")) {
                 explosionSizeByCrash = this.toInt(data, 0, 100);
             } else if (item.equalsIgnoreCase("ThrottleDownFactor")) {

@@ -186,6 +186,7 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("can_aps", ac.canUseAPS() ? 1.0D : 0.0D);
         updateVarMapItem("have_ecm_jammer", ac.haveECMJammer() ? 1.0D : 0.0D);
         updateVarMapItem("can_ecm_jammer", ac.canUseECMJammer() ? 1.0D : 0.0D);
+        updateVarMapItem("ecm_jammer_type", ac.getAcInfo().ecmJammerType);
         updateVarMapItem("is_engine_shutdown", ac.getHP() * 100 / ac.getMaxHP() < ac.getAcInfo().engineShutdownThreshold ? 1.0D : 0.0D);
         updateVarMapItem("hud_type", ac.getAcInfo().hudType);
         updateVarMapItem("weapon_group_type", ac.getAcInfo().weaponGroupType);
