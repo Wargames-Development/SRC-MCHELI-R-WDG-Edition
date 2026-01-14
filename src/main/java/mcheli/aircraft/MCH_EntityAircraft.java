@@ -4741,7 +4741,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.cs_planeAutoThrottleDown = MCH_Config.AutoThrottleDownPlane.prmBool;
         var10001 = MCH_MOD.config;
         this.cs_tankAutoThrottleDown = MCH_Config.AutoThrottleDownTank.prmBool;
-        this.camera.setShaderSupport(seatId, Boolean.valueOf(W_EntityRenderer.isShaderSupport()));
+        this.camera.setShaderSupport(seatId, W_EntityRenderer.isShaderSupport());
         MCH_PacketNotifyClientSetting.send();
     }
 
@@ -5346,11 +5346,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         if (this.worldObj.isRemote && isUsed) {
                             Vec3 wrv = MCH_Lib.RotVec3((double) 0.0F, (double) 0.0F, (double) -1.0F, -w.rotationYaw - yaw, -w.rotationPitch);
                             Vec3 spv = w.getCurrentWeapon().getShotPos(this);
-                            this.spawnParticleMuzzleFlash(this.worldObj, w.getInfo(),
-                                this.posX + spv.xCoord,
-                                this.posY + spv.yCoord,
-                                this.posZ + spv.zCoord,
-                                wrv);
+//                            this.spawnParticleMuzzleFlash(this.worldObj, w.getInfo(),
+//                                this.posX + spv.xCoord,
+//                                this.posY + spv.yCoord,
+//                                this.posZ + spv.zCoord,
+//                                wrv);
                         }
 
                         w.updateWeapon(this, isUsed, index);
@@ -5473,7 +5473,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
 
-    private void spawnParticleMuzzleFlash(World w, MCH_WeaponInfo wi, double px, double py, double pz, Vec3 wrv) {
+    public void spawnParticleMuzzleFlash(World w, MCH_WeaponInfo wi, double px, double py, double pz, Vec3 wrv) {
         Iterator i$;
         MCH_WeaponInfo.MuzzleFlash mf;
         if (wi.listMuzzleFlashSmoke != null) {

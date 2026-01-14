@@ -23,8 +23,13 @@ public class MCH_WeaponMarkerRocket extends MCH_WeaponBase {
             float yaw, pitch;
             if (prm.entity instanceof MCH_EntityTank) {
                 MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                yaw = prm.user.rotationYaw;
-                pitch = prm.user.rotationPitch;
+                if (getInfo().enableOffAxis) {
+                    yaw = prm.user.rotationYaw;
+                    pitch = prm.user.rotationPitch;
+                } else {
+                    yaw = prm.entity.rotationYaw;
+                    pitch = prm.entity.rotationPitch;
+                }
                 yaw += prm.randYaw;
                 pitch += prm.randPitch;
                 int wid = tank.getCurrentWeaponID(prm.user);

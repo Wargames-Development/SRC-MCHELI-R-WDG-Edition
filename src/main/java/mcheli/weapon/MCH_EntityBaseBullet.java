@@ -28,6 +28,7 @@ import net.minecraft.client.particle.EntityDiggingFX;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
@@ -1769,6 +1770,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
         for (Entity entity : nearbyEntities) {
             if (!canBeCollidedEntity(entity)) {
+                continue;
+            }
+
+            if (!(entity instanceof MCH_EntityAircraft)) {
                 continue;
             }
 

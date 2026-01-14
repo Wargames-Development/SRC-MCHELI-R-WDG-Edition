@@ -147,7 +147,7 @@ public class MCH_MissileDetector {
     public void destroyMissileFlare() {
         if (world.isRemote) return;
         if (ac.getAcInfo().hasDIRCM) {
-            List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(30.0D, 30.0D, 30.0D));
+            List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(80.0D, 80.0D, 80.0D));
             if (list == null) {
                 return;
             }
@@ -199,7 +199,7 @@ public class MCH_MissileDetector {
 
     public void destroyMissileChaff() {
         if (world.isRemote) return;
-        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(100.0D, 100.0D, 100.0D));
+        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(200.0D, 200.0D, 200.0D));
         if (list == null) {
             return;
         }
@@ -215,7 +215,7 @@ public class MCH_MissileDetector {
 
     public void destroyMissileECM() {
         if (world.isRemote) return;
-        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(50.0D, 50.0D, 50.0D));
+        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(80.0D, 80.0D, 80.0D));
         if (list == null) {
             return;
         }

@@ -5,6 +5,7 @@ import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraft.util.Vec3;
@@ -284,5 +285,17 @@ public abstract class MCH_WeaponBase {
 
     public void setAirburstDist(int dist) {
         this.airburstDist = dist;
+    }
+
+    public static void spawnMuzzleFlash(World w, MCH_WeaponParam prm, MCH_WeaponInfo info, float yaw, float pitch, double posX, double posY, double posZ) {
+        if (prm.entity != null && w.isRemote) {
+            double dirX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
+            double dirY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
+            double dirZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
+            Vec3 direction = Vec3.createVectorHelper(-dirX, -dirY, -dirZ);
+            if (prm.entity instanceof MCH_EntityAircraft) {
+                ((MCH_EntityAircraft)prm.entity).spawnParticleMuzzleFlash(w, info, posX, posY, posZ, direction);
+            }
+        }
     }
 }
