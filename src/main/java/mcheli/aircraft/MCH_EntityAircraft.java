@@ -5342,17 +5342,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 this.recoilYaw = w.rotationYaw;
                             }
                         }
-
-                        if (this.worldObj.isRemote && isUsed) {
-                            Vec3 wrv = MCH_Lib.RotVec3((double) 0.0F, (double) 0.0F, (double) -1.0F, -w.rotationYaw - yaw, -w.rotationPitch);
-                            Vec3 spv = w.getCurrentWeapon().getShotPos(this);
-//                            this.spawnParticleMuzzleFlash(this.worldObj, w.getInfo(),
-//                                this.posX + spv.xCoord,
-//                                this.posY + spv.yCoord,
-//                                this.posZ + spv.zCoord,
-//                                wrv);
-                        }
-
                         w.updateWeapon(this, isUsed, index);
                         ++id;
                     }

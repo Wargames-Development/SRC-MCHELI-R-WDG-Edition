@@ -44,11 +44,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (prm.entity instanceof MCH_EntityTank) {
             MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
             if (getInfo().enableOffAxis) {
-                yaw = prm.user.rotationYaw;
-                pitch = prm.user.rotationPitch;
+                yaw = prm.user.rotationYaw + super.fixRotationYaw;
+                pitch = prm.user.rotationPitch + super.fixRotationPitch;
             } else {
-                yaw = prm.entity.rotationYaw;
-                pitch = prm.entity.rotationPitch;
+                yaw = prm.entity.rotationYaw + super.fixRotationYaw;
+                pitch = prm.entity.rotationPitch + super.fixRotationPitch;
             }
             yaw += prm.randYaw;
             pitch += prm.randPitch;
@@ -96,11 +96,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                     if (prm.entity instanceof MCH_EntityTank) {
                         MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
                         if (getInfo().enableOffAxis) {
-                            yaw = prm.user.rotationYaw;
-                            pitch = prm.user.rotationPitch;
+                            yaw = prm.user.rotationYaw + super.fixRotationYaw;
+                            pitch = prm.user.rotationPitch + super.fixRotationPitch;
                         } else {
-                            yaw = prm.entity.rotationYaw;
-                            pitch = prm.entity.rotationPitch;
+                            yaw = prm.entity.rotationYaw + super.fixRotationYaw;
+                            pitch = prm.entity.rotationPitch + super.fixRotationPitch;
                         }
                         yaw += prm.randYaw;
                         pitch += prm.randPitch;
