@@ -69,7 +69,7 @@ public class MCH_WeaponRocket extends MCH_WeaponBase {
         } else {
             super.optionParameter1 = this.getCurrentMode();
             MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
-            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.posX, prm.posY, prm.posZ);
+            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
         }
 
         return true;

@@ -105,7 +105,7 @@ public class MCH_WeaponRailgun extends MCH_WeaponBase {
             this.playSound(prm.entity);
         } else {
             MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
-            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.posX, prm.posY, prm.posZ);
+            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
         }
         return true;
     }

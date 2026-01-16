@@ -43,13 +43,6 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
         if (prm.entity instanceof MCH_EntityTank) {
             MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-            if (getInfo().enableOffAxis) {
-                yaw = prm.user.rotationYaw + super.fixRotationYaw;
-                pitch = prm.user.rotationPitch + super.fixRotationPitch;
-            } else {
-                yaw = prm.entity.rotationYaw + super.fixRotationYaw;
-                pitch = prm.entity.rotationPitch + super.fixRotationPitch;
-            }
             yaw += prm.randYaw;
             pitch += prm.randPitch;
             int wid = tank.getCurrentWeaponID(prm.user);
@@ -63,7 +56,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             float yawLimit = (w == null ? 360F : w.maxYaw);
             float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
             yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
-            pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            if(fixRotationPitch == 0) {
+                pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            }
             pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
         }
         if (!super.worldObj.isRemote) {
@@ -86,22 +81,8 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
                 if (tgtEnt != null && !tgtEnt.isDead) {
                     this.playSound(prm.entity);
-                    if (getInfo().enableOffAxis) {
-                        yaw = prm.user.rotationYaw + super.fixRotationYaw;
-                        pitch = prm.user.rotationPitch + super.fixRotationPitch;
-                    } else {
-                        yaw = prm.entity.rotationYaw + super.fixRotationYaw;
-                        pitch = prm.entity.rotationPitch + super.fixRotationPitch;
-                    }
                     if (prm.entity instanceof MCH_EntityTank) {
                         MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                        if (getInfo().enableOffAxis) {
-                            yaw = prm.user.rotationYaw + super.fixRotationYaw;
-                            pitch = prm.user.rotationPitch + super.fixRotationPitch;
-                        } else {
-                            yaw = prm.entity.rotationYaw + super.fixRotationYaw;
-                            pitch = prm.entity.rotationPitch + super.fixRotationPitch;
-                        }
                         yaw += prm.randYaw;
                         pitch += prm.randPitch;
                         float minPitch = tank.getSeatInfo(prm.entity) == null ? tank.getAcInfo().minRotationPitch : tank.getSeatInfo(prm.entity).minPitch;
@@ -109,7 +90,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                         float playerYaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() - yaw);
                         float playerPitch = tank.getRotPitch() * MathHelper.cos((float) (playerYaw * Math.PI / 180.0D))
                             + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
-                        pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+                        if(fixRotationPitch == 0) {
+                            pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+                        }
                         pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
                     }
                     double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
@@ -137,7 +120,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             }
             if(result) {
                 MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
-                spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.posX, prm.posY, prm.posZ);
+                spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
             }
         }
 

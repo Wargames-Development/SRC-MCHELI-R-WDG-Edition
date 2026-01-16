@@ -419,6 +419,11 @@ public class MCH_WeaponSet {
                         }
 
                         prm.result = true;
+                    } else {
+                        this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
+                        this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
+                        this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
+                        prm.result = true;
                     }
                 }
             }

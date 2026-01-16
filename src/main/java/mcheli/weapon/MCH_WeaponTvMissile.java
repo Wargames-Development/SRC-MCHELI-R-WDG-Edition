@@ -106,13 +106,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         }
         if (prm.entity instanceof MCH_EntityTank) {
             MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-            if (getInfo().enableOffAxis) {
-                yaw = prm.user.rotationYaw + super.fixRotationYaw;
-                pitch = prm.user.rotationPitch + super.fixRotationPitch;
-            } else {
-                yaw = prm.entity.rotationYaw + super.fixRotationYaw;
-                pitch = prm.entity.rotationPitch + super.fixRotationPitch;
-            }
             yaw += prm.randYaw;
             pitch += prm.randPitch;
             int wid = tank.getCurrentWeaponID(prm.user);
@@ -126,7 +119,9 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             float yawLimit = (w == null ? 360F : w.maxYaw);
             float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
             yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
-            pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            if(fixRotationPitch == 0) {
+                pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            }
             pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
         }
         if(!worldObj.isRemote) {
@@ -151,7 +146,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             super.optionParameter2 = 0;
             super.optionParameter1 = this.getCurrentMode();
             MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
-            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.posX, prm.posY, prm.posZ);
+            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
         }
         return true;
     }

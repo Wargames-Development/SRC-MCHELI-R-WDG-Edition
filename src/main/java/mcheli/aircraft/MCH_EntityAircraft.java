@@ -4917,11 +4917,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public MCH_WeaponSet[] createWeapon(int seat_num) {
         this.currentWeaponID = new int[seat_num];
 
-        for (int weaponSetArray = 0; weaponSetArray < this.currentWeaponID.length; ++weaponSetArray) {
-            this.currentWeaponID[weaponSetArray] = -1;
-        }
+        Arrays.fill(this.currentWeaponID, -1);
 
-        if (this.getAcInfo() != null && this.getAcInfo().weaponSetList.size() > 0 && seat_num > 0) {
+        if (this.getAcInfo() != null && !this.getAcInfo().weaponSetList.isEmpty() && seat_num > 0) {
             MCH_WeaponSet[] var7 = new MCH_WeaponSet[this.getAcInfo().weaponSetList.size()];
 
             for (int i = 0; i < this.getAcInfo().weaponSetList.size(); ++i) {
@@ -4929,8 +4927,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 MCH_WeaponBase[] wb = new MCH_WeaponBase[ws.weapons.size()];
 
                 for (int defYaw = 0; defYaw < ws.weapons.size(); ++defYaw) {
-                    wb[defYaw] = MCH_WeaponCreator.createWeapon(super.worldObj, ws.type, ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).pos, ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).yaw, ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).pitch, this, ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).turret);
+                    wb[defYaw] = MCH_WeaponCreator.createWeapon(super.worldObj, ws.type,
+                        ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).pos,
+                        ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).yaw,
+                        ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).pitch,
+                        this, ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).turret);
                     wb[defYaw].aircraft = this;
+                    wb[defYaw].muzzleFlashPosition = ((MCH_AircraftInfo.Weapon) ws.weapons.get(defYaw)).muzzleFlashPos;
                 }
 
                 if (wb.length > 0 && wb[0] != null) {
@@ -5342,6 +5345,17 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 this.recoilYaw = w.rotationYaw;
                             }
                         }
+
+                        if (this.worldObj.isRemote && isUsed) {
+                            Vec3 wrv = MCH_Lib.RotVec3((double) 0.0F, (double) 0.0F, (double) -1.0F, -w.rotationYaw - yaw, -w.rotationPitch);
+                            Vec3 spv = w.getCurrentWeapon().getShotPos(this);
+//                            this.spawnParticleMuzzleFlash(this.worldObj, w.getInfo(),
+//                                this.posX + spv.xCoord,
+//                                this.posY + spv.yCoord,
+//                                this.posZ + spv.zCoord,
+//                                wrv);
+                        }
+
                         w.updateWeapon(this, isUsed, index);
                         ++id;
                     }

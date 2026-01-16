@@ -20,6 +20,7 @@ public abstract class MCH_WeaponBase {
     protected static final Random rand = new Random();
     public final World worldObj;
     public final Vec3 position;
+    public Vec3 muzzleFlashPosition;
     public final float fixRotationYaw;
     public final float fixRotationPitch;
     public final String name;
@@ -181,6 +182,10 @@ public abstract class MCH_WeaponBase {
         prm.posX += v.xCoord;
         prm.posY += v.yCoord;
         prm.posZ += v.zCoord;
+        Vec3 v1 = this.getMuzzleFlashPos(prm.entity);
+        prm.muzzleFlashPosX += v1.xCoord;
+        prm.muzzleFlashPosY += v1.yCoord;
+        prm.muzzleFlashPosZ += v1.zCoord;
 
         if (this.shot(prm)) {
             this.tick = 0;
@@ -195,6 +200,16 @@ public abstract class MCH_WeaponBase {
             return ((MCH_EntityAircraft) entity).calcOnTurretPos(this.position);
         } else {
             Vec3 v = Vec3.createVectorHelper(this.position.xCoord, this.position.yCoord, this.position.zCoord);
+            float roll = entity instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft) entity).getRotRoll() : 0.0F;
+            return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);
+        }
+    }
+
+    public Vec3 getMuzzleFlashPos(Entity entity) {
+        if (entity instanceof MCH_EntityAircraft && this.onTurret) {
+            return ((MCH_EntityAircraft) entity).calcOnTurretPos(this.muzzleFlashPosition);
+        } else {
+            Vec3 v = Vec3.createVectorHelper(this.muzzleFlashPosition.xCoord, this.muzzleFlashPosition.yCoord, this.muzzleFlashPosition.zCoord);
             float roll = entity instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft) entity).getRotRoll() : 0.0F;
             return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);
         }
