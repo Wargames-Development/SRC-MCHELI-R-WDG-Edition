@@ -33,6 +33,7 @@ public class MCH_ECMJammer {
 
     public boolean onUse(Entity e) {
         boolean result = false;
+
         if (worldObj.isRemote) {
             if (tick == 0) {
                 tick = waitTime;
@@ -44,21 +45,42 @@ public class MCH_ECMJammer {
             result = true;
             tick = waitTime;
             useTick = useTime;
+
             int jammingTime = 180;
-            if(e instanceof EntityPlayer) {
+
+            if (e instanceof EntityPlayer) {
                 aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
+
                 if (aircraft.getAcInfo().ecmJammerType == 1) {
-                    for (Entity entity : worldObj.getLoadedEntityList()) {
-                        if (entity instanceof MCH_EntityAircraft && entity.ridingEntity instanceof EntityPlayerMP
-                            && !((EntityPlayerMP) entity.ridingEntity).isOnSameTeam((EntityPlayer) e)) {
-                            ((MCH_EntityAircraft) entity).jammingTick = jammingTime;
-                            MCH_MOD.getPacketHandler().sendTo(
-                                new PacketECMJammerUse(aircraft.getEntityId(), useTick, aircraft.getAcInfo().ecmJammerType, jammingTime), (EntityPlayerMP) entity.ridingEntity);
-                        }
+                    for (Object obj : worldObj.getLoadedEntityList()) {
+                        if (!(obj instanceof Entity)) continue;
+
+                        Entity entity = (Entity) obj;
+
+                        if (!(entity instanceof MCH_EntityAircraft)) continue;
+                        if (!(entity.ridingEntity instanceof EntityPlayerMP)) continue;
+
+                        EntityPlayerMP rider = (EntityPlayerMP) entity.ridingEntity;
+
+                        // e is EntityPlayer due to the check above, safe cast here:
+                        if (rider.isOnSameTeam((EntityPlayer) e)) continue;
+
+                        ((MCH_EntityAircraft) entity).jammingTick = jammingTime;
+
+                        MCH_MOD.getPacketHandler().sendTo(
+                                new PacketECMJammerUse(
+                                        aircraft.getEntityId(),
+                                        useTick,
+                                        aircraft.getAcInfo().ecmJammerType,
+                                        jammingTime
+                                ),
+                                rider
+                        );
                     }
                 }
             }
         }
+
         return result;
     }
 
