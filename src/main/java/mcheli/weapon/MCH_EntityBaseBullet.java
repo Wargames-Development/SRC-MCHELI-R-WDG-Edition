@@ -85,6 +85,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private List<ChunkCoordIntPair> loadedChunks = new ArrayList<>();
     private double airburstTravelled = 0.0D;
     private boolean airburstTriggered = false;
+    public String nameOnRWR = "MSL";
 
     public MCH_EntityBaseBullet(World par1World) {
         super(par1World);
@@ -226,7 +227,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         return this.getDataWatcher().getWatchableObjectString(29);
     }
 
-    public void setName(String s) {
+    public void setInfoByName(String s) {
         if (s != null && !s.isEmpty()) {
             this.weaponInfo = MCH_WeaponInfoManager.get(s);
             if (this.weaponInfo != null) {
@@ -235,6 +236,17 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
                 this.onSetWeaponInfo();
             }
+        }
+
+    }
+
+    public void setInfo(String s, MCH_WeaponInfo info) {
+        if (info != null) {
+            this.weaponInfo = info;
+            if (!super.worldObj.isRemote) {
+                this.getDataWatcher().updateObject(29, s);
+            }
+            this.onSetWeaponInfo();
         }
 
     }
@@ -252,7 +264,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             this.sprinkleTime = this.getInfo().bombletSTime;
         }
 
+        this.nameOnRWR = this.getInfo().nameOnRWR;
         this.piercing = this.getInfo().piercing;
+
         if (this instanceof MCH_EntityBullet) {
             if (this.getInfo().acceleration > 4.0F) {
                 this.accelerationFactor = this.getInfo().acceleration / 4.0F;
@@ -420,6 +434,33 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.shootingEntity = user;
     }
 
+    private double calculateAngle(Entity viewer, double x, double y, double z) {
+        double dx = x - viewer.posX;
+        double dy = y - viewer.posY;
+        double dz = z - viewer.posZ;
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist < 1e-6) {
+            return 0.0;
+        }
+        dx /= dist;
+        dy /= dist;
+        dz /= dist;
+        double yawRad = Math.toRadians(viewer.rotationYaw);
+        double pitchRad = Math.toRadians(viewer.rotationPitch);
+        double fx = -Math.sin(yawRad) * Math.cos(pitchRad);
+        double fy = -Math.sin(pitchRad);
+        double fz = Math.cos(yawRad) * Math.cos(pitchRad);
+        double fLen = Math.sqrt(fx * fx + fy * fy + fz * fz);
+        if (fLen > 1e-6) {
+            fx /= fLen;
+            fy /= fLen;
+            fz /= fLen;
+        }
+        double dot = dx * fx + dy * fy + dz * fz;
+        dot = Math.max(-1.0, Math.min(1.0, dot));
+        return Math.toDegrees(Math.acos(dot));
+    }
+
     public void guidanceToPos(double targetPosX, double targetPosY, double targetPosZ) {
 
         if (getInfo().tickEndHoming > 0 && ticksExisted > getInfo().tickEndHoming) {
@@ -464,53 +505,37 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public void guidanceToTarget(double targetPosX, double targetPosY, double targetPosZ, float accelerationFactor) {
 
-        // 如果有结束寻的时间（tickEndHoming > 0）且当前已超过这个时间，停止寻的
         if (getInfo().tickEndHoming > 0 && ticksExisted > getInfo().tickEndHoming) {
             return;
         }
 
-        // 先判断是否存在有效的目标实体
         if (targetEntity == null || targetEntity.isDead) {
             return;
         }
 
-        //----------------------------------------------------------------------------
-        // 1. 如果需要预测目标位置，则根据目标当前速度做一个简单的预测
-        //----------------------------------------------------------------------------
+        //如果需要预测目标位置，则根据目标当前速度做一个简单的预测
         if (getInfo().predictTargetPos) {
-            // 当前导弹到目标的距离（用来粗略估计“到达时间”）
             double currentDistance = MathHelper.sqrt_double(
                 (targetPosX - posX) * (targetPosX - posX)
                     + (targetPosY - posY) * (targetPosY - posY)
                     + (targetPosZ - posZ) * (targetPosZ - posZ)
             );
-
-            // 当前导弹的速度（也可以根据历史帧或更复杂的模型来求平均速度）
             double missileSpeed = MathHelper.sqrt_double(
                 motionX * motionX + motionY * motionY + motionZ * motionZ
             );
-            // 避免分母为0
             if (missileSpeed < 0.0001D) {
                 missileSpeed = this.acceleration;
-                // 或者用一个固定值替代，比如武器配置里的初速度
             }
-
-            // 粗略估算导弹到达目标的时间
             double timeToTarget = currentDistance / missileSpeed;
-
-            // 根据目标速度，来对目标位置做一个简单的线性预测
             double vx = targetEntity.motionX;
             double vy = targetEntity.motionY;
             double vz = targetEntity.motionZ;
-
-            // 这里你也可以考虑加速度、重力等更复杂的因子
             targetPosX += vx * timeToTarget;
             targetPosY += vy * timeToTarget;
             targetPosZ += vz * timeToTarget;
         }
-        //----------------------------------------------------------------------------
-        // 2. 计算目标位置与当前实体位置之间的差值
-        //----------------------------------------------------------------------------
+
+        //计算目标位置与当前实体位置之间的差值
         double tx = targetPosX - this.posX;
         double ty = targetPosY - this.posY;
         double tz = targetPosZ - this.posZ;
@@ -518,31 +543,21 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         // 计算与目标的距离
         double d = MathHelper.sqrt_double(tx * tx + ty * ty + tz * tz);
 
-        //----------------------------------------------------------------------------
-        // 3. 根据距离和预设加速度计算导弹运动矢量分量
-        //----------------------------------------------------------------------------
         double mx = tx * this.acceleration / d;
         double my = ty * this.acceleration / d;
         double mz = tz * this.acceleration / d;
 
-        // 计算导弹当前运动方向（水平分量）
         Vector3f missileDirection = new Vector3f(this.motionX, this.motionY, this.motionZ);
-        // 计算目标方向（在水平面上）
         Vector3f targetDirection = new Vector3f(tx, ty, tz);
-
-        // 计算导弹运动方向与目标方向之间的夹角
         double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
         double maxAllowedAngle = Math.toRadians(getInfo().maxDegreeOfMissile);
 
-        // 如果角度超过允许值，且不是顶攻模式（doingTopAttack），则解除锁定
         if (angle > maxAllowedAngle && !doingTopAttack) {
             setTargetEntity(null);
             return;
         }
 
-        //----------------------------------------------------------------------------
-        // 4. 判断目标运动方向与导弹方向的夹角是否大于PD系统的允许阈值
-        //----------------------------------------------------------------------------
+        // 判断目标运动方向与导弹方向的夹角是否大于PD系统的允许阈值
         Vector3f targetVelocity = new Vector3f(
             (float) targetEntity.motionX,
             (float) targetEntity.motionY,
@@ -554,28 +569,40 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             return;
         }
 
-        // 如果是某些类型的空空导弹，且目标在地面上，则解锁
+        // 如果是空空导弹，且目标在地面上，则解锁
         if (this instanceof MCH_EntityAAMissile
             && MCH_WeaponGuidanceSystem.isEntityOnGround(targetEntity, weaponInfo.lockMinHeight)) {
             setTargetEntity(null);
             return;
         }
 
-        //----------------------------------------------------------------------------
-        // 5. 使用平滑加权平均值来更新当前实体的运动速度
-        //----------------------------------------------------------------------------
+        if (getInfo().semiActiveRadar) {
+            Entity viewer = null;
+            if (getInfo().enableHMS) {
+                if (this.shootingEntity != null) {
+                    viewer = this.shootingEntity;
+                }
+            } else {
+                if (this.shootingAircraft != null) {
+                    viewer = this.shootingAircraft;
+                }
+            }
+            if (viewer == null) {
+                viewer = this;
+            }
+            double semiAngle = calculateAngle(viewer, targetPosX, targetPosY, targetPosZ);
+            if (semiAngle > getInfo().maxLockOnAngle || d > getInfo().maxLockOnRange) {
+                setTargetEntity(null);
+                return;
+            }
+        }
+
         this.motionX = this.motionX + (mx - this.motionX) * getInfo().turningFactor;
         this.motionY = this.motionY + (my - this.motionY) * getInfo().turningFactor;
         this.motionZ = this.motionZ + (mz - this.motionZ) * getInfo().turningFactor;
 
-        //----------------------------------------------------------------------------
-        // 6. 更新导弹朝向（Yaw/Pitch）
-        //----------------------------------------------------------------------------
-        // Yaw：根据XZ平面速度方向计算
         double a = Math.atan2(this.motionZ, this.motionX);
         this.rotationYaw = (float) (a * 180.0D / Math.PI) - 90.0F;
-
-        // Pitch：根据Y方向与在XZ平面上的水平速度大小计算
         double r = Math.sqrt(this.motionX * this.motionX + this.motionZ * this.motionZ);
         this.rotationPitch = -((float) (Math.atan2(this.motionY, r) * 180.0D / Math.PI));
     }
@@ -670,7 +697,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 return;
             }
 
-            this.setName(this.getName());
+            this.setInfoByName(this.getName());
             if (this.getInfo() == null) {
                 return;
             }
@@ -719,26 +746,25 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         if (!this.isInWater()) {
+
+            double currentSpeed = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
+            if (currentSpeed == 0) currentSpeed = 0.000001F;
+
+            double dirX = motionX / currentSpeed;
+            double dirY = motionY / currentSpeed;
+            double dirZ = motionZ / currentSpeed;
+
             if (ticksExisted > getInfo().speedFactorStartTick
                 && ticksExisted < getInfo().speedFactorEndTick) {
-
-                double currentSpeed = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
-                if (currentSpeed > 0.0D) {
-                    double dirX = motionX / currentSpeed;
-                    double dirY = motionY / currentSpeed;
-                    double dirZ = motionZ / currentSpeed;
-
-                    super.motionX += dirX * getInfo().speedFactor;
-                    super.motionY += dirY * getInfo().speedFactor;
-                    super.motionZ += dirZ * getInfo().speedFactor;
-
-                    acceleration += getInfo().speedFactor;
-                }
+                super.motionX += dirX * getInfo().speedFactor;
+                super.motionY += dirY * getInfo().speedFactor;
+                super.motionZ += dirZ * getInfo().speedFactor;
+                acceleration += getInfo().speedFactor;
             }
 
             super.motionY += this.getGravity();
-            super.motionX -= getInfo().dragInAir;
-            super.motionZ -= getInfo().dragInAir;
+            super.motionX -= dirX * getInfo().dragInAir;
+            super.motionZ -= dirZ * getInfo().dragInAir;
         } else {
             super.motionY += this.getGravityInWater();
         }
@@ -747,6 +773,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (!super.isDead) {
             onUpdateCollided();
             onUpdateAirburst();
+            onUpdateProximityFuse();
         }
 
         super.posX += super.motionX * this.accelerationFactor;
@@ -1364,11 +1391,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
     }
 
-    public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater) {
-        newExplosion(x, y, z, exp, expBlock, inWater, null);
+    public MCH_Explosion.ExplosionResult newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater) {
+        return newExplosion(x, y, z, exp, expBlock, inWater, null);
     }
 
-    public void newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater, Entity directAttackEntity) {
+    public MCH_Explosion.ExplosionResult newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater, Entity directAttackEntity) {
         MCH_Explosion.ExplosionResult result;
         boolean playSound = (this.isBomblet != 1) || (super.rand.nextInt(3) == 0);
         EntityPlayer creditedPlayer = (this.shootingEntity instanceof EntityPlayer)
@@ -1478,6 +1505,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             this.notifyHitBullet();
         }
 
+        return result;
     }
 
     public void playExplosionSound() {
@@ -1570,7 +1598,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         double dz = entity.posZ - super.posZ;
                         Vector3f targetDir = new Vector3f((float) dx, (float) dy, (float) dz);
                         double angle = Math.abs(Vector3f.angle(missileDirection, targetDir));
-                        if (angle > Math.toRadians(getInfo().maxLockOnAngle)) continue;
+                        if (angle > Math.toRadians(getInfo().maxDegreeOfMissile)) continue;
                         double distSq = dx * dx + dy * dy + dz * dz;
                         if (distSq < nearestChaffDistSq) {
                             nearestChaffDistSq = distSq;
@@ -1592,7 +1620,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         double dz = entity.posZ - super.posZ;
                         Vector3f targetDir = new Vector3f((float) dx, (float) dy, (float) dz);
                         double angle = Math.abs(Vector3f.angle(missileDirection, targetDir));
-                        if (angle > Math.toRadians(getInfo().maxLockOnAngle)) continue;
+                        if (angle > Math.toRadians(getInfo().maxDegreeOfMissile)) continue;
 
                         if (angle < closestAngle) {
                             closestAngle = angle;
@@ -1603,6 +1631,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 // AT 导弹：只对地面上的 MCH_EntityAircraft 进行主动雷达搜索
                 else if (this instanceof MCH_EntityATMissile) {
                     if (entity instanceof MCH_EntityAircraft) {
+                        MCH_EntityAircraft ac = (MCH_EntityAircraft) entity;
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
                                 && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
@@ -1615,7 +1644,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         double dz = entity.posZ - super.posZ;
                         Vector3f targetDirection = new Vector3f((float) dx, (float) dy, (float) dz);
                         double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
-                        if (angle > Math.toRadians(getInfo().maxLockOnAngle)) continue;
+                        if (angle > Math.toRadians(getInfo().maxDegreeOfMissile)) continue;
                         if (angle < closestAngle) {
                             closestAngle = angle;
                             closestTarget = entity;
@@ -1648,19 +1677,178 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                             mZ = motionZ;
                             speed = acceleration;
                         }
-                        MCH_EntityRocket e = new MCH_EntityRocket(super.worldObj, posX, posY, posZ, mX, mY, mZ, rotationYaw, rotationPitch, speed);
-                        e.setName(getInfo().bombletModelName);
-                        e.setParameterFromWeapon(shootingAircraft, shootingEntity);
-                        e.setPower(e.getInfo().power);
-                        e.explosionPower = e.getInfo().explosion;
-                        e.explosionPowerInWater = e.getInfo().explosionInWater;
-                        float MOTION = this.getInfo().bombletDiff;
-                        e.motionX += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
-                        e.motionY += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
-                        e.motionZ += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                        MCH_WeaponInfo info = MCH_WeaponInfoManager.get(this.getInfo().bombletModelName);
+                        if(info != null) {
+                            MCH_EntityBaseBullet e = MCH_WeaponCreator.createEntity(info.type, super.worldObj, posX, posY, posZ, mX, mY, mZ, rotationYaw, rotationPitch, speed);
+                            e.setInfo(this.getInfo().bombletModelName, info);
+                            e.setParameterFromWeapon(shootingAircraft, shootingEntity);
+                            e.setPower(e.getInfo().power);
+                            e.explosionPower = e.getInfo().explosion;
+                            e.explosionPowerInWater = e.getInfo().explosionInWater;
+                            float MOTION = this.getInfo().bombletDiff;
+                            e.motionX += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                            e.motionY += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                            e.motionZ += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;
+                            MCH_WeaponCreator.setEntityInfo(e, shootingEntity);
 
-                        super.worldObj.spawnEntityInWorld(e);
+                            super.worldObj.spawnEntityInWorld(e);
+                        }
                     }
+                }
+            }
+
+            if(getInfo().destructAfterSpawnBullet && this.spawnedBulletNum >= getInfo().spawnBulletMaxNum) {
+                setDead();
+            }
+        }
+    }
+
+    /**
+     * 近炸检测（使用插值计算）
+     */
+    private void onUpdateProximityFuse() {
+
+        if (getInfo().proximityFuseTick < 0 || ticksExisted <= getInfo().proximityFuseTick) {
+            return;
+        }
+
+        if (getInfo().proximityFuseDist <= 0) {
+            return;
+        }
+
+        float searchRange = getInfo().proximityFuseDist * 5f;
+
+        List<Entity> nearbyEntities = worldObj.getEntitiesWithinAABBExcludingEntity(
+            this,
+            boundingBox.expand(searchRange, searchRange, searchRange)
+        );
+
+        if (nearbyEntities.isEmpty()) {
+            return;
+        }
+
+        // 当前帧子弹的位移向量
+        double dx = this.motionX * this.accelerationFactor;
+        double dy = this.motionY * this.accelerationFactor;
+        double dz = this.motionZ * this.accelerationFactor;
+        double segLen = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (segLen <= 0.0D) {
+            return;
+        }
+
+        // 子弹运动方向单位向量
+        double dirX = dx / segLen;
+        double dirY = dy / segLen;
+        double dirZ = dz / segLen;
+
+        // 子弹当前速度（单位：米/每帧）
+        double bulletSpeed = segLen;
+
+        for (Entity entity : nearbyEntities) {
+            if (!canBeCollidedEntity(entity)) {
+                continue;
+            }
+
+            if(MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().proximityFuseHeight)) {
+                continue;
+            }
+
+            // 方法1：考虑目标运动，计算预测位置
+            // 计算从子弹当前位置指向实体当前位置的向量
+            double toEntityX = entity.posX - this.posX;
+            double toEntityY = entity.posY - this.posY;
+            double toEntityZ = entity.posZ - this.posZ;
+
+            // 计算当前位置的距离
+            double currentDistance = Math.sqrt(toEntityX * toEntityX + toEntityY * toEntityY + toEntityZ * toEntityZ);
+
+            // 计算子弹到达目标当前位置所需的时间（粗略估计）
+            double timeToCurrentPos = currentDistance / bulletSpeed;
+
+            // 预测目标在timeToCurrentPos时间后的位置
+            double predictedX = entity.posX + entity.motionX * timeToCurrentPos;
+            double predictedY = entity.posY + entity.motionY * timeToCurrentPos;
+            double predictedZ = entity.posZ + entity.motionZ * timeToCurrentPos;
+
+            // 计算从子弹当前位置指向预测位置的向量
+            double toPredictedX = predictedX - this.posX;
+            double toPredictedY = predictedY - this.posY;
+            double toPredictedZ = predictedZ - this.posZ;
+
+            // 计算在子弹运动方向上的投影长度
+            double dot = toPredictedX * dirX + toPredictedY * dirY + toPredictedZ * dirZ;
+
+            // 如果预测点在子弹后方，跳过
+            if (dot <= 0) {
+                continue;
+            }
+
+            // 计算投影点（子弹运动方向上离预测点最近的点）
+            double projX = this.posX + dirX * dot;
+            double projY = this.posY + dirY * dot;
+            double projZ = this.posZ + dirZ * dot;
+
+            // 计算投影点到预测点的距离（垂直距离）
+            double perpX = predictedX - projX;
+            double perpY = predictedY - projY;
+            double perpZ = predictedZ - projZ;
+            double predictedDistance = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
+
+            // 如果距离小于近炸触发距离，进一步检查投影点是否在当前帧的位移路径上
+            if (predictedDistance <= getInfo().proximityFuseDist) {
+                // 计算从子弹当前位置到投影点的距离
+                double distToProj = Math.sqrt(
+                    (projX - this.posX) * (projX - this.posX) +
+                        (projY - this.posY) * (projY - this.posY) +
+                        (projZ - this.posZ) * (projZ - this.posZ)
+                );
+
+                // 如果投影点在当前帧位移路径上（或非常接近）
+                if (distToProj <= segLen + 0.1) {
+                    // 计算插值参数t
+                    double t = distToProj / segLen;
+                    // 限制t在0到1之间
+                    t = Math.max(0.0, Math.min(1.0, t));
+
+                    // 计算插值位置（爆炸位置）
+                    double ex = this.posX + dx * t;
+                    double ey = this.posY + dy * t;
+                    double ez = this.posZ + dz * t;
+
+                    if (!this.worldObj.isRemote) {
+                        MCH_Explosion.ExplosionResult result = null;
+                        if (this.getInfo().explosion > 0) {
+                            result = this.newExplosion(ex, ey, ez, getInfo().explosionAirburst,
+                                (float) this.getInfo().explosionBlock, false);
+                        } else if (this.explosionPower < 0) {
+                            this.playExplosionSound();
+                        }
+
+                        if (this.getInfo() != null && this.getInfo().enableChunkLoader) {
+                            this.clearChunkLoaders();
+                        }
+
+                        if (this.getInfo() != null) {
+                            PacketPlaySound.sendSoundPacket(
+                                ex, ey, ez, this.getInfo().hitSoundRange, this.dimension,
+                                this.getInfo().hitSound, true);
+                        }
+
+                        if (!entity.isDead) {
+                            MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
+                            DamageSource ds = DamageSource.setExplosionSource(result == null ? null : result.explosion);
+                            float damage = MCH_Config.applyDamageVsEntity(entity, ds, this.getInfo().proximityFuseDamage);
+                            damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
+                            entity.attackEntityFrom(ds, damage);
+                            if(damage > 0) {
+                                this.notifyHitBullet();
+                            }
+                        }
+                        this.setDead();
+                    }
+
+                    return;
                 }
             }
         }

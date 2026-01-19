@@ -36,6 +36,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public MCH_AircraftInfo.Chaff chaff;
     public MCH_AircraftInfo.Maintenance maintenance;
     public MCH_AircraftInfo.APS aps;
+    public MCH_AircraftInfo.ECMJammer ecmJammer;
     public float bodyHeight;
     public float bodyWidth;
     public boolean isFloat;
@@ -205,6 +206,18 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public int apsRange = 8;
     /**
+     * 电子干扰类型，0为机载电子干扰，1为机载电子攻击
+     */
+    public int ecmJammerType = 0;
+    /**
+     * 电子干扰生效时长
+     */
+    public int ecmJammerUseTime = 100;
+    /**
+     * 电子干扰冷却时长
+     */
+    public int ecmJammerWaitTime = 400;
+    /**
      * 是否有RWR
      */
     public boolean hasRWR = false;
@@ -222,9 +235,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public float armorExplosionDamageMultiplier = 1.0f;
 
     /**
-     * 是否有光电干扰机，不会被激光弹锁定
+     * 是否有光电干扰机，永远不会被激光弹锁定
      */
     public boolean hasPhotoelectricJammer = false;
+    public boolean hasDIRCM = false;
 
     private List textureNameList;
     private String lastWeaponType = "";
@@ -459,7 +473,6 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 throw new Exception();
             } else {
                 if (this.itemID <= 0) {
-                    ;
                 }
 
                 for (var10 = 0; var10 < this.partWeaponBay.size(); ++var10) {
@@ -551,6 +564,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
 
     public MCH_AircraftInfo.WeaponSet getWeaponSetById(int id) {
         return id >= 0 && id < this.weaponSetList.size() ? (MCH_AircraftInfo.WeaponSet) this.weaponSetList.get(id) : null;
+    }
+
+    public String getWeaponSetNameById(int id) {
+        return id >= 0 && id < this.weaponSetList.size() ? ((WeaponSet) this.weaponSetList.get(id)).type : null;
     }
 
     public MCH_AircraftInfo.Weapon getWeaponById(int id) {
@@ -895,6 +912,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             for (var16 = 0; var16 < s.length; ++var16) {
                                                                 this.flare.types[var16] = this.toInt(s[var16], 1, 10);
                                                             }
+                                                        } else if (item.equalsIgnoreCase("HasDIRCM")) {
+                                                            this.hasDIRCM = this.toBool(data);
                                                         } else if (item.equalsIgnoreCase("FlareOption")) {
                                                             s = this.splitParam(data);
                                                             if (s.length >= 3) {
@@ -922,6 +941,14 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             apsWaitTime = this.toInt(data, 0, 10000);
                                                         } else if (item.equalsIgnoreCase("APSRange")) {
                                                             apsRange = this.toInt(data, 0, 100);
+                                                        } else if (item.equalsIgnoreCase("HasECMJammer")) {
+                                                            ecmJammer = new ECMJammer();
+                                                        } else if (item.equalsIgnoreCase("ECMJammerType")) {
+                                                            ecmJammerType = this.toInt(data);
+                                                        } else if (item.equalsIgnoreCase("ECMJammerUseTime")) {
+                                                            ecmJammerUseTime = this.toInt(data, 0, 10000);
+                                                        } else if (item.equalsIgnoreCase("ECMJammerWaitTime")) {
+                                                            ecmJammerWaitTime = this.toInt(data, 0, 10000);
                                                         } else if (item.equalsIgnoreCase("Sound")) {
                                                             this.soundMove = data.toLowerCase();
                                                         } else if (item.equalsIgnoreCase("SoundRange")) {
@@ -1433,6 +1460,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         return this.aps != null;
     }
 
+    public boolean haveECMJammer() {
+        return this.ecmJammer != null;
+    }
+
     public class RotPart extends MCH_AircraftInfo.DrawnPart {
 
         public final float rotSpeed;
@@ -1739,6 +1770,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     }
 
     public class APS {
+
+    }
+
+    public class ECMJammer {
 
     }
 

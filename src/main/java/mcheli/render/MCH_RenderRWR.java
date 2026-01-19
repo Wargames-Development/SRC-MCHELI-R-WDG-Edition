@@ -9,6 +9,8 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponInfoManager;
 import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
@@ -31,6 +33,7 @@ public class MCH_RenderRWR {
     private static final ResourceLocation RWR_HELI = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_HELI.png");
     private static final ResourceLocation RWR_TANK = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_TANK.png");
     private static final ResourceLocation RWR_FAC = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_FAC.png");
+    private static final ResourceLocation RWR_jammed = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_jammed.png");
     private static final int _RWR_SIZE = 180;
     private static final int _RWR_CENTER_X = 100;
     private static final int _RWR_CENTER_Y = 280;
@@ -107,11 +110,18 @@ public class MCH_RenderRWR {
             double sx = sc.getScaledHeight() * (RWR_CENTER_X / SCREEN_HEIGHT_ADAPT_CONSTANT);
             double sy = sc.getScaledHeight() * (RWR_CENTER_Y / SCREEN_HEIGHT_ADAPT_CONSTANT);
             drawRWRCircle(sx, sy, sc, rwr, RWR_SIZE);
+            if(ac.jammingTick > 0) {
+                drawRWRCircle(sx, sy, sc, RWR_jammed, RWR_SIZE);
+            }
 
             // 新增实体渲染逻辑
             double circleRadius = sc.getScaledHeight() * (RWR_SIZE / SCREEN_HEIGHT_ADAPT_CONSTANT) / 2.0;
             for (MCH_EntityInfo entity : getServerLoadedEntity()) {
                 if (!isValidEntity(entity, player, MIN_DISTANCE)) continue;
+
+                if(ac.jammingTick > 0) {
+                    continue;
+                }
 
                 // 计算插值位置
                 double xPos = interpolate(entity.posX, entity.lastTickPosX, event.partialTicks);
@@ -150,7 +160,7 @@ public class MCH_RenderRWR {
                 int textWidth = Minecraft.getMinecraft().fontRenderer.getStringWidth(text);
                 Minecraft.getMinecraft().fontRenderer.drawString(
                     text,
-                    (int) (markerX - textWidth / 2),
+                    (int) (markerX - (double) textWidth / 2),
                     (int) (markerY - 4),
                     color, true
                 );
@@ -195,7 +205,7 @@ public class MCH_RenderRWR {
         return true;
     }
 
-    private MCH_RWRResult getTargetTypeOnRadar(MCH_EntityInfo entity, MCH_EntityAircraft ac) {
+    public MCH_RWRResult getTargetTypeOnRadar(MCH_EntityInfo entity, MCH_EntityAircraft ac) {
         int color = 0x00FF00;
         if (ac instanceof MCH_EntityTank
             || (ac instanceof MCP_EntityPlane && ac.getAcInfo().isFloat)) {
@@ -203,13 +213,13 @@ public class MCH_RenderRWR {
         }
         switch (ac.getAcInfo().rwrType) {
             case DIGITAL: {
-                if (entity.entityClassName.contains("MCH_EntityHeli")
-                    || entity.entityClassName.contains("MCP_EntityPlane")
-                    || entity.entityClassName.contains("MCH_EntityTank")
-                    || entity.entityClassName.contains("MCH_EntityVehicle")) {
+                if (isVehicle(entity.entityClassName)) {
                     return new MCH_RWRResult(ac.getNameOnMyRadar(entity), color);
-                } else {
-                    return new MCH_RWRResult("MSL", 0xFF0000);
+                } else if (isMissile(entity.entityClassName)) {
+                    MCH_WeaponInfo wi = MCH_WeaponInfoManager.get(entity.entityName);
+                    if (wi != null) {
+                        return new MCH_RWRResult(wi.nameOnRWR, 0xFF0000);
+                    }
                 }
             }
         }
@@ -251,5 +261,19 @@ public class MCH_RenderRWR {
 
     public List<MCH_EntityInfo> getServerLoadedEntity() {
         return new ArrayList<>(MCH_EntityInfoClientTracker.getAllTrackedEntities());
+    }
+
+    public boolean isVehicle(String className) {
+        return className.contains("MCH_EntityHeli")
+            || className.contains("MCP_EntityPlane")
+            || className.contains("MCH_EntityTank")
+            || className.contains("MCH_EntityVehicle");
+    }
+
+    public boolean isMissile(String className) {
+        return className.contains("MCH_EntityAAMissile")
+            || className.contains("MCH_EntityASMissile")
+            || className.contains("MCH_EntityATMissile")
+            || className.contains("MCH_EntityTvMissile");
     }
 }

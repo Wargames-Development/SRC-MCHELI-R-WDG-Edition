@@ -1,12 +1,12 @@
 package mcheli.plane;
 
+import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
 import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_AircraftInfo;
 import net.minecraft.item.Item;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class MCP_PlaneInfo extends MCH_AircraftInfo {
 
@@ -14,6 +14,7 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
     public List nozzles = new ArrayList();
     public List rotorList = new ArrayList();
     public List wingList = new ArrayList();
+    public List<ExhaustFlame> exhaustFlames = new ArrayList<>();
     public boolean isEnableVtol = false;
     public boolean isDefaultVtol;
     public float vtolYaw = 0.3F;
@@ -22,6 +23,7 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
     public boolean isVariableSweepWing = false;
     public float sweepWingSpeed;
 
+    public static Map<String, Integer> exhaustFlameTextureMap = new HashMap<>();
 
     public MCP_PlaneInfo(String name) {
         super(name);
@@ -139,6 +141,22 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
                 this.vtolPitch = this.toFloat(data, 0.01F, 1.0F);
             } else if (item.compareTo("enableautopilot") == 0) {
                 this.isEnableAutoPilot = this.toBool(data);
+            } else if (item.equalsIgnoreCase("addexhaustflame")) {
+                s = data.split("\\s*,\\s*");
+                if (s.length == 10) {
+                    String modelName = s[0].trim();
+                    String texturePrefix = s[1].trim();
+                    float x = this.toFloat(s[2]);
+                    float y = this.toFloat(s[3]);
+                    float z = this.toFloat(s[4]);
+                    float rx = this.toFloat(s[5]);
+                    float ry = this.toFloat(s[6]);
+                    float rz = this.toFloat(s[7]);
+                    float degreeYaw = this.toFloat(s[8]);
+                    int delay = this.toInt(s[9]);
+                    MCP_PlaneInfo.ExhaustFlame ef = new MCP_PlaneInfo.ExhaustFlame(modelName, texturePrefix, x, y, z, rx, ry, rz, degreeYaw, delay, "exhaustflame" + this.exhaustFlames.size());
+                    this.exhaustFlames.add(ef);
+                }
             }
         }
         MCH_AircraftInfo.allAircraftInfo.put(name, this);
@@ -157,6 +175,7 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
         this.nozzles.clear();
         this.rotorList.clear();
         this.wingList.clear();
+        this.exhaustFlames.clear();
     }
 
     public void postReload() {
@@ -213,6 +232,21 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
             this.maxRot = mr;
             this.maxRotFactor = this.maxRot / 90.0F;
             this.pylonList = null;
+        }
+    }
+
+    public class ExhaustFlame extends MCH_AircraftInfo.DrawnPart {
+
+        public String texturePrefix;
+        //绕机体左右侧的最大旋转角度
+        public float degreeYaw;
+        public int delay;
+
+        public ExhaustFlame(String modelName, String texturePrefix, float x, float y, float z, float rx, float ry, float rz, float degreeYaw, int delay, String partName) {
+            super(x, y, z, rx, ry, rz, modelName);
+            this.texturePrefix = texturePrefix;
+            this.degreeYaw = degreeYaw;
+            this.delay = delay;
         }
     }
 }

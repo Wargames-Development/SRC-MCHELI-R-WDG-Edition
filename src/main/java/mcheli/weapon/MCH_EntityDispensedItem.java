@@ -150,7 +150,7 @@ public class MCH_EntityDispensedItem extends MCH_EntityBaseBullet {
         if (!super.worldObj.isRemote) {
             MCH_EntityDispensedItem e = new MCH_EntityDispensedItem(super.worldObj, super.posX, super.posY, super.posZ, super.motionX, super.motionY, super.motionZ, (float) super.rand.nextInt(360), 0.0F, super.acceleration);
             e.setParameterFromWeapon(this, super.shootingAircraft, super.shootingEntity);
-            e.setName(this.getName());
+            e.setInfoByName(this.getName());
             float MOTION = 1.0F;
             float RANDOM = this.getInfo().bombletDiff;
             e.motionX = super.motionX * 1.0D + (double) ((super.rand.nextFloat() - 0.5F) * RANDOM);

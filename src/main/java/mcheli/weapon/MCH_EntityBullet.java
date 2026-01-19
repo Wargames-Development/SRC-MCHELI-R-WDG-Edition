@@ -25,28 +25,6 @@ public class MCH_EntityBullet extends MCH_EntityBaseBullet {
 
     public void onUpdate() {
         super.onUpdate();
-        if (!super.isDead && !super.worldObj.isRemote && this.getCountOnUpdate() > 1 && this.getInfo() != null && super.explosionPower > 0) {
-            float pDist = this.getInfo().proximityFuseDist;
-            if ((double) pDist > 0.1D) {
-                ++pDist;
-                float rng = pDist + MathHelper.abs(this.getInfo().acceleration);
-                List list = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.expand(rng, rng, rng));
-
-                for (Object o : list) {
-                    Entity entity1 = (Entity) o;
-                    if (this.canBeCollidedEntity(entity1) && entity1.getDistanceSqToEntity(this) < (double) (pDist * pDist)) {
-                        MCH_Lib.DbgLog(super.worldObj, "MCH_EntityBullet.onUpdate:proximityFuse:" + entity1);
-                        super.posX = (entity1.posX + super.posX) / 2.0D;
-                        super.posY = (entity1.posY + super.posY) / 2.0D;
-                        super.posZ = (entity1.posZ + super.posZ) / 2.0D;
-                        MovingObjectPosition mop = W_MovingObjectPosition.newMOP((int) super.posX, (int) super.posY, (int) super.posZ, 0, W_WorldFunc.getWorldVec3EntityPos(this), false);
-                        this.onImpact(mop, 1.0F);
-                        break;
-                    }
-                }
-            }
-        }
-
     }
 
     @Override

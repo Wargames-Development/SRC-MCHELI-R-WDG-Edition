@@ -1,6 +1,7 @@
 package mcheli;
 
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.weapon.MCH_EntityBaseBullet;
 import net.minecraft.entity.Entity;
 
 public class MCH_EntityInfo {
@@ -36,6 +37,12 @@ public class MCH_EntityInfo {
             MCH_EntityAircraft ac = (MCH_EntityAircraft) e;
             if (ac.getAcInfo() != null) {
                 name = ac.getAcInfo().name;
+            }
+        }
+        if (e instanceof MCH_EntityBaseBullet) {
+            MCH_EntityBaseBullet b = (MCH_EntityBaseBullet) e;
+            if (b.getInfo() != null) {
+                name = b.getInfo().name;
             }
         }
         return new MCH_EntityInfo(e.getEntityId(),

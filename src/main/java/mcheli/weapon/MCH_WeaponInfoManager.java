@@ -7,17 +7,13 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.io.*;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 public class MCH_WeaponInfoManager {
 
     private static MCH_WeaponInfoManager instance = new MCH_WeaponInfoManager();
-    private static HashMap map;
+    private static Map<String, MCH_WeaponInfo> map;
     private static String lastPath;
-
 
     private MCH_WeaponInfoManager() {
         map = new HashMap();
@@ -105,11 +101,8 @@ public class MCH_WeaponInfoManager {
     }
 
     public static void setRoundItems() {
-        Iterator i$ = map.values().iterator();
 
-        while (i$.hasNext()) {
-            MCH_WeaponInfo w = (MCH_WeaponInfo) i$.next();
-
+        for (MCH_WeaponInfo w : map.values()) {
             MCH_WeaponInfo.RoundItem r;
             Item item;
             for (Iterator i$1 = w.roundItems.iterator(); i$1.hasNext(); r.itemStack = new ItemStack(item, 1, r.damage)) {
@@ -121,7 +114,7 @@ public class MCH_WeaponInfoManager {
     }
 
     public static MCH_WeaponInfo get(String name) {
-        return (MCH_WeaponInfo) map.get(name);
+        return map.get(name);
     }
 
     public static boolean contains(String name) {
