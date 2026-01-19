@@ -24,7 +24,7 @@ public class MCH_EntityRocket extends MCH_EntityBaseBullet {
     public void sprinkleBomblet() {
         if (!super.worldObj.isRemote) {
             MCH_EntityRocket e = new MCH_EntityRocket(super.worldObj, super.posX, super.posY, super.posZ, super.motionX, super.motionY, super.motionZ, super.rotationYaw, super.rotationPitch, super.acceleration);
-            e.setName(this.getName());
+            e.setInfoByName(this.getName());
             e.setParameterFromWeapon(this, super.shootingAircraft, super.shootingEntity);
             float MOTION = this.getInfo().bombletDiff;
             e.motionX += ((double) super.rand.nextFloat() - 0.5D) * (double) MOTION;

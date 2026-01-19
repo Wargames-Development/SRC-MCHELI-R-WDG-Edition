@@ -1,12 +1,18 @@
 package mcheli.weapon;
 
+import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.wrapper.W_Entity;
+import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 
-public class MCH_EntityASMissile extends MCH_EntityBaseBullet {
+public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker, MCH_IMissile {
 
     public double targetPosX;
     public double targetPosY;
     public double targetPosZ;
+    public double originTargetPosX;
+    public double originTargetPosY;
+    public double originTargetPosZ;
     public boolean targeting;
 
     public MCH_EntityASMissile(World par1World) {
@@ -44,7 +50,24 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet {
             }
 
             if (!super.worldObj.isRemote && !super.isDead && targeting && this.getCountOnUpdate() > this.getInfo().rigidityTime) {
-                guidanceToPos(targetPosX, targetPosY, targetPosZ);
+                if (getInfo().lockEntity) {
+                    int range = getInfo().maxLockOnRange;
+                    for (Entity entity : super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.expand(100, 100, 100))) {
+                        if(entity instanceof MCH_EntityAircraft && !W_Entity.isEqual(entity, shootingAircraft)){
+                            double d0 = entity.posX - originTargetPosX;
+                            double d1 = entity.posY - originTargetPosY;
+                            double d2 = entity.posZ - originTargetPosZ;
+                            if (d0 * d0 + d1 * d1 + d2 * d2 <= range * range) {
+                                targetPosX = entity.posX;
+                                targetPosY = entity.posY;
+                                targetPosZ = entity.posZ;
+                            }
+                        }
+                    }
+                    guidanceToPos(targetPosX, targetPosY, targetPosZ);
+                } else {
+                    guidanceToPos(originTargetPosX, originTargetPosY, originTargetPosZ);
+                }
             }
         } else if (!super.worldObj.isRemote) {
             this.setDead();
@@ -56,7 +79,7 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet {
         if (!super.worldObj.isRemote) {
             MCH_EntityASMissile e = new MCH_EntityASMissile(super.worldObj, super.posX, super.posY, super.posZ, super.motionX, super.motionY, super.motionZ, (float) super.rand.nextInt(360), 0.0F, super.acceleration);
             e.setParameterFromWeapon(this, super.shootingAircraft, super.shootingEntity);
-            e.setName(this.getName());
+            e.setInfoByName(this.getName());
             float MOTION = 0.5F;
             float RANDOM = this.getInfo().bombletDiff;
             e.motionX = super.motionX * 0.5D + (double) ((super.rand.nextFloat() - 0.5F) * RANDOM);
@@ -70,5 +93,10 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet {
 
     public MCH_BulletModel getDefaultBulletModel() {
         return MCH_DefaultBulletModels.ASMissile;
+    }
+
+    @Override
+    public boolean canLockEntity(Entity var1) {
+        return false;
     }
 }

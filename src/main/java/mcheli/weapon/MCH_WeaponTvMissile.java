@@ -19,10 +19,9 @@ import net.minecraft.world.World;
 public class MCH_WeaponTvMissile extends MCH_WeaponBase {
 
     public MCH_LaserGuidanceSystem guidanceSystem;
-    protected MCH_EntityTvMissile lastShotTvMissile = null;
+    protected MCH_EntityTvMissile lastShotTvMissile;
     protected Entity lastShotEntity;
     protected boolean isTVGuided;
-
 
     public MCH_WeaponTvMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
@@ -40,6 +39,9 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             this.guidanceSystem = new MCH_LaserGuidanceSystem();
             guidanceSystem.worldObj = w;
             guidanceSystem.hasLaserGuidancePod = wi.hasLaserGuidancePod;
+            guidanceSystem.lockEntity = wi.lockEntity;
+            guidanceSystem.cameraFollowLockEntity = wi.cameraFollowLockEntity;
+            guidanceSystem.cameraFollowStrength = wi.cameraFollowStrength;
             if (w.isRemote) {
                 initGuidanceSystemClient();
             }
@@ -141,7 +143,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         }
 
         MCH_EntityTvMissile e = new MCH_EntityTvMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) acr);
-        e.setName(super.name);
+        e.setInfoByName(super.name);
         e.setTVMissile(isTVGuided);
         e.setParameterFromWeapon(this, prm.entity, prm.user);
         this.lastShotEntity = prm.entity;

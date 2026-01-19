@@ -3,6 +3,7 @@ package mcheli;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.network.packets.PacketEntityInfoSync;
@@ -91,14 +92,27 @@ public class MCH_EntityInfoManager {
         }
         if (MCH_FMURUtil.isSoldier(entity) || entity instanceof EntityPlayer || entity instanceof MCH_IEntityLockChecker) {
             if (entity instanceof MCP_EntityPlane || entity instanceof MCH_EntityHeli || entity instanceof MCH_EntityChaff) {
-                if (entity.posY - w.getHeightValue((int) entity.posX, (int) entity.posZ) < 30) {
+                if (!isShip(entity) && entity.posY - w.getHeightValue((int) entity.posX, (int) entity.posZ) < 30) {
                     return false;
                 }
-                if (entity.motionX * entity.motionX + entity.motionY * entity.motionY + entity.motionZ * entity.motionZ < 0.5 * 0.5) {
+                if (!isShip(entity) && entity.motionX * entity.motionX + entity.motionY * entity.motionY + entity.motionZ * entity.motionZ < 0.5 * 0.5) {
+                    return false;
+                }
+            }
+            if (entity instanceof MCH_EntityAircraft) {
+                MCH_EntityAircraft aircraft = (MCH_EntityAircraft) entity;
+                if (aircraft.isECMJammerUsing()) {
                     return false;
                 }
             }
             return true;
+        }
+        return false;
+    }
+
+    private boolean isShip(Entity entity) {
+        if (entity instanceof MCP_EntityPlane) {
+            return ((MCP_EntityPlane) entity).getAcInfo() != null && ((MCP_EntityPlane) entity).getAcInfo().isFloat;
         }
         return false;
     }

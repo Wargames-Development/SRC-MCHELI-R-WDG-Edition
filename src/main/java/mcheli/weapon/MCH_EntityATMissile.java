@@ -1,9 +1,10 @@
 package mcheli.weapon;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 
-public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
+public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker, MCH_IMissile {
 
     public int guidanceType = 0;
 
@@ -119,15 +120,7 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
 
                     //非攻顶
                     else {
-                        if (this.getInfo().proximityFuseDist >= 0.1F && d < (double) this.getInfo().proximityFuseDist) {
-                            MovingObjectPosition mop = new MovingObjectPosition(super.targetEntity);
-                            super.posX = (super.targetEntity.posX + super.posX) / 2.0D;
-                            super.posY = (super.targetEntity.posY + super.posY) / 2.0D;
-                            super.posZ = (super.targetEntity.posZ + super.posZ) / 2.0D;
-                            this.onImpact(mop, 1.0F);
-                        } else {
-                            this.guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
-                        }
+                        this.guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
                     }
                 }
             } else {
@@ -141,5 +134,10 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet {
 
     public MCH_BulletModel getDefaultBulletModel() {
         return MCH_DefaultBulletModels.ATMissile;
+    }
+
+    @Override
+    public boolean canLockEntity(Entity var1) {
+        return false;
     }
 }

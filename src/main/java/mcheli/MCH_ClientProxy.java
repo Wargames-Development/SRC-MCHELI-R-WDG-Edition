@@ -13,10 +13,7 @@ import mcheli.command.MCH_GuiTitle;
 import mcheli.container.MCH_EntityContainer;
 import mcheli.container.MCH_RenderContainer;
 import mcheli.debug.MCH_RenderTest;
-import mcheli.flare.MCH_EntityChaff;
-import mcheli.flare.MCH_EntityFlare;
-import mcheli.flare.MCH_RenderChaff;
-import mcheli.flare.MCH_RenderFlare;
+import mcheli.flare.*;
 import mcheli.gltd.MCH_EntityGLTD;
 import mcheli.gltd.MCH_ItemGLTDRender;
 import mcheli.gltd.MCH_RenderGLTD;
@@ -58,6 +55,7 @@ import mcheli.wrapper.modelloader.W_ModelCustom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.IChatComponent;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.model.IModelCustom;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -87,10 +85,8 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public static void registerModels_Bullet() {
-        Iterator i$ = MCH_WeaponInfoManager.getValues().iterator();
-
-        while (i$.hasNext()) {
-            MCH_WeaponInfo wi = (MCH_WeaponInfo) i$.next();
+        for (Object o : MCH_WeaponInfoManager.getValues()) {
+            MCH_WeaponInfo wi = (MCH_WeaponInfo) o;
             IModelCustom m = null;
             if (!wi.bulletModelName.isEmpty()) {
                 m = MCH_ModelManager.load("bullets", wi.bulletModelName);
@@ -149,6 +145,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityThrowable.class, new MCH_RenderThrowable());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityLockBox.class, new MCH_RenderLockBox());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityChaff.class, new MCH_RenderChaff());
+        RenderingRegistry.registerEntityRenderingHandler(MCH_EntityDecoy.class, new MCH_RenderDecoy());
         RenderingRegistry.registerEntityRenderingHandler(EntityNukeTorex.class, new RenderTorex());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemJavelin, new MCH_ItemLightWeaponRender());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemStinger, new MCH_ItemLightWeaponRender());
@@ -254,10 +251,41 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MCH_ModelManager.setForceReloadMode(false);
     }
 
+    private boolean resourceExists(String texturePath) {
+        try {
+            ResourceLocation resource = new ResourceLocation("mcheli", texturePath);
+            Minecraft.getMinecraft().getResourceManager().getResource(resource);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void registerModelsPlane(String name, boolean reload) {
         MCH_ModelManager.setForceReloadMode(reload);
         MCP_PlaneInfo info = (MCP_PlaneInfo) MCP_PlaneInfoManager.map.get(name);
         info.model = MCH_ModelManager.load("planes", info.name);
+
+        for (MCP_PlaneInfo.ExhaustFlame exhaustFlame : info.exhaustFlames) {
+            MCH_ModelManager.load("exhaustflames", exhaustFlame.modelName);
+            if(!MCP_PlaneInfo.exhaustFlameTextureMap.containsKey(exhaustFlame.texturePrefix)) {
+                String texturePrefix = exhaustFlame.texturePrefix;
+                int count = 0;
+                try {
+                    for (int i = 0; i < 100; i++) {
+                        String texturePath = "textures/exhaustflames/" + texturePrefix + i + ".png";
+                        if (resourceExists(texturePath)) {
+                            count++;
+                        } else {
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                MCP_PlaneInfo.exhaustFlameTextureMap.put(texturePrefix, count);
+            }
+        }
 
         Iterator i$;
         MCH_AircraftInfo.DrawnPart w;
@@ -523,7 +551,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public MCH_Config reconfig() {
-        MCH_Lib.DbgLog(false, "MCH_ClientProxy.reconfig()", new Object[0]);
+        MCH_Lib.DbgLog(false, "MCH_ClientProxy.reconfig()");
         MCH_Config config = this.loadConfig(super.lastConfigFileName);
         MCH_ClientCommonTickHandler.instance.updatekeybind(config);
         return config;

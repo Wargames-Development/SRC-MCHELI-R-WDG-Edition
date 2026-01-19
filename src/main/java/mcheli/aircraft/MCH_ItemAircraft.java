@@ -2,7 +2,10 @@ package mcheli.aircraft;
 
 import mcheli.MCH_Achievement;
 import mcheli.MCH_Config;
+import mcheli.MCH_I18n;
 import mcheli.MCH_MOD;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponInfoManager;
 import mcheli.wrapper.W_EntityPlayer;
 import mcheli.wrapper.W_Item;
 import mcheli.wrapper.W_MovingObjectPosition;
@@ -10,6 +13,9 @@ import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.block.BlockSponge;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.settings.GameSettings;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityMinecartEmpty;
 import net.minecraft.entity.player.EntityPlayer;
@@ -37,15 +43,93 @@ public abstract class MCH_ItemAircraft extends W_Item {
         }
     }
 
-    public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean par4) {
-        MCH_EntityAircraft ac = createAircraft(player.worldObj, -1.0D, -1.0D, -1.0D, stack);
-        super.addInformation(stack, player, lines, par4);
+    public static float roundFloat(float value, int points) {
+        int pow = 10;
+        for (int i = 1; i < points; i++)
+            pow *= 10;
+        float result = value * pow;
+
+        return (float) (int) ((result - (int) result) >= 0.5f ? result + 1 : result) / pow;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advancedTooltips) {
+        MCH_AircraftInfo info = getAircraftInfo();
+        if (info == null) return;
+
+        KeyBinding shift = Minecraft.getMinecraft().gameSettings.keyBindSneak;
+
+        lines.add("\u00a7b\u00a7o" + info.displayName);
+
+        if (!GameSettings.isKeyDown(shift)) {
+            lines.add(MCH_I18n.format("aircraft.info.hold_shift", GameSettings.getKeyDisplayString(shift.getKeyCode())));
+        } else {
+            lines.add("");
+
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.max_hp") + "\u00a77: " + info.maxHp);
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.engine_shutdown_threshold") + "\u00a77: " + info.engineShutdownThreshold + "%");
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_min_damage") + "\u00a77: " + roundFloat(info.armorMinDamage, 2));
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_max_damage") + "\u00a77: " + roundFloat(info.armorMaxDamage, 2));
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_damage_factor") + "\u00a77: " + roundFloat(info.armorDamageFactor, 2));
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.throttle_up_down") + "\u00a77: " + roundFloat(info.throttleUpDown, 2));
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.camera_zoom") + "\u00a77: " + info.cameraZoom);
+            if (info.stealth != 0) {
+                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.stealth") + "\u00a77: " + roundFloat(info.stealth, 2));
+            }
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.speed") + "\u00a77: " + roundFloat(info.speed, 2));
+            if (info.hasRWR) {
+                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.radar_type") + "\u00a77: " + info.radarType);
+                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.rwr_type") + "\u00a77: " + info.rwrType);
+            }
+            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_explosion_damage_multiplier") + "\u00a77: " + roundFloat(info.armorExplosionDamageMultiplier, 2));
+
+            lines.add("");
+            if (info.haveFlare()) {
+                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.flare"));
+            }
+            if (info.haveChaff()) {
+                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.chaff"));
+            }
+            if (info.haveAPS()) {
+                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.aps"));
+            }
+            if (info.haveMaintenance()) {
+                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.maintenance"));
+            }
+            if (info.hasPhotoelectricJammer) {
+                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.photoelectric_jammer"));
+            }
+            if (info.hasDIRCM) {
+                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.dircm"));
+            }
+            if (info.hasRWR) {
+                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.rwr"));
+            }
+
+            int num = info.getWeaponNum();
+            if (num > 0) {
+                lines.add("");
+                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.weapon_list") + ": ");
+                for (int i = 0; i < num; i++) {
+                    String s = info.getWeaponSetNameById(i);
+                    if (s != null) {
+                        MCH_WeaponInfo wi = MCH_WeaponInfoManager.get(s);
+                        if (wi != null) {
+                            lines.add("\u00a77" + wi.displayName);
+                        }
+                    }
+                }
+            } else {
+                lines.add("\u00a77" + MCH_I18n.format("aircraft.info.no_weapon"));
+            }
+
+        }
     }
 
     public abstract MCH_AircraftInfo getAircraftInfo();
 
     public abstract MCH_EntityAircraft createAircraft(World var1, double var2, double var4, double var6, ItemStack var8);
-
 
     public MCH_EntityAircraft onTileClick(ItemStack itemStack, World world, float rotationYaw, int x, int y, int z) {
         MCH_EntityAircraft ac = this.createAircraft(world, (double) ((float) x + 0.5F), (double) ((float) y + 1.0F), (double) ((float) z + 0.5F), itemStack);

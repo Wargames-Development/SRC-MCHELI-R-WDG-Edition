@@ -184,6 +184,8 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("have_maintenance", ac.haveMaintenance() ? 1.0D : 0.0D);
         updateVarMapItem("have_aps", ac.haveAPS() ? 1.0D : 0.0D);
         updateVarMapItem("can_aps", ac.canUseAPS() ? 1.0D : 0.0D);
+        updateVarMapItem("have_ecm_jammer", ac.haveECMJammer() ? 1.0D : 0.0D);
+        updateVarMapItem("can_ecm_jammer", ac.canUseECMJammer() ? 1.0D : 0.0D);
         updateVarMapItem("is_engine_shutdown", ac.getHP() * 100 / ac.getMaxHP() < ac.getAcInfo().engineShutdownThreshold ? 1.0D : 0.0D);
         updateVarMapItem("hud_type", ac.getAcInfo().hudType);
         updateVarMapItem("weapon_group_type", ac.getAcInfo().weaponGroupType);
@@ -194,6 +196,8 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("missile_lock_dist", ac.missileDetector != null ? ac.missileDetector.missileLockDist : 0.0D);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
         updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
+        updateVarMapItem("have_dircm", ac.getAcInfo().hasDIRCM ? 1.0D : 0.0D);
+        updateVarMapItem("is_jammed", ac.jammingTick > 0 ? 1.0D : 0.0D);
         if (ac instanceof MCP_EntityPlane) {
             MCP_PlaneInfo info = ((MCP_EntityPlane) ac).getPlaneInfo();
             updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);

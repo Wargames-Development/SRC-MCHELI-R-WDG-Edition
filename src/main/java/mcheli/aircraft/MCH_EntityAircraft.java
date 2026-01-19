@@ -9,10 +9,7 @@ import mcheli.chain.MCH_EntityChain;
 import mcheli.command.MCH_Command;
 import mcheli.event.AircraftDamageEvent;
 import mcheli.event.AircraftDestoryEvent;
-import mcheli.flare.MCH_APS;
-import mcheli.flare.MCH_Chaff;
-import mcheli.flare.MCH_Flare;
-import mcheli.flare.MCH_Maintenance;
+import mcheli.flare.*;
 import mcheli.multiplay.MCH_Multiplay;
 import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketBoundingBoxHit;
@@ -163,11 +160,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public MCH_Chaff chaff;
     public MCH_Maintenance maintenance;
     public MCH_APS aps;
+    public MCH_ECMJammer ecmJammer;
     public int ironCurtainRunningTick = 0;
     public float ironCurtainLastFactor = 0.5f;
     public float ironCurtainCurrentFactor = 0.5f;
     public int ironCurtainWaveTimer = 0;
     public int chaffUseTime = 0;
+    public int ecmJammerUseTime = 0;
     public float gForce;
     public Entity lastRiddenByEntity;
     public List<MCH_DamageIndicator> damageIndicatorList = new ArrayList<>();
@@ -225,6 +224,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private double lastCalcLandInDistanceCount;
     private double lastLandInDistance;
     private boolean switchSeat = false;
+    public int jammingTick = 0;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -236,6 +236,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.chaff = new MCH_Chaff(world, this);
         this.maintenance = new MCH_Maintenance(world, this);
         this.aps = new MCH_APS(world, this);
+        this.ecmJammer = new MCH_ECMJammer(world, this);
         this.currentFlareIndex = 0;
         this.entityRadar = new MCH_Radar(world);
         this.radarRotate = 0;
@@ -1548,6 +1549,26 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (chaffUseTime > 0) {
             chaffUseTime--;
         }
+        if (ecmJammerUseTime > 0) {
+            ecmJammerUseTime--;
+        }
+        if (jammingTick > 0) {
+            jammingTick--;
+        }
+
+        if(!worldObj.isRemote) {
+            int hpPer = getHP() * 100 / getMaxHP();
+            if(hpPer > 5 && hpPer < getAcInfo().engineShutdownThreshold) {
+                if(ticksExisted % 20 == 0) {
+                    W_WorldFunc.MOD_playSoundAtEntity(this, "low_health", 1.0F, 1.0F);
+                }
+            }
+            if (!isDestroyed() && hpPer <= 5) {
+                if (ticksExisted % 15 == 0) {
+                    W_WorldFunc.MOD_playSoundAtEntity(this, "no_health", 1.0F, 1.0F);
+                }
+            }
+        }
 
         this.prevCurrentThrottle = this.getCurrentThrottle();
         this.lastBBDamageFactor = 1.0F;
@@ -1698,6 +1719,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.aps.waitTime = getAcInfo().apsWaitTime;
             this.aps.range = getAcInfo().apsRange;
             this.aps.onUpdate();
+        }
+        if (this.getAcInfo() != null && this.ecmJammer != null) {
+            this.ecmJammer.useTime = getAcInfo().ecmJammerUseTime;
+            this.ecmJammer.waitTime = getAcInfo().ecmJammerWaitTime;
+            this.ecmJammer.onUpdate();
         }
         if (!super.worldObj.isRemote && this.getFlareTick() == 0 && ft != 0) {
             this.setCommonStatus(0, false);
@@ -3229,6 +3255,17 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
     }
 
+    public boolean useECMJammer(Entity e) {
+        if (this.getAcInfo() != null && this.getAcInfo().haveECMJammer()) {
+            if (this.ecmJammer.onUse(e)) {
+                return true;
+            }
+            return false;
+        } else {
+            return false;
+        }
+    }
+
     public int getCurrentFlareType() {
         return !this.haveFlare() ? 0 : this.getAcInfo().flare.types[this.currentFlareIndex];
     }
@@ -3272,12 +3309,20 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return this.chaff.isUsing();
     }
 
+    public boolean isECMJammerUsing() {
+        return ecmJammerUseTime > 0 || this.ecmJammer.isUsing();
+    }
+
     public boolean canUseMaintenance() {
         return this.getAcInfo() != null && this.getAcInfo().haveMaintenance() && this.maintenance.tick == 0;
     }
 
     public boolean canUseAPS() {
         return this.getAcInfo() != null && this.getAcInfo().haveAPS() && this.aps.tick == 0;
+    }
+
+    public boolean canUseECMJammer() {
+        return this.getAcInfo() != null && this.getAcInfo().haveECMJammer() && this.ecmJammer.tick == 0;
     }
 
     public boolean haveChaff() {
@@ -3290,6 +3335,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean haveAPS() {
         return this.getAcInfo() != null && this.getAcInfo().haveAPS();
+    }
+
+    public boolean haveECMJammer() {
+        return this.getAcInfo() != null && this.getAcInfo().haveECMJammer();
     }
 
     public MCH_EntitySeat[] getSeats() {

@@ -7,7 +7,6 @@ import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.container.MCH_EntityContainer;
 import mcheli.uav.MCH_EntityUavStation;
-import mcheli.weapon.MCH_WeaponParam;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -100,6 +99,10 @@ public class MCH_HeliPacketHandler {
 
                     if (pc.useAPS) {
                         heli.useAPS(player);
+                    }
+
+                    if (pc.useECMJammer) {
+                        heli.useECMJammer(player);
                     }
 
                     if (pc.unhitchChainId >= 0) {

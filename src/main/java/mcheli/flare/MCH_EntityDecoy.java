@@ -3,7 +3,6 @@ package mcheli.flare;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.weapon.MCH_IEntityLockChecker;
-import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
@@ -12,22 +11,20 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
-public class MCH_EntityChaff extends W_Entity implements MCH_IEntityLockChecker{
+public class MCH_EntityDecoy extends MCH_EntityChaff implements MCH_IEntityLockChecker {
 
-    public static final int MAX_TICK_EXISTED = 100;
-    public double gravity;
-    public double airResistance;
+    public static final int MAX_TICK_EXISTED = 140;
 
-    public MCH_EntityChaff(World par1World) {
+    public MCH_EntityDecoy(World par1World) {
         super(par1World);
-        this.gravity = -0.001D;
-        this.airResistance = 0.99D;
+        super.gravity = 0.000D;
+        super.airResistance = 1D;
         this.setSize(1.0F, 1.0F);
         super.prevRotationYaw = super.rotationYaw;
         super.prevRotationPitch = super.rotationPitch;
     }
 
-    public MCH_EntityChaff(World obj, double pX, double pY, double pZ, double mX, double mY, double mZ) {
+    public MCH_EntityDecoy(World obj, double pX, double pY, double pZ, double mX, double mY, double mZ) {
         this(obj);
         this.setLocationAndAngles(pX, pY, pZ, 0.0F, 0.0F);
         super.yOffset = 0.0F;

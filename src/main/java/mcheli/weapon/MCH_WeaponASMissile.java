@@ -2,7 +2,6 @@ package mcheli.weapon;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import mcheli.MCH_3rdCamera;
 import mcheli.MCH_Lib;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.MCH_RayTracer;
@@ -84,7 +83,7 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                 double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
                 MCH_EntityASMissile missile = new MCH_EntityASMissile(this.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, this.acceleration);
-                missile.setName(this.name);
+                missile.setInfoByName(this.name);
                 missile.setParameterFromWeapon(this, prm.entity, prm.user);
 
                 MCH_GPSPosition gpsPosition;
@@ -93,6 +92,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                         missile.targetPosX = gpsPosition.x;
                         missile.targetPosY = gpsPosition.y;
                         missile.targetPosZ = gpsPosition.z;
+                        missile.originTargetPosX = gpsPosition.x;
+                        missile.originTargetPosY = gpsPosition.y;
+                        missile.originTargetPosZ = gpsPosition.z;
                         missile.targeting = true;
                     }
                 }
@@ -135,11 +137,14 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             }
             if (!this.worldObj.isRemote) {
                 MCH_EntityASMissile missile = new MCH_EntityASMissile(this.worldObj, prm.posX, prm.posY, prm.posZ, targetX, targetY, targetZ, yaw, pitch, this.acceleration);
-                missile.setName(this.name);
+                missile.setInfoByName(this.name);
                 missile.setParameterFromWeapon(this, prm.entity, prm.user);
                 missile.targetPosX = hitResult.hitVec.xCoord;
                 missile.targetPosY = hitResult.hitVec.yCoord;
                 missile.targetPosZ = hitResult.hitVec.zCoord;
+                missile.originTargetPosX = hitResult.hitVec.xCoord;
+                missile.originTargetPosY = hitResult.hitVec.yCoord;
+                missile.originTargetPosZ = hitResult.hitVec.zCoord;
                 missile.targeting = true;
                 this.worldObj.spawnEntityInWorld(missile);
                 playSound(prm.entity);

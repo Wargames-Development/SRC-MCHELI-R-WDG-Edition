@@ -42,6 +42,10 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
      * APS按键
      */
     public MCH_Key KeyAPS;
+    /**
+     * 电子战干扰按键
+     */
+    public MCH_Key KeyECMJammer;
     public MCH_Key KeyAirburstDistReset;
     protected boolean isRiding = false;
     protected boolean isBeforeRiding = false;
@@ -75,6 +79,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         this.KeyChaff = new MCH_Key(MCH_Config.KeyChaff.prmInt);
         this.KeyMaintenance = new MCH_Key(MCH_Config.KeyMaintenance.prmInt);
         this.KeyAPS = new MCH_Key(MCH_Config.KeyAPS.prmInt);
+        this.KeyECMJammer = new MCH_Key(MCH_Config.KeyECMJammer.prmInt);
         this.KeyAirburstDistReset = new MCH_Key(MCH_Config.KeyAirburstDistReset.prmInt);
     }
 
@@ -152,7 +157,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     send = true;
                 }
             }
-            if (this.KeyGearUpDown.isKeyDown() && ac.getAcInfo().haveLandingGear())
+            if (this.KeyGearUpDown.isKeyDown() && ac.getAcInfo().haveLandingGear()) {
                 if (ac.canFoldLandingGear()) {
                     pc.switchGear = 1;
                     send = true;
@@ -160,6 +165,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     pc.switchGear = 2;
                     send = true;
                 }
+            }
             if (this.KeyFreeLook.isKeyDown())
                 if (ac.canSwitchFreeLook()) {
                     pc.switchFreeLook = (byte) (ac.isFreeLookMode() ? 2 : 1);
@@ -235,6 +241,16 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             if (ac.getSeatIdByEntity(player) <= 1) {
                 if (ac.canUseAPS() && ac.useAPS(player)) {
                     pc.useAPS = true;
+                    send = true;
+                } else {
+                    playSoundNG();
+                }
+            }
+        }
+        if (!ac.isDestroyed() && this.KeyECMJammer.isKeyDown()) {
+            if (ac.getSeatIdByEntity(player) <= 1) {
+                if (ac.canUseECMJammer() && ac.useECMJammer(player)) {
+                    pc.useECMJammer = true;
                     send = true;
                 } else {
                     playSoundNG();

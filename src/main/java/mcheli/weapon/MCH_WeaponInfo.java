@@ -8,11 +8,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class MCH_WeaponInfo extends MCH_BaseInfo {
+
     public static Random rand = new Random();
     public final String name;
     public String explosionType;
@@ -329,6 +328,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int spawnBulletIntervalTick = 20;
     public int spawnBulletPerNum = 1;
     public boolean spawnBulletInheritSpeed;
+    public boolean destructAfterSpawnBullet;
 
     /**
      * 子弹伤害衰减
@@ -359,6 +359,54 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 空气阻力，在x和z方向，正值减速，负值加速
      */
     public double dragInAir = 0;
+
+    /**
+     * 激光/GPS导弹可以锁定实体
+     */
+    public boolean lockEntity = false;
+
+    /**
+     * 让视角跟随锁定实体
+     */
+    public boolean cameraFollowLockEntity = false;
+    /**
+     * 吸附强度，0.1-1.0
+     */
+    public float cameraFollowStrength = 0.3f;
+
+    /**
+     * 反辐射导弹
+     */
+    public boolean antiRadiationMissile = false;
+
+    /**
+     * 半主动弹，需要载机引导才能命中
+     */
+    public boolean semiActiveRadar = false;
+    /**
+     * 是否允许头瞄
+     */
+    public boolean enableHMS = true;
+
+    /**
+     * 弹药在RWR上面显示什么
+     */
+    public String nameOnRWR = "MSL";
+
+    /**
+     * 多久启用近炸引信，-1永不启用
+     */
+    public int proximityFuseTick = -1;
+
+    /**
+     * 近炸伤害
+     */
+    public float proximityFuseDamage = 0;
+
+    /**
+     * 近炸高度
+     */
+    public int proximityFuseHeight = 20;
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -694,6 +742,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.spawnBulletPerNum = this.toInt(data);
             } else if (item.equalsIgnoreCase("SpawnBulletInheritSpeed")) {
                 this.spawnBulletInheritSpeed = this.toBool(data);
+            } else if (item.equalsIgnoreCase("DestructAfterSpawnBullet")) {
+                this.destructAfterSpawnBullet = this.toBool(data);
             } else if (item.equalsIgnoreCase("AddPotionEffect")) {
                 String[] split = data.split("\\s*,\\s*");
                 int potionID = Integer.parseInt(split[0]);
@@ -721,6 +771,27 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.canisterType = this.toInt(data);
             } else if (item.equalsIgnoreCase("DragInAir")) {
                 this.dragInAir = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("LockEntity")) {
+                this.lockEntity = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CameraFollowLockEntity")) {
+                this.cameraFollowLockEntity = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CameraFollowStrength")) {
+                this.cameraFollowStrength = this.toFloat(data);
+            } else if (item.equalsIgnoreCase("AntiRadiationMissile")) {
+                this.antiRadiationMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("SemiActiveRadar")) {
+                this.semiActiveRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableHMS")) {
+                this.enableHMS = this.toBool(data);
+            } else if (item.equalsIgnoreCase("NameOnRWR")) {
+                String name = data.trim();
+                this.nameOnRWR = "NULL".equals(name) ? "" : name;
+            } else if (item.equalsIgnoreCase("ProximityFuseTick")) {
+                this.proximityFuseTick = this.toInt(data);
+            } else if (item.equalsIgnoreCase("ProximityFuseDamage")) {
+                this.proximityFuseDamage = this.toFloat(data);
+            } else if (item.equalsIgnoreCase("ProximityFuseHeight")) {
+                this.proximityFuseHeight = this.toInt(data);
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {

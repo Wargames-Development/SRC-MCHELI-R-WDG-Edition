@@ -2,7 +2,6 @@ package mcheli.vehicle;
 
 import com.google.common.io.ByteArrayDataInput;
 import mcheli.chain.MCH_EntityChain;
-import mcheli.weapon.MCH_WeaponParam;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -52,6 +51,10 @@ public class MCH_VehiclePacketHandler {
 
                     if (pc.useAPS) {
                         vehicle.useAPS(player);
+                    }
+
+                    if (pc.useECMJammer) {
+                        vehicle.useECMJammer(player);
                     }
 
                     if (pc.unhitchChainId >= 0) {

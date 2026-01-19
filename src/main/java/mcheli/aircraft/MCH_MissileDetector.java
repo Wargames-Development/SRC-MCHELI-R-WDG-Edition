@@ -7,7 +7,10 @@ import mcheli.network.packets.PacketMissileLockType;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
+import mcheli.weapon.MCH_EntityASMissile;
 import mcheli.weapon.MCH_EntityBaseBullet;
+import mcheli.weapon.MCH_EntityTvMissile;
+import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_Lib;
 import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_WorldFunc;
@@ -74,17 +77,21 @@ public class MCH_MissileDetector {
                         this.destroyMissileFlare();
                     } else if (this.ac.isChaffUsing()) {
                         this.destroyMissileChaff();
+                    } else if (this.ac.isECMJammerUsing()) {
+                        this.destroyMissileECM();
                     } else if (!this.ac.isUAV() && !this.world.isRemote) {
                         LockResult result = isLockedByMissile();
                         if (this.alertCount == 0 && (isLocked || result.isLock)) {
                             this.alertCount = 20;
-                            if (result.isRadarMissile) {
-                                W_WorldFunc.MOD_playSoundAtEntity(var4, "alert_radar", 3.0F, 1.0F);
-                            } else {
-                                W_WorldFunc.MOD_playSoundAtEntity(var4, "alert", 3.0F, 1.0F);
+                            if(ac.jammingTick <= 0) {
+                                if (result.isRadarMissile) {
+                                    W_WorldFunc.MOD_playSoundAtEntity(var4, "alert_radar", 3.0F, 1.0F);
+                                } else if (result.isHeetseeker) {
+                                    W_WorldFunc.MOD_playSoundAtEntity(var4, "alert", 3.0F, 1.0F);
+                                }
                             }
                         }
-                        if (result.isLock) {
+                        if (result.isLock && ac.jammingTick <= 0) {
 
                             if (result.dist < 50) {
                                 missileLockDist = 1;
@@ -139,29 +146,51 @@ public class MCH_MissileDetector {
 
     public void destroyMissileFlare() {
         if (world.isRemote) return;
-        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(400.0D, 400.0D, 400.0D));
-        if (list == null) {
-            return;
-        }
-        for (Object o : list) {
-            MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
-            if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
-                //红外弹
-                if (msl.getInfo().isHeatSeekerMissile) {
-                    //抗干扰弹
-                    if (msl.getInfo().antiFlareCount > 0 && !msl.antiFlareUse) {
-                        msl.antiFlareUse = true;
-                        msl.antiFlareTick = msl.getInfo().antiFlareCount;
+        if (ac.getAcInfo().hasDIRCM) {
+            List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(30.0D, 30.0D, 30.0D));
+            if (list == null) {
+                return;
+            }
+            for (Object o : list) {
+                MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
+                if(!W_Entity.isEqual(msl.shootingAircraft, ac)) {
+                    if (msl instanceof MCH_EntityTvMissile) {
+                        ((MCH_EntityTvMissile) msl).targeting = false;
+                    } else if (msl instanceof MCH_EntityASMissile) {
+                        ((MCH_EntityASMissile) msl).targeting = false;
                     }
-                    //非抗干扰
-                    else {
+                }
+                if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
+                    if (msl.getInfo().isHeatSeekerMissile) {
                         msl.setTargetEntity(null);
                     }
                 }
-                //雷达弹不做处理
-                else if (msl.getInfo().isRadarMissile) {
-                    if (ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
-                        msl.setTargetEntity(null);
+            }
+        } else {
+            List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(250.0D, 250.0D, 250.0D));
+            if (list == null) {
+                return;
+            }
+            for (Object o : list) {
+                MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
+                if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
+                    //红外弹
+                    if (msl.getInfo().isHeatSeekerMissile) {
+                        //抗干扰弹
+                        if (msl.getInfo().antiFlareCount > 0 && !msl.antiFlareUse) {
+                            msl.antiFlareUse = true;
+                            msl.antiFlareTick = msl.getInfo().antiFlareCount;
+                        }
+                        //非抗干扰
+                        else {
+                            msl.setTargetEntity(null);
+                        }
+                    }
+                    //雷达弹不做处理
+                    else if (msl.getInfo().isRadarMissile) {
+                        if (ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
+                            msl.setTargetEntity(null);
+                        }
                     }
                 }
             }
@@ -182,6 +211,23 @@ public class MCH_MissileDetector {
                 }
             }
         }
+    }
+
+    public void destroyMissileECM() {
+        if (world.isRemote) return;
+        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(50.0D, 50.0D, 50.0D));
+        if (list == null) {
+            return;
+        }
+        for (Object o : list) {
+            MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
+            if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
+                if (msl.getInfo().isRadarMissile || msl.getInfo().antiRadiationMissile) {
+                    msl.setTargetEntity(null);
+                }
+            }
+        }
+
     }
 
 
