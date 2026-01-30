@@ -6,6 +6,7 @@ import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.aircraft.MCH_AircraftInfo;
+import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.packets.PacketLaserGuidanceTargeting;
 import mcheli.tank.MCH_EntityTank;
 import net.minecraft.client.Minecraft;
@@ -47,32 +48,36 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
     }
 
     public boolean shot(MCH_WeaponParam prm) {
-        if (!super.worldObj.isRemote) {
-            float yaw, pitch;
-            if (prm.entity instanceof MCH_EntityTank) {
-                MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                yaw = prm.user.rotationYaw;
-                pitch = prm.user.rotationPitch;
-                yaw += prm.randYaw;
-                pitch += prm.randPitch;
-                int wid = tank.getCurrentWeaponID(prm.user);
-                MCH_AircraftInfo.Weapon w = tank.getAcInfo().getWeaponById(wid);
-                float minPitch = w == null ? tank.getAcInfo().minRotationPitch : w.minPitch;
-                float maxPitch = w == null ? tank.getAcInfo().maxRotationPitch : w.maxPitch;
-                float playerYaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() - yaw);
-                float playerPitch = tank.getRotPitch() * MathHelper.cos((float) (playerYaw * Math.PI / 180.0D))
-                    + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
-                float playerYawRel = MathHelper.wrapAngleTo180_float(yaw - tank.getRotYaw());
-                float yawLimit = (w == null ? 360F : w.maxYaw);
-                float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
-                yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
-                pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
-                pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
+        float yaw, pitch;
+        if (prm.entity instanceof MCH_EntityTank) {
+            MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
+            if (getInfo().enableOffAxis) {
+                yaw = prm.user.rotationYaw + super.fixRotationYaw;
+                pitch = prm.user.rotationPitch + super.fixRotationPitch;
             } else {
-                yaw = prm.rotYaw;
-                pitch = prm.rotPitch;
+                yaw = prm.entity.rotationYaw + super.fixRotationYaw;
+                pitch = prm.entity.rotationPitch + super.fixRotationPitch;
             }
-
+            yaw += prm.randYaw;
+            pitch += prm.randPitch;
+            int wid = tank.getCurrentWeaponID(prm.user);
+            MCH_AircraftInfo.Weapon w = tank.getAcInfo().getWeaponById(wid);
+            float minPitch = w == null ? tank.getAcInfo().minRotationPitch : w.minPitch;
+            float maxPitch = w == null ? tank.getAcInfo().maxRotationPitch : w.maxPitch;
+            float playerYaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() - yaw);
+            float playerPitch = tank.getRotPitch() * MathHelper.cos((float) (playerYaw * Math.PI / 180.0D))
+                + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
+            float playerYawRel = MathHelper.wrapAngleTo180_float(yaw - tank.getRotYaw());
+            float yawLimit = (w == null ? 360F : w.maxYaw);
+            float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
+            yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
+            pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
+        } else {
+            yaw = prm.rotYaw;
+            pitch = prm.rotPitch;
+        }
+        if (!super.worldObj.isRemote) {
             double baseTXX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double baseTZZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double baseTYY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
@@ -150,6 +155,7 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
             this.playSound(prm.entity);
         } else {
             MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
+            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
         }
         return true;
     }
@@ -170,9 +176,9 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
         if (super.worldObj.isRemote) {
             if (guidanceSystem != null) {
                 this.guidanceSystem.targeting = false;
-                if (super.tick % 3 == 0) {
-                    MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
-                }
+//                if (super.tick % 3 == 0) {
+//                    MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
+//                }
             }
         }
     }

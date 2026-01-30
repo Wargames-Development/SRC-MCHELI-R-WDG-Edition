@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.PacketBase;
+import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -50,13 +51,15 @@ public class PacketECMJammerUse extends PacketBase {
     @Override
     public void handleClientSide(EntityPlayer clientPlayer) {
         Entity e = clientPlayer.worldObj.getEntityByID(acId);
-        if (e instanceof MCH_EntityAircraft) {
-            if(type == 0){
-                ((MCH_EntityAircraft) e).ecmJammerUseTime = time;
-            } else if (type == 1){
-                ((MCH_EntityAircraft) e).ecmJammerUseTime = time;
-                ((MCH_EntityAircraft) e).jammingTick = jammingTime;
+        Entity e1 = clientPlayer.ridingEntity;
+        if (e1 instanceof MCH_EntityAircraft) {
+            MCH_EntityAircraft ac = (MCH_EntityAircraft) e1;
+            if (type == 1 && !W_Entity.isEqual(e, e1)){
+                ac.jammingTick = jammingTime;
             }
+        }
+        if (e instanceof MCH_EntityAircraft) {
+            ((MCH_EntityAircraft) e).ecmJammerUseTime = time;
         }
     }
 }

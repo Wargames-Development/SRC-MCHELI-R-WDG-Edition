@@ -1,14 +1,16 @@
 [
 {
   "modId": "mcheli",
-  "modName": "MCHeli-R Wargames Edition",
-  "description": "A fork of Mcheli-Reforged \nFixes multiple small issues,\nAnd adds features/fixes for the Wargames Server,\n\nCredits: EMB4 (original MCHELI), MOC (MCHELI decoded), SecretAgent12 (MCHELI-R Features), MrNorwood (Packet Work & Optimisation), ATOM_14A (Some Model work), Glac (Wargames Edits), BarrackOsama (Balancing), Jomples (Wargames Edits), Wargames Development Group (support), Heinrich112, TheBobcat and many others. If we missed someone please let us know.",
-  "modVersion": "0.1.5_X8",
+  "modName": "MCHeli Reforged",
+  "description": "MCHeli Reforged mod.",
+  "modVersion": "0.1",
   "minecraftVersion": "1.7.10",
-  "url": "https://discord.wargames.uk",
+  "url": "",
   "updateUrl": "",
-  "authorList": ["EMB4", "TV90", "DTC10E", "Heinrich112", "ATOM_14A", "MrNorwood", "SecretAgent12", "Glac", "Barrack", "Jomples"],
-  "credits": "Created with help by many, see description.",
-  "logoFile": "mcheli-wargames_logo.png"
+  "authorList": ["TV90"],
+  "credits": "The Forge and FML guys, for making this example",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
 }
 ]

@@ -154,6 +154,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public String nameOnModernAARadar = "";
     /**
+     * 当前载具在高级对空雷达中显示的名字
+     */
+    public String nameOnAdvancedAARadar = "";
+    /**
      * 当前载具在早期对空雷达中显示的名字
      */
     public String nameOnEarlyAARadar = "";
@@ -652,13 +656,15 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                     this.rwrType = EnumRWRType.DIGITAL;
                 }
             } else if (item.equalsIgnoreCase("NameOnModernAARadar")) {
-                nameOnModernAARadar = data;
+                nameOnModernAARadar = data.trim();
+            } else if (item.equalsIgnoreCase("NameOnAdvancedAARadar")) {
+                nameOnAdvancedAARadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnEarlyAARadar")) {
-                nameOnEarlyAARadar = data;
+                nameOnEarlyAARadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnModernASRadar")) {
-                nameOnModernASRadar = data;
+                nameOnModernASRadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnEarlyASRadar")) {
-                nameOnEarlyASRadar = data;
+                nameOnEarlyASRadar = data.trim();
             } else if (item.equalsIgnoreCase("ExplosionSizeByCrash")) {
                 explosionSizeByCrash = this.toInt(data, 0, 100);
             } else if (item.equalsIgnoreCase("ThrottleDownFactor")) {
@@ -1216,6 +1222,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                 s = data.split("\\s*,\\s*");
                                                 String var29 = s[0].toLowerCase();
                                                 if (s.length >= 4 && MCH_WeaponInfoManager.contains(var29)) {
+                                                    float x = this.toFloat(s[1]);
+                                                    float y = this.toFloat(s[2]);
+                                                    float z = this.toFloat(s[3]);
                                                     var18 = s.length >= 5 ? this.toFloat(s[4]) : 0.0F;
                                                     ry = s.length >= 6 ? this.toFloat(s[5]) : 0.0F;
                                                     var25 = s.length >= 7 ? this.toBool(s[6]) : true;
@@ -1230,7 +1239,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                     w = s.length >= 11 ? this.toFloat(s[10]) : 0.0F;
                                                     float var44 = s.length >= 12 ? this.toFloat(s[11]) : 0.0F;
                                                     float var47 = s.length >= 13 ? this.toFloat(s[12]) : 0.0F;
-                                                    MCH_AircraftInfo.Weapon e = new MCH_AircraftInfo.Weapon(this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), var18, ry, var25, px, py, pz, w, var44, var47, item.equalsIgnoreCase("AddTurretWeapon"));
+                                                    float mx = s.length >= 14 ? this.toFloat(s[13]) : x;
+                                                    float my = s.length >= 15 ? this.toFloat(s[14]) : y;
+                                                    float mz = s.length >= 16 ? this.toFloat(s[15]) : z;
+                                                    MCH_AircraftInfo.Weapon e = new MCH_AircraftInfo.Weapon(x, y, z, mx, my, mz, var18, ry, var25, px, py, pz, w, var44, var47, item.equalsIgnoreCase("AddTurretWeapon"));
                                                     if (var29.compareTo(this.lastWeaponType) != 0) {
                                                         this.weaponSetList.add(new MCH_AircraftInfo.WeaponSet(var29));
                                                         ++this.lastWeaponIndex;
@@ -1684,6 +1696,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public class Weapon {
 
         public final Vec3 pos;
+        public final Vec3 muzzleFlashPos;
         public final float yaw;
         public final float pitch;
         public final boolean canUsePilot;
@@ -1696,8 +1709,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         public final boolean turret;
 
 
-        public Weapon(float x, float y, float z, float yaw, float pitch, boolean canPirot, int seatId, float defy, float mny, float mxy, float mnp, float mxp, boolean turret) {
-            this.pos = Vec3.createVectorHelper((double) x, (double) y, (double) z);
+        public Weapon(double x, double y, double z, double mx, double my, double mz, float yaw, float pitch, boolean canPirot, int seatId, float defy, float mny, float mxy, float mnp, float mxp, boolean turret) {
+            this.pos = Vec3.createVectorHelper(x, y, z);
+            this.muzzleFlashPos = Vec3.createVectorHelper(mx, my, mz);
             this.yaw = yaw;
             this.pitch = pitch;
             this.canUsePilot = canPirot;

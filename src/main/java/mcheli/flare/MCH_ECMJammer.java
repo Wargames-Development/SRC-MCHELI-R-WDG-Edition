@@ -48,14 +48,11 @@ public class MCH_ECMJammer {
             if(e instanceof EntityPlayer) {
                 aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
                 if (aircraft.getAcInfo().ecmJammerType == 1) {
-                    for (Entity entity : worldObj.getLoadedEntityList()) {
-                        if (entity instanceof MCH_EntityAircraft && entity.ridingEntity instanceof EntityPlayerMP
-                            && !((EntityPlayerMP) entity.ridingEntity).isOnSameTeam((EntityPlayer) e)) {
-                            ((MCH_EntityAircraft) entity).jammingTick = jammingTime;
-                            MCH_MOD.getPacketHandler().sendTo(
-                                new PacketECMJammerUse(aircraft.getEntityId(), useTick, aircraft.getAcInfo().ecmJammerType, jammingTime), (EntityPlayerMP) entity.ridingEntity);
-                        }
-                    }
+                    MCH_MOD.getPacketHandler().sendToAll(
+                        new PacketECMJammerUse(aircraft.getEntityId(), useTick, aircraft.getAcInfo().ecmJammerType, jammingTime));
+                } else {
+                    MCH_MOD.getPacketHandler().sendToAll(
+                        new PacketECMJammerUse(aircraft.getEntityId(), useTick, aircraft.getAcInfo().ecmJammerType, jammingTime));
                 }
             }
         }

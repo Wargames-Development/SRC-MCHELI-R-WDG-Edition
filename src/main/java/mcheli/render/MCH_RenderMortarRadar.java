@@ -186,12 +186,6 @@ public class MCH_RenderMortarRadar {
         if (entity.entityClassName.contains("MCH_EntityChaff") || entity.entityClassName.contains("MCH_EntityFlare")) {
             return false;
         }
-
-        // Ignore players completely on the mortar radar (reduces clutter)
-        if (entity.entityClassName.contains("EntityPlayer")) {
-            return false;
-        }
-
         if (entity.getHorizonalDistanceSqToEntity(player) < MIN_DISTANCE * MIN_DISTANCE) {
             return false;
         }
