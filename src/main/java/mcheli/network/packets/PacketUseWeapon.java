@@ -63,13 +63,13 @@ public class PacketUseWeapon extends PacketBase {
             }
         }
         if (ac != null) {
-            MCH_WeaponParam dx = new MCH_WeaponParam();
-            dx.entity = ac;
-            dx.user = player;
-            dx.setPosAndRot(useWeaponPosX, useWeaponPosY, useWeaponPosZ, 0.0F, 0.0F);
-            dx.option1 = useWeaponOption1;
-            dx.option2 = useWeaponOption2;
-            ac.useCurrentWeapon(dx);
+            MCH_WeaponParam param = new MCH_WeaponParam();
+            param.entity = ac;
+            param.user = player;
+            param.setPosAndRot(useWeaponPosX, useWeaponPosY, useWeaponPosZ, 0.0F, 0.0F);
+            param.option1 = useWeaponOption1;
+            param.option2 = useWeaponOption2;
+            ac.useCurrentWeapon(param);
         }
     }
 

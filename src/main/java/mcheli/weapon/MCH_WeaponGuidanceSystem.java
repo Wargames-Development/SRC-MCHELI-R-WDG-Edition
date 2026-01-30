@@ -347,36 +347,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
         } else {
             // 获取实体的类名
             String className = entity.getClass().getName();
-            // IR-only restriction: only MCHELI vehicles or flares
-            if (this.isHeatSeekerMissile) {
-                boolean isMcheliVehicle =
-                        (entity instanceof MCH_EntityAircraft)
-                                || className.indexOf("mcheli.") >= 0
-                                || className.indexOf("EntityVehicle") >= 0
-                                || className.indexOf("EntityPlane")   >= 0
-                                || className.indexOf("EntityMecha")   >= 0
-                                || className.indexOf("EntityAAGun")   >= 0;
 
-                if (!isMcheliVehicle && !(entity instanceof MCH_EntityFlare)) {
-                    // 阻止红外弹锁定玩家、动物或其他普通实体
-                    return false; // block players/animals/vanilla mobs for IR seekers
-                }
-            }
-            // RADAR-only restriction: only MCHELI vehicles or chaff
-            if (this.isRadarMissile) {
-                boolean isMcheliVehicle =
-                        (entity instanceof MCH_EntityAircraft)
-                                || className.indexOf("mcheli.") >= 0
-                                || className.indexOf("EntityVehicle") >= 0
-                                || className.indexOf("EntityPlane")   >= 0
-                                || className.indexOf("EntityMecha")   >= 0
-                                || className.indexOf("EntityAAGun")   >= 0;
-
-                if (!isMcheliVehicle && !(entity instanceof MCH_EntityChaff)) {
-                    // 阻止雷达弹锁定玩家、动物或其他普通实体
-                    return false; // hide green box & stop consideration
-                }
-            }
             // 如果实体是 EntityCamera 类型的，返回false
             if (className.indexOf("EntityCamera") >= 0) {
                 return false;
@@ -387,11 +358,11 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             }
             // 红外弹可以锁定热焰弹
             if (this.isHeatSeekerMissile && entity instanceof MCH_EntityFlare) {
-                return true; // IR decoy
+                return true;
             }
             // 雷达弹可以锁定箔条
             if (this.isRadarMissile && entity instanceof MCH_EntityChaff) {
-                return true; // RADAR decoy
+                return true;
             }
             if (targetEntity instanceof MCH_EntityAircraft) {
                 if (isRadarMissile && ((MCH_EntityAircraft) targetEntity).chaffUseTime > 0) {
@@ -405,24 +376,25 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             }
             // 锁定导弹
             if (this.canLockMissile &&
-                    (entity instanceof MCH_EntityAAMissile || entity instanceof MCH_EntityATMissile
-                            || entity instanceof MCH_EntityASMissile || entity instanceof MCH_EntityTvMissile)) {
+                (entity instanceof MCH_EntityAAMissile || entity instanceof MCH_EntityATMissile
+                    || entity instanceof MCH_EntityASMissile || entity instanceof MCH_EntityTvMissile)) {
                 if (!W_Entity.isEqual(user, ((MCH_EntityBaseBullet) entity).shootingEntity)) {
                     return true;
                 }
             }
             // 如果实体既不是生物实体，也不是飞机、车辆等特定类型，返回false
             if (!W_Lib.isEntityLivingBase(entity)
-                    && !(entity instanceof MCH_EntityAircraft)
-                    && !className.contains("EntityVehicle")
-                    && !className.contains("EntityPlane")
-                    && !className.contains("EntityMecha")
-                    && !className.contains("EntityAAGun")) {
+                && !(entity instanceof MCH_EntityAircraft)
+                && !className.contains("EntityVehicle")
+                && !className.contains("EntityPlane")
+                && !className.contains("EntityMecha")
+                && !className.contains("EntityAAGun")) {
                 return false;
             }
-//      else if (!this.canLockInWater && entity.isInWater()) {
-//          return false;
-//      }
+            // 如果实体在水中，而不能锁定水中的实体，则返回false
+//         else if(!this.canLockInWater && entity.isInWater()) {
+//            return false;
+//         }
             // 如果有自定义的实体锁定检查器，并且检查器返回false，则返回false
             else if (this.checker != null && !this.checker.canLockEntity(entity)) {
                 return false;

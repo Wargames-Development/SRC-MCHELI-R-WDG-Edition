@@ -52,14 +52,19 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
     @Override
     public boolean shot(MCH_WeaponParam prm) {
+        float yaw, pitch;
+        if (getInfo().enableOffAxis) {
+            yaw = prm.user.rotationYaw + super.fixRotationYaw;
+            pitch = prm.user.rotationPitch + super.fixRotationPitch;
+        } else {
+            yaw = prm.entity.rotationYaw + super.fixRotationYaw;
+            pitch = prm.entity.rotationPitch + super.fixRotationPitch;
+        }
         if (getInfo().isGPSMissile) {
             if (!super.worldObj.isRemote) {
                 this.playSound(prm.entity);
-                float yaw, pitch;
                 if (prm.entity instanceof MCH_EntityTank) {
                     MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                    yaw = prm.user.rotationYaw;
-                    pitch = prm.user.rotationPitch;
                     yaw += prm.randYaw;
                     pitch += prm.randPitch;
                     int wid = tank.getCurrentWeaponID(prm.user);
@@ -73,7 +78,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                     float yawLimit = (w == null ? 360F : w.maxYaw);
                     float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
                     yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
-                    pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+                    if(fixRotationPitch == 0) {
+                        pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+                    }
                     pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
                 } else {
                     yaw = prm.rotYaw;
@@ -103,11 +110,12 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             } else {
                 super.optionParameter1 = this.getCurrentMode();
                 MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
+                spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
             }
             return true;
         } else {
-            float yaw = prm.user.rotationYaw;
-            float pitch = prm.user.rotationPitch;
+            yaw = prm.user.rotationYaw;
+            pitch = prm.user.rotationPitch;
             double targetX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double targetZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);

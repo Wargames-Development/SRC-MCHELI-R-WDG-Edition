@@ -4,6 +4,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
+import mcheli.MCH_PlayerViewHandler;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_PacketNotifyTVMissileEntity;
@@ -42,6 +43,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             guidanceSystem.lockEntity = wi.lockEntity;
             guidanceSystem.cameraFollowLockEntity = wi.cameraFollowLockEntity;
             guidanceSystem.cameraFollowStrength = wi.cameraFollowStrength;
+            guidanceSystem.sendToServer = true;
             if (w.isRemote) {
                 initGuidanceSystemClient();
             }
@@ -94,17 +96,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
     }
 
     public boolean shot(MCH_WeaponParam prm) {
-        return super.worldObj.isRemote ? this.shotClient(prm.entity, prm.user) : this.shotServer(prm);
-    }
-
-    protected boolean shotClient(Entity entity, Entity user) {
-        super.optionParameter2 = 0;
-        super.optionParameter1 = this.getCurrentMode();
-        return true;
-    }
-
-    protected boolean shotServer(MCH_WeaponParam prm) {
-
         float yaw, pitch;
         if (getInfo().enableOffAxis) {
             yaw = prm.user.rotationYaw + super.fixRotationYaw;
@@ -115,8 +106,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         }
         if (prm.entity instanceof MCH_EntityTank) {
             MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-            yaw = prm.user.rotationYaw;
-            pitch = prm.user.rotationPitch;
             yaw += prm.randYaw;
             pitch += prm.randPitch;
             int wid = tank.getCurrentWeaponID(prm.user);
@@ -130,26 +119,35 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             float yawLimit = (w == null ? 360F : w.maxYaw);
             float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
             yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
-            pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            if(fixRotationPitch == 0) {
+                pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            }
             pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
         }
-        double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-        double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-        double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
-        this.isTVGuided = prm.option1 == 0;
-        float acr = super.acceleration;
-        if (!this.isTVGuided) {
-            acr = (float) ((double) acr * 1.5D);
-        }
+        if(!worldObj.isRemote) {
+            double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+            double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+            double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
+            this.isTVGuided = prm.option1 == 0;
+            float acr = super.acceleration;
+            if (!this.isTVGuided) {
+                acr = (float) ((double) acr * 1.5D);
+            }
 
-        MCH_EntityTvMissile e = new MCH_EntityTvMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) acr);
-        e.setInfoByName(super.name);
-        e.setTVMissile(isTVGuided);
-        e.setParameterFromWeapon(this, prm.entity, prm.user);
-        this.lastShotEntity = prm.entity;
-        this.lastShotTvMissile = e;
-        super.worldObj.spawnEntityInWorld(e);
-        this.playSound(prm.entity);
+            MCH_EntityTvMissile e = new MCH_EntityTvMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) acr);
+            e.setInfoByName(super.name);
+            e.setTVMissile(isTVGuided);
+            e.setParameterFromWeapon(this, prm.entity, prm.user);
+            this.lastShotEntity = prm.entity;
+            this.lastShotTvMissile = e;
+            super.worldObj.spawnEntityInWorld(e);
+            this.playSound(prm.entity);
+        } else {
+            super.optionParameter2 = 0;
+            super.optionParameter1 = this.getCurrentMode();
+            MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
+            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
+        }
         return true;
     }
 

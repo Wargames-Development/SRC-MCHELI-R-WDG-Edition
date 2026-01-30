@@ -8,10 +8,8 @@ import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.*;
-import cpw.mods.fml.common.network.NetworkCheckHandler;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
-import cpw.mods.fml.relauncher.Side;
 import mcheli.aircraft.*;
 import mcheli.block.MCH_DraftingTableBlock;
 import mcheli.block.MCH_DraftingTableTileEntity;
@@ -66,7 +64,7 @@ import java.util.Iterator;
 
 @Mod(
     modid = "mcheli",
-    name = "Mcheli-R Wargames Edition",
+    name = "MCH-Reforged",
     dependencies = "required-after:Forge@[10.13.2.1230,)"
 )
 @NetworkMod(
@@ -81,7 +79,7 @@ public class MCH_MOD {
     public static final String MOD_CH = "MCHeli_CH";
     public static final PacketHandler newPacketHandler = new PacketHandler();
     public static final MCH_EntityInfoManager entityInfoManager = new MCH_EntityInfoManager();
-    public static String VER = "0.1.5_X8";
+    public static String VER = "";
     @Instance("mcheli")
     public static MCH_MOD instance;
     @SidedProxy(
@@ -119,20 +117,6 @@ public class MCH_MOD {
 
     public static PacketHandler getPacketHandler() {
         return newPacketHandler;
-    }
-
-    /** Enforce exact client<->server version match for this mod. */
-    @NetworkCheckHandler
-    public boolean checkModVersions(java.util.Map<String, String> remoteVersions, Side remoteSide) {
-        // What the other side reports for our mod id
-        String remote = remoteVersions.get(MOD_ID); // MOD_ID = "mcheli"
-        if (remote == null) return false;           // other side doesn't have the mod -> reject
-
-        // Local version of this mod from the active ModContainer (reads mcmod.info)
-        String local = cpw.mods.fml.common.Loader.instance().activeModContainer().getVersion();
-
-        // Require exact string match (e.g., "0.1.1_X2)
-        return local != null && local.equals(remote);
     }
 
     public static void registerItem(W_Item item, String name, MCH_CreativeTabs ct) {
