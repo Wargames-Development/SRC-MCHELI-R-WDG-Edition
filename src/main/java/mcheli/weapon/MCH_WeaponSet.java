@@ -362,7 +362,7 @@ public class MCH_WeaponSet {
 
     public boolean use(MCH_WeaponParam prm) {
         MCH_WeaponBase crtWpn = this.getCurrentWeapon();
-        if (crtWpn != null && crtWpn.getInfo() != null) {
+        if (crtWpn != null && crtWpn.getInfo() != null && prm.entity != null) {
             MCH_WeaponInfo info = crtWpn.getInfo();
             if ((this.getAmmoNumMax() <= 0 || this.getAmmoNum() > 0) && (info.maxHeatCount <= 0 || this.currentHeat < info.maxHeatCount)) {
                 crtWpn.canPlaySound = this.soundWait == 0;
@@ -382,42 +382,49 @@ public class MCH_WeaponSet {
                 prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
                 prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
                 if (crtWpn.use(prm)) {
-                    if (info.maxHeatCount > 0) {
-                        this.cooldownSpeed = 1;
-                        this.currentHeat += crtWpn.heatCount;
-                        if (this.currentHeat >= info.maxHeatCount) {
-                            this.currentHeat += 30;
-                        }
-                    }
-
-                    if (info.soundDelay > 0 && this.soundWait == 0) {
-                        this.soundWait = info.soundDelay;
-                    }
-
-                    this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
-                    this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
-                    this.lastUsedCount[this.currentWeaponIndex] = crtWpn.interval > 0 ? crtWpn.interval : -crtWpn.interval;
-                    if (crtWpn.isCooldownCountReloadTime() && crtWpn.getReloadCount() - 10 > this.lastUsedCount[this.currentWeaponIndex]) {
-                        this.lastUsedCount[this.currentWeaponIndex] = crtWpn.getReloadCount() - 10;
-                    }
-
-                    this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
-                    this.countWait = crtWpn.interval;
-                    this.countReloadWait = 0;
-                    if (this.getAmmoNum() > 0) {
-                        this.setAmmoNum(this.getAmmoNum() - 1);
-                    }
-
-                    if (this.getAmmoNum() <= 0) {
-                        if (prm.isInfinity && this.getRestAllAmmoNum() < this.getAmmoNumMax()) {
-                            this.setRestAllAmmoNum(this.getAmmoNumMax());
+                    if (prm.entity.worldObj.isRemote) {
+                        if (info.maxHeatCount > 0) {
+                            this.cooldownSpeed = 1;
+                            this.currentHeat += crtWpn.heatCount;
+                            if (this.currentHeat >= info.maxHeatCount) {
+                                this.currentHeat += 30;
+                            }
                         }
 
-                        this.reload();
-                        prm.reload = true;
-                    }
+                        if (info.soundDelay > 0 && this.soundWait == 0) {
+                            this.soundWait = info.soundDelay;
+                        }
 
-                    prm.result = true;
+                        this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
+                        this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
+                        this.lastUsedCount[this.currentWeaponIndex] = crtWpn.interval > 0 ? crtWpn.interval : -crtWpn.interval;
+                        if (crtWpn.isCooldownCountReloadTime() && crtWpn.getReloadCount() - 10 > this.lastUsedCount[this.currentWeaponIndex]) {
+                            this.lastUsedCount[this.currentWeaponIndex] = crtWpn.getReloadCount() - 10;
+                        }
+
+                        this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
+                        this.countWait = crtWpn.interval;
+                        this.countReloadWait = 0;
+                        if (this.getAmmoNum() > 0) {
+                            this.setAmmoNum(this.getAmmoNum() - 1);
+                        }
+
+                        if (this.getAmmoNum() <= 0) {
+                            if (prm.isInfinity && this.getRestAllAmmoNum() < this.getAmmoNumMax()) {
+                                this.setRestAllAmmoNum(this.getAmmoNumMax());
+                            }
+
+                            this.reload();
+                            prm.reload = true;
+                        }
+
+                        prm.result = true;
+                    } else {
+                        this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
+                        this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
+                        this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
+                        prm.result = true;
+                    }
                 }
             }
         }

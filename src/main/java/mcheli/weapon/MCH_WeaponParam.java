@@ -9,6 +9,9 @@ public class MCH_WeaponParam {
     public double posX = 0.0D;
     public double posY = 0.0D;
     public double posZ = 0.0D;
+    public double muzzleFlashPosX = 0.0D;
+    public double muzzleFlashPosY = 0.0D;
+    public double muzzleFlashPosZ = 0.0D;
     public float rotYaw = 0.0F;
     public float rotPitch = 0.0F;
     public float rotRoll = 0.0F;
@@ -32,6 +35,9 @@ public class MCH_WeaponParam {
         this.posX = x;
         this.posY = y;
         this.posZ = z;
+        this.muzzleFlashPosX = x;
+        this.muzzleFlashPosY = y;
+        this.muzzleFlashPosZ = z;
     }
 
     public void setRotation(float y, float p) {

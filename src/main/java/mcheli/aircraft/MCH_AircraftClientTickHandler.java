@@ -208,7 +208,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
         }
         if (!ac.isDestroyed() && this.KeyFlare.isKeyDown()) {
-            if (ac.getSeatIdByEntity((Entity) player) <= 1)
+            if (ac.getSeatIdByEntity(player) <= 1)
                 if (ac.canUseFlare() && ac.useFlare(ac.getCurrentFlareType())) {
                     pc.useFlareType = (byte) ac.getCurrentFlareType();
                     ac.nextFlareType();

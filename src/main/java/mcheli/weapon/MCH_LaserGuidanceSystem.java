@@ -43,6 +43,7 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
     public boolean cameraFollowLockEntity = false;
     public float cameraFollowStrength = 0.3f;
     protected Entity user;
+    public boolean sendToServer = false;
 
     @Override
     public double getLockPosX() {
@@ -149,7 +150,9 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 targetPosZ = hitResult.hitVec.zCoord;
             }
 
-            MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX, targetPosY, targetPosZ));
+            if(sendToServer) {
+                MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX, targetPosY, targetPosZ));
+            }
 
             if (lockBox != null) {
                 lockBox.setPosition(targetPosX, targetPosY, targetPosZ);
