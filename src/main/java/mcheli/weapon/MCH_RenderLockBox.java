@@ -86,11 +86,7 @@ public class MCH_RenderLockBox extends W_Render {
             GL11.glBlendFunc(770, 771);
             GL11.glDisable(3553);
             GL11.glDisable(2929);
-            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
-                RenderHelper.disableStandardItemLighting();
-                OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-                GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
-            }
+
             int prevWidth = GL11.glGetInteger(2849);
             float minDistance = 50.0F;
             float size1 = 20.0F;
@@ -108,6 +104,12 @@ public class MCH_RenderLockBox extends W_Render {
                 tessellator.setColorRGBA_F(1.0F, 0.0F, 0.0F, 1.0F);
             } else {
                 tessellator.setColorRGBA_F(0.0F, 1.0F, 0.0F, 1.0F);
+            }
+
+            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+                RenderHelper.disableStandardItemLighting();
+                OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
+                GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
             }
 
             tessellator.addVertex(-size - 1.0F, -size, 0.0D);

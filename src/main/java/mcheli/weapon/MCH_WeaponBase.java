@@ -5,6 +5,7 @@ import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraft.util.Vec3;
@@ -19,6 +20,7 @@ public abstract class MCH_WeaponBase {
     protected static final Random rand = new Random();
     public final World worldObj;
     public final Vec3 position;
+    public Vec3 muzzleFlashPosition;
     public final float fixRotationYaw;
     public final float fixRotationPitch;
     public final String name;
@@ -180,6 +182,10 @@ public abstract class MCH_WeaponBase {
         prm.posX += v.xCoord;
         prm.posY += v.yCoord;
         prm.posZ += v.zCoord;
+        Vec3 v1 = this.getMuzzleFlashPos(prm.entity);
+        prm.muzzleFlashPosX += v1.xCoord;
+        prm.muzzleFlashPosY += v1.yCoord;
+        prm.muzzleFlashPosZ += v1.zCoord;
 
         if (this.shot(prm)) {
             this.tick = 0;
@@ -194,6 +200,16 @@ public abstract class MCH_WeaponBase {
             return ((MCH_EntityAircraft) entity).calcOnTurretPos(this.position);
         } else {
             Vec3 v = Vec3.createVectorHelper(this.position.xCoord, this.position.yCoord, this.position.zCoord);
+            float roll = entity instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft) entity).getRotRoll() : 0.0F;
+            return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);
+        }
+    }
+
+    public Vec3 getMuzzleFlashPos(Entity entity) {
+        if (entity instanceof MCH_EntityAircraft && this.onTurret) {
+            return ((MCH_EntityAircraft) entity).calcOnTurretPos(this.muzzleFlashPosition);
+        } else {
+            Vec3 v = Vec3.createVectorHelper(this.muzzleFlashPosition.xCoord, this.muzzleFlashPosition.yCoord, this.muzzleFlashPosition.zCoord);
             float roll = entity instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft) entity).getRotRoll() : 0.0F;
             return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);
         }
@@ -284,5 +300,17 @@ public abstract class MCH_WeaponBase {
 
     public void setAirburstDist(int dist) {
         this.airburstDist = dist;
+    }
+
+    public static void spawnMuzzleFlash(World w, MCH_WeaponParam prm, MCH_WeaponInfo info, float yaw, float pitch, double posX, double posY, double posZ) {
+        if (prm.entity != null && w.isRemote) {
+            double dirX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
+            double dirY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
+            double dirZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
+            Vec3 direction = Vec3.createVectorHelper(-dirX, -dirY, -dirZ);
+            if (prm.entity instanceof MCH_EntityAircraft) {
+                ((MCH_EntityAircraft)prm.entity).spawnParticleMuzzleFlash(w, info, posX, posY, posZ, direction);
+            }
+        }
     }
 }

@@ -60,25 +60,21 @@ public class MCH_Camera {
 
     public void setMode(int uid, int m) {
         if (this.isValidUid(uid)) {
-            this.mode[uid] = m < 0 ? 0 : m % this.getModeNum(uid);
-            switch (this.mode[uid]) {
-                case 0:
-                    if (this.worldObj.isRemote) {
+            if (this.worldObj.isRemote) {
+                this.mode[uid] = m < 0 ? 0 : m % this.getModeNum(uid);
+                switch (this.mode[uid]) {
+                    case 0:
                         W_EntityRenderer.deactivateShader();
-                    }
-                    break;
-                case 1:
-                    if (this.worldObj.isRemote) {
+                        break;
+                    case 1:
                         W_EntityRenderer.activateShader("nightvision");
-                    }
-                    break;
-                case 2:
-                    if (this.worldObj.isRemote) {
+                        break;
+                    case 2:
                         W_EntityRenderer.activateShader("thermal");
-                    }
-                    break;
+                        break;
+                }
+                currentCameraMode = mode[uid];
             }
-            currentCameraMode = mode[uid];
         }
     }
 
