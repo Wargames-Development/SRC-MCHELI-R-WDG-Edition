@@ -198,6 +198,7 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
         updateVarMapItem("have_dircm", ac.getAcInfo().hasDIRCM ? 1.0D : 0.0D);
         updateVarMapItem("is_jammed", ac.jammingTick > 0 ? 1.0D : 0.0D);
+        updateVarMapItem("ecm_jammer_type", ac.getAcInfo() != null ? ac.getAcInfo().ecmJammerType : 0.0D);
         if (ac instanceof MCP_EntityPlane) {
             MCP_PlaneInfo info = ((MCP_EntityPlane) ac).getPlaneInfo();
             updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);
