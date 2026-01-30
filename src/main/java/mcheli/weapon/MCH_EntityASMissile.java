@@ -49,21 +49,33 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 this.setDead();
             }
 
-            if (!super.worldObj.isRemote && !super.isDead && targeting && this.getCountOnUpdate() > this.getInfo().rigidityTime) {
-                if (getInfo().lockEntity) {
-                    int range = getInfo().maxLockOnRange;
-                    for (Entity entity : super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.expand(100, 100, 100))) {
-                        if(entity instanceof MCH_EntityAircraft && !W_Entity.isEqual(entity, shootingAircraft)){
-                            double d0 = entity.posX - originTargetPosX;
-                            double d1 = entity.posY - originTargetPosY;
-                            double d2 = entity.posZ - originTargetPosZ;
-                            if (d0 * d0 + d1 * d1 + d2 * d2 <= range * range) {
-                                targetPosX = entity.posX;
-                                targetPosY = entity.posY;
-                                targetPosZ = entity.posZ;
-                            }
+            if (!super.worldObj.isRemote && !super.isDead && targeting
+                    && this.getInfo() != null
+                    && this.getCountOnUpdate() > this.getInfo().rigidityTime) {
+
+                if (this.getInfo().lockEntity) {
+                    int range = this.getInfo().maxLockOnRange;
+
+                    for (Object obj : super.worldObj.getEntitiesWithinAABBExcludingEntity(
+                            this, super.boundingBox.expand(100, 100, 100))) {
+
+                        if (!(obj instanceof MCH_EntityAircraft)) continue;
+
+                        Entity entity = (Entity) obj;
+
+                        if (W_Entity.isEqual(entity, shootingAircraft)) continue;
+
+                        double d0 = entity.posX - originTargetPosX;
+                        double d1 = entity.posY - originTargetPosY;
+                        double d2 = entity.posZ - originTargetPosZ;
+
+                        if (d0 * d0 + d1 * d1 + d2 * d2 <= (double) range * (double) range) {
+                            targetPosX = entity.posX;
+                            targetPosY = entity.posY;
+                            targetPosZ = entity.posZ;
                         }
                     }
+
                     guidanceToPos(targetPosX, targetPosY, targetPosZ);
                 } else {
                     guidanceToPos(originTargetPosX, originTargetPosY, originTargetPosZ);
