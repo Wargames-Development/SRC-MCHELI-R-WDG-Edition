@@ -1,0 +1,16 @@
+[
+{
+  "modId": "mcheli",
+  "modName": "MCHeli Reforged",
+  "description": "MCHeli Reforged mod.",
+  "modVersion": "0.1",
+  "minecraftVersion": "1.7.10",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["TV90"],
+  "credits": "The Forge and FML guys, for making this example",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
