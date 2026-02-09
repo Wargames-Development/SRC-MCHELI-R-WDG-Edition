@@ -1,0 +1,55 @@
+DisplayName = BOMB UAH
+AddDisplayName = zh_CN, 自爆遥控直升机
+AddDisplayName = en_US, BOMB UAH
+MaxHp = 10
+
+Category = C
+HUD = UAH
+Speed = 0.4
+ThrottleUpDown = 10.0
+
+Sound = UAH_idle
+
+MaxFuel = 60
+FuelConsumption = 0.1
+
+CameraPosition = 0.00, -0.05, 0.18
+AddSeat = 0.0, 2.0, 0.0
+
+ParticlesScale = 0.1
+
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+
+HasChaff = true
+ChaffUseTime = 100
+ChaffWaitTime = 250
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = UAV
+NameOnModernAARadar = UAV
+NameOnEarlyAARadar = ?
+NameOnModernASRadar = UAV
+NameOnEarlyASRadar = ?
+enableRWR = false
+
+hasMaintenance = true
+MaintenceUsetime = 60
+MaintenceWaittime = 300
+
+;Parts
+AddRotor = 1, 0, 0.00,  0.24, -0.14,  0,-1, 0
+AddRotor = 1, 0, 0.00, -0.00, -0.65,  1, 0, 0
+
+;Weapons
+AddWeapon = UAH_Bomb, 0,0,0,  0,0
+
+;MISC
+;Place misc paramters here
+SmallUAV = true
+Stealth = 0.2
+AddRecipe = "SSS",  "PRI",  "BGG",  I, iron_ingot,  R, redstone,  S, stick,  P, glass_pane,  B, Iron_Bars,  G, gunpowder
+
+; C = Civilian(柉娫婡)
+
+;DUPLICATES

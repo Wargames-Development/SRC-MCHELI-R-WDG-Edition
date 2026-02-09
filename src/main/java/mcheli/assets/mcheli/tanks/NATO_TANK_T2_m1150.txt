@@ -1,0 +1,138 @@
+DisplayName = M1150 ABV
+AddDisplayName = zh_CN,M1150 突击破障车
+AddDisplayName = en_US,M1150 ABV
+MaxHp = 1200
+
+ItemID = 30101
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.5
+MobilityRoll = 0
+ThrottleUpDown = 1.5
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 2.5
+DefaultFreelook = true
+
+Sound = tank_gte
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.89
+MaxFuel = 1200
+FuelConsumption = 0.1
+
+CameraPosition = 0, 3.5,  0.77, true
+CameraRotationSpeed = 30
+CameraZoom = 6
+EnableNightVision = true
+AddSeat = 0.00,  0.0, 8,   false
+AddGunnerSeat = 0.00,  1.0, 0,    0, 3.5,  0.77,  false, -90, 90,true
+
+ArmorMinDamage = 15
+DamageFactor = 0.0
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.022, 0.448, 7.297,  7.5, 1.411, 2.123, 0.25, DEFAULT, 扫雷篱
+BoundingBox = 0.022, 0.448, 5.438,  2.922, 1.411, 1.574, 0.25, DEFAULT, 扫雷篱
+BoundingBox = 0.022, 0.93, -0.2,  4.486, 1.411, 6.143, 0.8, DEFAULT, 车体侧面
+BoundingBox = 0.022, 1.031, -4.081,  4.486, 1.468, 1.606, 1.3, DEFAULT, 引擎
+BoundingBox = 0.022, 0.733, 3.743,  4.486, 1.41, 1.73, 0.6, DEFAULT, 首上
+BoundingBox = 0.022, 2.13, 1.077,  3.882, 0.882, 2.134, 0.4, TURRET, 炮塔正面
+BoundingBox = 0.022, 2.392, -1.429,  3.882, 1.404, 2.922, 1.3, TURRET, 炮塔后面
+BoundingBox = 0.022, 2.777, 0.762,  1.144, 0.412, 1.209, 1.0, TURRET, 炮塔侧面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 3
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = M1
+NameOnEarlyASRadar = MBT
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3
+OnGroundRollFactor = 3
+
+;Parts
+SetWheelPos = 1.82,  -0.24,  2.86,  0.70, -0.76, -2.22, -4.14
+
+AddTrackRoller = -1.82,  0.728,  3.76
+AddTrackRoller = -1.82,  0.18,  2.58
+AddTrackRoller = -1.82,  0.18,  1.48
+AddTrackRoller = -1.82,  0.18,  0.4677
+AddTrackRoller = -1.82,  0.18, -0.437
+AddTrackRoller = -1.82,  0.18, -1.34
+AddTrackRoller = -1.82,  0.18, -2.2634
+AddTrackRoller = -1.82,  0.18, -3.2593
+AddTrackRoller = -1.82,  0.735, -4.24
+
+AddCrawlerTrack = false, 0.25, -2.15,  1.1/ -4.274,  1/ -4.575,  0.64/ -4.68,  0.55/ -4.64,  -0.16/ -3.7,  -0.23/ -3.28,  -0.23/  2.17,  -0.135/ 3.058,  0.433/ 4.03,  0.723/ 4.16,  1.075/ 3.776,  1.1/ 2.6,1.0/ -2.6
+
+;Weapons
+AddPartWeapon = m1150_ldcs, false, true, false,  0.00, 3.14, 0, 0
+AddPartWeaponChild = false, true, 0.00, 3.14, -3.28, 0.5
+AddPartWeaponChild = false, true, 0.00, 3.14, -3.28, 0.5
+
+AddTurretWeapon = m1150_ldcs, 1.1, 3.14, -3.28,  0.0, 0.0, true,1, 0,-360,360, -35, 0
+AddTurretWeapon = m1150_ldcs, -1.1, 3.14, -3.28,  0.0, 0.0, true,1, 0,-360,360, -35, 0
+
+AddPartturretWeapon = MG_40mmFrag, false, true, false, 0, 3.07, 0.784
+AddPartWeaponChild = false, true,0, 3.07, 1.39
+AddTurretWeapon = MG_40mmFrag, 0, 3.07, 1.39, 0.0, 0.0,true, 1, 0, -360,360, -50,15
+
+weapongrouptype = 90
+
+;MISC
+;Place misc paramters here
+ArmorDamageFactor = 1
+ArmorDamageFactor = 1.0
+HideEntity = true
+WeightType = Tank
+WeightedCenterZ = 0.0
+EnableBack = true
+inventorysize = 18
+RideRack = lcac, 1
+hudtype = 1
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+armorExplosionDamageMultiplier = 0.8
+
+;EnableEntityRadar = true
+; 指定した高さまでの水に触れてもダメージを受けない
+; 2であれば2ブロックまでダメージ無し
+; Tank or Car or Unknown
+; 重心Z座標設定
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+; 地面の滑りやすさ、小さいほど摩擦が大きくなり動きにくくなる
+;ArmorMinDamage 最小ダメージ、これより小さいダメージは無効化される
+;ArmorDamageFactor ダメージ係数上記のMin/Max範囲チェック後のダメージの係数 1で100%, 0.5で50%
+;後退可能にする
+;PivotTurnThrottle を0より大きい値にすると超信地旋回ができなくなる。デフォルトは0
+;AddCrawlerTrack = 履帯の表裏逆転,  1つの履帯の間隔, 履帯のXの位置, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, ...
+;転輪がなくても動作する
+;主砲
+;
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES
+hasMaintenance = true

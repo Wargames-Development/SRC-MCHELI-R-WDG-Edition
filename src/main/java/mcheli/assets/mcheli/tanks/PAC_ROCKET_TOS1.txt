@@ -1,0 +1,113 @@
+DisplayName = TOS-1M
+AddDisplayName = zh_CN,TOS-1M 火箭炮
+AddDisplayName = en_US,TOS-1M
+MaxHp = 700
+
+ItemID = 91128
+HUD = mlrs, mbt_gnr2
+ThirdPersonDist = 12
+Speed = 0.4
+ThrottleUpDown = 1.5
+MinRotationPitch = -85
+MaxRotationPitch = 1
+PivotTurnThrottle = 0.0
+throttledownfactor = 1
+StepHeight = 1.5
+MobilityYawOnGround = 2.6
+DefaultFreelook = true
+
+Sound = mbt_run
+
+Gravity = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.0,  5.2, 0.8, true
+CameraRotationSpeed = 10
+CameraZoom = 1
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58,0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.645, 0.200820,   4.684, 2.02,  5.3,0.7,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.21, 3.6,   4.684, 0.8871,  1.5,0.6,DEFAULT,首上
+BoundingBox = 0.0, 0.191, 3.67,   4.684, 1.08,  1.7,0.8,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -3.53,   4.684, 2.1,  2.302,1.1,DEFAULT,引擎
+BoundingBox = 0.0, 2, 0,   4, 1.2,  4,0.6,DEFAULT,硬化炮塔基座
+BoundingBox = 0.0, 3.161, -0.0,  2.85, 1.951, 6.204, 2.0, TURRET, 火箭弹发射器
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = MLRS
+NameOnModernAARadar = MLRS
+NameOnEarlyAARadar = MLRS
+EnableMortarRadar = true
+MortarRadarMaxDist = 350
+NameOnModernASRadar = TOS
+NameOnEarlyASRadar = MLRS
+
+hasMaintenance = true
+MaintenceUsetime = 60
+MaintenceWaittime = 300
+
+OnGroundPitchFactor = 3.9
+OnGroundRollFactor = 3.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddCrawlerTrack = true,0.22, -2.0,  -0.2580/2.114,-0.2580/3.228,-0.1937/3.48,0.3709/4.409,0.6107/4.607,0.7680/4.607,0.9098/4.537,1.043/4.249,1.067/-3.545,0.9765/-3.759,0.7946/-3.884,0.5796/-3.882,0.4811/-3.852,0.3996/-3.754,-0.1937/-2.595,-0.2580/-2.343
+
+AddTrackRoller = -2.32,  0.6857,  4.25
+AddTrackRoller = -2.32,  0.2221,  3.228
+AddTrackRoller = -2.32,  0.2221,  2.114
+AddTrackRoller = -2.32,  0.2221,  0.9994
+AddTrackRoller = -2.32,  0.2221,  -0.1148
+AddTrackRoller = -2.32,  0.2221,  -1.229
+AddTrackRoller = -2.32,  0.2221,  -2.343
+AddTrackRoller = -2.32,  0.6900, -3.483
+
+;Weapons
+AddPartWeapon = mlrs_tos_rocket, false, true, false,  0.00, 2, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 2.155, -3.387
+
+AddTurretWeapon = mlrs_tos_rocket,  0.00, 3.293, -3.387,  0.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = mlrs_tos_rocket,  0.50, 3.293, -3.387,  1.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = mlrs_tos_rocket,  -0.5, 3.293, -3.387,  1.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = mlrs_tos_rocket,  0.50, 3.293, -3.387,  -1.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = mlrs_tos_rocket,  -0.5, 3.293, -3.387,  -1.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = mlrs_tos_rocket,  0.50, 3.293, -3.387,  1.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = mlrs_tos_rocket,  -0.5, 3.293, -3.387,  -1.0, 0.0, true,1, 0,-360,360, -85, 10
+
+weapongrouptype = 1
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 3
+
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES

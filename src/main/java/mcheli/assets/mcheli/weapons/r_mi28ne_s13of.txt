@@ -1,0 +1,52 @@
+DisplayName = S13OF Rocket [HE]
+Type = Rocket
+Power = 0
+ModelBullet = hydra70
+Acceleration = 3.5
+Explosion = 4
+Explosionblock = 5
+Gravity = -0.0075
+Sound = rocket_snd
+Flaming = false
+Sight = MoveSight
+Delay = 2
+ReloadTime = 110
+Round = 10
+Accuracy = 0.5
+
+DisplayMortarDistance = true
+
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor = vehicle , 1
+DamageFactor = tank, 1.5
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+
+MaxAmmo = 10
+SuppliedNum = 5
+Item =  1, iron_ingot
+
+
+canBeIntercepted=true
+
+
+;¼ÝÊ»Î»cross_type0_9:0rocket£¬1zuni£¬2rocket_arm£¬3aam_irm£¬4irm£¬5arm£¬6laserm£¬7losm£¬8bomb£¬9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=1
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1.5
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = ship, 4
+ExplosionDamageVsShip=0.5

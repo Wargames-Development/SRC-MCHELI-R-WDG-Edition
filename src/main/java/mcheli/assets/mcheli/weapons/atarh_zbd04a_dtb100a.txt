@@ -1,0 +1,91 @@
+DisplayName = DTB100A [ARH Assisted Mortar]
+Type = ATmissile
+Power = 250
+Explosion =4
+ExplosionBlock = 0
+Acceleration = 5
+Sound = bmp_100_SND
+SoundVolume = 10.0
+Accuracy = 0
+ModelBullet = bullet76mm
+Flaming = true
+Round = 4
+Sight = None
+Delay = 80
+Gravity = -0.10
+DamageFactor = plane, 3.0
+DamageFactor = helicopter, 3.0
+ModeNum = 2
+; 着弾距離の表示
+DisplayMortarDistance = true
+; カメラの垂直方向を0に固定する
+FixCameraPitch = true
+; カメラの回転速度の倍率(小さくするとより細かく着弾地点が調整ができる)
+CameraRotationSpeedPitch = 0.2
+
+HeatCount = 250
+MaxHeatCount = 500
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+effectYield=5
+
+
+
+MaxAmmo = 4
+SuppliedNum = 4
+Item =  1, iron_ingot
+Item =  1, gunpowder
+
+DisplayMortarDistance = true
+
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+ActiveRadar = true
+EnableOffAxis = TRUE
+MaxLockOnRange = 40
+MaxDegreeOfMissile =85
+MaxLockOnAngle = 60
+;D=30,R=12,FOV=43.6
+;D=30,R=9,FOV=33.4
+scanInterval=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+DamageFactor = tank, 1.0
+
+
+
+
+AddMuzzleFlash      =  6.3,      1.10,        7,  220,254,159,74
+AddMuzzleFlash      = 6.2,      1.05,        6,  220,254,219,104
+AddMuzzleFlash      = 6.1,      1.00,        5,  220,254,219,184
+AddMuzzleFlashSmoke =  6.3, 15,  12.0,  4.0, 65,  220,160,140,120
+AddMuzzleFlashSmoke = 6.3, 10,  13.0,  7.0, 55,  200,190,170,150
+
+RecoilBufCount = 40, 5
+
+MaxAmmo = 20
+SuppliedNum = 10
+Item =  10, iron_ingot
+Item =  20, gunpowder
+canBeIntercepted=false
+canBeIntercepted=false
+
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=13
+
+EnableMortarRadar=true
+MortarRadarMaxDist=200
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.4
+ExplosionDamageVsPlane=0.3
+ExplosionDamageVsHeli=0.3
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=0.4
+enableExhaustFlare=false

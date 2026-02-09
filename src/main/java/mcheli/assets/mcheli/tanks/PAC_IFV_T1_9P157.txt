@@ -1,0 +1,121 @@
+DisplayName = 9P157-2 KHRIZANTEMA-S
+AddDisplayName = zh_CN, 9P157-2 "菊花-S"
+AddDisplayName = en_US, 9P157-2 KHRIZANTEMA-S
+MaxHp = 600
+
+ItemID = 91129
+HUD = IFV
+Speed = 0.5
+MobilityRoll = 0
+ThrottleUpDown = 3.0
+MinRotationPitch = -30
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 2
+DefaultFreelook = true
+
+Sound = MBT_run
+Float = true
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.89
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = -0.8695,  2.7, 1.556, false
+CameraRotationSpeed = 50
+CameraZoom = 6
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.096, 0,   0.00, 1.096, -4.534,  false, -90, 90, false
+
+ArmorMinDamage = 10
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.731, -0.808,  3.55, 2.0, 3.825, 1, DEFAULT, 车体侧面
+BoundingBox = 0.0, 0.731, -3.483,  3.55, 2.0, 1.567, 1.3, DEFAULT, 引擎
+BoundingBox = 0.0, 1.276, 2.387,  3.55, 0.887, 2.579, 0.6, DEFAULT, 首上
+BoundingBox = 0.0, 0.31, 2.269,  3.55, 0.961, 2.289, 0.7, DEFAULT, 首下
+BoundingBox = -0.473, 2.529, 0.019,  0.3, 1.574, 1.111, 0.6, DEFAULT, 发射架
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = 9P1
+NameOnModernAARadar = ?
+NameOnEarlyAARadar = ?
+NameOnModernASRadar = BMP
+NameOnEarlyASRadar = IFV
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 0.9
+OnGroundRollFactor = 0.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.5437,  2.656
+AddTrackRoller = -1.541,  0.1228,  1.807
+AddTrackRoller = -1.4555,  0.1228, 0.8294
+AddTrackRoller = -1.4555,  0.1228,  -0.3685
+AddTrackRoller = -1.4555,  0.1228,  -1.289
+AddTrackRoller = -1.4555,  0.1228,  -2.241
+AddTrackRoller = -1.4555,  0.1228,  -3.122
+AddTrackRoller = -1.4555,  0.5939,  -3.803
+
+AddCrawlerTrack = true, 0.21, -2.0, -0.271/-0.377, -0.271/1.807, -0.228/2.01, 0.287/2.85, 0.447/2.967, 0.637/2.967, 0.79/2.844, 0.864/2.654, 0.862/-3.82, 0.804/-3.985, 0.662/-4.084, 0.463/-4.061, 0.344/-3.954, -0.224/-3.314, -0.277/-3.122
+
+;Weapons
+AddPartWeapon = IFV_9P157_LASERM/IFV_9P157_SARH, false, true, false,  -0.3946, 1.788, 0.00009240, 0
+AddPartWeaponChild = false, true, -0.3946, 2.704,0.06055
+
+AddPartWeapon = IFV_9P157_LASERM/IFV_9P157_SARH, false, true, false,  0.7414, 1.788, 0.3187, 0
+AddPartWeaponChild = false, true, 0.7414, 2.28,0.3075
+
+AddPartWeapon = IFV_9P157_LASERM/IFV_9P157_SARH, false, true, false,  -0.8695, 1.788, 2.456, 0
+
+AddTurretWeapon = IFV_9P157_LASERM,          -0.4346, 2.904,0.06055,  0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = IFV_9P157_LASERM,          -0.3746, 2.904,0.06055,  0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = IFV_9P157_SARH,          -0.4346, 2.904,0.06055,  0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = IFV_9P157_SARH,          -0.3746, 2.904,0.06055,  0, 0.0, true,1, 0,-360,360, -85, 10
+
+AddWeapon = IFV_bunker,          0, 0,6,  0.0, 90, true,1, 0,0,0, 0, 0
+
+weapongrouptype = 13
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 700
+WeightType = Tank
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+hudtype = 3
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+armorExplosionDamageMultiplier = 1.5
+
+;CameraPosition = 0.6,  2.8, 0.8495, true
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+
+;DUPLICATES
+ThrottleUpDown = 2
+hasMaintenance = true
+hasMaintenance = true

@@ -1,0 +1,33 @@
+DisplayName = M220 TOW
+AddDisplayName = zh_CN, M220 TOW 导弹发射器
+AddDisplayName = en_US, M220 TOW
+MaxHp = 100
+
+HUD = M220TOW
+RotationPitchMin = -25
+RotationPitchMax = 25
+
+CameraPosition = 0,  1.7,  0
+CameraRotationSpeed = 20
+CameraZoom = 3
+EnableNightVision = false
+AddSeat = 0.4,0,0
+
+ArmorMinDamage = 5
+Boundingbox = 0.00,  1.10,  0.00,  0.7, 1.0
+EntityWidth = 0.9
+EntityHeight = 0.9
+
+;Weapons
+AddTurretWeapon = M220,  0.00, 1.6764, 2.43,   0.0, -3.0,   true,1, 0,-360,360, -80, 25
+
+;MISC
+;Place misc paramters here
+HideEntity = false
+ArmorMaxDamage = 1200
+AddPart = false, true, false, 0,   0, 0, 0
+AddPart = false,true, true,  0,   0, 0, 0
+
+;ArmorMaxDamage 最大ダメージ、これより大きいダメージは最大ダメージに丸められる
+
+;DUPLICATES

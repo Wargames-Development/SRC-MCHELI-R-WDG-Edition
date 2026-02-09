@@ -1,0 +1,84 @@
+DisplayName =DM53 Î²ÒíÎÈ¶¨ÍÑ¿Ç´©¼×µ¯
+Type = MachineGun1
+Power = 550
+ModelBullet = tank_shell
+Acceleration = 20.0
+;;Piercing =5
+Explosion = 0
+ExplosionBlock = 0
+Flaming = false
+Sight = None
+Delay = 90
+ReloadTime = 90
+Round = 1
+SoundVolume = 10.0
+Sound = NATO_120_snd
+Accuracy = 0.05
+BulletColor        = 255, 255, 100, 100
+Group = MainGun
+DisplayMortarDistance = true
+Recoil = 0.8
+Gravity = -0.007
+DisplayMortarDistance = true
+TrajectoryParticle = largesmoke
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 3
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.0
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+effectYield=5
+
+heatcount=700
+maxheatcount=2100
+
+AddMuzzleFlash      =  9.3,      0.5,        7,  220,254,159,74
+AddMuzzleFlash      =  9.2,      0.5,        6,  220,254,219,104
+AddMuzzleFlash      =  9.1,      0.5,        5,  220,254,219,184
+AddMuzzleFlashSmoke =  9.3, 5,  12.0,  4.0, 65,  220,160,140,120
+AddMuzzleFlashSmoke = 11.3, 5,  13.0,  7.0, 55,  200,190,170,150
+RecoilBufCount = 40, 5
+
+MaxAmmo = 20
+SuppliedNum = 10
+Item =  10, iron_ingot
+Item =  5, gunpowder
+
+FlakParticlesCrack = 300
+NumParticlesFlak = 20
+FlakParticlesDiff = 0.8
+
+WeaponSwitchSound = Switch_Main_Cannon
+
+RecoilPitch = 100
+RecoilYaw = 0.5
+RecoilPitchRange = 20
+RecoilYawRange = 1
+RecoilRecoverFactor = 0.05
+canBeIntercepted=false
+canBeIntercepted=false
+
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+crosstype=1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.5
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=1
+BulletDecay = Segmented , 25, 1.2, 50, 1.1, 100, 1, 150 , 0.9, 200, 0.85, 250, 0.8, 300, 0.7
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

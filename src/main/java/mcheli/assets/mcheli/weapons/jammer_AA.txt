@@ -1,0 +1,102 @@
+DisplayName = AA Jammer
+Type = rocket
+Sound = MAV_F
+SoundVolume = 10
+
+Power = 0
+
+
+
+Acceleration = 0.1
+Explosion = 0
+ExplosionBLOCK = 1
+Flaming = false
+Sight = MissileSight 
+Delay = 100
+LockTime = 0
+ModeNum = 2
+
+ModelBullet = none
+
+RidableOnly = false
+HeatCount = 700
+MaxHeatCount = 700
+DisableSmoke = True
+
+ExplosionType=hbmNT_Shell
+DisableDestroyBlock=true
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1.1
+DamageFactor = tank, 1.1
+
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+
+
+ROUND =1
+RELOADTIME=100
+
+
+
+
+
+
+
+
+
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true
+
+SpeedDependsAircraft = true
+;¼ÝÊ»Î»cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;¿ÕÓÅ¹¥»÷»úweapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+crosstype=30
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=1
+
+
+
+
+EnableOffAxis = false
+LockTime = 1
+TurningFactor = 0.05
+
+
+
+
+SpeedDependsAircraft =true
+
+
+SpawnBulletInAir = true
+ModelBomblet = jammer_AS_ammo
+
+BombletDiff = 0.5
+SpawnBulletMaxNum = 4
+SpawnBulletIntervalTick = 10
+SpawnBulletPerNum=4
+SpawnBulletInheritSpeed = true
+
+SpeedFactor = -0.02
+SpeedFactorStartTick = 0
+SpeedFactorEndTick = 40
+SpeedDependsAircraft = true
+
+bombletstime=50

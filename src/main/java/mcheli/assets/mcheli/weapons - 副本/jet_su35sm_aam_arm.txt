@@ -1,0 +1,86 @@
+DisplayName =R-77M 主动雷达弹
+Type = AAMissile
+ModelBullet = R77M
+Power = 200
+Acceleration = 0.1
+Explosion = 2
+Flaming = false
+Sight = MissileSight
+Delay = 8
+ReloadTime = 45
+Group = MainGun
+Round = 4
+HeatCount =500
+MaxHeatCount = 1500
+LockTime = 0
+TimeFuse = 300
+ProximityFuseDist = 10
+DamageFactor = heli, 0.7
+Sound = AA11_F
+SoundVolume = 10
+RigidityTime = 0
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+numLockedChaffMax=1
+MaxLockOnRange = 600
+turningFactor = 0.25
+predictTargetPos=false
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+
+
+
+
+;200米距离，38.6度fov，对应视场半径70米
+
+PDHDNMaxDegree = 180
+LockMinHeight = 60
+EnableOffAxis = false
+
+ActiveRadar = true
+enableBVR=true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+;DV=2.7
+SpeedFactor = 0.06
+SpeedFactorStartTick = 5
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+pdHDNMaxDegreeLockOutCount = 1
+scanInterval=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+crosstype=2
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=0.1
+ExplosionDamageVsTank=0.1
+ExplosionDamageVsPlane=0.1
+ExplosionDamageVsHeli=0.1
+ExplosionDamageVsVehicle=0.1
+ExplosionDamageVsShip=0.1
+enableExhaustFlare=true
+
+MaxLockOnAngle = 39
+MaxDegreeOfMissile = 39
+
+
+ProximityFuseDist = 20
+proximityFuseTick=60
+proximityFuseDamage = 200
+proximityFuseHeight = 50
+ExplosionAirburst = 4
+EnableOffAxis = false

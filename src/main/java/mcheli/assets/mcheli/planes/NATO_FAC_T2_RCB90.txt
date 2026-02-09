@@ -1,0 +1,129 @@
+DisplayName = RCB-90
+AddDisplayName = zh_CN, RCB-90 河川指挥艇
+AddDisplayName = en_US, RCB-90
+MaxHp = 700
+
+HUD = FAC, FAC, FAC, FAC, FAC
+ThirdPersonDist = 16
+Speed = 0.4
+MobilityRoll = 0
+ThrottleUpDown = 1
+MinRotationPitch = -70
+MaxRotationPitch = 10
+throttledownfactor = 3
+StepHeight = 0.0
+MobilityYawOnGround = 4.0
+CanMoveOnGround = false
+DefaultFreelook = true
+enableback = true
+
+Sound = RCB90_idle
+Float = true
+FloatOffset = -0.3
+CanRotOnGround = false
+
+Gravity = -0.15
+GravityInWater = -0.1
+MaxFuel = 1500
+FuelConsumption = 2.0
+
+CameraPosition = -0.4, 3.41, 0.28, true
+CameraZoom = 6
+EnableNightVision = true
+AddSeat = -1.0, 0.7314, -4.115
+AddSeat = 1.0, 0.7314,  -4.115
+AddSeat = -1, 1.29, -2.51
+AddSeat = 1, 1.29, -2.51
+AddGunnerSeat = -0.63, 0.74, 0, -0.4, 3.41, 1.28,false,-70, 10, true
+
+AddParticleSplash = 1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+
+AddPartWeaponBay = fac_rcb90_atgm_irm,  0,  1.255, -6.372,  1.000, 0.000, 0.000, -91
+
+ArmorMinDamage = 15
+DamageFactor = 0.0
+engineShutdownThreshold = 10
+explosionsizebycrash = 10
+BoundingBox = 0.0, -0.2, -0.557,  3.96, 2.753, 16.492, 0.4, DEFAULT, 船体
+BoundingBox = 0.0, 1.431, -0.557,  3.026, 1.349, 8.328, 0.8, DEFAULT, 上层建筑
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = NVL
+NameOnModernAARadar = NVL
+NameOnEarlyAARadar = NVL
+NameOnModernASRadar = CB90
+NameOnEarlyASRadar = NVL
+enablerwr = true
+
+hasMaintenance = true
+
+;Weapons
+AddPartWeapon = FAC_30mm, false, true, false, 0.00, 1.48, 0
+AddPartWeaponChild = false, true,  0.00, 3.145, -0.1206
+AddPartWeaponChild = false, true,  0.00, 3.145, -0.1206,0.1
+
+AddPartWeapon = FAC_MG_MINIGUN_l, false, true, false,  1.685, 1.414, -4.022
+AddPartWeaponChild = false, true,  1.685, 1.724, -4.022
+AddPartRotWeapon = FAC_MG_MINIGUN_l,     false, true, true,   1.685, 1.724,  -4.022,  0,0,1
+
+AddPartWeapon = FAC_MG_MINIGUN_R, false, true, false,  -1.685, 1.414, -4.022
+AddPartWeaponChild = false, true,  -1.685, 1.724, -4.022
+AddPartRotWeapon = FAC_MG_MINIGUN_R,     false, true, true,   -1.685, 1.724,  -4.022,  0,0,1
+
+AddWeapon = FAC_30mm,  0.00, 3.145, -0.1206, 0.0,  0.0, false, 1,   0, -360, 360,  -70, 10
+
+AddWeapon = fac_rcb90_atgm_irm, -0.8535, 1.135, -5.958, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = fac_rcb90_atgm_irm, 0.8535, 1.135, -5.958, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = fac_rcb90_atgm_irm, -0.2752, 1.135, -5.958, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = fac_rcb90_atgm_irm, 0.2752, 1.135, -5.958, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = fac_rcb90_atgm_irm, -0.8535, 1.135, -6.878, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = fac_rcb90_atgm_irm, 0.8535, 1.135, -6.878, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = fac_rcb90_atgm_irm, -0.2752, 1.135, -6.878, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = fac_rcb90_atgm_irm, 0.2752, 1.135, -6.878, 0.0,-90.0, false, 1, 180, -180, 180,  -90, 90
+AddWeapon = FAC_MG_MINIGUN_r, -1.685, 1.724,  -4.022, 0.0, 0.0, false, 2, 0, -0, 180, -50, 20
+
+AddWeapon = FAC_MG_MINIGUN_l,  1.685, 1.724,  -4.022, 0.0, 0.0, false, 3, 0, -180, 0, -50, 20
+
+weapongrouptype = 2
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 1200
+HideEntity = true
+AddPartRotor = 0,  3.85,     -2.31,  0,1.0,0
+AddBlade = 1, 0,  0,  3.85,     -2.31,  0,1.0,0
+AddPartRotation = 0.00,  4.78,3.276,   0,-1,0,     25,      true
+maintenanceUseTime = 20
+maintenanceWaitTime = 1200
+
+; 水しぶき を発生させる
+;AddParticleSplash = 座標X,   Y,    Z,   表示数, サイズ,  速度,  表示時間, 上昇, 重力
+;操縦席
+;M134ガンナー
+;武器可動パーツ
+;RWS
+;ATGM
+;M134
+;AddPartNozzle =  0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  0.73, 0.00, -5.64, -1,0,0
+;AddPartNozzle = -0.73, 0.00, -5.64, -1,0,0
+
+;DUPLICATES
+AddParticleSplash = -1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash = 1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddPartWeaponBay = fac_rcb90_atgm_irm,  0,  1.255, -6.462,  1.000, 0.000, 0.000, 91
+FlareType = 10

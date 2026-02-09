@@ -1,0 +1,72 @@
+DisplayName = 蓝箭11 红外制导空对地导弹[破甲]
+Type = ATMissile
+Power = 600
+Acceleration = 0.1
+Explosion = 4
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 100
+LockTime = 45
+ModeNum = 2
+Round =2
+reloadtime =100
+ProximityFuseDist = 1
+ModelBullet = AGM114
+Sound = missile_11_snd
+RidableOnly = false
+HeatCount = 700
+MaxHeatCount = 1000
+
+RigidityTime = 0
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+MaxLockOnRange = 1500
+MaxLockOnAngle = 10
+
+EnableOffAxis = false
+MaxDegreeOfMissile = 180
+SpeedFactor = 0.16
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 40
+SpeedDependsAircraft = true
+turningFactor = 0.17
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1.1
+DamageFactor = tank, 1.1
+
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+
+modenum=2
+fixmode=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+RidableOnly = true
+
+;炮手位cross_type0_9 :0 TVM，1 MISSILESTRIKE，2 rocket_arm，3 CONNONSTRIKE，4 irm，5 arm，6 laserm，7 losm，8 SARH，9 connon
+;weapon_group_type: 0:SARH/MISSILESTRIKE;1:CONNON/SARH;2:CONNON/IRM;3:LASERM/CONNONSTRIKE
+;4:CONNON/TVM;5:CONNON/TVM;6:CONNON/TVM;7:CONNON/TVM
+crosstype=4
+
+DamageFactor = living, 0.5
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true

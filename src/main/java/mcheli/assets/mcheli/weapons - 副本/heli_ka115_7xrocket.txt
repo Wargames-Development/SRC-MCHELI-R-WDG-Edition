@@ -1,0 +1,54 @@
+DisplayName = S5K  7联装反步兵火箭弹
+Type = Rocket
+Power = 40
+ModelBullet = hydra70
+Acceleration = 5.0
+Explosion = 3
+Explosionblock = 0
+Sound = rocket_snd
+Flaming = false
+Sight = MoveSight
+Delay = 1
+ReloadTime = 110
+Round = 7
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+HeatCount = 40
+MaxHeatCount = 260
+
+DamageFactor = plane, 2
+DamageFactor = heli, 2
+DamageFactor =vehicle , 1
+
+DisplayMortarDistance = true
+
+Accuracy = 0.5
+
+Gravity = -0.002
+
+SoundVolume = 10
+MaxAmmo = 76
+SuppliedNum = 76
+Item =  1, iron_ingot
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=0
+
+
+ExplosionDamageVsLiving=1 
+ExplosionDamageVsPlayer=1 
+ExplosionDamageVsTank=0.4
+ExplosionDamageVsPlane=0.4 
+ExplosionDamageVsHeli=0.4 
+ExplosionDamageVsVehicle=0.1
+ExplosionDamageVsShip=0.4
+enableExhaustFlare=true

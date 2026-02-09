@@ -1,0 +1,131 @@
+DisplayName = 2S25M SPRUT-SDM
+AddDisplayName = zh_CN,2S25M 章鱼-SDM
+AddDisplayName = en_US,2S25M SPRUT-SDM
+MaxHp = 800
+
+ItemID = 91129
+HUD = MBT, MBT_GUNNER
+Speed = 0.9
+MobilityRoll = 0
+ThrottleUpDown = 3.0
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 2
+DefaultFreelook = true
+
+Sound = mbt_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.91
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.8,  2.8, 0.9852, true
+CameraRotationSpeed = 50
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.0, 1.78, 0.0,  false, -90, 90, true
+AddGunnerSeat = 0.00, 1.58, -3,    0.483, 3.095, -1.733,  false, -70, 10, true
+
+ArmorMinDamage = 12
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.793, -0.155,  3.786, 2.0, 4.421, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 1.371, 2.903,  3.786, 0.799, 1.722, 0.4, DEFAULT, 首上
+BoundingBox = 0.0, 0.409, 2.903,  3.786, 1.099, 1.722, 0.8, DEFAULT, 首下
+BoundingBox = 0.0, 0.782, -3.242,  3.786, 2.0, 1.722, 1.3, DEFAULT, 引擎
+BoundingBox = -1.59, 2.334, -0.877,  0.102, 0.938, 2.697, 1.0, TURRET, 炮塔侧面
+BoundingBox = 1.59, 2.334, -0.877,  0.102, 0.938, 2.697, 1.0, TURRET, 炮塔侧面
+BoundingBox = 0.0, 2.334, -2.17,  3.086, 0.938, 0.102, 1.0, TURRET, 炮塔后面
+BoundingBox = 0.0, 2.334, -0.091,  3.118, 1.046, 3.343, 0.6, TURRET, 炮塔正面
+BoundingBox = 0.0, 2.841, -0.091,  2.936, 0.077, 3.149, 1.3, TURRET, 炮塔顶部
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = IFV
+NameOnModernAARadar = IFV
+NameOnEarlyAARadar = 
+NameOnModernASRadar = BMP
+NameOnEarlyASRadar = IFV
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 0.9
+OnGroundRollFactor = 0.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.5863,  2.639
+AddTrackRoller = -1.541,  0.08373,  1.840
+AddTrackRoller = -1.541,  0.08373,  0.9706
+AddTrackRoller = -1.541,  0.08373,  0.1672
+AddTrackRoller = -1.541,  0.08373,  -0.6240
+AddTrackRoller = -1.541,  0.08373,  -1.406
+AddTrackRoller = -1.541,  0.08373,  -2.166
+AddTrackRoller = -1.541,  0.08373,  -2.927
+AddTrackRoller = -1.4555,  0.5836,  -3.531
+
+AddCrawlerTrack = true, 0.21, -2.0,  -0.2526/1.292,-0.2514/1.980,0.3555/2.870,0.4614/2.941,0.5862/2.965,0.7111/2.941,0.8171/2.870,0.8878/2.764,0.9163/2.649,0.9437/1.424,0.9394/-2.562,0.9029/-3.62,0.8650/-3.715,0.7111/-3.847,0.6029/-3.855,0.3311/-3.757,-0.1688/-3.173,-0.2452/-3.010,-0.2526/-2.408
+
+;Weapons
+AddTurretWeapon = IFV_2S25M_APFSDS,          0.00, 2.071, 1.314,  -0.2, 0.0, true,1, 0,-360,360, -17, 8
+AddTurretWeapon = IFV_2S25M_ATGM_LOSM,          0.00, 2.071, 1.314,  -0.2, 0.0, true,1, 0,-360,360, -17, 8
+AddTurretWeapon = GUNNER_MG_762,          0.4987, 3.095,-1.808,  0.0, 0.0, false,2, 0,-360,360, -70, 10
+AddTurretWeapon = GUNNER_connonstrike,          0.0, 100,-100,  0.0, 0.0, false,2, 0,-360,360, -0, 0
+
+AddPartWeapon = IFV_2S25M_APFSDS/IFV_2S25M_ATGM_LOSM, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 2.071, 1.314
+AddPartWeaponChild = false, true,0.00, 2.071, 1.314, 0.1
+AddPartWeaponChild = false, true, 0.4987, 3.095,-1.808
+
+AddPartTurretWeapon = GUNNER_MG_762, true, true, false,  0.483, 1.788, -1.733, 0
+AddPartWeaponChild = false, true,0.483, 3.095, -1.808
+
+AddWeapon = AI,          3.3414, 0,0.1625,  0.0, 0.0, true,1, 0,0,0, 0, 0
+AddWeapon = AI,          -3.3414, 0,0.1625,  0.0, 0.0, true,1, 0,0,0, 0, 0
+
+weapongrouptype = 14
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 800
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+AddPartRotor = 1.267,  0.8348, -255.9,   1,0,0
+AddPartRotor = 1.267,  0.8348, -255.9,   -1,0,0
+HUDTYPE = 3
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+armorExplosionDamageMultiplier = 1.2
+
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+;cross_type0-11:MG,AP,ARM,CANISTER,HE,HEAT,IRM,LOSM,SARH,STAFF,TVM,AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T 10KF51 11 AP/STAFF 12 T14  13 heat/LOSM/MG 14 AP/LOSM/TRANS
+
+;DUPLICATES
+hasMaintenance = true

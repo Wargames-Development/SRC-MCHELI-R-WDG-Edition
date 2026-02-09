@@ -1,0 +1,63 @@
+DisplayName = ASN-1000 反辐射巡飞弹[指令线中继制导]
+Type = TVMissile
+Power = 200
+Acceleration = 3.5
+Explosion = 4
+Explosionblock =10
+Flaming = false
+Sight = MoveSight
+Delay = 0
+ModeNum = 2
+ModelBullet = UCAV
+Sound = sa-2_snd
+ReloadTime = 100
+Round =4
+reloadtime=200
+heatcount = 300
+maxheatcount = 900
+DamageFactor = player, 1
+DamageFactor = plane, 5
+DamageFactor = heli, 5
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.0
+;DEBUG:Manual control only
+FixMode = 1
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+
+
+
+
+MaxAmmo = 4
+SuppliedNum = 8
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=8
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=1
+enableExhaustFlare=true
+
+DestructAfterSpawnBullet=true
+SpawnBulletInAir = true
+ModelBomblet = IFV_ZPD100_atgm_SEAD_BULLET
+BombletDiff = 0.0
+SpawnBulletMaxNum = 1
+SpawnBulletIntervalTick = 40
+SpawnBulletPerNum=1
+SpawnBulletInheritSpeed = true

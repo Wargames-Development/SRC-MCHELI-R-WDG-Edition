@@ -1,0 +1,124 @@
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+
+;cross_type0-11:,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11APF,12SAP,13AHEAD
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T 10KF51 11 AP/STAFF 12 T14  13 heat/LOSM/MG
+;m1128
+;15 AP/SAP, 16 AP/AHEAD, 17,LOSM/AHEAD
+
+
+;hudtype=1美国2中国3俄罗斯4步战车
+;美国坦克AP,HE,HEAT准星((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&hud_type==1&&cam_zoom==1&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	US_TANK_CROSS, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If =((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==1)&&(cam_zoom>1))&&(reloading==0&&wpn_heat<1.0)
+DrawTexture = US_TANK_CROSS, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+;过热
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==1)&&(cam_zoom==1))&&(reloading==1||wpn_heat==1.0)
+DrawTexture = US_TANK_CROSS_WAIT, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==1)&&(cam_zoom>1))&&(reloading==1||wpn_heat==1.0)
+DrawTexture = US_TANK_CROSS_WAIT, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+
+
+;中国坦克准星准星
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&hud_type==2&&cam_zoom==1&&(reloading==0&&wpn_heat<1.0)
+;If = hud_type==1
+DrawTexture = 	CN_TANK_CROSS, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==2)&&(cam_zoom>1))&&(reloading==0&&wpn_heat<1.0)
+DrawTexture = CN_TANK_CROSS, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+;过热
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==2)&&(cam_zoom==1))&&(reloading==1||wpn_heat==1.0)
+DrawTexture = CN_TANK_CROSS_WAIT, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==2)&&(cam_zoom>1))&&(reloading==1||wpn_heat==1.0)
+DrawTexture = CN_TANK_CROSS_WAIT, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+
+;俄罗斯坦克准星准星
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&hud_type==3&&cam_zoom==1&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	RU_TANK_CROSS, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==3)&&(cam_zoom>1))&&(reloading==0&&wpn_heat<1.0)
+DrawTexture = RU_TANK_CROSS, (-192*(width/960)), (-96*(height/500)), (384*(width/960)), (192*(height/500)), 0,0,512,256
+
+EndIf
+;过热
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==3)&&(cam_zoom==1))&&(reloading==1||wpn_heat==1.0)
+DrawTexture = RU_TANK_CROSS_WAIT, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+
+If = ((cross_type==1)||(cross_type==4)||(cross_type==5)||(cross_type==11)||(cross_type==12)||(cross_type==13))&&((hud_type==3)&&(cam_zoom>1))&&(reloading==1||wpn_heat==1.0)
+DrawTexture = RU_TANK_CROSS_WAIT, (-192*(width/960)), (-96*(height/500)), (384*(width/960)), (192*(height/500)), 0,0,512,256
+
+EndIf
+
+
+;机枪，霰弹准星
+If = ((cross_type==0)||(cross_type==3))&&cam_zoom==1&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	canister, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If =((cross_type==0)||(cross_type==3))&& (cam_zoom>1)&&(reloading==0&&wpn_heat<1.0)
+DrawTexture = canister, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+;过热
+If = ((cross_type==0)||(cross_type==3))&&(cam_zoom==1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture = canister_WAIT, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If = ((cross_type==0)||(cross_type==3))&&(cam_zoom>1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture = canister_WAIT, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+
+;导弹通用准星
+If = ((cross_type==2)||(cross_type==6)||(cross_type==7)||(cross_type==8)||(cross_type==9)||(cross_type==10))&&cam_zoom==1&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	ATGM_TANK_CROSS, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If =((cross_type==2)||(cross_type==6)||(cross_type==7)||(cross_type==8)||(cross_type==9)||(cross_type==10))&& (cam_zoom>1)&&(reloading==0&&wpn_heat<1.0)
+DrawTexture = ATGM_TANK_CROSS, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+;过热
+If = ((cross_type==2)||(cross_type==6)||(cross_type==7)||(cross_type==8)||(cross_type==9)||(cross_type==10))&&(cam_zoom==1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture =ATGM_TANK_CROSS_WAIT, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+
+EndIf
+
+If = ((cross_type==2)||(cross_type==6)||(cross_type==7)||(cross_type==8)||(cross_type==9)||(cross_type==10))&&(cam_zoom>1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture = ATGM_TANK_CROSS_WAIT, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+
+EndIf
+

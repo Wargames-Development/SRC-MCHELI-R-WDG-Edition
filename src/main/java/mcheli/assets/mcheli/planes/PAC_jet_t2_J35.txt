@@ -1,0 +1,271 @@
+DisplayName = J-35
+AddDisplayName = zh_CN, 歼-35
+AddDisplayName = en_US, J-35
+MaxHp = 350
+
+Category = M.A
+ItemID = 28705
+HUD = JET
+ThirdPersonDist = 25
+Speed = 2.0
+MobilityPitch = 1
+MobilityRoll = 2
+MobilityYaw = 1
+ThrottleUpDown = 0.6
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 1800
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.00, 1.2, -0.7212
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  1.7,  1.72
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = Exhaustflame, Exhaustflame_blue, 0.9774, 1.635, -11, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_blue, -0.9774, 1.635, -11, -1, 0, 0, 0, 1
+
+AddPartWeaponBay = JET_J35_IRM/ JET_J35_AAM_ARM,  1.303, 0.9281,-3.058,  -0, -0, 1.000,  80
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.087, -4.409,  4.464, 3.025, 11.011, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.447, 3.442,  2.198, 2.698, 4.835, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.102, -11.105,  2.198, 2.177, 2.43, 1.5, DEFAULT, 引擎
+BoundingBox = -2.699, 2.103, -11.493,  2.85, 0.651, 3.102, 1.0, DEFAULT, 机身
+BoundingBox = 2.699, 2.103, -11.493,  2.85, 0.651, 3.102, 1.0, DEFAULT, 机身
+BoundingBox = -4.53, 2.103, -6.622,  4.442, 1.015, 4.835, 1.0, DEFAULT, 机身
+BoundingBox = 4.53, 2.103, -6.622,  4.442, 1.015, 4.835, 1.0, DEFAULT, 机身
+EntityWidth = 0.85
+EntityHeight = 0.85
+
+FlareType = 9
+hasDIRCM = true
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = ADVANCED_AA
+NameOnAdvancedAARadar = J35
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00,  1.851,-8.339,  1,0, 0, 15
+
+AddPartSteeringWheel = 3.383, 1.931,-8.344, 1, 0, 0.0,   -15
+AddPartSteeringWheel = -3.383, 1.931,-8.344,  -1, 0, 0.0,   -15
+AddPartSteeringWheel = 2.24, 1.961,-10.98, 1, 0, 0.0,   -15
+AddPartSteeringWheel = -2.24, 1.961,-10.98,  -1, 0, 0.0,   -15
+AddPartSteeringWheel = -0.5075,1.921,2.073, 0, 0, 1,   -10
+AddPartSteeringWheel = 3.1802,4.6939,-12.5474,-1.0747,-2.1236,1.5561, 20
+AddPartSteeringWheel = -3.1802,4.6939,-12.5474,1.0747,-2.1236,1.5561, 20
+
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle = 0.5545, 1.896, 2.127,  1,0,0.00, 40
+
+AddPartThrottle = 0.9775,2.1042,-11.8108,0.2471,-0.0718,-0.0009,6
+AddPartThrottle = 1.2246,2.0324,-11.8118,0.1826,-0.1874,-0.0024,6
+AddPartThrottle = 1.2246,2.0324,-11.8118,0.1826,-0.1874,-0.0024,6
+AddPartThrottle = 1.393,1.3349,-11.8205,0.0766,0.2559,0.0032,-6
+AddPartThrottle = 1.2057,1.1557,-11.8228,0.1873,0.1792,0.0023,-6
+AddPartThrottle = 0.955,1.0936,-11.8236,0.2507,0.0621,0.0008,-6
+AddPartThrottle = 0.7051,1.168,-11.8226,0.2499,-0.0744,-0.0009,-6
+AddPartThrottle = 0.5269,1.3583,-11.8202,0.1782,-0.1903,-0.0024,-6
+AddPartThrottle = 0.4664,1.6087,-11.8171,0.0605,-0.2504,-0.0032,-6
+AddPartThrottle = 0.5392,1.8626,-11.8139,-0.0727,-0.2539,-0.0032,-6
+AddPartThrottle = 0.5392,1.8626,-11.8139,0.1879,0.1809,0.0023,6
+AddPartThrottle = 0.7271,2.0435,-11.8116,0.2504,0.0607,0.0008,6
+
+AddPartThrottle = 0.866,2.0633,-11.7906,0.2066,0.0,0.0,6
+AddPartThrottle = 1.2892,1.9499,-11.7906,-0.1789,0.1033,0.0,-6
+AddPartThrottle = 1.42,1.7434,-11.7906,-0.1033,0.1789,0.0,-6
+AddPartThrottle = 1.4301,1.4991,-11.7906,0.0,0.2066,0.0,-6
+AddPartThrottle = 1.3167,1.2826,-11.7906,0.1033,0.1789,0.0,-6
+AddPartThrottle = 1.1102,1.1517,-11.7906,0.1789,0.1033,0.0,-6
+AddPartThrottle = 0.866,1.1416,-11.7906,0.2066,0.0,0.0,-6
+AddPartThrottle = 0.8283,1.1517,-11.7906,-0.1789,0.1033,0.0,6
+AddPartThrottle = 0.6218,1.2826,-11.7906,-0.1033,0.1789,0.0,6
+AddPartThrottle = 0.5084,1.4991,-11.7906,0.0,0.2066,0.0,6
+AddPartThrottle = 0.5185,1.7434,-11.7906,0.1033,0.1789,0.0,6
+AddPartThrottle = 0.6494,1.9499,-11.7906,0.1789,0.1033,0.0,6
+
+AddPartThrottle = -0.9585,2.1042,-11.8108,0.2471,-0.0718,-0.0009,6
+AddPartThrottle = -0.7114,2.0324,-11.8118,0.1826,-0.1874,-0.0024,6
+AddPartThrottle = -0.7114,2.0324,-11.8118,0.1826,-0.1874,-0.0024,6
+AddPartThrottle = -0.5430,1.3349,-11.8205,0.0766,0.2559,0.0032,-6
+AddPartThrottle = -0.7303,1.1557,-11.8228,0.1873,0.1792,0.0023,-6
+AddPartThrottle = -0.9810,1.0936,-11.8236,0.2507,0.0621,0.0008,-6
+AddPartThrottle = -1.2309,1.168,-11.8226,0.2499,-0.0744,-0.0009,-6
+AddPartThrottle = -1.4091,1.3583,-11.8202,0.1782,-0.1903,-0.0024,-6
+AddPartThrottle = -1.4696,1.6087,-11.8171,0.0605,-0.2504,-0.0032,-6
+AddPartThrottle = -1.3968,1.8626,-11.8139,-0.0727,-0.2539,-0.0032,-6
+AddPartThrottle = -1.3968,1.8626,-11.8139,0.1879,0.1809,0.0023,6
+AddPartThrottle = -1.2089,2.0435,-11.8116,0.2504,0.0607,0.0008,6
+AddPartThrottle = -1.0700,2.0633,-11.7906,0.2066,0.0,0.0,6
+AddPartThrottle = -0.6468,1.9499,-11.7906,-0.1789,0.1033,0.0,-6
+AddPartThrottle = -0.5160,1.7434,-11.7906,-0.1033,0.1789,0.0,-6
+AddPartThrottle = -0.5059,1.4991,-11.7906,0.0,0.2066,0.0,-6
+AddPartThrottle = -0.6193,1.2826,-11.7906,0.1033,0.1789,0.0,-6
+AddPartThrottle = -0.8258,1.1517,-11.7906,0.1789,0.1033,0.0,-6
+AddPartThrottle = -1.0700,1.1416,-11.7906,0.2066,0.0,0.0,-6
+AddPartThrottle = -1.1077,1.1517,-11.7906,-0.1789,0.1033,0.0,6
+AddPartThrottle = -1.3142,1.2826,-11.7906,-0.1033,0.1789,0.0,6
+AddPartThrottle = -1.4276,1.4991,-11.7906,0.0,0.2066,0.0,6
+AddPartThrottle = -1.4175,1.7434,-11.7906,0.1033,0.1789,0.0,6
+AddPartThrottle = -1.2866,1.9499,-11.7906,0.1789,0.1033,0.0,6
+
+AddPartLG = 0.000, 1.407,1.432,   0, 0.000, 0.00, 102
+
+AddPartLGRev = 0.3085, 1.066, 1.444,   -0.05, 0.075, 1.00,  89
+AddPartLGRev = -0.3085, 1.066, 1.444,    0.05, 0.075, 1.00, -89
+
+AddPartLG = 1.663, 1.917,-5.276,   0.00, 0.000, 0.00, 90
+AddPartLGRev = 2.008, 1.751, -5.392,   -0.05, 0.075, 1.00,  80
+
+AddPartLG = -1.663, 1.917,-5.276,   0.00, 0.000, 0.00, 90
+
+AddPartLGRev = -2.008, 1.751, -5.392,   0.05, 0.075, 1.00,  -80
+
+;Weapons
+AddPartWeaponMissile = JET_J35_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = JET_J35_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = JET_J35_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = JET_J35_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = JET_J35_AAM_ARM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = JET_J35_AAM_ARM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = JET_J35_AAM_ARM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = JET_J35_AAM_ARM,  false, false, false,  -5.0, 0,  0
+
+AddWeapon = JET_J35_30MM, 1.085, 3, -1,  0.0, 0.0
+
+AddWeapon = JET_J35_IRM,-0.97, 1.0, -3.82,   0.0, 0.0
+AddWeapon = JET_J35_IRM,-0.97, 1.0, -3.82,   0.0, 0.0
+AddWeapon = JET_J35_IRM,-0.97, 1.0, -3.82,   0.0, 0.0
+AddWeapon = JET_J35_IRM,-0.97, 1.0, -3.82,   0.0, 0.0
+
+AddWeapon = JET_J35_AAM_ARM, 1.085, 1.952, 2.096,  0.0, 0.0
+AddWeapon = JET_J35_AAM_ARM, -1.085, 1.952, 2.096,  0.0, 0.0
+AddWeapon = JET_J35_AAM_ARM, 1.085, 1.952, 2.096,  0.0, 0.0
+AddWeapon = JET_J35_AAM_ARM, 1.085, 1.952, 2.096,  0.0, 0.0
+
+weapongrouptype = 21
+
+;MISC
+;Place misc paramters here
+EnableVtol = false
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+;AddPartNozzle = 0.9774, 1.635, -12.56, -1,0,0
+;AddPartNozzle = -0.9774, 1.635, -12.56, -1,0,0
+;0
+;占位1-19
+;涡扇13E左
+;20
+;21
+;22
+;23
+;24
+;25
+;26
+;27
+;28
+;29
+;30
+;31
+;32
+;33
+;34
+;35
+;36
+;37
+;38
+;39
+;40
+;41
+;42
+;43
+;44
+;45
+;46
+;47
+;48
+;49
+;50
+;51
+;52
+;53
+;54
+;55
+;56
+;57
+;58
+;59
+;60
+;61
+;62
+;63
+;64
+;65
+;66
+;67
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;Front
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 AAM_ARM ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 GPSBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 1.00
+MobilityPitch = 1.00
+MobilityRoll = 2.39
+MobilityRoll = 2.39
+MobilityYaw = 0.60
+MobilityYaw = 0.60
+MotionFactor = 0.968
+MotionFactor = 0.968
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+AddPartWeaponBay = JET_J35_IRM / JET_J35_AAM_ARM, -1.303, 0.9281,-3.058,   0, -0, 1.000, -80
+AddPartWeaponBay = JET_J35_IRM / JET_J35_AAM_ARM, -0, 0.9229,-3.264,   0, -0, 1.000, -80
+AddPartWeaponBay = JET_J35_IRM/ JET_J35_AAM_ARM,  0, 0.9229,-3.264,  -0, -0, 1.000,  80
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200

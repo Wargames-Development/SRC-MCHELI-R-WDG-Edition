@@ -1,0 +1,84 @@
+DisplayName = SPM-3
+AddDisplayName = zh_CN, SPM-3 熊式装甲车
+AddDisplayName = en_US, SPM-3
+MaxHp = 600
+
+HUD = M1161ITV,mbt_gnr
+Speed = 0.9
+MobilityRoll = 0
+ThrottleUpDown = 3.0
+MinRotationPitch = -85
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+StepHeight = 1.5
+MobilityYawOnGround = 2
+DefaultFreelook = true
+
+Sound = JeepMove
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraRotationSpeed = 50
+CameraZoom = 3
+EnableNightVision = true
+EnableEntityRadar = false
+AddSeat = 0.8969, 1.40, 0.4174
+AddGunnerSeat = -0.8969, 1.40, 0.4174,    -0.8032, 4,  -1.434,  false, -90, 90, true
+
+ArmorMinDamage = 10
+DamageFactor = 0.00
+BoundingBox = 0.0, 0.8875,  2.572,   2.5, 2.5,  0.6
+BoundingBox = 0.0, 1.147,  -0.1272,   3.0, 3.0,  1
+BoundingBox = 0.0, 1.147,  -2.778,   2.5, 3.0,  1
+SubmergedDamageHeight = 2
+
+NameOnAdvancedAARadar = 
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = CAR
+NameOnEarlyASRadar = ?
+
+OnGroundPitchFactor = 0.9
+OnGroundRollFactor = 0.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.4311,  2.319
+AddTrackRoller = -1.541,  0.4311,  -2.011
+
+;Weapons
+AddPartWeapon = Gunner_HMG,     false,  true,  false,   -0.8032,  0.649,    -1.334
+AddPartWeaponChild = false, true,  0.00, 3.611,  -1.434
+AddWeapon = Gunner_HMG ,   -0.8032, 3.611,  -1.434,   0.0, 0.0, false, 2, 0, -360,360, -40,10
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = false
+HideEntity = true
+
+;AddWeapon = ai ,   -3.0, 0.0,  2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+;AddWeapon = ai ,   3.0, 0.0,  2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+;AddWeapon = ai ,   -3.0, 0.0,  -2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+;AddWeapon = ai ,   3.0, 0.0,  -2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+;AddPartWeaponMissile = ai,   false, false, false,   0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,  -0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,   0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,  -0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,   0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,  -0.297,  0.518, -8.699
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+
+;DUPLICATES
+ThrottleUpDown = 3.5

@@ -1,0 +1,69 @@
+DisplayName = 鹰击18 反舰导弹 指令线/主动雷达复合制导
+Type = TVMissile
+ModelBullet = YJ18
+Power = 100
+Acceleration = 3
+Gravity = 0
+Explosion = 11
+Flaming = false
+Sight = MoveSight
+ModeNum = 2
+Delay = 30
+ReloadTime = 45
+HeatCount = 500
+MaxHeatCount = 1200
+Round = 4
+ProximityFuseDist = 4
+Group = MainGun
+Sound = Heatseekers_F
+TrajectoryParticleStartTick = 10
+DamageFactor = heli, 1.0
+DamageFactor = plane, 1
+DamageFactor = tank, 0.5
+RigidityTime = 2
+FixMode = 1
+MaxAmmo = 4
+SuppliedNum = 4
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+enableBVR=true
+MinRangeBVR = 10
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=4
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=5
+ExplosionDamageVsPlane=5
+ExplosionDamageVsHeli=5
+ExplosionDamageVsVehicle=5
+DamageFactor = ship, 5
+ExplosionDamageVsShip=5
+enableExhaustFlare=true
+
+
+
+EnableOffAxis = false
+LockMinHeight = 50
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+DestructAfterSpawnBullet=true
+SpawnBulletInAir = true
+ModelBomblet = WARSHIP_052D_ASM_ARM_BULLET
+BombletDiff = 0.0
+SpawnBulletMaxNum = 1
+SpawnBulletIntervalTick = 40
+SpawnBulletPerNum=1
+SpawnBulletInheritSpeed = true

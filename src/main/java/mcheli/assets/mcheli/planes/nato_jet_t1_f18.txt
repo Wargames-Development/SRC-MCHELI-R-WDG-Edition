@@ -1,0 +1,147 @@
+DisplayName = F/A-18E SUPER HORNET
+AddDisplayName = zh_CN,F/A-18E 超级大黄蜂
+AddDisplayName = en_US,F-18E SUPER HORNET
+MaxHp = 400
+
+Category = M.F
+HUD = JET, su34_gnr
+ThirdPersonDist = 25
+Speed = 3.0
+MobilityPitch = 1
+MobilityRoll = 2
+MobilityYaw = 1
+ThrottleUpDown = 2
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.0, 0
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.30,  1.239
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddPartNozzle = 7.820, 2.123, -8.556, -1,0,0
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -0.6882, 2.268,-12.31, 0, 0, 0,0,1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.6882, 2.268,-12.31, 0, 0,0,0, 1
+
+AddPartSlideweaponbay = JET_F18_AAM_SARH/JET_F18_AAM_IRM, 0,0,0.01
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.00, 2.40, 3.5,  3.0, 3.5
+BoundingBox = 0.00, 1.90, -1.0,  4.9, 3.2
+BoundingBox = 0.00, 1.90, -5.80, 5.0, 3.2
+BoundingBox = 0.00, 1.90, -10.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -6.50,  5.0, 1.4
+BoundingBox = 4.2, 2.20, -6.50,  5.0, 1.4
+BoundingBox = 0.00, 2.20, -12.3,  3.5, 2.0,1.5
+EntityWidth = 0.70
+EntityHeight = 0.70
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = F18
+NameOnModernAARadar = F18
+NameOnEarlyAARadar = F18
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00, 3.542, -4.496,  -1,0,0,  -20
+AddPartLG = 0, 1.771, 2.126,  1,0,0,90
+AddPartLG = 0, 1.914, -0.4410,  1,0,0,-30
+AddPartLGRev = -0.66, 1.60, 3.039,  0,0,1,-80
+AddPartLGRev = 0.66, 1.62, 3.039,  0,0,1,80
+AddPartLGRev = -0.52, 1.42, 2.094,  0,0,1,-80
+AddPartLGRev = 0.52, 1.42, 2.094,  0,0,1,80
+AddPartLGRev = -0.285, 1.29, 0.9415,  0,0,1,-90
+
+AddPartLG = 0.7512, 1.526, -4.996,  0,0,0,90
+AddPartLGRev = 0.5167, 1.021, -5.80,  -0.08,0,1,-95
+AddPartLGRev = 0.5037, 1.085, -6.989,  -0.08,0,1,-85
+AddPartLGRev = 1.256, 1.058, -6.993,  0.08,0,1,85
+
+AddPartLG = -0.7512, 1.526, -4.996,  0,0,0,90
+AddPartLGRev = -0.5167, 1.021, -5.80,  0.08,0,1,95
+AddPartLGRev = -0.5037, 1.085, -6.989,  0.08,0,1,85
+AddPartLGRev = -1.256, 1.058, -6.993,  -0.08,0,1,-85
+
+AddPartSteeringWheel = 0.2656, 2.788,2.073, 0, 0, 1,   -360
+AddPartSteeringWheel = -0.2660, 2.788,2.073, 0, 0, 1,   -360
+AddPartSteeringWheel = -0.01040, 2.497, 1.837, 0.0, 0.0, 1.0, -20
+AddPartSteeringWheel = 2.127,  2.537,  -7.287,   -1, 0, 0,  8
+AddPartSteeringWheel = -2.127,  2.537,  -7.287,    1, 0, 0,  8
+AddPartSteeringWheel = 1.315, 2.884, -9.735, 0.0, -1.0, 0.2,8
+AddPartSteeringWheel = -1.315, 2.884, -9.735, 0.0, -1.0, 0.2, 8
+
+AddPartSteeringWheel = 1.239, 2.118,-11.15, 1, 0, 0.0,   -15
+AddPartSteeringWheel = 1.239, 2.118,-11.15, -1, 0, 0.0,   -15
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.3
+
+AddPartCanopy = 0.00, 3.615, -1.20,  -1,0,0,  40
+AddPartCanopy = 0.00, 3.903, -2.891,  -1,0,0,  0
+
+;Weapons
+AddPartWeaponMissile = JET_F18_AAM_SARH,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F18_AAM_SARH,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F18_AAM_IRM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F18_AAM_IRM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F18_AAM_IRM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F18_AAM_IRM,   false, false, false,  -0.297,  0.518, -8.699
+
+AddWeapon = JET_F18_20MM_AA,  -0.0,  2.496,  5.440,  0.0,  0.0
+AddWeapon = JET_F18_AAM_SARH,     6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F18_AAM_SARH,     -6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F18_AAM_IRM,     4.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F18_AAM_IRM,     -4.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F18_AAM_IRM,     6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F18_AAM_IRM,     -6.232,  1.758, -7.699,  0,-0.0
+
+weapongrouptype = 1
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;前起落架
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 1.00
+MobilityPitch = 1.00
+MobilityRoll = 2.39
+MobilityRoll = 2.39
+MobilityYaw = 0.60
+MobilityYaw = 0.60
+MotionFactor = 0.968
+MotionFactor = 0.968
+SweepWingSpeed = 0.9
+AddPartNozzle = -7.820, 2.123, -8.556, -1,0,0
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200
+hasMaintenance = true

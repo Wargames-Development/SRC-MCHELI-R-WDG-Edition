@@ -1,0 +1,116 @@
+DisplayName = FLARAKRAD
+AddDisplayName = zh_CN,轮式罗兰防空系统
+AddDisplayName = en_US,FLARAKRAD
+MaxHp = 700
+
+ItemID = 30100
+HUD = SPAA, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.70
+MobilityRoll = 0
+ThrottleUpDown = 2.5
+MinRotationPitch = -85
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 3.5
+DefaultFreelook = true
+
+Sound = vehicle_run
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.9
+MaxFuel = 1200
+FuelConsumption = 0.1
+
+CameraPosition = 0.0,  3.853, 1.2, true
+CameraRotationSpeed = 80
+CameraZoom = 6
+EnableNightVision = true
+AddGunnerSeat = 0.7, 1.0, 5.56,    0.7, 1.0, 5.56,  false, -90, 90, true
+
+ArmorMinDamage = 10
+DamageFactor = 0.0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 1.305, 0.483,  3.01, 3.261, 5.396, 0.6, DEFAULT, 车体中部
+BoundingBox = 0.0, 1.839, 4.83,  3.01, 1.342, 3.277, 0.8, DEFAULT, 驾驶室
+BoundingBox = 0.0, 0.45, 4.83,  3.01, 1.418, 3.479, 0.4, DEFAULT, 车体前部
+BoundingBox = 0.0, 1.319, -3.106,  3.01, 3.26, 1.783, 0.8, DEFAULT, 车体尾部
+BoundingBox = 0.0, 3.673, 0.037,  2.102, 1.622, 2.177, 0.5, TURRET, 无人炮塔
+SubmergedDamageHeight = 3
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = RLD
+NameOnModernAARadar = RLD
+NameOnEarlyAARadar = SAM
+NameOnModernASRadar = RLD
+NameOnEarlyASRadar = SAM
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 5
+OnGroundRollFactor = 5
+
+;Parts
+SetWheelPos = 1.82,  -0.24,  2.86,  0.70, -0.76, -2.22, -4.14
+
+;Weapons
+AddPartWeapon = AA_RAD_LOSM/AA_RAD_SARH, false, true, false,  0.0, 0.0, 0.0, 0
+AddPartWeaponChild = false, true, 0.0, 4.119, -0.1715, 0.0,
+AddPartWeaponChild = false, true, 0.0, 4.119, -0.1715, 0.0,
+AddTurretWeapon = AA_RAD_SARH, -1.32, 4.119, -0.2,  0.0, 0.0, true, 1, 0,-360,360, -85, 10
+AddTurretWeapon = AA_RAD_SARH, 1.32, 4.119, -0.2,  0.0, 0.0, true, 1, 0,-360,360, -85, 10
+
+AddTurretWeapon = AA_RAD_LOSM, -1.32, 4.119, -0.2,  0.0, -70.0, true, 1, 0,-360,360, -85, 10
+AddTurretWeapon = AA_RAD_LOSM, 1.32, 4.119, -0.2,  0.0, -70.0, true, 1, 0,-360,360, -85, 10
+
+AddWeapon = IFV_bunker,          0, 0,6,  0.0, 90, true,1, 0,0,0, 0, 0
+
+weapongrouptype = 6
+
+;MISC
+;Place misc paramters here
+ArmorDamageFactor = 1
+ArmorDamageFactor = 1.0
+HideEntity = true
+WeightType = Tank
+WeightedCenterZ = 0.0
+EnableBack = true
+AddPartWheel = 1.15,  0.35,  4.70, 30
+AddPartWheel = 1.15,  0.35,  2.52,
+AddPartWheel = 1.15,  0.35,  -2.97,
+AddPartWheel = 1.15,  0.35,  -1.25,
+AddPartWheel = -1.12,  0.35,  4.75, 30
+AddPartWheel = -1.12,  0.35,  2.48,
+AddPartWheel = -1.12,  0.35,  -1.19,
+AddPartWheel = -1.12,  0.35,  -3.02,
+engineshutdownthres = 20
+hudtype = 1
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+armorExplosionDamageMultiplier = 1.2
+
+;EnableEntityRadar = true
+; 指定した高さまでの水に触れてもダメージを受けない
+; 2であれば2ブロックまでダメージ無し
+; Tank or Car or Unknown
+; 重心Z座標設定
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+; 地面の滑りやすさ、小さいほど摩擦が大きくなり動きにくくなる
+;ArmorDamageFactor ダメージ係数上記のMin/Max範囲チェック後のダメージの係数 1で100%, 0.5で50%
+;後退可能にする
+;PivotTurnThrottle を0より大きい値にすると超信地旋回ができなくなる。デフォルトは0
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR
+;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+
+;DUPLICATES

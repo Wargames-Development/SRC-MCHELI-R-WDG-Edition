@@ -1,0 +1,27 @@
+﻿ 色設定(Current Color)
+Color = 0xCFFFFFFF
+
+
+DrawString = -180,  30, "X:%+4.1f",    TVM_POS_X
+DrawString = -180,  40, "Y:%+4.1f",    TVM_POS_Y
+DrawString = -180,  50, "Z:%+4.1f",    TVM_POS_Z
+DrawCenteredString = 0,70, "%3.1f LR", TVM_DIFF
+DrawLine =  -100, -50,   -100, -75,   -75, -75
+DrawLine =  -100, +50,   -100, +75,   -75, +75
+DrawLine =  +100, -50,   +100, -75,   +75, -75
+DrawLine =  +100, +50,   +100, +75,   +75, +75
+DrawLine = -50,   0,   -10,   0
+DrawLine =  50,   0,    10,   0
+DrawLine =   0, -50,     0, -10
+DrawLine =   0,  50,     0,  10
+DrawString = -100, -85, "x%.1f",    CAM_ZOOM
+DrawString = 80, -85, "%3dm", ALTITUDE
+DrawString = -120,  -4, "%3.0f", PLYR_PITCH
+DrawLine = -130,-5,   -90,-5,   -90, 5,   -130, 5,   -130,-5
+DrawCenteredString = 0,  -69, "%3.0f", PLYR_YAW
+DrawLine = -20,-70,   20,-70,   20,-60,   -20,-60,   -20,-70
+
+
+; -250,-250,  500,500, 0,0, 1024,1024
+
+DrawTexture = GUNNER_TVM, (-545*(width/960)), (-375*(height/500)), (1090*(width/960)), (750*(height/500)), 0,0,1000,1000,0

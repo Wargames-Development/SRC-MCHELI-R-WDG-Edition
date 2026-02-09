@@ -1,0 +1,44 @@
+DisplayName = ÅÅÀ×Ë÷
+Type = Rocket
+Power = 50
+Acceleration = 2
+Explosion = 4
+Sight = MoveSight
+Delay = 40
+ModelBullet = ldcs
+Sound = AA11_F
+ModeNum = 2
+;fixmode = 1
+round  = 2
+SoundVolume = 10.0
+smokesize = 0.5
+
+HeatCount = 600
+MaxHeatCount = 1000
+
+ExplosionDamageVsLiving=10
+ExplosionDamageVsPlayer=10
+ExplosionDamageVsTank=3
+ExplosionDamageVsPlane=3
+ExplosionDamageVsHeli=3
+ExplosionDamageVsVehicle=3
+gravity = -0.012
+
+crosstype = 11
+displaymortardistance= true
+WeaponSwitchSound = Switch_Main_Cannon
+
+MaxAmmo = 4
+SuppliedNum = 2
+
+Item =  2,hbm:item.ammo_standard,54
+Item =  4,hbm:tile.det_miner
+
+;SpawnBulletPerNum = 5
+SpawnBulletInAir = true
+ModelBomblet = m1150_ldcs_line
+BombletDiff = 0
+SpawnBulletMaxNum = 40
+SpawnBulletInheritSpeed= true
+SpawnBulletIntervalTick =2
+DisableDestroyBlock=true

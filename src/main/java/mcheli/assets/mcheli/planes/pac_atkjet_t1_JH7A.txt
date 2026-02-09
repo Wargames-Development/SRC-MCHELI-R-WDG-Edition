@@ -1,0 +1,138 @@
+DisplayName = JH-7AII
+AddDisplayName = zh_CN,歼轰-7A 飞豹II
+AddDisplayName = en_US,JH-7AII
+MaxHp = 400
+
+Category = M.F
+HUD = JET, JET_GUNNER
+ThirdPersonDist = 25
+Speed = 2.0
+MobilityPitch = 0.9
+MobilityRoll = 1.5
+MobilityYaw = 0.9
+ThrottleUpDown = 0.8
+
+Gravity = -0.038
+motionfactor = 0.955
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.627, -4.173
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.0,  1.95,  5.149
+AddGunnerSeat = 0.0,  2.381,  3.447 , 0.6401, 0.6893, 2.128, true,-10, 120, false
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.6520, 2.321, -11, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -0.6520, 2.321, -11, -1, 0, 0, 0, 1
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.226, 6.429,  1.404, 2.21, 7.883, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.227, -3.79,  3.148, 2.579, 13.046, 1.0, DEFAULT, 机身
+BoundingBox = 4.538, 2.381, -5.228,  6.051, 1.251, 5.56, 1.0, DEFAULT, 机身
+BoundingBox = -4.538, 2.381, -5.228,  6.051, 1.251, 5.56, 1.0, DEFAULT, 机身
+BoundingBox = 3.212, 2.381, -11.733,  3.164, 0.655, 2.907, 1.0, DEFAULT, 机身
+BoundingBox = -3.212, 2.381, -11.733,  3.164, 0.655, 2.907, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 5.061, -9.84,  0.706, 3.343, 5.45, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.381, -11.381,  3.148, 1.757, 2.134, 1.5, DEFAULT, 引擎
+EntityWidth = 0.75
+EntityHeight = 0.75
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = JH7
+NameOnModernAARadar = J7
+NameOnEarlyAARadar = M21
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartLG = 0, 1.49, 3.795,  0,0,0,90
+
+AddPartLGRev = -0.3896, 1.120, 3.475,  0,0,1,-100
+AddPartLGRev = 0.3896, 1.120, 3.475,  0,0,1,100
+
+AddPartLG = 0.9605, 1.57, -4.152,  0,0,0,90
+AddPartLGRev = 1.236, 1.956, -2.737,  0,0,1,85
+AddPartLGRev = 1.255, 1.713, -4.185,  0,0,1,60
+
+AddPartLG = -0.9605, 1.57, -4.152,  0,0,0,90
+AddPartLGRev = -1.236, 1.956, -2.737,  0,0,1,-85
+AddPartLGRev = -1.255, 1.713, -4.185,  0,0,1,-60
+
+AddPartSteeringWheel = 3.08,  2.886,  -5.861,   -4.4633, -0.0758, 1.9205,  10
+AddPartSteeringWheel = -3.08,  2.886,  -5.861,    4.4633, -0.0758, 1.9205,  10
+AddPartSteeringWheel = 1.386, 2.089,-9.985, 1, 0, 0.0,   -15
+AddPartSteeringWheel = -1.386, 2.089,-9.985,  -1, 0, 0.0,   -15
+AddPartSteeringWheel = 0, 3.582, -11.00, 0.0, -1.0, 0.337, 15
+
+AddPartSteeringWheel = 0.0,2.243,5.528, 0, 0, 1,   -20
+AddPartThrottle = 0.3741, 2.276, 5.510,  1,0,0.00, 40
+
+AddPartwing = 0.00,  1.50,-9.582,  1,0, 0, -60
+AddPartwing = 0.00,  3.123,-9.631,  1,0, 0, 60
+
+;Weapons
+AddPartWeaponMissile = ATKJET_JH7A_AAM_IRM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_JH7A_AAM_IRM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_JH7A_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_JH7A_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_JH7A_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_JH7A_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_JH7A_GUNNER_LASERBOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_JH7A_GUNNER_IRBOMB,   false, false, false,  -0.297,  0.518, -8.699
+
+AddWeapon = ATKJET_JH7A_23MM,  -0.7357,  1.318,  -1.02,  -0.5,  -0.5
+AddWeapon = ATKJET_JH7A_AAM_IRM,  -5,  2.09, -8,  -1.4,  -0
+AddWeapon = ATKJET_JH7A_AAM_IRM,    5,  2.09, -8,  1.8 , -0
+AddWeapon = ATKJET_JH7A_BOMB,   0,  0.7351, -1.063,  0.0,  0
+AddWeapon = ATKJET_JH7A_BOMB,   0,  0.77, -3.776,  0.0,  0
+AddWeapon = ATKJET_JH7A_BOMB,   -4.50,  1.985, -4.499,  0.0, 0
+AddWeapon = ATKJET_JH7A_BOMB,   4.5,  1.985, -4.499,  0.0,  0
+
+AddWeapon = ATKJET_JH7A_GUNNER_LASERBOMB,     -2.872, 2.18, -3.05,  0,0.0, false,2,  0,-360,360, 0,90
+AddWeapon = ATKJET_JH7A_GUNNER_IRBOMB,    2.872, 2.18, -3.05,  0,0.0,  false,2,  0,-360,360, 0,90
+
+weapongrouptype = 30
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  0.6520, 2.321, -11.72, -1,0,0
+;AddPartNozzle = -0.6520, 2.321, -11.72, -1,0,0
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 EF2000, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM ;16 SU34
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+SweepWingSpeed = 0.9

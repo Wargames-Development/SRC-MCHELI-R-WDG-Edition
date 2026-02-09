@@ -1,0 +1,56 @@
+DisplayName = XD-1 ACCIPITER
+AddDisplayName = zh_CN, XD-1雀鹰
+AddDisplayName = en_US, XD-1 ACCIPITER
+MaxHp = 60
+
+Category = M.Q
+HUD = XD1
+ThirdPersonDist = 15
+Speed = 0.4
+ThrottleUpDown = 10
+MinRotationPitch = -60
+MaxRotationPitch = 60
+
+Sound = SUAV_idle
+
+MaxFuel = 120
+FuelConsumption = 0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.40, 0.34
+EnableGunnerMode = false
+AutoPilotRot = -0.55
+EnableNightVision = true
+EnableEntityRadar = true
+
+ParticlesScale = 1.0
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.00, 0.02, -1.59, -1, 0, 0, 0, 1
+
+ArmorMinDamage = 0
+
+RadarType = MODREN_AA
+NameOnAdvancedAARadar = ?
+NameOnModernAARadar = ?
+NameOnEarlyAARadar = ?
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+;Weapons
+AddWeapon = xd1m167,   0.0, 0.0, 0.0,  0.0, 0.0
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 1200
+SmallUAV = true
+MinRotationRoll = -60
+MaxRotationRoll = 60
+AddRecipe = " I ",  " I ",  " F ",  I,iron_ingot, F,furnace
+AddPartRotor = 0.00,  0.00,  0.00,   1,0,0
+AddBlade = 1, 0,  0.00,  0.00,  0.00,   0,0,-1
+
+; M = Military(軍用機).  Q = Drone(無人航空機)
+;AddPartNozzle = 0.00, 0.02, -1.59, -1,0,0
+
+;DUPLICATES

@@ -1,0 +1,79 @@
+DisplayName =红箭10 重型红外制导反坦克导弹
+Type = ATMissile
+Power = 600
+Acceleration = 0.5
+Explosion = 6
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 100
+LockTime = 60
+ModeNum = 2
+Round =2
+reloadtime =100
+ProximityFuseDist = 1
+ModelBullet = fgm148
+Sound = missile_11_snd
+RidableOnly = false
+HeatCount = 900
+MaxHeatCount = 1000
+
+Gravity = 0.015
+
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+MaxLockOnRange = 1500
+MaxLockOnAngle = 10
+LockMinHeight = 50
+EnableOffAxis = true
+MaxDegreeOfMissile = 40
+SpeedFactor = 0.03
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 40
+SpeedDependsAircraft = true
+turningFactor = 0.15
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+
+
+effectYield=0
+
+
+DamageFactor = player, 1.0
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor = vehicle , 1.0
+DamageFactor = tank, 1.0
+DamageFactor = living, 1.0
+DamageFactor = ship, 1.0
+
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+
+modenum=2
+fixmode=1
+
+canBeIntercepted=true
+RidableOnly = true
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=7
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank= 2
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=2
+ExplosionDamageVsShip=2
+
+enableExhaustFlare=true
+
+turningFactor = 0.15

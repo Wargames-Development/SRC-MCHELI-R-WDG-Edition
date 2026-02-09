@@ -1,0 +1,136 @@
+DisplayName = RAFALE C.F3-R
+AddDisplayName = zh_CN,阵风 C.F3-R
+AddDisplayName = en_US,RAFALE C.F3-R
+MaxHp = 350
+
+Category = M.F
+HUD = JET, su34_gnr
+ThirdPersonDist = 25
+Speed = 2.1
+MobilityPitch = 1
+MobilityRoll = 2
+MobilityYaw = 1
+ThrottleUpDown = 2
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.0, 0
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.475,  6.319
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.6542, 2.6, -7.0, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -0.6542, 2.6, -7.0, -1, 0, 0, 0, 1
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.00, 2.40, 6.5,  3.0, 2.0
+BoundingBox = 0.00, 1.90, 3.0,  4.9, 2.2
+BoundingBox = 0.00, 1.90, -2.80, 5.0, 2.2
+BoundingBox = 0.00, 1.90, -5.50, 4.0, 2.2
+BoundingBox = -4.2, 2.20, -2.50,  5.0, 1.4
+BoundingBox = 4.2, 2.20, -2.50,  5.0, 1.4
+BoundingBox = 0.00, 2.20, -5.3,  3.5, 2.0,1.2
+EntityWidth = 0.75
+EntityHeight = 0.75
+
+FlareType = 4
+hasecmJammer = true
+ecmJammerType = 0
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = RFL
+NameOnModernAARadar = RFL
+NameOnEarlyAARadar = RFL
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00, 2.263, -4.221,  -1,0,0,  -20
+AddPartLG = 0.00,  2.594,  5.776,    -0, 0, 0,  -90
+AddPartLGRev = -0.4018,  1.81,  6.851,    0, 0, 1,  -100
+AddPartLGRev = 0.3800,  1.769,  6.092,    0, 0, 1,  80
+AddPartLGRev = -0.3800,  1.769,  6.092,    0, 0, 1,  -80
+AddPartLGRev = 0.15,  1.577,  4.817,    0, 0, 1,  80
+AddPartLGRev = -0.15,  1.577,  4.817,    0, 0, 1,  -80
+
+AddPartLG = 1.031,  1.885,  -0.8539,    0, 0, 0.0,  -90
+AddPartLGRev = 1.544,  1.730,  0.2225,    0, 0, 1,  80
+AddPartLGRev = 1.089,  1.575,  -1.594,    -1, 0, 0,  -120
+
+AddPartLG = -1.031,  1.885,  -0.8539,    0, 0, 0.0,  -90
+AddPartLGRev = -1.544,  1.730,  0.2225,    0, 0, 1,  -80
+AddPartLGRev = -1.089,  1.575,  -1.594,    -1, 0, 0,  -120
+
+AddPartSteeringWheel = 0,2.922,3.77, 1, 0, 0.0,   30
+AddPartSteeringWheel = 0,2.922,3.77, 1, 0, 0.0,   -30
+AddPartSteeringWheel = -2.007,2.352,-4.184, 1, 0, 0.0,   15
+AddPartSteeringWheel = 2.007,2.352,-4.184, 1, 0, 0.0,   -15
+AddPartSteeringWheel = 0.003273, 4.968, -6.741, 0.0, -1.0, 0.337, 10
+AddPartSteeringWheel = -0.3950, 2.870, 6.697, 0.0, 0.0, -1, 10
+
+AddPartThrottle = 0.5245, 2.919, 6.631,  1,0,0.00, 25
+
+AddPartCanopy = -0.7030, 3.1, 5.196,  0,0,1,  70
+AddPartCanopy = 0.00, 3.526, 5.684,  -1,0,0,  00
+
+;Weapons
+AddPartWeaponMissile = JET_RAFALE_LASERM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_RAFALE_LASERM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_RAFALE_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_RAFALE_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_RAFALE_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_RAFALE_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+
+AddWeapon = JET_RAFALE_30MM_AA,  0.63, 0.9084,  4.269,  0.0,  -0.1
+AddWeapon = JET_RAFALE_AAM_ARM,     6.232,  1.758, -7.699,  0,0.0, true,1,  0,-50,50, -50,50
+AddWeapon = JET_RAFALE_AAM_ARM,     -6.232,  1.758, -7.699,  0,0.0, true,1,  0,-50,50, -50,50
+AddWeapon = JET_RAFALE_LASERM,     0,  0.1, 6.119,  0,0.0, false,1,  0,-360,360, 0,90
+AddWeapon = JET_RAFALE_LASERM,     -0,  0.1, 6.119,  0,0.0, false,1,  0,-360,360, 0,90
+
+weapongrouptype = 5
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  0.6542, 2.6, -7.367, -1,0,0
+;AddPartNozzle =  -0.6542, 2.6, -7.367, -1,0,0
+;HasChaff = true
+;ChaffUseTime =50
+;ChaffWaitTime = 200
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 1.00
+MobilityPitch = 1.00
+MobilityRoll = 2.39
+MobilityRoll = 2.39
+MobilityYaw = 0.60
+MobilityYaw = 0.60
+MotionFactor = 0.968
+MotionFactor = 0.968
+SweepWingSpeed = 0.9

@@ -1,0 +1,66 @@
+﻿
+; 色設定(Current Color)
+Color = 0xCFFFFFFF
+
+; ヨーの目盛描画
+Color = 0xCFFFFFFF
+DrawGraduationYaw   = plyr_yaw, 0,   0, -100
+DrawLine = 0,-87,   2,-83,  -2,-83,   0,-87
+DrawCenteredString =   0, -81, "%.0f", PLYR_YAW
+DrawCenteredString = -140, -15, "仰角"
+DrawCenteredString = 140, -15, "着弹"
+
+If = reloading==1
+DrawCenteredString =   -140, 55, "%.2f%%",   RELOAD_PER
+EndIf
+
+DrawCenteredString = -26, 68, "%s",  WPN_AMMO
+DrawCenteredString =   0, 68, "/",   WPN_AMMO
+DrawCenteredString =  26, 68, "%s",  WPN_RM_AMMO
+; 武器名 (Weapon name)
+DrawCenteredString = 0, 57, "%s",  WPN_NAME
+; 銃身の熱量タイプの場合(Heat)
+If = is_heat_wpn==1
+	Color = 0xCFA99D38
+	DrawRect = -20, 77, 41, 2
+	Color = 0xFFDF0408
+	DrawRect = -20, 77, 41*wpn_heat, 2
+EndIf
+
+If = is_heat_wpn==1
+	Color = 0xCFFFFFFF
+	DrawRect = -20, 77, 41, 2
+	Color = 0xFFDF0408
+	DrawRect = -20, 77, 41*wpn_heat, 2
+EndIf
+
+; レーダーを持つ機体の場合
+If = have_radar==1
+	Color = 0xCFFFFFFF
+	DrawLine = 144,21,   144+64, 21,   144+64, 21+64,   144, 21+64,   144, 21
+	
+	DrawLine = 144,    21+32,   144+64, 21+32
+	DrawLine = 144+32, 21,      144+32, 21+64
+
+	Color = 0xCFFFFFFF
+	DrawEntityRadar = -plyr_yaw-180, 144, 21,  64,64
+
+	Color = 0xFFDF0408
+	DrawEnemyRadar  = -plyr_yaw-180, 144, 21,  64,64
+EndIf
+
+; ピッチの目盛描画
+Color = 0xCFFFFFFF
+DrawGraduationPitch1 = plyr_pitch, 0, 0, 0
+Color = plyr_pitch<=-20? 0xCFFFFFFF : 0xFFDF0408
+DrawCenteredString = -140, -4, "%.0f", PLYR_PITCH
+Color = 0xCFFFFFFF
+DrawLine = -120,0,   -120-5,-5,   -120-30,-5,   -120-30,5,   -120-5,5,   -120,0  
+DrawLine =  120,0,    120+5,-5,    120+30,-5,    120+30,5,    120+5,5,    120,0
+
+If = dsp_mt_dist == 1 && mt_dist > 0
+	DrawCenteredString = 140, -4, "%.0f", MORTAR_DIST
+Endif
+If = dsp_mt_dist == 1 && mt_dist <= 0
+	DrawCenteredString = 140, -4, "---"
+Endif

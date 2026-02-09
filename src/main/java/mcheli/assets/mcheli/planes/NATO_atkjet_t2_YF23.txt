@@ -1,0 +1,148 @@
+AddDisplayName = zh_CN,YF-23 黑寡妇
+AddDisplayName = en_US,YF-23
+MaxHp = 400
+
+Category = M.A
+ItemID = 28705
+HUD = JET
+ThirdPersonDist = 25
+Speed = 2.0
+MobilityPitch = 0.8
+MobilityRoll = 1
+MobilityYaw = 0.8
+ThrottleUpDown = 0.6
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 1800
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.00, 1.2, -0.7212
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.0, 1.5
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = f119, Exhaustflame_red, 1.3745,2.1, -12.3,     -1.0, -0.0,  0.0000,   0,  1
+AddExhaustFlame = f119, Exhaustflame_red, -1.3745,2.1, -12.3,   -1.0, -0.0,  0.0000,   -0,  1
+
+AddPartWeaponBay = ATKJET_YF23_IRBOMB, 0.5736,  1.3344, 1,   0,  0, 1,  120
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.357, 0.0,  2.454, 2.0, 6.654, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.085, 4.748,  1.418, 1.417, 2.893, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.084, -6.443,  3.532, 1.663, 6.266, 1.0, DEFAULT, 机身
+BoundingBox = 4.713, 1.854, -6.828,  3.36, 0.154, 3.549, 1.0, DEFAULT, 机身
+BoundingBox = -4.713, 1.854, -6.828,  3.36, 0.154, 3.549, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.084, -11.806,  3.532, 1.663, 4.509, 1.5, DEFAULT,引擎
+BoundingBox = 2.452, 1.854, -7.646,  1.505, 1.663, 7.883, 1.0, DEFAULT, 机身
+BoundingBox = -2.452, 1.854, -7.646,  1.505, 1.663, 7.883, 1.0, DEFAULT, 机身
+BoundingBox = 2.974, 3.034, -14.414,  1.362, 2.752, 3.55, 1.0, DEFAULT, 机身
+BoundingBox = -2.974, 3.034, -14.414,  1.362, 2.752, 3.55, 1.0, DEFAULT, 机身
+EntityWidth = 0.85
+EntityHeight = 0.85
+
+FlareType = 5
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = ADVANCED_AA
+NameOnAdvancedAARadar = F23
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartSteeringWheel = 0,2.2182,2, 0, 0, 1,   -20
+AddPartSteeringWheel = 5.0392,1.9034,-8.7526,  1.82,0, 1.5351, 20
+AddPartSteeringWheel = -5.0392,1.9034,-8.7526,  1.82,0, -1.5351, -20
+AddPartSteeringWheel = 1.37, 2.7,-12.66, 1,0, 0.0,   -5
+AddPartSteeringWheel = -1.37, 2.7,-12.66, 1,0, 0.0,   -5
+AddPartSteeringWheel = 2.71,1.85,-13.88,  3.0584, 2.4591, 0.9367,   15
+AddPartSteeringWheel = -2.71,1.85,-13.88,  -3.0584, 2.4591, -0.9367,   15
+
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.3
+
+AddPartwing = 3.7267,  1.9367,  -9.2763,  1.82,0, 1.5351, -20
+AddPartwing = -3.7267,  1.9367,  -9.2763,  1.82,0, -1.5351, -20
+
+AddPartLG = 0.00, 1.79, 1.218,    -1,0,0,  95
+AddPartLGrev = -0.2142, 1.3673, 0,      0,0,1, -90
+AddPartLG = 2, 1.7224, -6.79,      1,0,0, 77,0,0,0,10
+AddPartLGrev = 2.5862, 1.2858, -7.57,     0,0,1, 80
+AddPartLG = 2, 1.7224, -6.79,      1,0,0,77,0,0,0,10
+AddPartLGrev = -2.5862, 1.2858, -7.57,     0,0,1, -80
+AddPartLG = 0.00, 2,2.186,    1,0,0,  60
+AddPartLG = 2, 1.512, -7.62,      1,0,0, -52
+AddPartLG = 2, 1.512, -7.62,      1,0,0, -52
+
+;Weapons
+AddPartWeaponMissile = ATKJET_YF23_IRBOMB,    false,  false,  false,    0.2334, 1.82, 0.15
+AddPartWeaponMissile = ATKJET_YF23_IRBOMB,    false,  false,  false,   -0.2334, 1.82, 0.15
+AddPartWeaponMissile = ATKJET_YF23_IRBOMB,    false,  false,  false,  0.2334, 1.82, -1.6
+AddPartWeaponMissile = ATKJET_YF23_IRBOMB,    false,  false,  false,   -0.2334, 1.82, -1.6
+AddPartWeaponMissile = ATKJET_YF23_AGM_SEAD,    false,  false,  false,    0.39, 1.63, -7
+AddPartWeaponMissile = ATKJET_YF23_AGM_SEAD,    false,  false,  false,   -0.39, 1.63, -7
+
+AddWeapon = ATKJET_YF23_20MM_AS,  -0.8,  2.5,  0.8,  0.0,  0.0
+AddWeapon = ATKJET_YF23_IRBOMB,-0.7484, 1, 1.632,   0.0, 0.0
+AddWeapon = ATKJET_YF23_IRBOMB,0.7484, 1.0, 1.632,   0.0, 0.0
+AddWeapon = ATKJET_YF23_IRBOMB,-0.7484, 1, 1.632,   0.0, 0.0
+AddWeapon = ATKJET_YF23_IRBOMB,0.7484, 1.0, 1.632,   0.0, 0.0
+
+AddWeapon = ATKJET_YF23_AGM_SEAD,-0.7484, 1, 1.632,   0.0, 0.0
+AddWeapon = ATKJET_YF23_AGM_SEAD,0.7484, 1.0, 1.632,   0.0, 0.0
+
+weapongrouptype = 230
+
+;MISC
+;Place misc paramters here
+YDisplayName = YF-23
+VtolYaw = 2
+VtolPitch = 2
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;Front
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+AddPartWeaponBay = ATKJET_YF23_IRBOMB,  -0.5736,  1.3344, 1,   0,  0, 1,  -120
+AddPartWeaponBay = ATKJET_YF23_AGM_SEAD,  0.8343, 1.4295, -4,  0,0, 1, 120
+AddPartWeaponBay = ATKJET_YF23_AGM_SEAD,  -0.8343, 1.4295, -4,  0,0, 1, -120
+AddPartWeaponBay = ATKJET_YF23_20MM_AS, -2.019, 1.2031, -10,  0,0, 1, -120
+AddPartWeaponBay = ATKJET_YF23_20MM_AS,  -1.0579, 1.2031, -10,  0,0, 1, 120
+AddPartWeaponBay = ATKJET_YF23_20MM_AS,-0.8948,  2.3476, 1.015,   0.1477,  0, 1.0813,  -90
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200

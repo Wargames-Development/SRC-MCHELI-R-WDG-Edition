@@ -1,0 +1,19 @@
+﻿DisplayName = Hand Flare
+AddDisplayName = zh_CN, 手持信号棒
+StackSize = 4
+Sound = smoke_snd
+AliveTime = 30
+Explosion = 0
+TimeFuse = 0
+Bound = 0.1
+Gravity = -0.025
+GravityInWater = 0.01
+SmokeSize = 8
+SmokeNum = 6
+SmokeColor = 180, 30, 30
+SmokeVelocityVertical   = 1.2
+SmokeVelocityHorizontal = 0.5
+AddRecipe = "DY",  Y, iron_ingot, D,dye,1
+DispenseAcceleration = 1.1
+
+handflare=true

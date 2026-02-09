@@ -1,0 +1,64 @@
+DisplayName = 9M220O [TV-ATGM]
+Type = TVMissile
+Power = 200
+Acceleration = 2
+Explosion = 9
+Explosionblock =10
+Flaming = false
+Sight = MoveSight
+Delay = 50
+ModeNum = 2
+ModelBullet = 9m120
+Sound = sa-2_snd
+ReloadTime = 100
+Round = 4
+reloadtime=200
+
+DamageFactor = player, 1
+DamageFactor = plane, 5
+DamageFactor = heli, 5
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.0
+;DEBUG:Manual control only
+FixMode = 1
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+effectYield=10
+
+
+RecoilPitch = 50
+RecoilYaw = 0.5
+RecoilPitchRange = 5
+RecoilYawRange = 0.5
+RecoilRecoverFactor = 0.2
+FlakParticlesCrack = 50
+NumParticlesFlak = 10
+FlakParticlesDiff = 0.3
+
+MaxAmmo = 4
+SuppliedNum = 1
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=8
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.7
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=1
+enableExhaustFlare=false
+
+

@@ -1,0 +1,74 @@
+DisplayName = AGM114K [SALH]
+Type = TVMissile
+Power = 600
+Acceleration = 0.1
+Explosion = 4
+Explosionblock = 0
+Flaming = false
+Sight = MoveSight
+Delay = 100
+ModeNum = 2
+ModelBullet =agm114
+Sound =9K118_F
+ReloadTime = 100
+Round = 2
+FIXMODE=1
+LOCKTIME = 0
+HeatCount = 1000
+MaxHeatCount = 1200
+TimeFuse = 200
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+
+
+laserGuidance = true
+hasLaserGuidancePod = true
+
+CameraRotationSpeedPitch = 0.3
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+MaxAmmo = 8
+SuppliedNum = 8
+Item =  1, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=6
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true
+
+turningFactor = 0.15
+Gravity = 0.005
+
+MaxDegreeOfMissile =135
+SpeedFactor = 0.08
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 80
+SpeedDependsAircraft = true
+
+
+;让激光导弹能照射上实体
+
+laserGuidance = true
+hasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = false
+;cameraFollowstrength=0.1
+LockEntity=true

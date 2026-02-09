@@ -1,0 +1,50 @@
+Type = AAMissile
+Displayname = 48N6 [SARH-AAM]
+ModelBullet = 77h6h
+SoundVolume = 10
+Sound = s300launch
+Power = 600
+Sight = MissileSight
+Acceleration = 0.5
+Delay = 20
+ReloadTime = 500
+Round = 4
+Explosion = 2
+ExplosionBlock = 0
+TimeFuse = 400
+Flaming = false
+MaxAmmo = 4
+SuppliedNum = 1
+
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+numLockedChaffMax = 1
+LockTime = 10
+RigidityTime = 10
+ProximityFuseDist = 2
+crosstype = 6
+HeatCount = 340
+MaxHeatCount = 1000
+
+;MCHELI-R WEAPON PARAMETERS
+
+
+
+maxDegreeOfMissile = 75
+maxLockOnRange = 750
+maxLockOnAngle = 10
+pdHDNMaxDegree = 180
+AntiFlareCount = 100
+lockMinHeight = 30
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+ActiveRadar = true
+turningfactor = 0.75
+enableBVR = true
+EnableOffAxis = true
+SpeedFactor = 0.125
+SpeedFactorStartTick = 20
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+scanInterval = 20

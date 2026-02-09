@@ -1,0 +1,53 @@
+DisplayName = MAV
+AddDisplayName = zh_CN, MAV微型无人侦察机
+AddDisplayName = en_US, MAV
+MaxHp = 20
+
+Category = C
+HUD = MAV
+Speed = 0.7
+MobilityPitch = 1000
+MobilityRoll = 1000
+MobilityYaw = 1000
+ThrottleUpDown = 1000.0
+
+Sound = MAV_idle
+
+MaxFuel = 60
+FuelConsumption = 0.1
+
+CameraPosition = 0.00, -0.05, 0.18
+CameraRotationSpeed = 1000
+AddSeat = 0.0, 2.0, 0.0
+
+ParticlesScale = 0.1
+AddPartNozzle = 0.00, 0.02, -1.59, -1,0,0
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = UAV
+NameOnModernAARadar = UAV
+NameOnEarlyAARadar = ?
+NameOnModernASRadar = UAV
+NameOnEarlyASRadar = ?
+enableRWR = false
+
+;Parts
+AddRotor = 1, 0, 0.00,  0.24, -0.14,  0,-1, 0
+AddRotor = 1, 0, 0.00, -0.00, -0.65,  1, 0, 0
+
+;Weapons
+AddWeapon = MAV_jammer, 0,0,0,  0,0
+AddWeapon = MAV_Bomb, 0,0,0,  0,0
+AddWeapon = targeting_pod_10s_mav, 0,0,0,  0,0
+
+;MISC
+;Place misc paramters here
+SmallUAV = true
+ThrottleUpDownOnEntity = 1000.0
+Stealth = 0.5
+RotorSpeed = 1000.0
+AddRecipe = "SSS",  "PRI",  "BGG",  I, iron_ingot,  R, redstone,  S, stick,  P, glass_pane,  B, Iron_Bars,  G, gunpowder
+
+; C = Civilian(柉娫婡)
+
+;DUPLICATES

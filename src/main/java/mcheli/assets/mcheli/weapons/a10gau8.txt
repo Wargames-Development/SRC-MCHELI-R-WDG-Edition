@@ -1,0 +1,24 @@
+DisplayName = A-10 Strafing Run
+Type = CAS
+Power = 40
+Acceleration = 10
+Explosion = 3
+ExplosionBlock = 0
+Flaming = false
+Sight = None
+Delay = 3
+ModelBullet = he
+heatcount = 500
+maxheatcount =1
+Accuracy = 2.5
+sound = kx
+
+MaxAmmo = 3
+SuppliedNum = 1
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+ExplosionType=hbmNT_Shell
+canBeIntercepted=false
+canBeIntercepted=false

@@ -1,0 +1,1 @@
+DrawCenteredString = (0*(width/960)), (30*(height/500)), "Press [SPACE] to Eject"

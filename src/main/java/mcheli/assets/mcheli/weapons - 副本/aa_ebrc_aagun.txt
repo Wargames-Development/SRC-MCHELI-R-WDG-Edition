@@ -1,0 +1,87 @@
+DisplayName = CTA-CT40 40MM机炮
+Type = MachineGun1
+Power = 30
+Acceleration = 20
+Explosion = 3
+explosionblock=0
+Gravity = -0.004
+DisplayMortarDistance = true
+explosionblock = 0
+modelbullet = AP
+Sight = MoveSight
+Flaming = false
+Sight = MoveSight
+Delay = 4
+SoundVolume = 0.6
+SoundPitch = 1.0
+Sound = 2s38_snd
+round = 20
+DisableSmoke = True
+
+enableBVR=true
+
+reloadtime =50
+Accuracy = 0.1
+HeatCount = 20
+MaxHeatCount = 300
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.2
+DamageFactor = heli, 1.2
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.1
+
+AddMuzzleFlash      =  3.1,      0.22,        2,  170,254,159,84
+AddMuzzleFlash      =  3.2,      0.20,        1,  150,254,219,184
+AddMuzzleFlashSmoke =  2.5,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke =  3.2,  1,   3.0,  1.0,  5,  180,220,217,214
+
+MaxAmmo = 1200
+SuppliedNum = 300
+Item =  2, iron_ingot
+Item =  2, gunpowder
+
+
+RecoilPitch = 15
+RecoilYaw = 0.3
+RecoilPitchRange = 5
+RecoilYawRange = 0.8
+RecoilRecoverFactor = 0.04
+WeaponSwitchSound = Switch_Main_Cannon
+FlakParticlesCrack = 300
+NumParticlesFlak = 20
+FlakParticlesDiff = 0.8
+
+
+
+effectYield=0
+canBeIntercepted=false
+canBeIntercepted=false
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=4
+ExplosionDamageVsLiving=0.5
+ExplosionDamageVsPlayer=0.5
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.3
+ExplosionDamageVsHeli=0.3
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=0.5
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1
+
+enableBVR=true
+MinRangeBVR = 10

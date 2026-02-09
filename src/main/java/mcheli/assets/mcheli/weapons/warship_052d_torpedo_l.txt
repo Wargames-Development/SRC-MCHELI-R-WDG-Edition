@@ -1,0 +1,35 @@
+DisplayName = Óã-7 324ºÁÃ×ÓãÀ×
+Type = Torpedo
+Power = 1200
+ModelBullet = YU-7
+Acceleration = 1.5
+AccelerationInWater = 2.5
+
+Gravity = -0.03
+GravityInWater = 0.00
+
+Explosion = 10
+Explosionblock = 0
+ExplosionInWater = 10
+Flaming = false
+Sight = None
+Delay =10
+round = 2
+reloadtime = 200
+Accuracy = 0.1
+SoundVolume = 50
+Sound = bomb_snd
+HeatCount = 500
+MaxHeatCount = 900
+
+FixCameraPitch = true
+
+MaxAmmo = 2
+SuppliedNum = 1
+Item =  2, iron_ingot
+Item =  2, gunpowder
+Item =  2, redstone
+
+canBeIntercepted=false
+
+crosstype=11

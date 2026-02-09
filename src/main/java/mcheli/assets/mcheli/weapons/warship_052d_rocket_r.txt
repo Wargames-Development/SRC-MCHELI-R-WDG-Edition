@@ -1,0 +1,49 @@
+DisplayName = FQF-3200 ·´Ç±»ğ¼ıµ¯
+Type = Rocket
+Power = 100
+Explosion = 5
+ExplosionBlock = 0
+Acceleration = 5
+Sound = m224_f
+SoundVolume = 10.0
+Accuracy = 1.0
+ModelBullet = bullet76mm
+Flaming = true
+Round = 6
+Sight = None
+Delay = 3
+Gravity = -0.075
+DamageFactor = plane, 3.0
+DamageFactor = helicopter, 3.0
+ModeNum = 2
+; ’…’e‹——£‚Ì•\¦
+DisplayMortarDistance = true
+; ƒJƒƒ‰‚Ì‚’¼•ûŒü‚ğ0‚ÉŒÅ’è‚·‚é
+
+; ƒJƒƒ‰‚Ì‰ñ“]‘¬“x‚Ì”{—¦(¬‚³‚­‚·‚é‚Æ‚æ‚è×‚©‚­’…’e’n“_‚ª’²®‚ª‚Å‚«‚é)
+CameraRotationSpeedPitch = 0.2
+
+HeatCount = 100
+MaxHeatCount = 500
+
+; AddMuzzleFlash = ”­ËŒ³‚©‚ç‚Ì‹——£, ƒTƒCƒY, •\¦ŠÔ,  A,  R,  G,  B
+AddMuzzleFlash      =           2.1,   1.05,        2,  220,254,219,104
+AddMuzzleFlash      =           2.0,   1.00,        1,  220,254,219,184
+; AddMuzzleFlashSmoke = ”­ËŒ³‚©‚ç‚Ì‹——£, •\¦”, ƒTƒCƒY, ”ÍˆÍ, •\¦ŠÔ,  A,  R,  G,  B
+AddMuzzleFlashSmoke   =             3.2,     10,    6.0,  3.0,       25,  220,160,140,120
+AddMuzzleFlashSmoke   =             2.2,      5,    6.0,  4.0,       35,  200,190,170,150
+
+
+
+
+MaxAmmo = 12
+SuppliedNum = 12
+Item =  1,flansmod:81mmammo
+
+Accuracy = 3.6
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true
+
+;cross_type:0 CONNON,1 AAM_IRM, 2 AAM_SARH, 3 ATGM_IRM, 4 ATGM_LOSM, 5, ATGM_SARH, 6 HEAT, 7 AHEAD, 8 ROCKET ,9 40MM
+crosstype=8

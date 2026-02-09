@@ -1,0 +1,45 @@
+DisplayName = TOW-2N [TV-Temp]
+Type = tvMissile
+Power = 800
+Acceleration = 2.8
+Explosion = 4
+Explosionblock = 0
+Flaming = false
+Sight = false
+Delay = 40
+ModeNum = 2
+ModelBullet =agm114
+Sound = sa-2_snd
+ReloadTime = 100
+Round = 4
+
+TimeFuse = 300
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+DisplayMortarDistance = true
+
+Fixmode=1
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+MaxAmmo = 4
+SuppliedNum = 1
+Item =  1, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=true
+
+
+;¼ÝÊ»Î»cross_type0_9:0rocket£¬1zuni£¬2rocket_arm£¬3aam_irm£¬4irm£¬5arm£¬6laserm£¬7losm£¬8bomb£¬9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=7
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=false

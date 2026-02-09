@@ -1,0 +1,156 @@
+DisplayName = F-35B
+AddDisplayName = zh_CN,F-35B 闪电-II
+AddDisplayName = en_US,F-35B
+MaxHp = 400
+
+Category = M.A
+ItemID = 28705
+HUD = JET
+ThirdPersonDist = 25
+Speed = 1.8
+MobilityPitch = 0.8
+MobilityRoll = 1
+MobilityYaw = 0.8
+ThrottleUpDown = 0.6
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 1800
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.00, 1.2, -0.7212
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.004,  2.140
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+AddPartNozzle = 0.00, 2.088, -9.209, -1,0,0
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.00, 2.088, -9, -1, 0, 0, 0, 1
+
+AddPartWeaponBay = ATKJET_F35B_IRBOMB/ ATKJET_F35B_GPSMISSILE,  1.864, 1.303,-3.514,  -0.027, -0.031, 1.000,  80
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.087, -4.409,  4.464, 3.025, 11.011, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.447, 3.442,  2.198, 2.698, 4.835, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.102, -11.105,  2.198, 2.177, 2.43, 1.5, DEFAULT, 引擎
+BoundingBox = -2.699, 2.103, -11.493,  2.85, 0.651, 3.102, 1.0, DEFAULT, 机身
+BoundingBox = 2.699, 2.103, -11.493,  2.85, 0.651, 3.102, 1.0, DEFAULT, 机身
+BoundingBox = -4.53, 2.103, -6.622,  4.442, 1.015, 4.835, 1.0, DEFAULT, 机身
+BoundingBox = 4.53, 2.103, -6.622,  4.442, 1.015, 4.835, 1.0, DEFAULT, 机身
+EntityWidth = 0.85
+EntityHeight = 0.85
+
+FlareType = 9
+hasDIRCM = true
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = ADVANCED_AA
+NameOnAdvancedAARadar = F35
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00,  0.9411,-6.735,  1,0, 0, 40
+
+AddPartSteeringWheel = 4.049, 2.286,-8.12, 1, 0, 0.0,   -8
+AddPartSteeringWheel = -4.051, 2.253,-8.111,  -1, 0, 0.0,   -8
+AddPartSteeringWheel = 1.872, 2.257,-11.13, 1, 0, 0.0,   -15
+AddPartSteeringWheel = -1.872, 2.257,-11.13,  -1, 0, 0.0,   -15
+AddPartSteeringWheel = -0.5236,2.559,2.274, 0, 0, 1,   -10
+
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.37
+
+AddPartLG = 0.000, 1.696,1.023,   -1.00, 0.000, 0.00, 102
+
+AddPartLGRev = 0.4194, 1.262, 2.119,   -0.05, 0.075, 1.00,  89
+AddPartLGRev = -0.3910, 1.259, 2.120,    0.05, 0.075, 1.00, -89
+
+AddPartLG = 2.379, 2.307,-6,   0.00, 0.000, 0.00, 90
+AddPartLGRev = 2.558, 1.781, -5.153,   -0.05, 0.075, 1.00,  80
+
+AddPartLG = -2.379, 2.307,-6,   0.00, 0.000, 0.00, 90
+
+AddPartLGRev = -2.558, 1.781, -5.153,   0.05, 0.075, 1.00,  -80
+
+;Weapons
+AddPartWeaponMissile = ATKJET_F35B_IRBOMB,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_F35B_IRBOMB,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_F35B_IRBOMB,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_F35B_IRBOMB,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_F35B_GPSMISSILE,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_F35B_AAM_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_F35B_AAM_IRM,  false, false, false,  -5.0, 0,  0
+
+AddWeapon = ATKJET_F35B_IRBOMB,-0.97, 1.0, -3.82,   -1.0, 0.0
+AddWeapon = ATKJET_F35B_IRBOMB,-0.97, 1.0, -3.82,   1.0, 0.0
+AddWeapon = ATKJET_F35B_IRBOMB,-0.97, 1.0, -3.82,   -1.0, 0.0
+AddWeapon = ATKJET_F35B_IRBOMB,-0.97, 1.0, -3.82,   1.0, 0.0
+
+AddWeapon = ATKJET_F35B_GPSMISSILE,  0.97, 1.0, -3.82,   -0.0, 0.0
+AddWeapon = ATKJET_F35B_AAM_IRM, 1.085, 1.952, 2.096,  0.0, 0.0
+AddWeapon = ATKJET_F35B_AAM_IRM, -1.085, 1.952, 2.096,  0.0, 0.0
+
+weapongrouptype = 18
+
+;MISC
+;Place misc paramters here
+VtolYaw = 2
+VtolPitch = 2
+
+EnableVtol = true
+AddPartRotor = 0.01112,  3.205, -0.4392,  0,1,0, 0
+AddPartRotor = -0.6893, 3.146, -3.016,  0,0.071,1,  80
+AddPartRotor = -0.6893, 3.146, -3.016,  0,0.071,1,  80
+AddPartRotor = 0.6910, 3.152, -3.017,  0,0.071,1, -80
+AddPartRotor = -0.566, 1.143, -0.2913,  0,-0.0,1, -110
+AddPartRotor = 0.6106, 1.148, -0.2926, 0,-0.0,1,  110
+AddPartRotor = -1, 1.622, -9.488,   0.017, -0.2, 1, -80
+AddPartRotor = 1, 1.630, -9.490,  -0.017, -0.2, 1,  80
+AddPartRotor = 0.00,  3.424, -1.304,  -1,0,0, 70
+AddPartRotor = 0.00,  2.106, -9.214,  -1,0,0, 30
+AddBlade = 1,0,  0.01112,  3.205, -0.4392,  0,1,0
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;Front
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+AddPartWeaponBay = ATKJET_F35B_IRBOMB / ATKJET_F35B_GPSMISSILE, -1.848, 1.288,-3.510,   0.027, -0.031, 1.000, -80
+AddPartWeaponBay = ATKJET_F35B_IRBOMB / ATKJET_F35B_GPSMISSILE,  0.5339, 0.9531,-3.599,   0.000, -0.011, 1.000, -80
+AddPartWeaponBay = ATKJET_F35B_IRBOMB / ATKJET_F35B_GPSMISSILE, -0.5156, 0.9489,-3.598,   0.000, -0.011, 1.000,  80
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200

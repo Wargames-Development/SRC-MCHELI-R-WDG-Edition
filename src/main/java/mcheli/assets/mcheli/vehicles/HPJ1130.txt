@@ -1,0 +1,47 @@
+DisplayName = HPJ 1130
+AddDisplayName = zh_CN, HPJ 1130
+AddDisplayName = en_US, HPJ 1130
+MaxHp = 800
+
+Category = M.A
+ItemID = 28700
+HUD = LAV-AD
+ThirdPersonDist = 8
+MinRotationPitch = -85
+MaxRotationPitch = 10
+
+CameraPosition = 0.0, 4.664, 0.0, true
+CameraZoom = 3
+EnableNightVision = true
+EnableEntityRadar = true
+AddSeat = 0.0, 1.435, 0
+
+ArmorMinDamage = 5
+DamageFactor = 0.0
+BoundingBox = 0, 0.85, 0.0,   3.0, 4
+
+RadarType = MODREN_AA
+NameOnAdvancedAARadar = AA
+NameOnModernAARadar = AA
+NameOnEarlyAARadar = AA
+NameOnModernASRadar = AA
+NameOnEarlyASRadar = AA
+enablerwr = true
+
+;Weapons
+AddTurretWeapon = C-RAM_20mm,  0.008515, 2.774, 0.278,  0.0,0.0,   true,1, 0,-360,360, -88, 12
+
+;MISC
+;Place misc paramters here
+HideEntity = true
+ArmorMaxDamage = 2000
+AddPart = true, true, false, 0,   0, 1.664, 0.0
+AddPart = false,true, true,  0,   0, 2.765, 0.00
+AddChildPart = true, false,false, 1,   0.00, 2.765, 0.0
+
+; M = Military,  A = AAGun(対空砲)
+; AddPart = DrawFirstPerson[T/F], RotationYaw[T/F], RotationPitch[T/F], PartType[0~], PoxX, PoxY, PoxZ
+;脚
+;本体
+
+;DUPLICATES

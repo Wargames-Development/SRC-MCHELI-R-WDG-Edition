@@ -1,0 +1,47 @@
+DisplayName = UCAV LAUNCHER
+AddDisplayName = zh_CN, UCAV 弹簧刀战斗无人机发射管
+AddDisplayName = en_US, UCAV
+MaxHp = 20
+
+Category = W.A
+HUD = M224
+ThirdPersonDist = 8
+Speed = 0
+MobilityRoll = 50
+ThrottleUpDown = 0
+MinRotationPitch = -40
+MaxRotationPitch = 40
+PivotTurnThrottle = 0.0
+MobilityYawOnGround = 0.0
+CanMoveOnGround = false
+DefaultFreelook = true
+
+MaxFuel = 0
+FuelConsumption = 1.0
+
+CameraPosition = 0.0,1.6, -0.2,true
+CameraRotationSpeed = 30.0
+CameraZoom = 1
+EnableGunnerMode = true
+AddSeat = 0.0,  0.0, -1.1,0.00,  0.00, -0.2,false,-90,40,true
+
+DamageFactor = 0.8
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = 
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+
+;Weapons
+AddPartWeapon = UCAV, false,  true,  false,   0.00, -0.2,  0.00
+AddTurretWeapon = UCAV,  0, 2.5, 0,   0.0, -1.0,   true,1, 0,-10,10, -20,20
+
+;MISC
+;Place misc paramters here
+HideEntity = false
+
+; W = WWII,  A = AAGun(対空砲)
+
+;DUPLICATES

@@ -1,0 +1,91 @@
+DisplayName =M1028A1榴霰弹
+Type = MachineGun1
+Power = 35
+
+;霰弹数量 (现在只支持MachineGun1)
+Canister = 12
+;霰弹散布种类 
+;0为位置散布(不管距离多远，散布都相同)
+;1为角度散布（距离越远散布越大)
+;2为时间散布（用于模拟多连发弹药，同时支持角度散布）
+CanisterType = 1
+;霰弹角度散布参数 推荐值>0.5
+BombletDiff = 1.5
+;霰弹时间散布参数 推荐值>3
+BombletSTime = 0
+
+Acceleration = 15
+Explosion = 2
+ExplosionBlock = 0
+Flaming = false
+Sight = MoveSight
+Delay = 90
+DisableSmoke = True
+ReloadTime = 90
+Round = 1
+SoundVolume = 7.0
+Accuracy = 0
+Piercing  = 0
+BulletColor        = 255, 255, 100, 100
+
+DisplayMortarDistance = true
+Group = MainGun
+Recoil = 3.5
+HeatCount = 600
+MaxHeatCount = 1500
+Sound = nato_120_snd
+Gravity = -0.0065
+heatcount = 700
+maxheatcount =2100
+
+AddMuzzleFlash      = 7.3,      0.5,        7,  220,254,159,74
+AddMuzzleFlash      =  7.2,      0.5,        6,  220,254,219,104
+AddMuzzleFlash      =  7.1,      0.5,        5,  220,254,219,184
+AddMuzzleFlashSmoke =  8.3, 5,  12.0,  4.0, 65,  220,160,140,120
+AddMuzzleFlashSmoke = 11.3, 5,  13.0,  7.0, 55,  200,190,170,150
+DamageFactor = player, 0.1
+DamageFactor = plane, 0.5
+DamageFactor = heli, 0.5
+DamageFactor = vehicle , 1
+DamageFactor = tank, 0
+ModelBullet =  tank_ap
+
+RecoilBufCount = 40, 5
+
+MaxAmmo = 20
+SuppliedNum = 10
+Item =  10, iron_ingot
+Item =  20, gunpowder
+
+FlakParticlesCrack = 6
+NumParticlesFlak = 4
+FlakParticlesDiff = 0.4
+
+WeaponSwitchSound = Switch_Main_Cannon
+
+RecoilPitch = 100
+RecoilYaw = 0.5
+RecoilPitchRange = 20
+RecoilYawRange = 1
+RecoilRecoverFactor = 0.05
+canBeIntercepted=true
+
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+crosstype=3
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.1
+DamageFactor = ship, 0.65
+ExplosionDamageVsShip=1
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

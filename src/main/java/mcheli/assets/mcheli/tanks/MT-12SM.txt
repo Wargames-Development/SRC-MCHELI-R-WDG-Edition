@@ -1,0 +1,79 @@
+DisplayName = MT-12SM
+AddDisplayName = zh_CN, MT-12SM 现代化野战火炮
+AddDisplayName = en_US, MT-12SM
+MaxHp = 400
+
+ItemID = 30100
+HUD = D-30,D-30
+ThirdPersonDist = 12
+Speed = 0.1
+MobilityRoll = 0
+ThrottleUpDown = 10.0
+MinRotationPitch = -20
+MaxRotationPitch = 7
+PivotTurnThrottle = 0.1
+StepHeight = 1.5
+MobilityYawOnGround = 2.5
+DefaultFreelook = false
+
+Sound = mbt_run
+
+Gravity = -0.1
+GravityInWater = -0.2
+MotionFactor = 0.9
+MaxFuel = 1200
+FuelConsumption = 3.0
+
+CameraPosition = 0.0, 2.0741, 1.0068 , true
+CameraRotationSpeed = 6
+CameraZoom = 3
+AddGunnerSeat = 0.5306, 0.355, -1.42,   0.0, 2.0741, 1.0068,  false,-27,27, -20, 7, true
+AddGunnerSeat = -0.5306, 0.355, -1.42,  0.0, 2.0741, 1.0068, false, -27,27,-20, 7, true
+
+ArmorMinDamage = 5
+DamageFactor = 0.0
+BoundingBox = 0.0, 1.01,  0.0,   2.5, 2.5,   0.6
+SubmergedDamageHeight = 2
+
+NameOnAdvancedAARadar = 
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = ART
+NameOnEarlyASRadar = ART
+
+OnGroundPitchFactor = 2.0
+OnGroundRollFactor = 1.3
+
+;Parts
+SetWheelPos = -0.9769,  -0.3126,  1.0,  -1.0
+TrackRollerRot = 40
+
+;Weapons
+AddWeapon = MT12_APShell2 ,0.00, 0.8182, 0.0,  0.0, 0.0, false,2, 0,-27,27, -20, 7
+AddWeapon = MT12_HEShell2, 0.00, 0.8182, 0.0,  0.0, 0.0, false,2, 0,-27,27, -20, 7
+AddWeapon = MT12_APShell, 0.00, 0.8182, 0.0,  0.0, 0.0, true,2, 0,-27,27, -20, 7
+AddWeapon = MT12_heShell, 0.00, 0.8182, 0.0,  0.0, 0.0, true,2, 0,-27,27, -20, 7
+AddPartWeapon = MT12_APShell / MT12_HEShell/ MT12_apShell2 / MT12_HEShell2, false, true, false,  0.00, 0.2937, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 0.3037, 0.0719
+AddPartWeaponChild = false, true, 0.00, 0.3037, 0.0719, 0.24
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+WeightedCenterZ = 0.0
+ArmorDamageFactor = 0.90
+EnableBack = true
+AddPartWheel = 0.0,  0.3126, 0.0
+AddPartWheel = 0.0,  0.3126, 0.0
+TurretPosition = 0.00, 0.2937, 0.0
+AddRecipe = "XXX",  "X X",  "III",  X, iron_block,  I, iron_ingot
+
+;EnableEntityRadar = true
+;EnableGunnerMode = true
+; Tank or Car or Unknown
+;爆发装填双人模式
+;常规装填单人模式
+;底盘装甲
+
+;DUPLICATES
+DefaultFreelook = true

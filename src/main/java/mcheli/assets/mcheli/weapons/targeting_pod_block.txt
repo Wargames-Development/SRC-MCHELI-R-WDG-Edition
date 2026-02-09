@@ -1,0 +1,7 @@
+DisplayName = ±Íº«Œª÷√[30s]
+Type = TargetingPod
+Sight = MoveSight
+Delay = 10
+Sound = MARK
+MarkTime = 30
+Target = block

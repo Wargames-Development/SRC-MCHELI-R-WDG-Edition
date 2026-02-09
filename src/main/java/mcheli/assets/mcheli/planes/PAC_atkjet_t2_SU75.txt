@@ -1,0 +1,145 @@
+DisplayName = SU-75 Checkmate
+AddDisplayName = zh_CN,SU-75 将死
+AddDisplayName = en_US,SU-75 Checkmate
+MaxHp = 350
+
+Category = M.A
+ItemID = 28705
+HUD = JET,JET_GUNNER
+ThirdPersonDist = 25
+Speed = 2.0
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+ThrottleUpDown = 0.6
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 1800
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.00, 1.2, -0.7212
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.247, 2.343
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = F16, Exhaustflame_BLUE, 0.0, 2.344, -10.61, 0, -1, 0, 8.5, 2
+
+AddPartWeaponBay = ATKJET_SU75_GPSBOMB, 0.7114,1.1655,-5.8211,0.0,-0.0687,5.4765,90
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.381, 0.938,  4.02, 2.579, 5.7, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.381, -5.657,  4.226, 2.166, 7.462, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.382, 4.769,  2.418, 1.663, 4.268, 1.0, DEFAULT, 机身
+BoundingBox = 4.38, 2.381, -6.622,  5.423, 1.015, 8.71, 1.0, DEFAULT, 机身
+BoundingBox = -4.38, 2.381, -6.622,  5.423, 1.015, 8.71, 1.0, DEFAULT, 机身
+BoundingBox = 2.234, 3.784, -10.742,  0.42, 2.221, 2.541, 1.0, DEFAULT, 机身
+BoundingBox = -2.234, 3.784, -10.742,  0.42, 2.221, 2.541, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.382, -10.605,  2.724, 1.663, 2.908, 1.5, DEFAULT, 引擎
+EntityWidth = 0.85
+EntityHeight = 0.85
+
+FlareType = 5
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = ADVANCED_AA
+NameOnAdvancedAARadar = S75
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 2.3612,2.2572,-8.2356,2.062,0.0067,0.4513,-20
+AddPartwing = -2.3613,2.2572,-8.2356,-2.062,0.0067,0.4513,20
+AddPartwing = -0.8812,2.2198,-11.5412,1.7624,0.0,0.0,-20
+
+AddPartSteeringWheel = 6.0496,2.2523,-8.1075,-1.6227,0.0114,0.322,15
+AddPartSteeringWheel = -6.0496,2.2523,-8.1075,1.6227,0.0114,0.322,15
+AddPartSteeringWheel = 0.0, 2.344, -10.61, 0, 1, 0, -8.5
+AddPartSteeringWheel = 1.817,2.771,-10.43,0.8943,2.0497,-0.2576,-15
+AddPartSteeringWheel = -1.817,2.771,-10.43,0.8943,-2.0497,0.2576,15
+AddPartSteeringWheel = 0,2.654,2.746,0,0,1,-10
+
+AddPartThrottle = 0.4368,2.6426,2.6255,-0.0597,-0.0247,0.0014,-50
+
+AddPartLGRev = 0.5382,1.0915,1.4403,0.0,0.0038,-1.6812, -100
+AddPartLGRev = -0.1283,1.0955,-0.2587,-0.0001,-0.0052,1.5653,-100
+AddPartLGRev = 0.5383,1.0949,1.7496,-0.0001,-0.0034,-0.3093,-110
+AddPartLGRev = -0.1284,1.0939,1.7496,0.0,-0.0036,-0.443,110
+AddPartLG = 0.1857, 1.476,0.1734, 1,0,0, -85
+
+AddPartLGRev = 1.8922,1.9623,-3.097,0.031,-0.0245,-0.888,-85
+AddPartLGRev = 1.2108,1.4818,-3.9926,-0.0078,0.0445,-1.9257,110
+AddPartLG = 1.42, 2.064, -4.313,1,0,0, 40
+AddPartLG = 1.428, 1.985, -5.823,-1,  0, -0.3, 95
+
+AddPartLGRev = -1.9232,1.9377,-3.9849,0.031,0.0245,0.888,-85
+AddPartLGRev = -1.2018,1.4974,-5.0653,-0.0055,0.0494,-0.8547,-110
+AddPartLG = -1.42, 2.064, -4.313,1,0,0, 40
+AddPartLG = -1.428, 1.985, -5.823,-1,  0, 0.3, 95
+
+;Weapons
+AddPartWeaponMissile = ATKJET_SU75_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU75_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU75_GPSBOMB,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU75_GPSBOMB,  false, false, false,  -5.0, 0,  0
+
+AddWeapon = ATKJET_SU75_30MM_AS,  -0.8,  2.5,  0.8,  0.0,  0.0
+AddWeapon = ATKJET_SU75_GPSBOMB,-0.7484, 1, 1.632,   0.0, 0.0
+AddWeapon = ATKJET_SU75_GPSBOMB,0.7484, 1.0, 1.632,   0.0, 0.0
+
+AddWeapon = ATKJET_SU75_IRM,-2, 1.0, -3.82,   1.0, 0.0
+
+AddWeapon = ATKJET_SU75_IRM,2, 1.0, -3.82,   1.0, 0.0
+
+weapongrouptype = 75
+
+;MISC
+;Place misc paramters here
+VtolYaw = 2
+VtolPitch = 2
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+;AddPartNozzle = 1.55, 1.871, -12.46, -1,0,0
+;AddPartNozzle = -1.55, 1.871, -12.46, -1,0,0
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;Front
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+AddPartWeaponBay = ATKJET_SU75_GPSBOMB, -0.7114,1.1655,-5.8211,0.0,-0.0687,5.4765,-90
+AddPartWeaponBay = ATKJET_SU75_IRM, 1.7032,1.9632,-0.9267,-0.167,0.0406,1.5723,65
+AddPartWeaponBay = ATKJET_SU75_IRM, -1.7032,1.9632,-0.9266,0.167,0.0406,1.5723,-65
+AddPartWeaponBay = ATKJET_SU75_30MM_AS,  -1.4221,2.5183,-0.5553,0.0264,-0.0515,1.0433,-120
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200

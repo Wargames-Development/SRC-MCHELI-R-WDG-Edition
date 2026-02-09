@@ -1,0 +1,126 @@
+DisplayName = ZTZ-99
+AddDisplayName = zh_CN,ZTZ-99 主战坦克
+AddDisplayName = en_US,ZTZ-99
+MaxHp = 1200
+
+ItemID = 91128
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.70
+ThrottleUpDown = 1.5
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 1.8
+StepHeight = 1.5
+MobilityYawOnGround = 2.6
+DefaultFreelook = true
+
+Sound = mbt_run
+
+Gravity = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.8,  2.6, 2.11, true
+CameraRotationSpeed = 40
+CameraZoom = 6
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00,  2.00,  0,0.00, 2.00,0.00 ,false,-90,90,true
+AddGunnerSeat = 0, 0.5, -2,  -0.8067, 3.54, -0.6309, false, -90, 90, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.645, 0.220820,   4.184, 2.02,  5.2,1,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.21, 3.6,   4.184, 0.8871,  1.8,0.4,DEFAULT,首上
+BoundingBox = 0.0, 0.191, 3.6,   4.184, 1.08,  2.0,0.8,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -3.63,   4.184, 2.1,  2.302,1.3,DEFAULT,引擎
+BoundingBox = 0.0, 2.16, -0.44,   3.4, 1,  4.5,0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.63, -0.44,   2.8, 0.1,  4.2,0.8, TURRET,车顶
+BoundingBox = 1.75, 2.24, -1.4,   0.212, 0.7087,  3.1,1.0, TURRET,炮塔侧面
+BoundingBox = -1.75, 2.24, -1.4,   0.212, 0.7087,  3.1,1.0, TURRET,炮塔侧面
+BoundingBox = 0, 2.24, -2.9,   3.3, 0.7087,  0.2,1.3, TURRET,炮塔后面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+HasPhotoelectricJammer = true
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = Z99
+NameOnEarlyASRadar = MBT
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.9
+OnGroundRollFactor = 3.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddCrawlerTrack = true, 0.22, -2.20,  -0.255/3.55, -0.12/3.76, 0.59/4.80, 0.888/4.80, 1.095/4.411, 1.115/4.04, 1.115/-4.45, 0.866/-4.86, 0.661/-4.89, 0.425/-4.79, -0.255/-3.75, -0.255/-2.15
+TrackRollerRot = 60
+AddTrackRoller = -2.0,  0.7514,  4.411
+AddTrackRoller = -2.0,  0.2364,  3.447
+AddTrackRoller = -2.0,  0.2382,  2.257
+AddTrackRoller = -2.0,  0.2336,  0.7989
+AddTrackRoller = -2.0,  0.2375, -0.6904
+AddTrackRoller = -2.0,  0.2371, -2.129
+AddTrackRoller = -2.0,  0.2399, -3.337
+AddTrackRoller = -1.0,  0.7044, -4.422
+
+;Weapons
+AddPartWeapon = MBT_ZTZ99_HE/MBT_ZTZ99_ATGM_LOSM, false, true, false,  0.00, 1.4866, 0.00, 0
+AddPartWeaponChild = false, true, 0.00, 1.982, 1.556, 0.0
+AddPartWeaponChild = false, true, 0.00, 1.982, 1.556, 0.5
+AddTurretWeapon = MBT_ZTZ99_HE,  0.8,  2.6, 2.11,  0.0, 0.0,  true,1, 0,-360,360, -30, 10,  0.00, 1.982, 1.556
+AddTurretWeapon = MBT_ZTZ99_ATGM_LOSM, 0.0, 2.39,  8.85,  0.0, 0.0, true,1, 0,-360,360, -30, 10
+AddTurretWeapon = MG_762,      -0.35, 1.61, 1.81,  0.0, 0.0, true,1, 0,-360,360, -30,10
+AddPartTurretWeapon = GUNNER_40MM_Frag, true, true, false, -0.8067, 2.322, -0.4971
+AddPartWeaponChild = false, true,-0.8067, 2.94, -0.6309
+AddTurretWeapon = GUNNER_40MM_Frag, -0.8067, 2.94, -0.6309, 0.0, 0.0, FALSE, 2, 0, -360,360, -70,10
+
+AddTurretWeapon = GUNNER_MARK, -0.7362, 3.054, -0.4402, 0.0, 0.0, FALSE, 2, 0, -360,360, -70,10
+
+weapongrouptype = 8
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 900
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 2
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+;主砲
+;QJZ89
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+
+;DUPLICATES
+hasMaintenance = true

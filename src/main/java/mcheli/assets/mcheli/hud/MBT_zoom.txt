@@ -1,0 +1,66 @@
+
+;hudtype=1美国2中国3俄罗斯
+;美国坦克瞄准镜
+If =hud_type==0&& cam_zoom>1&&is_engine_shutdown==0
+	DrawTexture = M1A2BNK,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==0&&cam_zoom>1&&is_engine_shutdown==1
+	DrawTexture = M1A2BNKLOWHP,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+
+If =hud_type==0&& cam_zoom==1&&is_engine_shutdown==0
+	DrawTexture = M1A2BNK,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==0&&cam_zoom==1&&is_engine_shutdown==1
+	DrawTexture = M1A2BNKLOWHP,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+
+
+If =hud_type==1&& cam_zoom>1&&is_engine_shutdown==0
+	DrawTexture = M1A2BNK,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==1&&cam_zoom>1&&is_engine_shutdown==1
+	DrawTexture = M1A2BNKLOWHP,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+
+If =hud_type==1&& cam_zoom==1&&is_engine_shutdown==0
+	DrawTexture = M1A2BNK,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==1&&cam_zoom==1&&is_engine_shutdown==1
+	DrawTexture = M1A2BNKLOWHP,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+
+;hudtype=1美国2中国3俄罗斯
+;中国坦克瞄准镜
+
+If =hud_type==2&& cam_zoom>1&&is_engine_shutdown==0
+	DrawTexture = ZTZ99BNK,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==2&&cam_zoom>1&&is_engine_shutdown==1
+	DrawTexture = ZTZ99BNKLOWHP,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+
+If =hud_type==2&& cam_zoom==1&&is_engine_shutdown==0
+	DrawTexture = ZTZ99BNK,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==2&&cam_zoom==1&&is_engine_shutdown==1
+	DrawTexture = ZTZ99BNKLOWHP,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+
+;hudtype=1美国2中国3俄罗斯
+;俄罗斯坦克瞄准镜
+
+If =hud_type==3&& cam_zoom>1&&is_engine_shutdown==0
+	DrawTexture = T14BNK,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==3&&cam_zoom>1&&is_engine_shutdown==1
+	DrawTexture = T14BNKLOWHP,(-600*width/683)-stick_x*5, (-600*height/353)-stick_y*1+pitch*1,1200*width/683,1200*height/353, 0,0, 1960,1960
+EndIf
+
+If =hud_type==3&& cam_zoom==1&&is_engine_shutdown==0
+	DrawTexture = T14BNK,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+If = hud_type==3&&cam_zoom==1&&is_engine_shutdown==1
+	DrawTexture = T14BNKLOWHP,(-750*width/683)-stick_x*0, (-750*height/353)-stick_y*0+pitch*0,1500*width/683,1500*height/353, 0,0, 1960,1960
+EndIf
+

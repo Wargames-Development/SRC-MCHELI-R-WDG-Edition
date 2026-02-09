@@ -1,0 +1,73 @@
+DisplayName = APKWS IV 70MM被动雷达制导火箭弹
+
+Type = ATMissile
+Power = 40
+ModelBullet = hydra70
+Acceleration = 4
+Explosion = 3
+Explosionblock = 0
+Sound = rocket_snd
+Flaming = false
+Sight = MissileSight
+Delay = 2
+ReloadTime = 110
+Round = 14
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+HeatCount = 50
+MaxHeatCount = 650
+SoundVolume = 10
+DamageFactor = plane, 2
+DamageFactor = heli, 2
+DamageFactor =vehicle , 1
+DamageFactor = TANK, 1.3
+
+DisplayMortarDistance = true
+Accuracy = 0.5
+ModeNum = 1
+
+Gravity = -0.002
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+
+MaxAmmo = 76
+SuppliedNum = 76
+Item =  1, iron_ingot
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true
+
+EnableOffAxis = false
+
+PassiveRadar = true
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 600
+LOCKTIME=0
+turningFactor = 0.15
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=11
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.3
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true
+MaxLockOnAngle = 15
+MaxDegreeOfMissile = 15
+predictTargetPos=false
+
+locktime=15
+
+hasHMS=true

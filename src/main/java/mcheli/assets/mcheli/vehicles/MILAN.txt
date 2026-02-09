@@ -1,0 +1,32 @@
+DisplayName = MILAN 3
+AddDisplayName = zh_CN, MILAN 3 导弹发射器
+AddDisplayName = en_US, MILAN 3
+MaxHp = 60
+
+HUD = M220TOW
+RotationPitchMin = -25
+RotationPitchMax = 25
+
+CameraPosition = 0,  1.25,  0
+CameraRotationSpeed = 20
+CameraZoom = 3
+EnableNightVision = false
+AddSeat = 0.4,0,0
+
+ArmorMinDamage = 2
+Boundingbox = 0.00,  1.10,  0.00,  0.7, 1.0
+EntityWidth = 0.9
+EntityHeight = 0.9
+
+;Weapons
+AddTurretWeapon = MILAN,  0.00, 1.3, 2.43,   40.0, -40.0,   true,1, 0,-360,360, -80, 25
+
+;MISC
+;Place misc paramters here
+HideEntity = false
+ArmorMaxDamage = 1200
+AddPart = false, true, false, 0,   0, 0, 0
+
+;ArmorMaxDamage 最大ダメージ、これより大きいダメージは最大ダメージに丸められる
+
+;DUPLICATES

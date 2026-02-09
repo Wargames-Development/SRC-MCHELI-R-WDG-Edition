@@ -1,0 +1,65 @@
+DisplayName = ﾅﾚｻｸﾊｾﾐﾅｺﾅｵｯ
+Type = MkRocket
+Power = 200
+Explosion = 4
+ExplosionBlock = 0
+Acceleration = 5
+Sound = mark
+SoundVolume = 10.0
+Accuracy = 1.0
+ModelBullet = bullet76mm
+Flaming = true
+Round = 4
+Sight = None
+Delay = 70
+Gravity = -0.005
+DamageFactor = plane, 3.0
+DamageFactor = helicopter, 3.0
+ModeNum = 2
+; 着弾距離の表示
+DisplayMortarDistance = true
+; カメラの垂直方向を0に固定する
+
+; カメラの回転速度の倍率(小さくするとより細かく着弾地点が調整ができる)
+CameraRotationSpeedPitch = 0.2
+
+HeatCount = 900
+MaxHeatCount = 900
+
+; AddMuzzleFlash = 発射元からの距離, サイズ, 表示時間,  A,  R,  G,  B
+AddMuzzleFlash      =           2.1,   1.05,        2,  220,254,219,104
+AddMuzzleFlash      =           2.0,   1.00,        1,  220,254,219,184
+; AddMuzzleFlashSmoke = 発射元からの距離, 表示数, サイズ, 範囲, 表示時間,  A,  R,  G,  B
+AddMuzzleFlashSmoke   =             3.2,     10,    6.0,  3.0,       25,  220,160,140,120
+AddMuzzleFlashSmoke   =             2.2,      5,    6.0,  4.0,       35,  200,190,170,150
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_shell
+effectYield=4
+
+
+
+MaxAmmo = 4
+SuppliedNum = 4
+Item =  1,flansmod:81mmammo
+
+
+markerRocketSpawnNum = 10
+markerRocketSpawnDiff = 20
+markerRocketSpawnHeight = 300
+markerRocketSpawnSpeed = 2
+
+;ﾅﾚﾊﾖﾎｻcross_type0_9 :0 TVM｣ｬ1 MISSILESTRIKE｣ｬ2 rocket_arm｣ｬ3 CONNONSTRIKE｣ｬ4 irm｣ｬ5 arm｣ｬ6 laserm｣ｬ7 losm｣ｬ8 SARH｣ｬ9 connon
+;weapon_group_type: 0:SARH/MISSILESTRIKE;1:CONNON/SARH;2:CONNON/IRM;3:LASERM/CONNONSTRIKE
+;4:CONNON/TVM;5:CONNON/TVM;6:CONNON/TVM;7:CONNON/TVM
+crosstype=3
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true

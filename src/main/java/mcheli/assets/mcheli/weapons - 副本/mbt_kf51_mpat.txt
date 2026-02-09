@@ -1,0 +1,90 @@
+displayname =DM72 可编程重型多功能破甲弹
+type = machinegun2
+power = 500
+modelbullet = tank_shell
+acceleration = 10
+explosion = 4
+explosionblock = 2
+
+canairburst=true
+explosionairburst=6
+
+flaming = false
+sight = movesight
+delay = 140
+modenum = 1
+soundvolume = 10.0
+round = 1
+reloadtime = 140
+sound =152_snd
+group = maingun
+recoil = 0.8
+gravity = -0.008
+displaymortardistance = true
+trajectoryparticle = largesmoke
+damagefactor = player, 0.5
+damagefactor = plane, 1
+damagefactor = heli, 1
+damagefactor =vehicle , 1
+damagefactor = tank, 1
+
+
+disabledestroyblock=true
+nukeeffectonly=true
+explosiontype=hbmnt_shell
+effectyield=10
+
+
+addmuzzleflash      =  8.3,      0.5,        7,  220,254,159,74
+addmuzzleflash      =  8.2,      0.5,        6,  220,254,219,104
+addmuzzleflash      =  8.1,      0.5,        5,  220,254,219,184
+addmuzzleflashsmoke =  8.3, 5,  12.0,  4.0, 65,  220,160,140,120
+addmuzzleflashsmoke = 8.3, 5,  13.0,  7.0, 55,  200,190,170,150
+
+recoilbufcount = 40, 5
+
+maxammo = 20
+suppliednum = 10
+item =  10, iron_ingot
+item =  20, gunpowder
+
+flakparticlescrack = 300
+numparticlesflak = 20
+flakparticlesdiff = 0.8
+
+weaponswitchsound = switch_main_cannon
+
+recoilpitch = 100
+recoilyaw = 0.5
+recoilpitchrange = 20
+recoilyawrange = 1
+recoilrecoverfactor = 0.05
+
+canbeintercepted=false
+canbeintercepted=false
+
+;cross_type0-11:0mg,1ap,2arm,3canister,4he,5heat,6irm,7losm,8sarh,9staff,10tvm,11ap_fast
+;weapon_group_type:0ap/heat;1ap/cansiter;2ap/he;3ap/arm;4ap/ap
+;5heat/he;6heat/canister;
+;7he/staff;8he/saclos
+crosstype=5
+ExplosionDamageVsLiving=1 
+ExplosionDamageVsPlayer=1 
+ExplosionDamageVsTank=0.1 
+ExplosionDamageVsPlane=1 
+ExplosionDamageVsHeli=1 
+ExplosionDamageVsVehicle=0.1
+
+DamageFactor = player, 1
+DamageFactor = plane, 1
+DamageFactor = heli, 1
+DamageFactor = vehicle, 1
+DamageFactor = tank, 1.0
+DamageFactor = living, 0.5
+DamageFactor = ship, 1
+ExplosionDamageVsShip=0.1
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

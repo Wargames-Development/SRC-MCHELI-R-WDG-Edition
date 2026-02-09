@@ -1,0 +1,95 @@
+DisplayName =海红旗9B 重型主动雷达弹
+Type = AAMissile
+ModelBullet = 9M317
+Power = 550
+Acceleration = 0.1
+Explosion = 8
+Flaming = false
+Sight = MissileSight
+Delay = 15
+ReloadTime = 45
+Group = MainGun
+Round = 3
+HeatCount = 500
+MaxHeatCount = 1200
+LockTime = 0
+TimeFuse = 1500
+ProximityFuseDist = 10
+DamageFactor = heli, 0.7
+Sound = AA11_F
+SoundVolume = 10
+RigidityTime = 0
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+enableBVR=true
+
+
+
+numLockedChaffMax=1
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 800
+MaxLockOnAngle = 55
+PDHDNMaxDegree = 180
+LockMinHeight = 100
+EnableOffAxis = true
+predictTargetPos=true
+ActiveRadar = true
+enableBVR=true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+SpeedFactor = 0.03
+MaxDegreeOfMissile = 50
+SpeedFactorStartTick = 5
+SpeedFactorEndTick = 150
+SpeedDependsAircraft = false
+pdHDNMaxDegreeLockOutCount = 1
+scanInterval=4
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=7
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=0.1
+ExplosionDamageVsTank=0.1
+ExplosionDamageVsPlane=0.1
+ExplosionDamageVsHeli=0.1
+ExplosionDamageVsVehicle=0.1
+ExplosionDamageVsShip=0.1
+enableExhaustFlare=true
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+
+SmokeSize   = 10
+SmokeMaxAge = 500
+
+
+
+MaxLockOnAngle = 35
+MaxDegreeOfMissile = 35
+
+
+
+ProximityFuseDist = 5
+proximityFuseTick=30
+proximityFuseDamage = 500
+proximityFuseHeight = 50
+ExplosionAirburst = 7
+
+EnableOffAxis = true
+turningFactor = 0.12
+
+enableBVR=true
+MinRangeBVR = 10
+LockMinHeight = 60

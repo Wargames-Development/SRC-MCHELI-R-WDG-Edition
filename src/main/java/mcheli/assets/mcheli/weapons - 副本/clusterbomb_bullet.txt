@@ -1,0 +1,33 @@
+DisplayName = clusterbomb_bullet
+Type = Rocket
+Power =200
+ModelBullet = cbc
+Acceleration = 0
+Explosion = 3
+Explosionblock = 0
+ExplosionInWater = 10
+Flaming = false
+Sight = None
+Delay = 100
+Sound = bomb_snd
+
+ReloadTime = 150
+Round = 1
+
+DisableSmoke = True
+Gravity = -0.15
+
+
+
+HeatCount = 2000
+MaxHeatCount = 2000
+
+MaxAmmo = 8
+SuppliedNum = 8
+Item =  1, iron_ingot
+ExplosionDamageVsLiving=0.2
+ExplosionDamageVsPlayer=0.2
+ExplosionDamageVsTank=4
+ExplosionDamageVsPlane=4
+ExplosionDamageVsHeli=4
+ExplosionDamageVsVehicle=4

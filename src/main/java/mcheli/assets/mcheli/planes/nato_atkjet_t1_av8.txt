@@ -1,0 +1,158 @@
+DisplayName = AV-8B+
+AddDisplayName = zh_CN,AV-8B+ 海鹞
+AddDisplayName = en_US,AV-8B+
+MaxHp = 450
+
+Category = M.A
+ItemID = 28705
+HUD = JET
+ThirdPersonDist = 25
+Speed = 1.6
+MobilityPitch = 0.8
+MobilityRoll = 1
+MobilityYaw = 0.8
+ThrottleUpDown = 0.6
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 1800
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.00, 1.2, -0.7212
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.637,  2.832
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+AddPartNozzle = -1.64, 2.223, -1.331, -1,0,0
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.00, 2.34, -4.06,  4.0, 3
+BoundingBox = 0.00, 2.34, -8.03,  4.0, 3
+BoundingBox = 0.00, 3.98, -12.02,  4.0, 3
+BoundingBox = 0.00, 1.69, -12.02,  4.0, 3,1.5
+BoundingBox = 0.00, 2.45, 2.34,  3.0, 3
+BoundingBox = 0.00, 2.45, 4.5,  2.5, 3
+BoundingBox = 0.00, 2.45, -0.651,  3.0, 3
+BoundingBox = 4.31, 2.45, -4.36,  5.0, 1
+BoundingBox = -4.31, 2.45, -4.36,  5.0, 1
+EntityWidth = 0.85
+EntityHeight = 0.85
+
+FlareType = 5
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = EARLY_AA
+NameOnAdvancedAARadar = AV8
+NameOnModernAARadar = F18
+NameOnEarlyAARadar = F18
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00,  0.9411,-6.735,  1,0, 0, 40
+
+AddPartSteeringWheel = -0.2742,  2.417,  -11.40,   -1, 0, 0,  15
+AddPartSteeringWheel = 0.009761, 2.568, -12.05, 0.0, -1.0, 0.337, 15
+AddPartSteeringWheel = 4.164,  2.284,  -5.546,   -4.4633, -0.0758, 1.9205,  0
+AddPartSteeringWheel = -4.164,  2.284,  -5.546,    4.4633, -0.0758, 1.9205,  0
+AddPartSteeringWheel = 0.3220, 2.996,3.693, 0, 0, 1,   -360
+AddPartSteeringWheel = -0.3220, 2.996,3.693, 0, 0, 1,   -360
+AddPartSteeringWheel = -0.01040, 2.642, 3.406, 0.0, 0.0, 1.0, -20
+AddPartSteeringWheel = 0.2742,  2.417,  -11.40,   1, 0, 0,  15
+AddPartSteeringWheel = -2.517,  2.525,  -4.808,   1, 0, 0,  8
+AddPartSteeringWheel = 2.517,  2.525,  -4.808,   -1, 0, 0,  8
+
+AddPartCanopy = -0.0,  3.731,   0.7980, 1,0,0,  -60
+AddPartCanopy = -0.0,  4.00,     -1.665,  0,0,1,   0
+
+AddPartLG = 0, 1.516, 1.241,  -1,0,0,135
+AddPartLG = 0, 1.958, -5.378,  -1,0,0,-85
+AddPartLG = 0, 1.958, -5.378,  -1,0,0,-85
+AddPartLG = 0, 1.525, -4.506,  -1,0,0,-90
+
+AddPartLGRev = 0.2935, 1.51, 2.226,  0,0,1,100
+AddPartLGRev = -0.2935, 1.51, 2.226,  0,0,1,-100
+AddPartLGRev = 0.4925, 1.04, -5.535,  0,0,1,100
+AddPartLGRev = -0.4925, 1.04, -5.535,  0,0,1,-100
+
+AddPartLGRev = 0.0, 1.317, 1.160,  -1,0,0,-100
+AddPartLGRev = 0.0, 0.9355, -4.309,  -1,0,0,100
+
+;Weapons
+AddPartWeaponMissile = ATKJET_AV8B_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_IRM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_AV8B_ROCKET_ARM,false, false, false,  -5.0, 0,  0
+
+AddWeapon = ATKJET_AV8B_25MM_AS,  0.7933,    1.159,  0.5066,   0.1, -0.2
+AddWeapon = ATKJET_AV8B_25MM_AS,  -0.7933,    1.159,  0.5066,   -0.1, -0.2
+
+AddWeapon = ATKJET_AV8B_ROCKET_ARM,-2.867, 1.322, -2.82,   -1.0, 0.0
+AddWeapon = ATKJET_AV8B_ROCKET_ARM,2.867, 1.322, -2.82,   1.0, 0.0
+
+AddWeapon = ATKJET_AV8B_IRM,  -1.085, 1.952, 2.096,   -0.0, 0.0
+AddWeapon = ATKJET_AV8B_IRM, 1.085, 1.952, 2.096,  0.0, 0.0
+
+weapongrouptype = 8
+
+;MISC
+;Place misc paramters here
+VtolYaw = 2
+VtolPitch = 2
+EnableVtol = true
+AddPartRotor = 0,  2.494,  0.6556,   0, 0, 1,0
+AddPartRotor = 0,  2.494,  0.6556,   0, 0, 1,0
+AddPartRotor = 0.00,  2.228, -0.9287  -1,0,0
+AddPartRotor = 0.00,  1.836, -3.859,  -1,0,0
+AddPartRotor = 0.00,  2.228, -0.9287,  -1,0,0
+AddBlade = 1,0, 0,  2.494,  0.6556,   0,0.00, 1
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;Front
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+AddPartNozzle = 1.64, 2.223, -1.331, -1,0,0
+AddPartNozzle = -1.236, 1.758, -4.049, -1,0,0
+AddPartNozzle = 1.236, 1.758, -4.049, -1,0,0
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200

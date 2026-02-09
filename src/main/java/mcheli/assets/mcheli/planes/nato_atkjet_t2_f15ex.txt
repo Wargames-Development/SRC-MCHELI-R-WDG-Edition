@@ -1,0 +1,157 @@
+DisplayName = F-15E MLU
+AddDisplayName = zh_CN,F-15E MLU 攻击鹰
+AddDisplayName = en_US,F-15E MLU
+MaxHp = 400
+
+Category = M.F
+HUD = JET, jet_GUNNER
+ThirdPersonDist = 25
+Speed = 2.0
+MobilityPitch = 0.9
+MobilityRoll = 1.5
+MobilityYaw = 0.9
+ThrottleUpDown = 0.8
+
+Gravity = -0.038
+motionfactor = 0.96
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.7
+
+CameraPosition = 1.355, 0.7385, -3.151
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.255,  0.4031
+AddGunnerSeat = 0.00,  2.552, -1.466, 1.355, 0.7385, -3.151, true
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = BIG_Exhaustflame, Exhaustflame_red, 0.7552, 2.092, -13.22, -1, 0, 0, 0, 1
+AddExhaustFlame = BIG_Exhaustflame, Exhaustflame_red, -0.7552, 2.092, -13.22, -1, 0, 0, 0, 1
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox =  0.00, 2.40, 1.5,  3.0, 3.5
+BoundingBox =  0.00, 1.90, -3.0,  4.9, 3.2
+BoundingBox =  0.00, 1.90, -7.80, 5.0, 3.2
+BoundingBox =  0.00, 1.90, -12.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox =  4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox =  0.00, 2.20, -14.3,  3.5, 2.0,1.5
+
+EntityWidth = 0.65
+EntityHeight = 0.65
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = ADVANCED_AA
+NameOnAdvancedAARadar = F15
+NameOnModernAARadar = F15
+NameOnEarlyAARadar = F15
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+enableRWR = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00, 3.10, -4.182,  -1,0,0,  -50
+AddPartLG = 0, 1.559, -2.762,  0,0,0,-90
+AddPartLGRev = 0.2001, 1.425, 0.3139,  0,0,1,70
+AddPartLGRev = 0, 1.364, -1.492,  1,0,0,120
+
+AddPartLG = 1.378, 1.560, -7.247,  0,0,0,-90
+AddPartLGRev = 0.3367, 1.327, -6.196,  0,0,1,-90
+AddPartLG = -1.378, 1.560, -7.247,  0,0,0,-90
+AddPartLGRev = -0.3367, 1.327, -6.196,  0,0,1,90
+
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.3
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, -5.8
+
+AddPartSteeringWheel = -1.977,  2.737,  -13.78,   0, 1,0,  -15
+AddPartSteeringWheel = 1.971,  2.753,  -13.78 , 0, 1, 0,  -15
+AddPartSteeringWheel = -2.328,2.430,-10.15, 1, 0, 0.0,   25
+AddPartSteeringWheel = 2.327,2.449,-10.15, 1, 0, 0.0,   -25
+AddPartSteeringWheel = -2.328,1.897,-14.00, 1, 0, 0.0,   25
+AddPartSteeringWheel = 2.327,1.897,-14.00, 1, 0, 0.0,   -25
+AddPartSteeringWheel = -0.03495,2.625,0.8746, 0, 0, 1,   -20
+
+AddPartCanopy = 0.00, 3.507, -2.568,  -1,0,0,  40
+AddPartCanopy = 0.00, 3.903, -2.891,  -1,0,0,  0
+
+;Weapons
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_TVM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_TVM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,   false, false, false,  -0.297,  0.518, -8.699
+
+AddPartWeaponMissile = ATKJET_F15E_GPSBOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_GPSBOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+
+AddWeapon = ATKJET_F15E_20MM,  -0.6850,  2.986,  -0.09,  0.0,  0.0
+
+AddWeapon = ATKJET_F15E_GPSBOMB,      0.00,  2.255,  0.4031,  0,-1, false,1,  0,-360,360, 0,90
+AddWeapon = ATKJET_F15E_GPSBOMB,       0.00,  2.255,  0.4031,  0,-1,  false,1,  0,-360,360, 0,90
+AddWeapon = ATKJET_F15E_GPSBOMB,      0.00,  2.255,  0.4031,  0,-1, false,1,  0,-360,360, 0,90
+AddWeapon = ATKJET_F15E_GPSBOMB,       0.00,  2.255,  0.4031,  0,-1,  false,1,  0,-360,360, 0,90
+AddWeapon = ATKJET_F15E_AAM_ARM,     -6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = ATKJET_F15E_AAM_ARM,     6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = ATKJET_F15E_AAM_ARM,     -6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = ATKJET_F15E_AAM_ARM,     6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,  -1.128, 0.2844, -6.5,  0, -0,false,2, 0,-360,360, -15,85
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,  1.128, 0.2844, -6.5,  0, -0,false,2, 0,-360,360, -15,85
+
+AddWeapon = ATKJET_F15E_GUNNER_TVM , 2,  1.8, -2,  0, -0,false,2, 0,-360,360, -15,85
+AddWeapon = ATKJET_F15E_GUNNER_TVM , -2,  1.8, -2,  0, -0,false,2, 0,-360,360, -15,85
+
+AddTurretWeapon = AESA,   -0.846, 3.68,  0.373,   0.0, 0.0, false, 2, 0, -360,360, -70,10
+
+weapongrouptype = 13
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  0.7552, 2.092, -13.22, -1,0,0
+;AddPartNozzle = -0.7552, 2.092, -13.22, -1,0,0
+;AddPartLG = -1.868,  2.057, -8.975, -1,0, 0.4,  90,  0, 1,0,  90
+;AddPartLG =  1.868,  2.057, -8.975, -1,0,-0.4,  90,  0,-1,0, 90
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200
+enablerwr = true
+hasMaintenance = true

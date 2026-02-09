@@ -1,0 +1,58 @@
+DisplayName = 4-AXIS-DRONE[RPG]
+AddDisplayName = zh_CN, 四轴无人机[RPG]
+AddDisplayName = en_US, 4-AXIS-DRONE
+MaxHp = 25
+
+Category = C
+HUD = MAV, heli_gnr
+Speed = 0.7
+MobilityPitch = 1000
+MobilityRoll = 1000
+MobilityYaw = 1000
+ThrottleUpDown = 1000.0
+
+Sound = fpvdrone
+
+MaxFuel = 60
+FuelConsumption = 0.1
+
+CameraPosition = 0.00, 0.0, 0.0
+CameraRotationSpeed = 1000
+AddSeat = 0.00, 0.0, 0.0
+
+ParticlesScale = 0.1
+
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 1.14,0.0,  2.0, 1.5
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = UAV
+NameOnModernAARadar = UAV
+NameOnEarlyAARadar = ?
+NameOnModernASRadar = UAV
+NameOnEarlyASRadar = ?
+enableRWR = false
+
+;Parts
+AddRotor = 1, 0,  0.755, 1.67,  -0.751,  0.0,  1.0, 0.0
+AddRotor = 1, 0,  -0.755, 1.67,  -0.751,  0.0, -1.0, 0.0
+AddRotor = 1, 0,  0.755, 1.67,  0.751,  0.0,  1.0, 0.0
+AddRotor = 1, 0,  -0.755, 1.67,  0.751,  0.0, -1.0, 0.0
+
+;Weapons
+AddPartWeaponMissile = PG7V,   false,  false,  false,     1.72,  0.96, -1.64
+AddWeapon = PG7V,  0.00, 0.22, 0.0,  0.0, 0.0, true,1, 0,-0,0, -10, 70
+
+;MISC
+;Place misc paramters here
+SmallUAV = true
+ThrottleUpDownOnEntity = 1000.0
+Stealth = 0.4
+RotorSpeed = 1000.0
+
+; C = Civilian(柉娫婡)
+;AddTurretWeapon = AESA,   -0.846, 3.68,  0.373,   0.0, 0.0, false, 1, 0, -360,360, -70,10
+;AddTurretWeapon = PESA,   -0.846, 3.68,  0.373,   0.0, 0.0, false, 1, 0, -360,360, -70,10
+
+;DUPLICATES

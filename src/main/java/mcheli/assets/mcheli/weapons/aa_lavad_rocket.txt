@@ -1,0 +1,66 @@
+DisplayName = Hydra70 [HE]
+Type = rocket
+Power = 50
+ModelBullet = ROCKET_1
+Acceleration = 3.0
+Explosion = 3
+Explosionblock = 0
+Sound = rocket_snd
+Flaming = false
+Sight = MoveSight
+Delay = 3
+ReloadTime = 110
+Round = 19
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+SoundVolume = 10
+DamageFactor = plane, 2
+DamageFactor = heli, 2
+DamageFactor = TANK, 1.5
+DamageFactor = vehicle , 1
+
+DisplayMortarDistance = true
+Accuracy = 0.5
+
+
+Gravity = -0.006
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+RecoilPitch = 10
+RecoilYaw = 0.5
+RecoilPitchRange = 15
+RecoilYawRange = 1
+RecoilRecoverFactor = 0.07
+WeaponSwitchSound = Switch_Main_Cannon
+FlakParticlesCrack = 300
+NumParticlesFlak = 20
+FlakParticlesDiff = 0.8
+
+
+
+MaxAmmo = 19
+SuppliedNum = 19
+Item =  1, iron_ingot
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=true
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=9
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = ship, 1.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=false

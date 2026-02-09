@@ -1,0 +1,77 @@
+DisplayName =57E6-EA 主动雷达弹
+Type = AAMissile
+ModelBullet = 95YA6
+Power = 200
+Acceleration = 1.0
+Explosion = 2
+Flaming = false
+Sight = MissileSight
+Delay = 8
+ReloadTime = 45
+Group = MainGun
+Round = 4
+HeatCount = 500
+MaxHeatCount = 1500
+LockTime = 0
+TimeFuse = 270
+ProximityFuseDist = 10
+DamageFactor = heli, 0.7
+Sound = AA11_F
+SoundVolume = 10
+RigidityTime = 0
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+enableBVR=true
+MinRangeBVR = 10
+predictTargetPos=false
+
+
+numLockedChaffMax=1
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 600
+MaxLockOnAngle = 55
+PDHDNMaxDegree = 180
+LockMinHeight = 60
+EnableOffAxis = true
+predictTargetPos=true
+ActiveRadar = true
+enableBVR=true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+SpeedFactor = 0.05
+MaxDegreeOfMissile = 60
+SpeedFactorStartTick = 5
+SpeedFactorEndTick = 36
+SpeedDependsAircraft = false
+pdHDNMaxDegreeLockOutCount = 1
+scanInterval=2
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=7
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=0.1
+ExplosionDamageVsTank=0.1
+ExplosionDamageVsPlane=0.1
+ExplosionDamageVsHeli=0.1
+ExplosionDamageVsVehicle=0.1
+ExplosionDamageVsShip=0.1
+enableExhaustFlare=true
+
+ProximityFuseDist = 20
+proximityFuseTick=60
+proximityFuseDamage = 200
+proximityFuseHeight = 50
+ExplosionAirburst = 4
+EnableOffAxis = true
+LockMinHeight = 50

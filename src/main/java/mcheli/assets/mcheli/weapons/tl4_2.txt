@@ -1,0 +1,30 @@
+DisplayName = TL-4 攻顶
+Type = ATMissile
+Power = 800
+Acceleration = 3
+Explosion = 3
+Flaming = true
+Sight = MissileSight 
+Delay = 300
+Group = MainGun
+LockTime = 60
+RidableOnly = true
+ModeNum = 2
+FixMode = 1
+ModelBullet = fgm148
+Sound = FGM148_F
+RigidityTime = 3
+TrajectoryParticleStartTick = 10
+Zoom = 4
+DisplayMortarDistance = true
+
+DamageFactor = plane, 1.0
+DamageFactor = helicopter, 1.0
+DamageFactor = tank, 1.0
+
+MaxAmmo = 1
+SuppliedNum = 1
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+enableExhaustFlare=true

@@ -1,0 +1,71 @@
+DisplayName =长钉ER 反坦克导弹 [人在回路][破甲]
+Type = tvMissile
+Power = 500
+Acceleration = 0.1
+Explosion = 4
+Explosionblock = 0
+Flaming = false
+Sight = false
+Delay = 120
+ModeNum = 2
+ModelBullet =agm114
+Sound = sa-2_snd
+ReloadTime = 100
+Round = 4
+
+
+ProximityFuseDist = 1
+HeatCount = 1000
+MaxHeatCount = 1200
+TimeFuse = 220
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+DisplayMortarDistance = true
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+MaxAmmo = 8
+SuppliedNum = 8
+Item =  1, iron_ingot
+
+CameraRotationSpeedPitch = 0.5
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=11
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=1
+enableExhaustFlare=true
+
+
+EnableOffAxis = false
+SpeedFactor = 0.06
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+
+turningFactor = 0.17
+laserGuidance = true
+hasLaserGuidancePod = true
+turningFactor = 0.17
+MaxDegreeOfMissile =50
+EnableOffAxis = true

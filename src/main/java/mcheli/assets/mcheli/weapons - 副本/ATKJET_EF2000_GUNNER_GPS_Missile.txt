@@ -1,0 +1,83 @@
+DisplayName = LORA 弹道导弹[卫星制导]
+Type = ASmissile
+Power =0
+Acceleration = 0.5
+Explosion = 15
+Explosionblock=0
+Flaming = false
+Sight = MoveSight
+ModelBullet = lora
+Sound = missile_11_snd
+ProximityFuseDist = 1
+Delay = 10
+ReloadTime = 140
+Round = 2
+
+DisplayMortarDistance = true
+
+
+HeatCount = 600
+MaxHeatCount = 600
+
+LockTime = 1
+TurningFactor = 0.1
+IsGPSMissile = true
+MaxDegreeOfMissile = 360
+RigidityTime = 130
+Gravity = 0.035
+
+;TrajectoryParticle = largeexplosion
+
+
+
+SpeedFactor = 0.08
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 140
+SpeedDependsAircraft =true
+
+
+DisplayMortarDistance = true
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+
+effectYield=10
+
+MaxAmmo = 4
+SuppliedNum = 4
+Item =  2, iron_ingot
+Item =  2, gunpowder
+Item =  2, redstone
+
+MaxAmmo = 2
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true
+SpeedDependsAircraft =false
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+crosstype=19
+ExplosionDamageVsLiving=2
+ExplosionDamageVsPlayer=2
+ExplosionDamageVsTank=5
+ExplosionDamageVsPlane=5
+ExplosionDamageVsHeli=5
+ExplosionDamageVsVehicle=1
+ExplosionDamageVsShip=4
+enableExhaustFlare=true
+TrajectoryParticle = largeexplode

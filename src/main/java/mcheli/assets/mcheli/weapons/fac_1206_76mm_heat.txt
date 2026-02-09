@@ -1,0 +1,72 @@
+DisplayName = ÆÆ¼×µ¯
+Type = MachineGun1
+Power = 220
+Acceleration = 12.0
+Explosion = 3
+Gravity = -0.005
+DisplayMortarDistance = true
+explosionblock = 0
+modelbullet = tank_shell
+Sight = MoveSight
+Flaming = false
+Sight = MoveSight
+Delay = 43
+SoundVolume = 10
+Sound = HSTV_snd
+round = 10
+DisableSmoke = True
+
+reloadtime =50
+Accuracy = 0.1
+HeatCount = 150
+MaxHeatCount = 1050
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+
+Recoil = 0.5
+
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 0.4
+DamageFactor = heli, 0.4
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.15
+
+AddMuzzleFlash      =  6.524,      0.44,        2,  170,254,159,84
+AddMuzzleFlash      =  6.6,      0.40,        1,  150,254,219,184
+AddMuzzleFlashSmoke =  6.6,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke =  6.7,  1,   3.0,  1.0,  5,  180,220,217,214
+
+MaxAmmo = 50
+SuppliedNum = 10
+Item =  2, iron_ingot
+Item =  2, gunpowder
+
+RecoilPitch = 50
+RecoilYaw = 0.5
+RecoilPitchRange = 15
+RecoilYawRange = 1
+RecoilRecoverFactor = 0.05
+WeaponSwitchSound = Switch_Main_Cannon
+FlakParticlesCrack = 300
+NumParticlesFlak = 20
+FlakParticlesDiff = 0.8
+canBeIntercepted=false
+canBeIntercepted=false
+
+;cross_type:0 CONNON,1 AAM_IRM, 2 AAM_SARH, 3 ATGM_IRM, 4 ATGM_LOSM, 5, ATGM_SARH, 6 HEAT, 7 AHEAD, 8 ROCKET ,9 40MM
+crosstype=6
+
+DamageFactor = living, 0.5
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.3
+ExplosionDamageVsShip=0.5
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

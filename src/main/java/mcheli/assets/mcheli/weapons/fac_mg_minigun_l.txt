@@ -1,0 +1,43 @@
+DisplayName = 7.62 Minigun
+Type = MachineGun1
+Power = 5
+Acceleration = 15.0
+ModelBullet = bullet76mm
+Explosion = 0
+Flaming = false
+Sight = None
+Delay = 0
+Recoil = 0.1
+ReloadTime = 45
+Round = 60
+SoundDelay = 1
+SoundVolume = 8
+Accuracy = 1
+Sound = M61A1_SND
+DamageFactor = player, 1
+DamageFactor = plane, 2.8
+DamageFactor = heli, 2.8
+DamageFactor = vehicle , 3.5
+DamageFactor = tank, 3
+
+HeatCount = 5
+MaxHeatCount = 300
+
+
+AddMuzzleFlashSmoke =  2.2,  1,   4.0,  1.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke =  3.2,  1,   3.0,  1.0,  5,  180,220,217,214
+
+MaxAmmo = 1000
+SuppliedNum = 100
+Item =  3, iron_ingot
+Item =  3, gunpowder
+canBeIntercepted=false
+canBeIntercepted=false
+DamageFactor = ship, 3.5
+cross_type:0 CONNON,1 AAM_IRM, 2 AAM_SARH, 3 ATGM_IRM, 4 ATGM_LOSM, 5, ATGM_SARH, 6 HEAT, 7 AHEAD, 8 ROCKET ,9 40MM,10 MG 11 Torpedo
+crosstype=10
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

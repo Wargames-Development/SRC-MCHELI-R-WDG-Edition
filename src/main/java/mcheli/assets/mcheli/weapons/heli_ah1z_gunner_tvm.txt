@@ -1,0 +1,54 @@
+DisplayName = AGM-114L Longbow [TV-temp]
+Type = tvMissile
+Power = 500
+Acceleration = 2
+Explosion = 4
+Explosionblock = 0
+Flaming = false
+Sight = false
+Delay = 120
+ModeNum = 2
+ModelBullet =agm114
+Sound = sa-2_snd
+ReloadTime = 100
+Round = 4
+
+TimeFuse = 300
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+DisplayMortarDistance = true
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+MaxAmmo = 4
+SuppliedNum = 1
+Item =  1, iron_ingot
+
+CameraRotationSpeedPitch = 0.2
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+turningFactor = 0.09
+;≈⁄ ÷Œªcross_type0_9 :0 TVM£¨1 MISSILESTRIKE£¨2 rocket_arm£¨3 CONNONSTRIKE£¨4 irm£¨5 arm£¨6 laserm£¨7 losm£¨8 SARH£¨9 connon
+;weapon_group_type: 0:SARH/MISSILESTRIKE;1:CONNON/SARH;2:CONNON/IRM;3:LASERM/CONNONSTRIKE
+;4:CONNON/TVM;5:CONNON/TVM;6:CONNON/TVM;7:CONNON/TVM
+crosstype=0
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true
+laserGuidance = true
+hasLaserGuidancePod = true
+turningFactor = 0.17
+MaxDegreeOfMissile =35
+EnableOffAxis = true

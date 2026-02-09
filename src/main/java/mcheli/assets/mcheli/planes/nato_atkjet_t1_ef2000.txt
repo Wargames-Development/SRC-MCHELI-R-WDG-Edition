@@ -1,0 +1,139 @@
+DisplayName = EF-2000
+AddDisplayName = zh_CN,EF-2000 台风
+AddDisplayName = en_US,EF-2000
+MaxHp = 400
+
+Category = M.F
+HUD = JET, JET_GUNNER
+ThirdPersonDist = 25
+Speed = 2
+MobilityPitch = 0.9
+MobilityRoll = 1.5
+MobilityYaw = 0.9
+ThrottleUpDown = 0.8
+
+Gravity = -0.038
+MotionFactor = 0.96
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0, 1.00, -6.17
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.95,  0.5975
+AddGunnerSeat = 0.00,  3.2, -1.00, 0, 1.00, -6.17, true,-10, 120, false
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.6749, 2.607, -13.22, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -0.6749 ,2.607, -13.22, -1, 0, 0, 0, 1
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.00, 2.40, 1.5,  3.0, 3.5
+BoundingBox = 0.00, 1.90, -3.0,  4.9, 3.2
+BoundingBox = 0.00, 1.90, -7.80, 5.0, 3.2
+BoundingBox = 0.00, 1.90, -12.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox = 4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox = 0.00, 2.20, -14.3,  3.5, 2.0,1.5
+EntityWidth = 0.65
+EntityHeight = 0.65
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = E2K
+NameOnModernAARadar = E2K
+NameOnEarlyAARadar = E2K
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00, 2.739, 2.389,  -1,0,0,  -40
+AddPartLG = 0, 1.493, -1.90,  1,0,0,120
+AddPartLGRev = 0.2479, 1.423, -2.839,  0,0,1,100
+
+AddPartLG = 2.477, 2.1, -7.388,  0,0,0,-90
+AddPartLGRev = 2.676, 2.024, -7.385,  0,0,1,100
+AddPartLGRev = 0.2731, 1.594, -7.219,  0,0,1,-80
+
+AddPartLG = -2.477, 2.10, -7.388,  0,0,0,90
+AddPartLGRev = -2.676, 2.024, -7.385,  0,0,1,-100
+AddPartLGRev = -0.2731, 1.594, -7.219,  0,0,1,80
+
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.4
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, -6
+
+AddPartSteeringWheel = 3.086,2.20,-11.20, 1, 0, 0.0,   -25
+AddPartSteeringWheel = -3.086,2.20,-11.20, 1, 0, 0.0,   25
+AddPartSteeringWheel = 0.002984,  3.802,  -13.13,   0.0, -1.0, 0.337,  15
+AddPartSteeringWheel = -0.01212,3.199,1.126, 0, 0, 1,   -20
+
+AddPartCanopy = 0.00, 4.321, -2.407,  -1,0,0,  40
+AddPartCanopy = 0.00, 3.903, -2.891,  -1,0,0,  0
+
+;Weapons
+AddPartWeaponMissile = ATKJET_EF2000_GUNNER_GPS_Missile,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_EF2000_GUNNER_GPS_Missile,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_EF2000_AAM_IRM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_EF2000_AAM_IRM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_EF2000_GUNNER_LASERM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_EF2000_GUNNER_LASERM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_EF2000_GUNNER_LASERM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = atkjet_EF2000_LASERBOMB,   false, false, false,   0.297,  0.518, -8.699
+
+AddWeapon = ATKJET_EF2000_27MM_AS,  -0.6850,  2.986,  -0.09,  0.0,  0.0
+AddWeapon = atkjet_EF2000_LASERBOMB,     2.23,  1.32, -4.784, 0.0,0.05,false,1, 0,-360,360, -15,85
+AddWeapon = ATKJET_EF2000_GUNNER_LASERM,     -2.23,  1.32, -4.784, 1,0,false,2, 0,-360,360, -15,85
+AddWeapon = ATKJET_EF2000_GUNNER_LASERM,     -2.23,  1.32, -4.784, 1,0,false,2, 0,-360,360, -15,85
+AddWeapon = ATKJET_EF2000_GUNNER_LASERM,     -2.23,  1.32, -4.784, 1,0,false,2, 0,-360,360, -15,85
+AddWeapon = ATKJET_EF2000_AAM_IRM,     -6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = ATKJET_EF2000_AAM_IRM,     6.232,  1.758, -7.699,  0,-0.0
+
+AddWeapon = ATKJET_EF2000_GUNNER_GPS_Missile , -3.86,  1.35, -7.34,  0, -75,false,2, 0,-360,360, -15,85
+AddWeapon = ATKJET_EF2000_GUNNER_GPS_Missile , 3.86,  1.35, -7.34,  0, -75,false,2, 0,-360,360, -15,85
+
+weapongrouptype = 12
+
+;MISC
+;Place misc paramters here
+onGroundPitch = 1.5
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  0.7552, 2.092, -13.22, -1,0,0
+;AddPartNozzle = -0.7552, 2.092, -13.22, -1,0,0
+;AddPartLG = -1.868,  2.057, -8.975, -1,0, 0.4,  90,  0, 1,0,  90
+;AddPartLG =  1.868,  2.057, -8.975, -1,0,-0.4,  90,  0,-1,0, 90
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+VariableSweepWing = true
+SweepWingSpeed = 0.9

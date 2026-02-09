@@ -1,0 +1,151 @@
+DisplayName = M1A2
+AddDisplayName = zh_CN,M1A2 无人靶车
+AddDisplayName = en_US,M1A2
+MaxHp = 1200
+
+Category = M.Q
+ItemID = 30101
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.4
+MobilityRoll = 0
+ThrottleUpDown = 2
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 3.5
+DefaultFreelook = true
+
+Sound = tank_gte
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.89
+MaxFuel = 1200
+FuelConsumption = 0.1
+
+CameraPosition = -0.8,  2.9, 2.2, true
+CameraRotationSpeed = 30
+CameraZoom = 6
+AutoPilotRot = 0
+EnableNightVision = true
+AddGunnerSeat = 0.00,  1.50,  0,    0.00,  2.50,  0.25,  false, -90, 90, true
+AddGunnerSeat = -0.0, 0.493, 0,  -0.8827, 3.493, 0.2674, false, -90, 90, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.0
+engineShutdownThreshold = 30
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.645, -0.400820,   4.4, 2.02,  6.3,1,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.21, 3.4,   4.4, 0.7,  1.5,0.6,DEFAULT,首上
+BoundingBox = 0.0, 0.191, 3.52,   4.4, 1.2,  1.7,0.5,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -4.5,   4.4, 2.1,  2.1,1.3,DEFAULT,引擎
+BoundingBox = 0.0, 2.16, -0.5,   4, 1,  5.7,0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.68, -0.5,   3.184, 0.1,  5,1, TURRET,车顶
+BoundingBox = 2.0, 2.24, -2.5,   0.212, 0.7087,  2.9,1.0, TURRET,炮塔侧面
+BoundingBox = -2.0, 2.24, -2.5,   0.212, 0.7087,  2.9,1.0, TURRET,炮塔侧面
+BoundingBox = 0, 2.24, -4,   3.8, 0.7087,  0.2,1.3, TURRET,炮塔后面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 3
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = Abrams
+NameOnEarlyAARadar = MBT
+NameOnModernASRadar = Abrams
+NameOnEarlyASRadar = MBT
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 5
+OnGroundRollFactor = 5
+
+;Parts
+SetWheelPos = 1.82,  -0.24,  2.86,  0.70, -0.76, -2.22, -4.14
+
+AddTrackRoller = -1.82,  0.81,  3.70
+AddTrackRoller = -1.82,  0.18,  2.22
+AddTrackRoller = -1.82,  0.18,  1.02
+AddTrackRoller = -1.82,  0.18,  0.06
+AddTrackRoller = -1.82,  0.18, -0.90
+AddTrackRoller = -1.82,  0.18, -1.86
+AddTrackRoller = -1.82,  0.18, -2.82
+AddTrackRoller = -1.82,  0.18, -3.78
+AddTrackRoller = -1.82,  0.81, -4.59
+
+AddCrawlerTrack = false, 0.37, -2.15,  1.14/ -4.62,  1.10/ -4.88,  0.80/ -4.90,  0.54/ -4.84,  -0.16/ -4.07,  -0.23/ -3.45,  -0.23/  2.17,  -0.11/ 2.73,  0.50/ 4.04,  0.78/ 4.12,  1.12/ 4.02,  1.22/ 3.73,
+
+;Weapons
+AddPartWeapon = MBT_M1A2_APFSDS/MBT_M1A2_ATGM_ARM, false, true, false,  0.00, 2.074, 0.00, 0
+AddPartWeaponChild = false, true, 0.00, 2.074, 1.947, 0.0
+AddPartWeaponChild = false, true, 0.00, 2.074, 1.947, 0.5
+
+AddTurretWeapon = MBT_M1A2_APFSDS, 0.00, 2.074, 1.947,  0.0, 0.0, true,1, 0,-360,360, -18, 7
+AddTurretWeapon = MBT_M1A2_ATGM_ARM,     0.00, 2.074, 1.947,  0.0, 0.0, true,1, 0,-360,360, -18, 7
+
+AddTurretWeapon = mg_762,      -0.43, 2.18, 1.92,  0.0, 0.0, true,1, 0,-360,360, -18, 7
+
+AddPartTurretWeapon = GUNNER_MG_127, true, true, false, -0.9664, 2.937, 0.4745
+AddPartWeaponChild = false, true, -0.8827, 3.493, 0.2674
+AddTurretWeapon = GUNNER_MG_127, -0.8827, 3.493, 0.2674, 0.0, 0.0, false, 2, 0, -360,360, -70,10
+AddTurretWeapon = GUNNER_CAS,   -0.846, 3.68,  0.373,   0.0, 0.0, false, 2, 0, -360,360, -70,10
+
+weapongrouptype = 3
+
+;MISC
+;Place misc paramters here
+UAV = true
+UAV = true
+ArmorMaxDamage = 900
+ArmorDamageFactor = 1
+ArmorDamageFactor = 1.0
+HideEntity = true
+WeightType = Tank
+WeightedCenterZ = 0.0
+EnableBack = true
+RideRack = lcac, 1
+hudtype = 1
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+onGroundPitch = 0
+TargetDrone = true
+
+;EnableEntityRadar = true
+; 指定した高さまでの水に触れてもダメージを受けない
+; 2であれば2ブロックまでダメージ無し
+; Tank or Car or Unknown
+; 重心Z座標設定
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+; 地面の滑りやすさ、小さいほど摩擦が大きくなり動きにくくなる
+;ArmorMinDamage 最小ダメージ、これより小さいダメージは無効化される
+;ArmorDamageFactor ダメージ係数上記のMin/Max範囲チェック後のダメージの係数 1で100%, 0.5で50%
+;後退可能にする
+;PivotTurnThrottle を0より大きい値にすると超信地旋回ができなくなる。デフォルトは0
+;AddCrawlerTrack = 履帯の表裏逆転,  1つの履帯の間隔, 履帯のXの位置, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, ...
+;転輪がなくても動作する
+;主砲
+;
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+; M = Military(軍用機).  Q = Drone(無人航空機)
+
+;DUPLICATES
+ThrottleUpDown = 20.0
+MaxFuel = 180
+FuelConsumption = 1.0
+hasMaintenance = true

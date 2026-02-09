@@ -1,0 +1,116 @@
+DisplayName = M1128
+AddDisplayName = zh_CN, M1128 斯崔克
+AddDisplayName = en_US, M1128 MGS
+MaxHp = 800
+
+ItemID = 91129
+HUD = MBT, MBT_GUNNER
+Speed = 0.9
+MobilityRoll = 0
+ThrottleUpDown = 2
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 2
+DefaultFreelook = true
+
+Sound = vehicle_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.91
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.8,  3.15, 0.6846, true
+CameraRotationSpeed = 50
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.0, 1.78, 0.0,  false, -90, 90, true
+AddGunnerSeat = 0.00, 2, 0,    -0.0, 4.78, 0.0,  false, -90, 90, true
+
+ArmorMinDamage = 12
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.877, 0.371,  2.996, 2.266, 3.883, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 1.49, 3.498,  2.996, 1.078, 2.441, 0.5, DEFAULT, 首上
+BoundingBox = 0.0, 0.394, 3.565,  2.996, 1.077, 2.566, 0.7, DEFAULT, 首下
+BoundingBox = 0.0, 0.909, -2.228,  2.996, 2.254, 1.315, 1.3, DEFAULT, 乘员/弹药舱
+BoundingBox = 0.0, 2.523, -0.357,  1.418, 1.156, 3.41, 0.75, TURRET, 炮闩
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = IFV
+NameOnModernAARadar = IFV
+NameOnEarlyAARadar = 
+NameOnModernASRadar = LAV
+NameOnEarlyASRadar = IFV
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 0.9
+OnGroundRollFactor = 0.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.3583,  3.109
+AddTrackRoller = -1.541,  0.3583,  1.706
+AddTrackRoller = -1.4555,  0.3583,  0.1238
+AddTrackRoller = -1.4555,  0.3583,  -1.244
+
+;Weapons
+AddTurretWeapon = IFV_M1128_STAFF,          0.00, 2.589, 0.1625,  -0.2, 0.0, true,1, 0,-360,360, -17, 8
+AddTurretWeapon = IFV_M1128_ATGM_LOSM,          0.00, 2.589, 0.1625,  -0.2, 0.0, true,1, 0,-360,360, -17, 8
+AddTurretWeapon = GUNNER_CAS,          0.00, 2.589, 0.1625,  -0.2, 0.0, false,2, 0,-360,360, -17, 8
+AddTurretWeapon = GUNNER_SMOKE,          0.00, 2.589, 0.1625,  -0.2, 0.0, false,2, 0,-360,360, -17, 8
+
+AddPartWeapon = IFV_M1128_STAFF/IFV_M1128_ATGM_LOSM, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 2.589, 0.1625
+AddPartWeaponChild = false, true,0.00, 2.589, 0.1625, 0.1
+
+AddWeapon = AI,          3.3414, 0,0.1625,  0.0, 0.0, true,1, 0,0,0, 0, 0
+AddWeapon = AI,          -3.3414, 0,0.1625,  0.0, 0.0, true,1, 0,0,0, 0, 0
+
+weapongrouptype = 1128
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 800
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+AddPartRotor = 1.267,  0.8348, -255.9,   1,0,0
+AddPartRotor = 1.267,  0.8348, -255.9,   -1,0,0
+HUDTYPE = 1
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+armorExplosionDamageMultiplier = 1.2
+
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+;cross_type0-11:MG,AP,ARM,CANISTER,HE,HEAT,IRM,LOSM,SARH,STAFF,TVM,AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T 10KF51 11 AP/STAFF 12 T14  13 heat/LOSM/MG 14 AP/LOSM/TRANS
+
+;DUPLICATES
+hasMaintenance = true

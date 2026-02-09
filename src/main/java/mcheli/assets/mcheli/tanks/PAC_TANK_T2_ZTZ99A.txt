@@ -1,0 +1,129 @@
+DisplayName = ZTZ-99A
+AddDisplayName = zh_CN,ZTZ-99A 主战坦克
+AddDisplayName = en_US,ZTZ-99A
+MaxHp = 1200
+
+ItemID = 91128
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.7
+ThrottleUpDown = 2.0
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 3.6
+DefaultFreelook = true
+
+Sound = mbt_run
+
+Gravity = -0.1
+MotionFactor = 0.90
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.8,  2.6, 2.11, true
+CameraRotationSpeed = 40
+CameraZoom = 6
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+AddGunnerSeat = -0.6034, 4.304, -2.175,  -0.8169, 3.188, -1.063, false, -70, 10, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.645, 0.200820,   4.184, 2.02,  5.1,1,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.21, 3.4,   4.184, 0.8871,  1.5,0.4,DEFAULT,首上
+BoundingBox = 0.0, 0.191, 3.47,   4.184, 1.08,  1.7,0.8,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -3.53,   4.184, 2.1,  2.302,1.3,DEFAULT,引擎
+BoundingBox = 0.0, 2.16, -0.44,   3.8, 1,  5.13,0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.68, -0.44,   3.184, 0.1,  4.5,1, TURRET,车顶
+BoundingBox = 1.85, 2.24, -1.57,   0.212, 0.7087,  3.393,1, TURRET,炮塔侧面
+BoundingBox = -1.85, 2.24, -1.57,   0.212, 0.7087,  3.393,1, TURRET,炮塔侧面
+BoundingBox = 0, 2.24, -3.18,   4, 0.7087,  0.2,1.3, TURRET,炮塔后面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = Z99
+NameOnEarlyASRadar = MBT
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.9
+OnGroundRollFactor = 3.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddCrawlerTrack = true, 0.22, -2.0,  -0.2526/1.498,-0.2526/2.660,-0.1861/2.909,0.4774/4.087,0.6208/4.159,0.78/4.159,1.023/3.957,1.058/3.796,0.9898/-4.052,0.8383/-4.293,0.6576/-4.347,0.4778/-4.290,-0.1861/-3.357,-0.2526/-3.109
+
+AddTrackRoller = -2.32,  0.7004,  3.796
+AddTrackRoller = -2.32,  0.2438,  2.660
+AddTrackRoller = -2.32,  0.2438,  1.498
+AddTrackRoller = -2.32,  0.2438,  0.3390
+AddTrackRoller = -2.32,  0.2438, -0.8230
+AddTrackRoller = -2.32,  0.2438, -1.996
+AddTrackRoller = -2.32,  0.2438, -3.109
+AddTrackRoller = -2.32,  0.6602, -4.00
+
+;Weapons
+AddPartWeapon = MBT_ZTZ99A_APFSDS/MBT_ZTZ99A_ATGM_ARM, false, true, false,  0.00, 1.58, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 1.891, 1.519
+AddPartWeaponChild = false, true, 0.00, 1.891, 1.519, 0.5
+
+AddTurretWeapon = MBT_ZTZ99A_APFSDS,  0.8,  2.6, 2.11,  0.0, 0.0,  true,1, 0,-360,360, -17, 8,  0.00, 1.891, 1.519
+AddTurretWeapon = MBT_ZTZ99A_ATGM_ARM,  0.00, 1.891, 1.519,  0.0, 0.0, true,1, 0,-360,360, -17, 8
+
+AddTurretWeapon = MG_762,      -0.35, 1.876, 0.34,  0.0, 0.0, true,1, 0,-360,360, -17, 8
+
+AddPartTurretWeapon = MBT_ZTZ99A_GUNNER_IRM, true, true, false, -0.7891, 2.275, -1.048
+AddPartWeaponChild = false, true, -0.8169, 3.188, -1.054
+AddTurretWeapon = MBT_ZTZ99A_GUNNER_IRM, -0.8169, 3.188, -1.054, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+
+AddPartTurretWeapon = mbt_ztz99A_gunner_laser, false, true, false, 1.126, 2.552, -1.159
+AddTurretWeapon = mbt_ztz99A_gunner_laser, 1.126, 3.094, -0.8291, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+
+weapongrouptype = 3
+
+;MISC
+;Place misc paramters here
+Stealth = 0.5
+ArmorMaxDamage = 900
+WeightType = Tank
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 2
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+;FINISH
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 HT95,10M1A2T
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES

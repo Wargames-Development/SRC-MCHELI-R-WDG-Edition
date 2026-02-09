@@ -1,0 +1,53 @@
+DisplayName = 鹰击18D 巡航导弹坐标指示器
+Type = ASMissile
+Power = 1000
+Acceleration = 2
+Explosion = 8
+Explosionblock = 0
+
+Flaming = false
+Sight = MissileSight
+Delay = 100
+ModeNum = 1
+Sound = MARK
+
+ModelBullet = YJ18
+
+Accuracy = 0
+
+
+
+
+HeatCount = 1200
+MaxHeatCount = 1200
+
+DamageFactor = player, 1
+DamageFactor = plane, 1
+DamageFactor = heli, 1.0
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1
+
+MaxAmmo = 1
+SuppliedNum = 1
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+;炮手位cross_type0_9 :0 TVM，1 MISSILESTRIKE，2 rocket_arm，3 CONNONSTRIKE，4 irm，5 arm，6 laserm，7 losm，8 SARH，9 connon
+;weapon_group_type: 0:SARH/MISSILESTRIKE;1:CONNON/SARH;2:CONNON/IRM;3:LASERM/CONNONSTRIKE
+;4:CONNON/TVM;5:CONNON/TVM;6:CONNON/TVM;7:CONNON/TVM
+crosstype=1
+
+DamageFactor = living, 1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+enableExhaustFlare=true

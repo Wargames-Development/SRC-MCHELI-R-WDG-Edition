@@ -1,0 +1,32 @@
+DisplayName = NUKE
+AddDisplayName = zh_CN,战术核武器指示器
+MaxHp = 100
+
+ItemID = 28611
+HUD = aa_HUD2
+ThirdPersonDist = 12
+MinRotationPitch = -20
+MaxRotationPitch = 20
+
+Gravity = -0.001
+
+CameraPosition = 0.0, 2.00, 0.0
+AddSeat = 0.00,  1.0, 0.00
+
+DamageFactor = 2
+Boundingbox = 0.00,  1.10,  0.00,  1.0, 1.0
+
+;Weapons
+AddPartWeapon = nuke, false, true, false,  0.00, 1.021, 0.00
+AddPartWeaponChild = false, true, 0.03, 1.021,0.0
+AddTurretWeapon = nuke,          0.00, 300.00, -100.00,  0.0, -50, true,1, 0,-360,360, -20, 20
+
+;MISC
+;Place misc paramters here
+AmmoSupplyRange = 350
+
+;RepairOtherVehicles = 30, 25
+;Creative only
+;AddRecipe = "XXX",  "XIX",  "XXX",  X, iron_block, I, iron_ingot
+
+;DUPLICATES

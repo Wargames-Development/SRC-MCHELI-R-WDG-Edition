@@ -1,0 +1,146 @@
+DisplayName = KF-51
+AddDisplayName = zh_CN,KF-51 黑豹
+AddDisplayName = en_US,KF-51
+MaxHp = 1200
+
+ItemID = 30101
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.7
+MobilityRoll = 0
+ThrottleUpDown = 1.5
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 3.5
+DefaultFreelook = true
+
+Sound = MBT_RUN
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.89
+MaxFuel = 1200
+FuelConsumption = 0.1
+
+CameraPosition = -0.85,  2.78, 3.00, true
+CameraRotationSpeed = 30
+CameraZoom = 6
+EnableNightVision = true
+AddGunnerSeat = 0.00, 1.58, 0.0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+AddGunnerSeat = 0.0, 0.1, -6.141,  -0.2604, 4.220, -4.287, false, -80, 10, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.0
+engineShutdownThreshold = 30
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.745, -0.5,   4.7, 2.02,  5.2,1,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.37, 2.8,   4.7, 0.8,  1.5,0.4,DEFAULT,首上
+BoundingBox = 0.0, 0.431, 2.9,   4.7, 1,  1.7,0.8,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -4.2,   4.7, 2.1,  2.302,1.3,DEFAULT,引擎
+BoundingBox = 0.0, 2.4, -0.44,   3.8, 1.1,  6,0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.93, -0.44,   3.184, 0.1,  5.1,1, TURRET,车顶
+BoundingBox = 1.85, 2.4, -2.57,   0.212, 0.7087,  3.393,1.0, TURRET,炮塔侧面
+BoundingBox = -1.85, 2.4, -2.57,   0.212, 0.7087,  3.393,1.0, TURRET,炮塔侧面
+BoundingBox = 0, 2.4, -4.18,   4, 0.7087,  0.2,1.3, TURRET,炮塔后面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 3
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = MBT
+NameOnEarlyASRadar = MBT
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 5
+OnGroundRollFactor = 5
+
+;Parts
+SetWheelPos = 1.82,  -0.24,  2.86,  0.70, -0.76, -2.22, -4.14
+
+AddTrackRoller = -1.82,  0.7142,  3.284
+AddTrackRoller = -1.82,  0.1926,  2.136
+AddTrackRoller = -1.82,  0.1926,  1.163
+AddTrackRoller = -1.82,  0.1926,  0.2187
+AddTrackRoller = -1.82,  0.1926, -0.7313
+AddTrackRoller = -1.82,  0.1926, -1.70
+AddTrackRoller = -1.82,  0.1926, -2.681
+AddTrackRoller = -1.82,  0.1926, -3.688
+AddTrackRoller = -1.82,  0.7243, -4.553
+
+AddCrawlerTrack = true, 0.19, -2.0,  -0.2571/0.2136,-0.2571/2.131,-0.2248/2.304,0.2982/3.458,0.5415/3.702,0.7135/3.736,0.8855/3.701,1.129/3.457,1.163/3.285,1.092/-4.607,0.9900/-4.813,0.7870/-4.920,0.5600/-4.887,-0.2208/-3.866,-0.2571/-3.694
+
+;Weapons
+AddTurretWeapon = MBT_KF51_MPAT,  -0.85,  2.78, 3.00,  0.0, 0.0,  true,1, 0,-360,360, -18, 7,  0.00, 2.095, 1.152
+
+AddTurretWeapon = MBT_KF51_IRM,      0.5418, 2.819, -1.896,  5.0, 0.0, true,1, 0,-360,360, -18, 7
+AddTurretWeapon = MBT_KF51_IRM,      0.5418, 2.819, -1.896,  -5.0, 0.0, true,1, 0,-360,360, -18, 7
+
+AddTurretWeapon = MG_127,      0.5418, 2.819, -1.896,  0.0, 0.0, true,1, 0,-360,360, -18, 7
+
+AddPartWeapon = MBT_KF51_MPAT/MBT_KF51_IRM, false, true, false,  0.00, 1.58, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 2.186, 1.152
+AddPartWeaponChild = false, true, 0.00, 2.186, 1.152, 0.5
+AddPartWeaponChild = false, true, 0.00, 2.863, -3.322
+
+AddPartTurretWeapon = gunner_MG_762,true, true, false, 0.4220, 2.813, -4.141
+AddPartWeaponChild = false, true, 0.4220, 3.422, -4.287
+AddTurretWeapon = gunner_MG_762,  0.4220, 2.813, -4.141,  0.0, 0.0, false,2, 0,-360,360, -80,10
+AddTurretWeapon = mbt_ztz100_gunner_laser,  -0.1684, 2.813, -4.141,  0.0, 0.0, false,2, 0,-360,360, -80,10
+AddTurretWeapon = gunner_mark, 0, 3.014, -0,  -0, 0.0, false,2, 0,-0,0, -0, 0
+
+weapongrouptype = 10
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 900
+ArmorDamageFactor = 1
+ArmorDamageFactor = 1.0
+HideEntity = true
+WeightType = Tank
+WeightedCenterZ = 0.0
+EnableBack = true
+RideRack = lcac, 1
+hudtype = 1
+maintenanceUseTime = 20
+maintenanceWaitTime = 350
+
+;EnableEntityRadar = true
+; 指定した高さまでの水に触れてもダメージを受けない
+; 2であれば2ブロックまでダメージ無し
+; Tank or Car or Unknown
+; 重心Z座標設定
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+; 地面の滑りやすさ、小さいほど摩擦が大きくなり動きにくくなる
+;ArmorMinDamage 最小ダメージ、これより小さいダメージは無効化される
+;ArmorDamageFactor ダメージ係数上記のMin/Max範囲チェック後のダメージの係数 1で100%, 0.5で50%
+;後退可能にする
+;PivotTurnThrottle を0より大きい値にすると超信地旋回ができなくなる。デフォルトは0
+;AddCrawlerTrack = 履帯の表裏逆転,  1つの履帯の間隔, 履帯のXの位置, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, ...
+;転輪がなくても動作する
+;主砲
+;
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:MG,AP,ARM,CANISTER,HE,HEAT,IRM,LOSM,SARH,STAFF,TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T 10KF51 11 AP/STAFF 12 T14
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES

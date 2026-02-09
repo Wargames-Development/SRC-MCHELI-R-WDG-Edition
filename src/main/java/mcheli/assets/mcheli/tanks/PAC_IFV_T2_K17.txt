@@ -1,0 +1,122 @@
+DisplayName = K-17ML BUMERANG
+AddDisplayName = zh_CN, K-17ML 回旋镖 步兵战车
+AddDisplayName = en_US, K-17ML BUMERANG
+MaxHp = 800
+
+ItemID = 91129
+HUD = IFV, MBT_GUNNER
+Speed = 0.7
+MobilityRoll = 0
+ThrottleUpDown = 3.0
+MinRotationPitch = -35
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 4
+DefaultFreelook = true
+
+Sound = vehicle_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.6,  2.65, 0.25, true
+CameraRotationSpeed = 50
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.0, 1.78, 0.0,  false, -90, 90, true
+
+ArmorMinDamage = 12
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.736, 0.591,  3.102, 2.0, 3.62, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 0.736, -2.034,  3.102, 2.0, 1.638, 1.3, DEFAULT, 乘员舱
+BoundingBox = 0.0, 1.238, 3.855,  3.102, 0.99, 2.908, 0.5, DEFAULT, 首上
+BoundingBox = 0.0, 0.242, 3.855,  3.102, 0.99, 2.908, 0.7, DEFAULT, 首下
+BoundingBox = 0.0, 2.074, -0.246,  1.99, 0.76, 2.566, 0.5, TURRET, 无人炮塔
+BoundingBox = -1.279, 2.075, -0.011,  0.533, 0.441, 1.329, 1.5, TURRET, 外置弹药架
+BoundingBox = 1.279, 2.075, -0.011,  0.533, 0.441, 1.329, 1.5, TURRET, 外置弹药架
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = IFV
+NameOnModernAARadar = IFV
+NameOnEarlyAARadar = 
+NameOnModernASRadar = BMP
+NameOnEarlyASRadar = IFV
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor = 3.5
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.3765,  3.294
+AddTrackRoller = -1.541,  0.3765,  1.673
+AddTrackRoller = -1.4555,  0.3765,  -0.1376
+AddTrackRoller = -1.4555,  0.3765,  -1.839
+
+;Weapons
+AddTurretWeapon = IFV_K17_CANISTER,          0.07, 2.247, -0.06662,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+
+AddTurretWeapon = IFV_K17_ATGM_LOSM,          -1.06, 1.7, 0.91,  0.0, -10.0, true,1, 0,-360,360, -50, 10
+AddTurretWeapon = IFV_K17_ATGM_LOSM,          1.06, 1.7, 0.91,  0.0, -10.0, true,1, 0,-360,360, -50, 10
+
+AddTurretWeapon = AI,          3.5, 0, 1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+AddTurretWeapon = AI,          -3.5, 0, 1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+AddTurretWeapon = AI,          3.5, 0, -1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+AddTurretWeapon = AI,          -3.5, 0, -1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+
+AddPartWeapon = IFV_K17_CANISTER, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 2.211, -0.06662
+AddPartWeaponChild = false, true,0.00, 2.211, -0.06662, 0.1
+
+AddPartWeapon = IFV_K17_CANISTER/IFV_K17_ATGM_LOSM, true, true, false,  0.00, 1.788, 0.00, 0
+
+weapongrouptype = 30
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 800
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+AddPartRotor = 1.267,  0.8348, -255.9,   1,0,0
+AddPartRotor = 1.267,  0.8348, -255.9,   -1,0,0
+engineshutdownthres = 15
+hudtype = 2
+maintenanceUseTime = 20
+maintenanceWaitTime = 250
+armorExplosionDamageMultiplier = 1.2
+
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+
+;DUPLICATES
+ThrottleUpDown = 2.0
+throttledownfactor = 3
+explosionsizebycrash = 10

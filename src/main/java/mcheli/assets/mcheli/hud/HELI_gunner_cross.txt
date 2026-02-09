@@ -1,0 +1,143 @@
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+
+;炮手位cross_type0_9 0:TVM，1MISSILESTRIKE，2rocket_arm，3CONNONSTRIKE，4irm，5arm，6laserm，7losm，8SARH，9connon
+;weapon_group_type: 0:SARH/MISSILESTRIKE;1:CONNON/SARH;2:CONNON/IRM;3:LASERM/CONNONSTRIKE
+;4:CONNON/TVM;5:CONNON/TVM;6:CONNON/TVM;7:CONNON/TVM
+
+
+
+
+;导弹通用准星,非瞄准
+If = (cross_type!=9)&&cam_zoom==1&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	AGM_CROSS, (-300*(width/960))-stick_x*15, (-150*(height/500))-stick_y*15, (600*(width/960)), (300*(height/500)), 0,0,2048,1024
+EndIf
+
+
+;过热
+If = (cross_type!=9)&&(cam_zoom==1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture = 	AGM_CROSS_WAIT, (-300*(width/960))-stick_x*3, (-150*(height/500))-stick_y*3, (600*(width/960)), (300*(height/500)), 0,0,2048,1024
+
+EndIf
+
+If = (cross_type!=9)&&(cam_zoom==1)&&(reloading==0&&wpn_heat<1.0)
+DrawTexture = 	CROSS, (-32*(width/960))-stick_x*0, (-32*(height/500))-stick_y*0, (64*(width/960)), (64*(height/500)), 0,0,128,128
+EndIf
+
+
+;过热
+If   = (cross_type!=9)&&cam_zoom==1&&(reloading==1||wpn_heat==1.0)
+DrawTexture = 	CROSS_WAIT, (-32*(width/960))-stick_x*0, (-32*(height/500))-stick_y*0, (64*(width/960)), (64*(height/500)), 0,0,128,128
+EndIf
+
+;导弹通用准星,瞄准
+If = (cross_type!=9)&&cam_zoom>1&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	AGM_CROSS, (-400*(width/960))-stick_x*15, (-2000*(height/500))-stick_y*15, (800*(width/960)), (400*(height/500)), 0,0,2048,1024
+EndIf
+
+
+;过热
+If = (cross_type!=9)&&(cam_zoom>1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture = 	AGM_CROSS_WAIT, (-400*(width/960))-stick_x*3, (-200*(height/500))-stick_y*3, (800*(width/960)), (400*(height/500)), 0,0,2048,1024
+
+EndIf
+
+If = (cross_type!=9)&&(cam_zoom>1)&&(reloading==0&&wpn_heat<1.0)
+DrawTexture = 	CROSS, (-48*(width/960))-stick_x*0, (-48*(height/500))-stick_y*0, (96*(width/960)), (96*(height/500)), 0,0,128,128
+EndIf
+
+
+;过热
+If   = (cross_type!=9)&&cam_zoom>1&&(reloading==1||wpn_heat==1.0)
+DrawTexture = 	CROSS_WAIT, (-48*(width/960))-stick_x*0, (-48*(height/500))-stick_y*0, (96*(width/960)), (96*(height/500)), 0,0,128,128
+EndIf
+
+
+;机炮
+If = ((cross_type==9))&&(cam_zoom==1)&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	HELI_CONNON_CROSS, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+EndIf
+
+
+;过热
+If = ((cross_type==9))&&(cam_zoom==1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture = 	IFV_CROSS_WAIT, (-96*(width/960)), (-48*(height/500)), (192*(width/960)), (96*(height/500)), 0,0,512,256
+EndIf
+;机炮瞄准
+If = ((cross_type==9))&&(cam_zoom>1)&&(reloading==0&&wpn_heat<1.0)
+
+DrawTexture = 	HELI_CONNON_CROSS, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+EndIf
+
+
+;过热
+If = ((cross_type==9))&&(cam_zoom>1)&&(reloading==1||wpn_heat==1.0)
+DrawTexture = 	IFV_CROSS_WAIT, (-128*(width/960)), (-64*(height/500)), (256*(width/960)), (128*(height/500)), 0,0,512,256
+EndIf
+
+
+If = lock<=0.15&&lock>0
+DrawTexture = LOCK1, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.2&&lock>0.15
+DrawTexture = LOCK2, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.25&&lock>0.2
+DrawTexture = LOCK3, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.3&&lock>0.25
+DrawTexture = LOCK4, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.35&&lock>0.3
+DrawTexture = LOCK5, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.4&&lock>0.35
+DrawTexture = LOCK6, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.45&&lock>0.4
+DrawTexture = LOCK7, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.5&&lock>0.45
+DrawTexture = LOCK8, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.55&&lock>0.5
+DrawTexture = LOCK9, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.6&&lock>0.55
+DrawTexture = LOCK10, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.65&&lock>0.6
+DrawTexture = LOCK10, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.7&&lock>0.65
+DrawTexture = LOCK9, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.75&&lock>0.7
+DrawTexture = LOCK8, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.8&&lock>0.75
+DrawTexture = LOCK9, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=0.85&&lock>0.8
+DrawTexture = LOCK10, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf
+
+If = lock<=1&&lock>0.85
+DrawTexture = LOCK11, (-64*(width/960)), (-64*(height/500)), (128*(width/960)), (128*(height/500)), 0,0,256,256
+EndIf

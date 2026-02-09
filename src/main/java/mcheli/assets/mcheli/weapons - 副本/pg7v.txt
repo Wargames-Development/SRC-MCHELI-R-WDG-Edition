@@ -1,0 +1,29 @@
+DisplayName = PG7V »ð¼ýµ¯
+Type = Rocket
+Power = 650
+ModelBullet = pg7v
+Acceleration = 1
+Explosion = 4
+Explosionblock = 0
+ExplosionInWater = 10
+Flaming = false
+Sight = None
+Delay = 100
+Sound = bomb_snd
+
+ReloadTime = 150
+Round = 1
+
+DisableSmoke = True
+Gravity = -0.2
+
+
+DamageFactor = plane, 3
+DamageFactor = helicopter, 3
+
+HeatCount = 2000
+MaxHeatCount = 2000
+
+MaxAmmo = 8
+SuppliedNum = 8
+Item =  1, iron_ingot

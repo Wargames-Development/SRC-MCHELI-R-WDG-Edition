@@ -1,0 +1,26 @@
+DisplayName = Ó°Ïñµ¼Òý·Éµ¯
+Type = TVMissile
+Power = 350
+Acceleration = 3
+Explosion = 3
+Flaming = false
+Sight = MoveSight
+Delay = 1000
+;ModeNum = 2
+ModelBullet = agm114
+Sound = 9K118_F
+SoundVolume = 10
+TimeFuse = 200
+
+;DEBUG:Manual control only
+;FixMode = 1
+
+; DEBUG
+RigidityTime = 30
+
+MaxAmmo = 1
+SuppliedNum = 1
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+enableExhaustFlare=true

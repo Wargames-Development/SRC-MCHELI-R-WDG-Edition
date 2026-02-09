@@ -1,0 +1,135 @@
+DisplayName = VT-4D1
+AddDisplayName = zh_CN,VT-4D1 主战坦克
+AddDisplayName = en_US,VT-4D1
+MaxHp = 1200
+
+ItemID = 91128
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.7
+ThrottleUpDown = 2
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 3.6
+DefaultFreelook = true
+
+Sound = mbt_run
+
+Gravity = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.75,  2.75, 1.85, true
+CameraRotationSpeed = 40
+CameraZoom = 6
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+AddGunnerSeat = 0, 1, -4.086,  -0.7859, 3.185, -1.229, false, -70, 10, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 30
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.645, 0.200820,   4.4, 2.02,  5.1,1,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.21, 3.4,   4.4, 0.8871,  1.5,0.4,DEFAULT,首上
+BoundingBox = 0.0, 0.191, 3.47,   4.4, 1.08,  1.7,0.8,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -3.33,   4.4, 2.1,  2.1,1.3,DEFAULT,引擎
+BoundingBox = 0.0, 2.16, -0.1,   3.8, 1,  4.8,0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.68, -0.1,   3.184, 0.1,  4.5,0.8, TURRET,车顶
+BoundingBox = 1.85, 2.24, -1.2,   0.212, 0.7087,  2.9,1.0, TURRET,炮塔侧面
+BoundingBox = -1.85, 2.24, -1.2,   0.212, 0.7087,  2.9,1.0, TURRET,炮塔侧面
+BoundingBox = 0, 2.24, -2.7,   3.8, 0.7087,  0.2,1.3, TURRET,炮塔后面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = VT4
+NameOnEarlyASRadar = MBT
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.9
+OnGroundRollFactor = 3.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddCrawlerTrack = true, 0.22, -2.0,  -0.2530/0,-0.2530/3.192,-0.1863/3.441,0.3962/4.389,0.6433/4.591,0.9514/4.519,0.9514/4.519,1.089/4.227,1.075/-3.623,1.04/-3.856,0.8845/-4.032,0.6582/-4.097,0.3830/-4.059,-0.1863/-2.844,-0.2530/-2.595
+
+AddTrackRoller = -2.32,  0.7243,  4.227
+AddTrackRoller = -2.32,  0.2449,  3.192
+AddTrackRoller = -2.32,  0.2449,  2.026
+AddTrackRoller = -2.32,  0.2449,  0.8636
+AddTrackRoller = -2.32,  0.2449,-0.3021
+AddTrackRoller = -2.32,  0.2449,-1.479
+AddTrackRoller = -2.32,  0.2449, -2.595
+AddTrackRoller = -2.32,  0.6615,-3.679
+
+;Weapons
+AddPartWeapon = MBT_VT4D_RAILGUN/MBT_VT4D_RAILGUN_fast, false, true, false,  0.00, 1.58, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 2.004, 1.615
+AddPartWeaponChild = false, true, 0.00, 2.004, 1.615, 0.5
+
+AddTurretWeapon = MBT_VT4D_RAILGUN, 0.75,  2.75, 1.85,  0.0, 0.0, true,1, 0,-360,360, -17, 8,0.00, 2.004, 1.615
+AddTurretWeapon = MBT_VT4D_RAILGUN_fast,  0.75,  2.75, 1.85,  0.0, 0.0, true,1, 0,-360,360, -17, 8,0.00, 2.004, 1.615
+
+AddTurretWeapon = MG_CANISTER,      -0.35, 1.856, 0.34,  0.0, 0.0, true,1, 0,-360,360, -17, 8
+
+AddPartTurretWeapon = GUNNER_MG_MINIGUN, true, true, false, -0.7858, 2.546, -1.229
+AddPartWeaponChild = false, true, -0.7858, 3.185, -1.229
+
+AddPartTurretWeapon = GUNNER_MG_MINIGUN, false, true, false, 1.458, 2.646, -2.134
+AddPartWeaponChild = false, true, 1.458, 2.882, -2.134
+
+AddPartTurretWeapon = GUNNER_SMOKE, false, true, false, -1.492, 2.646, -2.134
+AddPartWeaponChild = false, true, -1.492, 2.882, -2.134
+
+AddPartTurretRotWeapon = mbt_vt4d_gunner_rocket,     true, true,  true,   -0.7859, 3.185,  -1.229
+
+AddTurretWeapon = mbt_vt4d_gunner_rocket, -0.7859, 3.185, -1.229, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+AddTurretWeapon = gunner_connonstrike, -0.7859, 3.185, -1.229, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+
+AddTurretWeapon = targeting_pod_10s, 0, 0, 0, 0.0, 0.0, false, 2, 0, -360,360, -45,10
+weapongrouptype = 4
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 900
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 2
+maintenanceUseTime = 20
+maintenanceWaitTime = 350
+
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES

@@ -1,0 +1,79 @@
+DisplayName =红箭-50 红外制导反坦克导弹
+Type = ATMissile
+Power = 600
+Acceleration = 0.1
+Explosion = 4
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 100
+LockTime = 45
+ModeNum = 2
+Round =2
+reloadtime =100
+ModelBullet = agm114
+Sound = missile_11_snd
+RidableOnly = false
+HeatCount = 700
+MaxHeatCount = 1000
+
+RigidityTime=50
+
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+MaxLockOnRange = 1500
+MaxLockOnAngle = 10
+
+EnableOffAxis = false
+MaxDegreeOfMissile = 180
+SpeedFactor = 0.08
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 40
+SpeedDependsAircraft = true
+turningFactor = 0.15
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+;ExplosionType=hbmNT_Shell
+
+
+
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1.1
+DamageFactor = tank, 1.1
+
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+
+modenum=2
+fixmode=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+RidableOnly = true
+
+;cross_type:0 CONNON,1 AAM_IRM, 2 AAM_SARH, 3 ATGM_IRM, 4 ATGM_LOSM, 5, ATGM_SARH, 6 HEAT, 7 AHEAD, 8 ROCKET ,9 40MM
+crosstype=7
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.5
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=1
+enableExhaustFlare=true

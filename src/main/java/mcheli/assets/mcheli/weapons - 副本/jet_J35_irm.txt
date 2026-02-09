@@ -1,0 +1,78 @@
+DisplayName = 天龙20 红外制导空对地导弹[破甲]
+Type = ATMissile
+Power = 450
+Acceleration = 0.5
+Explosion = 3
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 120
+LockTime = 35
+ModeNum = 2
+Round =2
+reloadtime =100
+ProximityFuseDist = 1
+ModelBullet = spear3
+Sound = missile_11_snd
+RidableOnly = false
+HeatCount = 1000
+MaxHeatCount = 1200
+
+RigidityTime = 0
+
+
+DisableSmoke = false
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1.1
+DamageFactor = tank, 1.1
+
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+MaxLockOnRange = 1500
+MaxLockOnAngle = 5
+LockMinHeight = 50
+EnableOffAxis = false
+MaxDegreeOfMissile = 35
+SpeedFactor = 0.015
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+turningFactor = 0.15
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+
+ExplosionDamageVsLiving=2
+ExplosionDamageVsPlayer=2
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+RidableOnly = true
+
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+crosstype=6
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=1

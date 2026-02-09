@@ -1,0 +1,130 @@
+DisplayName = BMP-2M
+AddDisplayName = zh_CN,BMP-2M 步兵战车
+AddDisplayName = en_US,BMP-2M
+MaxHp = 800
+
+ItemID = 91129
+HUD = IFV, MBT_GUNNER
+Speed = 0.7
+MobilityRoll = 0
+ThrottleUpDown = 2
+MinRotationPitch = -45
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 1.5
+StepHeight = 1.5
+MobilityYawOnGround = 4
+DefaultFreelook = true
+
+Sound = mbt_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.6,  2.363, 0.7619, true
+CameraRotationSpeed = 50
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.0, 1.78, 0.0,  false, -90, 90, true
+AddGunnerSeat = -0.0,  1.05,  -3.87,   -0.7383, 2.993, -1.202,   false, -70, 10,true
+
+ArmorMinDamage = 12
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.689, 0.644,  3.62, 2.0, 4.269, 1.0, DEFAULT, HULL SIDE
+BoundingBox = 0.0, 1.269, 3.701,  3.62, 0.806, 1.856, 0.5, DEFAULT, FRONT UPPER
+BoundingBox = 0.0, 0.338, 3.701,  3.62, 1.045, 1.856, 0.7, DEFAULT, FRONT LOWER
+BoundingBox = 0.0, 0.637, -2.221,  3.62, 1.922, 1.482, 1.3, DEFAULT, CREW / AMMO COMPARTMENT
+BoundingBox = -1.321, 2.012, -0.637,  0.036, 0.628, 1.614, 1.0, TURRET, TURRET SIDE
+BoundingBox = 1.321, 2.012, -0.637,  0.036, 0.628, 1.614, 1.0, TURRET, TURRET SIDE
+BoundingBox = 0.0, 2.012, -1.394,  2.618, 0.628, 0.074, 1.3, TURRET, TURRET REAR
+BoundingBox = 0.0, 2.012, -0.059,  2.618, 0.706, 2.381, 0.6, TURRET, TURRET FRONT
+BoundingBox = 0.0, 2.349, -0.059,  2.394, 0.064, 2.177, 1.0, TURRET, TURRET TOP
+
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = IFV
+NameOnModernAARadar = IFV
+NameOnEarlyAARadar = 
+NameOnModernASRadar = BMP
+NameOnEarlyASRadar = IFV
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor = 3.5
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.6444,  3.417
+AddTrackRoller = -1.541,  0.0952,  2.675
+AddTrackRoller = -1.541,  0.0952,  1.925
+AddTrackRoller = -1.541,  0.0952,  1.152
+AddTrackRoller = -1.541,  0.0952,  0.3883
+AddTrackRoller = -1.541,  0.0952,  -0.4650
+AddTrackRoller = -1.541,  0.0952,  -1.343
+AddTrackRoller = -1.541,  0.5207,  -2.247
+
+AddCrawlerTrack = true, 0.20, -2.0,  -0.2415/2.743,0.04942/3.264,0.4855/3.679,0.6538/3.728,0.9073/3.674,0.9802/3.515,0.9712/2.529,0.9285/1.531,0.9674/0.5697,0.8992/-0.2669,0.9616/-1.065,0.8573/-2.278,0.7721/-2.475,0.6294/-2.584,0.3890/-2.575,0.2434/-2.462,0.01073/-2.076,-0.2057/-1.619,-0.2415/-1.544,
+
+;Weapons
+AddTurretWeapon = IFV_BMP2M_APFSDS,          0.046, 2.019, 0.6972,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+AddTurretWeapon = IFV_BMP2M_ATGM_LOSM,          -1.29, 2.18, 0.51,  0.0, -0.0, true,1, 0,-360,360, -50, 10
+AddTurretWeapon = IFV_BMP2M_ATGM_LOSM,          1.29, 2.18, 0.51,  0.0, -0.0, true,1, 0,-360,360, -50, 10
+;AddTurretWeapon = AI,          3.5, 0, 1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+;AddTurretWeapon = AI,          -3.5, 0, 1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+;AddTurretWeapon = AI,          3.5, 0, -1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+;AddTurretWeapon = AI,          -3.5, 0, -1,  0.0, 0.0, true,1, 0,-360,360, -65, 10
+
+AddPartWeapon = IFV_BMP2M_APFSDS, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 2.019, 0.6972
+AddPartWeaponChild = false, true,0.00, 2.019, 0.6972, 0.05
+
+AddPartTurretWeapon = GUNNER_MG_CANISTER, true, true, false,  -0.7383, 2.386, -1.16, 0
+AddPartWeaponChild = false, true,-0.7383, 2.793, -1.202
+AddTurretWeapon = GUNNER_MG_CANISTER,         -0.7383, 2.793, -1.202,  0.0, 0.0, false,2, 0,-360,360, -70, 10
+;AddTurretWeapon = GUNNER_MARK,         -0.7383, 2.793, -1.202,  0.0, 0.0, false,2, 0,-360,360, -70, 10
+
+weapongrouptype = 2
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 800
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+hudtype = 3
+maintenanceUseTime = 20
+maintenanceWaitTime = 1200
+armorExplosionDamageMultiplier = 1.2
+
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+;10 only HE/LOSM;11 only AP/TVM
+
+;DUPLICATES
+ThrottleUpDown = 2.0
+hasMaintenance = true

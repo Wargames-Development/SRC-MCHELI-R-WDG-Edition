@@ -1,0 +1,128 @@
+DisplayName = GEPARD 1A4
+AddDisplayName = zh_CN, 猎豹1A4 自行防空炮
+AddDisplayName = en_US, GEPARD 1A4
+MaxHp = 700
+
+ItemID = 91129
+HUD = SPAA, MBT_GUNNER
+Speed = 0.7
+MobilityRoll = 0
+ThrottleUpDown = 2
+MinRotationPitch = -85
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 2
+DefaultFreelook = true
+
+Sound = MBT_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.89
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.0,  3.25, 0.25, true
+CameraRotationSpeed = 50
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.3, -0.0,   0.00, 1.096, -4.534,  false, -90, 90, true
+AddGunnerSeat = 0.00, 1.58, -2.44,    -0.0, 3.78, 0,  false, -90, 90, true
+
+ArmorMinDamage = 10
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.532, -0.449,  3.26, 1.663, 4.646, 1.0, DEFAULT, HULL SIDE
+BoundingBox = 0.0, 0.532, -3.746,  3.26, 1.663, 1.99, 1.3, DEFAULT, ENGINE
+BoundingBox = 0.0, 0.867, 2.518,  3.26, 0.98, 1.302, 0.5, DEFAULT, FRONT UPPER
+BoundingBox = 0.0, 0.074, 2.518,  3.26, 0.737, 1.476, 0.7, DEFAULT, FRONT LOWER
+BoundingBox = 1.206, 2.032, -0.909,  0.078, 1.132, 2.311, 1.0, TURRET, TURRET SIDE
+BoundingBox = -1.206, 2.032, -0.909,  0.078, 1.132, 2.311, 1.0, TURRET, TURRET SIDE
+BoundingBox = 0.0, 2.032, -2.042,  2.37, 1.132, 0.084, 1.3, TURRET, TURRET REAR
+BoundingBox = 0.0, 2.032, -0.079,  2.406, 1.328, 3.514, 0.6, TURRET, TURRET FRONT
+BoundingBox = 0.0, 2.688, -0.079,  2.102, 0.047, 3.072, 1.0, TURRET, TURRET TOP
+
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = GPD
+NameOnModernAARadar = GPD
+NameOnEarlyAARadar = SAM
+NameOnModernASRadar = GPD
+NameOnEarlyASRadar = SAM
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 0.9
+OnGroundRollFactor = 0.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.4456,  2.528
+AddTrackRoller = -1.541,  0.08422,  1.783
+AddTrackRoller = -1.4555,  0.08422, 1.050
+AddTrackRoller = -1.4555,  0.08422,  0.3054
+AddTrackRoller = -1.4555,  0.08422,  -0.4515
+AddTrackRoller = -1.4555,  0.08422,  -1.191
+AddTrackRoller = -1.4555,  0.08422,  -1.927
+AddTrackRoller = -1.4555,  0.08422,  -2.667
+AddTrackRoller = -1.4555,  0.4315,  -3.396
+
+AddCrawlerTrack = true, 0.21, -2.0, -0.2582/0.3054,-0.2582/1.783,-0.2123/1.954,0.2380/2.648,0.3257/2.736,0.4456/2.768,0.6532/2.648,0.7888/1.495,0.7464/-2.253,0.6575/-3.470,0.5924/-3.591,0.4315/-3.634,0.2706/-3.591,-0.2123/-2.839,-0.2582/-2.667
+
+;Weapons
+AddPartWeapon = AA_G1A2_AAGUN/AA_G1A2_SARH, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true, -0.000, 2.089,-0.7733
+AddPartWeaponChild = false, true, -0.000, 2.089,-0.7733,0.02
+AddPartWeaponChild = false, true, -0.000, 2.089,1.578
+
+AddTurretWeapon = AA_G1A2_AAGUN,          -0.9236, 2.089,-0.7733,  -0.2, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = AA_G1A2_AAGUN,          0.9236, 2.089,-0.7733,  0.2, 0.0, true,1, 0,-360,360, -85, 10
+
+AddTurretWeapon = AA_G1A2_SARH,          1.000, 2.229,-1.071,  -0.2, -5, true,1, 0,-360,360, -85,10
+AddTurretWeapon = AA_G1A2_SARH ,         -1.000, 2.229,-1.071,  0.2, -5, true,1, 0,-360,360, -85, 10
+
+AddTurretWeapon = GUNNER_SMOKE,          -0.00, 2.42, 0.0,  0.0, 0.0, false,2, 0,-360,360, -85, 10
+AddTurretWeapon = GUNNER_ANTITANK_MINE,          -0.00, 2.42, 0.0,  0.0, 0.0, false,2, 0,-360,360, -85, 10
+
+;AddWeapon = IFV_bunker,          0, 0,7,  0.0, 90, true,1, 0,0,0, 0, 0
+
+weapongrouptype = 3
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 700
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+hudtype = 1
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+armorExplosionDamageMultiplier = 1.2
+
+;CameraPosition = 0.6,  2.8, 0.8495, true
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR
+;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+
+;DUPLICATES

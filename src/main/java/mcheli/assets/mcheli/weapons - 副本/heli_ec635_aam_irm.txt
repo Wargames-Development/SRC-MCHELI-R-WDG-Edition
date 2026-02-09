@@ -1,0 +1,80 @@
+DisplayName = AIM92 ∫ÏÕ‚∏Ò∂∑µØ
+Type = AAMissile
+ModelBullet = 9K38
+Power = 250
+Acceleration = 0.5
+Explosion = 2
+Flaming = false
+Sight = MissileSight
+Delay = 8
+ReloadTime = 45
+Group = MainGun
+Round = 4
+HeatCount = 500
+MaxHeatCount = 800
+LockTime = 15
+TimeFuse = 170
+ProximityFuseDist = 3
+DamageFactor = heli, 1.2
+Sound = AA11_F
+SoundVolume = 10
+Gravity = 0.004
+MaxAmmo = 8
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+
+LockMinHeight = 3
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+
+enableBVR=true
+predictTargetPos=false
+LockMinHeight = 3
+turningFactor = 0.2
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+PDHDNMaxDegree = 90
+MaxDegreeOfMissile = 45
+maxLockOnAngle=5
+MaxLockOnRange = 1500
+AntiFlareCount=20
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+SpeedFactor = 0.075
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+EnableOffAxis = false
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;º› ªŒªcross_type0_9:0rocket£¨1zuni£¨2rocket_arm£¨3aam_irm£¨4irm£¨5arm£¨6laserm£¨7losm£¨8bomb£¨9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=3
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=0.1
+ExplosionDamageVsTank=0.1
+ExplosionDamageVsPlane=0.1
+ExplosionDamageVsHeli=0.1
+ExplosionDamageVsVehicle=0.1
+
+;º› ªŒªcross_type0_9:0rocket£¨1zuni£¨2rocket_arm£¨3aam_irm£¨4irm£¨5arm£¨6laserm£¨7losm£¨8bomb£¨9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=3
+ExplosionDamageVsShip=0.1
+enableExhaustFlare=true
+
+MaxDegreeOfMissile = 55
+ProximityFuseDist = 20
+proximityFuseTick=60
+proximityFuseDamage = 250
+proximityFuseHeight = 50
+ExplosionAirburst = 4
+EnableOffAxis = false
+LockMinHeight = 10

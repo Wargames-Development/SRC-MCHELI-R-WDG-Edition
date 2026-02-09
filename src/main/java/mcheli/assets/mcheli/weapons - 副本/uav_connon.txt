@@ -1,0 +1,40 @@
+DisplayName =制导炮弹指示器
+Type = ASMissile
+Power =350
+Acceleration = 3
+Explosion = 6
+Explosionblock = 5
+Flaming = false
+Sight = MoveSight
+Delay = 100
+ModeNum = 2
+ModelBullet =HTD
+Sound =ATTACK_SND
+ReloadTime = 100
+Round = 2
+FIXMODE=1
+LOCKTIME = 0
+ProximityFuseDist = 1
+HeatCount = 10000
+MaxHeatCount = 10001
+TimeFuse = 10000
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+
+DisableSmoke = True
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+ProximityFuseDist = 1
+MaxAmmo = 12
+SuppliedNum = 8
+Item =  1, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true

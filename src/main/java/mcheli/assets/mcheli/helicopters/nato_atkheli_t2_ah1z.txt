@@ -1,0 +1,104 @@
+DisplayName = AH-1Z VIPER
+AddDisplayName = zh_CN, AH-1Z 蝰蛇
+AddDisplayName = en_US, AH-1Z VIPER
+MaxHp = 400
+
+Category = M.A
+ItemID = 28800
+HUD = HELI, HELI_GUNNER
+ThirdPersonDist = 25
+Speed = 1.2
+MinRotationPitch = -85
+MaxRotationPitch = 85
+
+Gravity = -0.038
+MaxFuel = 1200
+FuelConsumption = 1.0
+
+CameraPosition = 0.0, 1.07, 3.5
+CameraZoom = 3
+EnableGunnerMode = false
+EnableNightVision = true
+EnableEntityRadar = true
+AddSeat = 0.00, 1.18, 0.835
+AddGunnerSeat = 0.00, 1.00,  2.5,  0.0, 0.73, 3.86, true
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 1.41, 0.8,  2,3.5
+BoundingBox = 0.0, 1.41, 2.8,  2,2.3
+BoundingBox = 0.0, 1.67, -1.69,  3,4
+BoundingBox = 0.0, 1.67, -4.21,  2,2.8
+BoundingBox = 0.0, 1.13, -6.21,  2,1.5
+BoundingBox = 0.0, 1.13, -6.21,  2,1.5
+BoundingBox = 0.0, 1.13, -8.2,  2,1.5
+BoundingBox = 0.0, 1.13, -10.19,  2,1.5
+BoundingBox = 0.0, 2.32, -12.41,  2,4,1.2
+BoundingBox = 0.0, 4.19, -1.66,  8,0.2,1.2
+EntityWidth = 0.9
+EntityHeight = 0.9
+
+FlareType = 3
+HasChaff = true
+ChaffUseTime = 100
+ChaffWaitTime = 250
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = AH1
+NameOnModernAARadar = AH1
+NameOnEarlyAARadar = HELI
+NameOnModernASRadar = HELI
+NameOnEarlyASRadar = *
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddRotor = 1, 0, 0,  3.5,     -1.67,  0.0, 1.0, 0.0
+AddRotor = 1, 0, 0,  3.03, -13.07,  1.0, 0.0, 0.0
+AddRotor = 1, 0, 0,  3.03, -13.07,  -1.0, 0.0, 0.0
+
+;Weapons
+AddPartWeapon = HELI_AH1Z_GUNNER_20MM,     true,  true,  false,   0.00,  0.649,    2.66
+AddPartWeaponChild = false, true,  0.00, 0.427,  2.66
+AddPartRotWeapon = HELI_AH1Z_GUNNER_20MM,     false, true,  true,    0.00,  0.41,    2.66
+
+AddWeapon = HELI_AH1Z_GUNNER_20MM,  0.00,  0.41,  2.66,  0,-1, false,1, 0,-360,360, -5,70
+
+AddWeapon = HELI_AH1Z_ROCKET_ARM,        1.06,  0.745, -1.0,  0.5, 0,  false,1,  0,0,0, 0, 25
+AddWeapon = HELI_AH1Z_ROCKET_ARM,       -1.06,  0.745, -1.0,  -0.5, 0, false,1,  0,0,0, 0, 25
+
+AddWeapon = HELI_AH1Z_GUNNER_TVM,    -1.00,  0.695, -1.0,  1, 0,  false,2,  0,-360,360, -5,70
+AddWeapon = HELI_AH1Z_GUNNER_TVM,    -1.00,  0.695, -1.0,  1, 0,  false,2,  0,-360,360, -5,70
+
+AddWeapon = HELI_AH1Z_LOSM,  -1.00,  0.695, 1.0,  1, 0,  false,1
+AddWeapon = HELI_AH1Z_LOSM, -1.00,  0.695, 1.0,  1, 0,  false,1
+
+weapongrouptype = 7
+
+;MISC
+;Place misc paramters here
+ConcurrentGunnerMode = true
+EntityPitch = 0
+EntityRoll = 0
+AddRecipe = "YXY",  "X X",  "YXY", X, iron_block, Y, iron_ingot
+maintenanceUseTime = 20
+maintenanceWaitTime = 1200
+
+; FlareOption = 位置X, 位置Y, 位置Z
+; TEST
+; FlareOption = 10.0,  5.0, -20.0
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;飛行可能時間[秒] = 燃料搭載可能量 / 1秒間に消費する燃料
+; 燃料搭載可能量
+; 1秒間に消費する燃料
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+
+;DUPLICATES
+HasChaff = true
+ChaffUseTime = 100
+ChaffWaitTime = 200
+hasMaintenance = true

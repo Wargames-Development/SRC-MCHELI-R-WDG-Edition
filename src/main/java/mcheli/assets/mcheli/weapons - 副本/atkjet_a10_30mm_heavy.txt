@@ -1,0 +1,73 @@
+DisplayName = GAU-8 30毫米重型反载具机炮[通用弹链]
+Type = MachineGun1
+Power = 13
+Acceleration = 12
+Explosion = 2
+Explosionblock = 0
+Sight = MoveSight
+Flaming = false
+ModelBullet = bullet105mm
+
+Sight = MoveSight
+Delay = 0
+SoundVolume = 10
+SoundPitch = 1.0
+Sound = gun_h5_snd
+Accuracy = 1.2
+HeatCount = 10
+MaxHeatCount = 400
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+AddMuzzleFlash      =  1.6,      0.22,        2,  170,254,159,84
+AddMuzzleFlash      =  1.5,      0.20,        1,  150,254,219,184
+AddMuzzleFlashSmoke =  2.2,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke =  3.2,  1,   3.0,  1.0,  5,  180,220,217,214
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.6
+DamageFactor = heli, 1.6
+DamageFactor = vehicle , 1.5
+DamageFactor = tank, 2
+DamageFactor = living, 0.5
+DamageFactor = ship, 2
+Gravity = -0.001
+MaxAmmo = 2000
+SuppliedNum = 2000
+Item =  1, iron_ingot
+MaxAmmo = 2000
+SuppliedNum = 2000
+Item =  1, iron_ingot
+canBeIntercepted=false
+canBeIntercepted=false
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+crosstype=0
+ExplosionDamageVsLiving=0.5
+ExplosionDamageVsPlayer=0.5
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+
+FlakParticlesCrack = 10
+NumParticlesFlak = 2
+FlakParticlesDiff = 0.3
+
+DragInAir = 0.01
+BulletDecay = Segmented , 25, 1.2 , 50, 1, 100, 0.9 , 200 , 0.8, 300, 0.7

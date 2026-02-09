@@ -1,0 +1,88 @@
+DisplayName = 英雄-120 双联装重型主动雷达巡飞弹
+Type = ATMissile
+Power = 0
+Acceleration = 2
+Explosion = 7
+Flaming = false
+Sight = MoveSight
+Delay = 0
+ReloadTime = 120
+Round = 2
+ModeNum = 2
+FixMode = 1
+Sound = AA11_F
+Gravity = 0
+SoundVolume = 10
+TimeFuse =1000
+ModelBullet = UCAV
+Group = MainGun
+DamageFactor = player, 1
+DamageFactor = plane, 1
+DamageFactor = heli, 1
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1
+RigidityTime = 30
+
+TrajectoryParticleStartTick = 10
+
+MaxAmmo = 8
+SuppliedNum = 2
+A
+
+RecoilBufCount = 40, 5
+
+FlakParticlesCrack = 300
+NumParticlesFlak = 20
+FlakParticlesDiff = 0.8
+
+WeaponSwitchSound = Switch_Main_Cannon
+
+LockTime = 0
+
+
+
+SpeedFactor = -0.1
+SpeedFactorStartTick = 11
+SpeedFactorEndTick = 21
+SpeedDependsAircraft = true
+
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 100
+MaxLockOnAngle = 180
+EnableOffAxis = TRUE
+MaxDegreeOfMissile = 90
+ActiveRadar = true
+
+
+scanInterval=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+RidableOnly = true
+
+
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+crosstype=2
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=3.5
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 1
+DamageFactor = ship, 1
+ExplosionDamageVsShip=1
+enableExhaustFlare=true
+turningFactor = 0.17
+
+SpeedFactor = -0.1
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 26
+SpeedDependsAircraft = true
+
+heatcount= 600
+maxheatcount=1000

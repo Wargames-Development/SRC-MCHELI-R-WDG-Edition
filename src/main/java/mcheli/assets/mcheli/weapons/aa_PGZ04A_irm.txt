@@ -1,0 +1,79 @@
+DisplayName = QW-2  热引导导弹
+Type = AAMissile
+ModelBullet = 9K38
+Power = 250
+Acceleration = 1.5
+Explosion = 2
+Flaming = false
+Sight = MissileSight
+Delay = 8
+ReloadTime = 45
+Group = MainGun
+Round = 4
+HeatCount = 300
+MaxHeatCount = 900
+LockTime =8
+TimeFuse = 170
+ProximityFuseDist = 10
+DamageFactor = heli, 1.2
+Sound = AA11_F
+SoundVolume = 10
+Gravity = 0.004
+MaxAmmo = 8
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+
+LockMinHeight = 3
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+
+enableBVR=false
+predictTargetPos=false
+LockMinHeight = 3
+turningFactor = 0.1
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+PDHDNMaxDegree = 90
+MaxDegreeOfMissile = 35
+maxLockOnAngle=5
+MaxLockOnRange = 1500
+AntiFlareCount=20
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+SpeedFactor = 0.075
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+EnableOffAxis = TRUE
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=8
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=0.1
+ExplosionDamageVsTank=0.1
+ExplosionDamageVsPlane=0.1
+ExplosionDamageVsHeli=0.1
+ExplosionDamageVsVehicle=0.1
+ExplosionDamageVsShip=0.1
+enableExhaustFlare=true
+
+MaxDegreeOfMissile = 55
+ProximityFuseDist = 20
+proximityFuseTick=60
+proximityFuseDamage = 250
+proximityFuseHeight = 50
+ExplosionAirburst = 4
+EnableOffAxis = true
+LockMinHeight =10
+
+enableBVR=true

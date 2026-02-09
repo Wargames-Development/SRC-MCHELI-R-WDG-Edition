@@ -1,0 +1,145 @@
+DisplayName = F-22A
+AddDisplayName = zh_CN,F-22A 猛禽
+AddDisplayName = en_US,F-22A
+MaxHp = 400
+
+Category = M.F
+HUD = JET, su34_gnr
+ThirdPersonDist = 25
+Speed = 1.5
+MobilityPitch = 1.0
+MobilityRoll = 1.15
+MobilityYaw = 0.35
+ThrottleUpDown = 0.55
+
+Gravity = -0.038
+motionfactor = 0.96
+MaxFuel = 1080
+FuelConsumption = 1
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.0, 0
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  2.05,  3.03
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = F119, Exhaustflame_red, 0.7529, 1.804, -8.873, -1, 0, 0, 0, 1
+AddExhaustFlame = F119, Exhaustflame_red, -0.7529, 1.804, -8.873, -1, 0, 0, 0, 1
+
+
+
+
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 10
+explosionsizebycrash = 6
+BoundingBox = 0.00, 2.40, 3.5,  3.0, 3.5
+BoundingBox = 0.00, 1.90, -1.0,  4.9, 3.2
+BoundingBox = 0.00, 1.90, -5.80, 5.0, 3.2
+BoundingBox = 0.00, 1.90, -10.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -6.50,  5.0, 1.4
+BoundingBox = 4.2, 2.20, -6.50,  5.0, 1.4
+BoundingBox = -3.2, 2.20, -12,  3, 1.4
+BoundingBox = 3.2, 2.20, -12,  3, 1.4
+BoundingBox = 0.00, 2.20, -12.3,  3.5, 2.0,1.5
+EntityWidth = 0.70
+EntityHeight = 0.70
+
+FlareType = 4
+hasecmJammer = true
+ecmJammerType = 0
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = ADVANCED_AA
+NameOnAdvancedAARadar = F22
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00, 3.542, -4.496,  -1,0,0,  -20
+AddPartLG = 0, 1.346, 0.9327,  1,0,0,-90
+AddPartLGRev = 0.2789, 1.068, 2.224,  0,0,1,80
+AddPartLGRev = -0.2601, 1.068, 2.224,  0,0,1,-80
+
+AddPartLG = 1.399, 1.604, -6.076,  0,0,0,90
+AddPartLGRev = 2.871, 1.810, -5.463,  0,0,1,45
+
+AddPartLG = -1.399, 1.604, -6.076,  0,0,0,90
+AddPartLGRev = -2.86, 1.812, -5.459,  0,0,1,-45
+
+AddPartSteeringWheel = 3.427, 1.802,-9.042, 1, 0, 0.0,   -8
+AddPartSteeringWheel = -3.427, 1.802,-9.042,  -1, 0, 0.0,   -8
+
+AddPartSteeringWheel = 2.10, 1.852,-11.57, 1, 0, 0.0,   -15
+AddPartSteeringWheel = -2.081, 1.852,-11.57,  -1, 0, 0.0,   -15
+AddPartSteeringWheel = -0.3850,2.29,3.302, 0, 0, 1,   -20
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.22
+
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.3
+
+AddPartCanopy = 0.00, 3.140,0.9595,  -1,0,0,  40
+AddPartCanopy = 0.00, 3.903, -2.891,  -1,0,0,  0
+
+;Weapons
+AddPartWeaponMissile = JET_F22_AAM_IRM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F22_AAM_IRM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F22_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F22_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F22_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F22_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+
+AddPartWeaponBay = JET_F22_AAM_IRM,  -2.005, 1.596, -2.441,  0.000, 0.000, 1.000, -130
+AddPartWeaponBay = JET_F22_AAM_IRM,  2.020,  1.594, -2.441,  0.000, 0.000, 1.000, 130
+AddPartWeaponBay = JET_F22_AAM_ARM,  0.007808,  0.8034, -4.916,  0.000, 0.000, 1.000, 85
+AddPartWeaponBay = JET_F22_AAM_ARM,  0.007808, 0.8034, -4.917,  0.000, 0.000, 1.000, -85
+AddPartWeaponBay = JET_F22_AAM_ARM,  -1.213, 0.7845, -4.732,  0.000, 0.000, 1.000, -100
+AddPartWeaponBay = JET_F22_AAM_ARM,  1.224,  0.7834, -4.734,  0.000, 0.000, 1.000, 100
+
+AddPartSlideweaponbay = us_aim174/JET_F22_AAM_IRM, 0,0,0.01
+
+AddWeapon = JET_F22_20MM_AA,  -0.8,  2.5,  0.8,  0.0,  0.0
+AddWeapon = JET_F22_AAM_IRM,     4.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F22_AAM_IRM,     -4.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F22_AAM_ARM,     6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F22_AAM_ARM,     -6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F22_AAM_IRM,     6.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F22_AAM_IRM,     -6.232,  1.758, -7.699,  0,-0.0
+
+weapongrouptype = 3
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 20
+maintenanceWaitTime = 1200
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  0.7529, 1.804, -8.873, -1,0,0
+;AddPartNozzle =  -0.7529, 1.804, -8.873, -1,0,0
+;前起落架
+;HasChaff = true
+;ChaffUseTime = 100
+;ChaffWaitTime = 400
+;HasChaff = true
+;ChaffUseTime =50
+;ChaffWaitTime = 200
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+

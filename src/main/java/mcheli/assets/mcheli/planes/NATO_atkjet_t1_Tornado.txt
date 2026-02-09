@@ -1,0 +1,161 @@
+DisplayName = TORNADO F/GR.1
+AddDisplayName = zh_CN,狂风 F/GR.1
+AddDisplayName = en_US,TORNADO F-GR.1
+MaxHp = 400
+
+Category = M.F
+HUD = JET, JET_GUNNER
+ThirdPersonDist = 25
+Speed = 1.8
+MobilityPitch = 0.7
+MobilityRoll = 1.0
+MobilityYaw = 0.7
+ThrottleUpDown = 0.7
+
+Gravity = -0.038
+motionfactor = 0.955
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = -0.5433, 0.8783, -2.314
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.0,  2.18,  -0.4455
+AddGunnerSeat = 0.0,  2.25,  -2.2455 , -0.5433, 0.8783, -2.314, true,-10, 120, false
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.6813, 2.323, -13.6, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -0.6813, 2.323, -13.6, -1, 0, 0, 0, 1
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.526, 1.574,  2.0, 2.515, 6.083, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.526, -6.516,  3.444, 3.055, 10.372, 1.0, DEFAULT, 机身
+BoundingBox = 5.269, 2.64, -7.568,  7.171, 0.752, 3.806, 1.0, DEFAULT, 机身
+BoundingBox = -5.269, 2.64, -7.568,  7.171, 0.752, 3.806, 1.0, DEFAULT, 机身
+BoundingBox = 2.906, 2.22, -11.922,  3.133, 0.395, 3.806, 1.0, DEFAULT, 机身
+BoundingBox = -2.906, 2.22, -11.922,  3.133, 0.395, 3.806, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 5.263, -12.233,  0.466, 3.102, 6.787, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.526, -12.607,  2.606, 2.311, 2.061, 1.5, DEFAULT, 引擎
+EntityWidth = 0.75
+EntityHeight = 0.75
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = EARLY_AA
+NameOnAdvancedAARadar = TRF
+NameOnModernAARadar = TRF
+NameOnEarlyAARadar = ATK
+NameOnModernASRadar = ATK
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartLG = 0, 1.822, 0.04831,  0,0,0,90
+AddPartLGRev = 0.3438, 1.217, 1.119,  0,0,1,95
+AddPartLGRev = -0.3444, 1.217, 1.119,  0,0,1,-95
+AddPartLGRev = 0.0, 1.250, -0.3334,  1,0, 0, 80
+
+AddPartLG = 1.07, 1.719, -7.292,  0,0,0,90
+AddPartLGRev = 1.418, 1.567, -7.332,  0,0,1,70
+
+AddPartLG = -1.07, 1.719, -7.292,  0,0,0,90
+AddPartLGRev = -1.418, 1.567, -7.332,  0,0,1,-70
+
+AddPartSteeringWheel = 1.323, 2.229,-11.94, 1, 0, 0.0,   -15
+AddPartSteeringWheel = -1.323, 2.229,-11.94,  -1, 0, 0.0,   -15
+AddPartSteeringWheel = 0, 3.488, -12.37, 0.0, -1.0, 0.337, 5
+
+AddPartSteeringWheel = 0.0,2.238,0.1956, 0, 0, 1,   -20
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.4
+
+AddPartwing = 0.00,  1.50,-9.582,  1,0, 0, -60
+AddPartwing = 0.00,  3.123,-9.631,  1,0, 0, 60
+
+;Weapons
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_BOMB,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_GUNNER_LASERM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_GUNNER_LASERM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_GUNNER_LASERM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_GUNNER_SARH,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_GUNNER_SARH,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_GUNNER_SARH,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_AAM_SARH,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_Tornado_AAM_SARH,   false, false, false,  -0.297,  0.518, -8.699
+
+AddWeapon = ATKJET_Tornado_27MM_AS,  -0.7357,  1.318,  -1.02,  -0.5,  -0.5
+
+AddWeapon = ATKJET_Tornado_BOMB,   -3.61,  1.178, -5.647,  0.0, 0
+AddWeapon = ATKJET_Tornado_BOMB,   3.61,  1.178, -5.647,  0.0,  0
+AddWeapon = ATKJET_Tornado_BOMB,   -3.0,  1.178, -5.647,  0.0, 0
+AddWeapon = ATKJET_Tornado_BOMB,   3.0,  1.178, -5.647,  0.0,  0
+AddWeapon = ATKJET_Tornado_BOMB,   -4.2,  1.178, -5.647,  0.0, 0
+AddWeapon = ATKJET_Tornado_BOMB,   4.2,  1.178, -5.647,  0.0,  0
+AddWeapon = ATKJET_Tornado_BOMB,   -3.61,  1.178, -6.647,  0.0, 0
+AddWeapon = ATKJET_Tornado_BOMB,   3.61,  1.178, -6.647,  0.0,  0
+AddWeapon = ATKJET_Tornado_BOMB,   -3.0,  1.178, -6.647,  0.0, 0
+AddWeapon = ATKJET_Tornado_BOMB,   3.0,  1.178, -6.647,  0.0,  0
+AddWeapon = ATKJET_Tornado_BOMB,   -4.2,  1.178, -6.647,  0.0, 0
+AddWeapon = ATKJET_Tornado_BOMB,   4.2,  1.178, -6.647,  0.0,  0
+
+AddWeapon = ATKJET_Tornado_AAM_SARH,  -5,  2.09, -8,  -1.4,  -0
+AddWeapon = ATKJET_Tornado_AAM_SARH,    5,  2.09, -8,  1.8 , -0
+
+AddWeapon = ATKJET_Tornado_GUNNER_LASERM,     -2.872, 2.18, -3.05,  0,0.0, false,2,  0,-360,360, 0,90
+AddWeapon = ATKJET_Tornado_GUNNER_LASERM,     -2.872, 2.18, -3.05,  0,0.0, false,2,  0,-360,360, 0,90
+AddWeapon = ATKJET_Tornado_GUNNER_LASERM,     -2.872, 2.18, -3.05,  0,0.0, false,2,  0,-360,360, 0,90
+
+AddWeapon = ATKJET_Tornado_GUNNER_SARH,    2.872, 2.18, -3.05,  0,0.0,  false,2,  0,-360,360, 0,90
+AddWeapon = ATKJET_Tornado_GUNNER_SARH,    2.872, 2.18, -3.05,  0,0.0,  false,2,  0,-360,360, 0,90
+AddWeapon = ATKJET_Tornado_GUNNER_SARH,    2.872, 2.18, -3.05,  0,0.0,  false,2,  0,-360,360, 0,90
+
+weapongrouptype = 35
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  0.6813, 2.323, -13.6, -1,0,0
+;AddPartNozzle = -0.6813, 2.323, -13.6, -1,0,0
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 EF2000, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM ;16 SU34
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+SweepWingSpeed = 0.9

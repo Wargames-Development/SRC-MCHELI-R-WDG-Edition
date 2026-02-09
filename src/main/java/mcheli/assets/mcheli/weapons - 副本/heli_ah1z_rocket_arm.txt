@@ -1,0 +1,71 @@
+DisplayName = APKWS III  70MM主动雷达制导火箭弹
+Type = atmissile
+Power = 45
+ModelBullet = hydra70
+Acceleration = 3
+Explosion = 2
+Explosionblock =0
+DisplayMortarDistance = true
+
+Sound = rocket_snd
+Flaming = false
+Sight = MoveSight
+Delay = 2
+ReloadTime = 110
+Round = 14
+HeatCount = 50
+MaxHeatCount = 650
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor = tank, 1.1
+DamageFactor =vehicle , 1
+
+RidableOnly = true
+
+
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+
+MaxAmmo = 16
+SuppliedNum = 20
+Item =  1, iron_ingot
+SoundVolume = 10
+LockTime = 0
+
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 40
+MaxLockOnAngle = 68
+;R=20,D=30,FOV=67.4
+EnableOffAxis = false
+MaxDegreeOfMissile = 85
+ActiveRadar = true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+scanInterval=2
+
+ActiveRadar = true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+turningFactor = 0.1
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=2
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true

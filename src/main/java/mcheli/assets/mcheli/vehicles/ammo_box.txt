@@ -1,0 +1,25 @@
+DisplayName = AmmoBox
+AddDisplayName = zh_CN, 载具弹药箱
+AddDisplayName = en_US, AMMO CRATE
+MaxHp = 30
+
+ItemID = 28611
+ThirdPersonDist = 12
+MinRotationPitch = 0
+MaxRotationPitch = 0
+
+CameraPosition = 0.0, 2.00, 0.0
+AddSeat = 0.00,  1.0, 0.00
+
+DamageFactor = 2
+
+;MISC
+;Place misc paramters here
+HideEntity = true
+AmmoSupplyRange = 10
+CanRide = false
+CreativeOnly = true
+
+;RepairOtherVehicles = 10, 25
+
+;DUPLICATES

@@ -1,0 +1,55 @@
+DisplayName = GPU-2/A 20mm Gunpod [HE]
+Type = MachineGun2
+Power = 16
+Acceleration = 16
+ModelBullet = 30mm
+Explosion = 1
+Flaming = false
+Sight = None
+Delay = 0
+ReloadTime = 45
+HeatCount = 2
+MaxHeatCount = 300
+Round = 300
+SoundVolume = 10
+reloadtime = 30
+Sound = M61A1_SND
+DamageFactor = player, 1
+DamageFactor = plane, 1
+DamageFactor = heli, 1
+DamageFactor = vehicle , 0.5
+DamageFactor = tank, 0.3
+Accuracy = 2
+;ModeNum = 2
+Gravity = -0.0062
+CameraRotationSpeedPitch = 0.4
+AddMuzzleFlash      =   2.1,      0.32,        3,  150,254,159,84
+AddMuzzleFlash      =   2.0,      0.30,        2,  150,254,219,184
+AddMuzzleFlashSmoke   = 2.2,  2,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke   = 3.2,  1,   3.0,  3.0,  5,  180,220,217,214
+
+MaxAmmo = 300
+SuppliedNum = 150
+Item =  1, iron_ingot
+Item =  1, gunpowder
+
+
+
+;¼ÝÊ»Î»cross_type0_9:0rocket£¬1zuni£¬2rocket_arm£¬3aam_irm£¬4irm£¬5arm£¬6laserm£¬7losm£¬8bomb£¬9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=9
+
+DamageFactor = living, 1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 2
+ExplosionDamageVsShip=0.5
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

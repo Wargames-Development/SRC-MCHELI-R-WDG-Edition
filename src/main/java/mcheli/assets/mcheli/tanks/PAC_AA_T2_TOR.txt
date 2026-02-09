@@ -1,0 +1,132 @@
+DisplayName = TOR-M1 SAM
+AddDisplayName = zh_CN, 道尔-M1 中程防空系统
+AddDisplayName = en_US, TOR-M1 SAM
+MaxHp = 700
+
+HUD = SPAA, MBT_GUNNER
+ThirdPersonDist = 8
+Speed = 0.7
+ThrottleUpDown = 3.0
+MinRotationPitch = -85
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 2.5
+DefaultFreelook = true
+
+Sound = 9K22_idle
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.5
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.00,  6.0, 0.00, true
+CameraRotationSpeed = 80
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+
+AddPartWeaponBay = AA_TOR_SARH/AA_TOR_LOSM, 0.00, 4.005, -0.3558, -1, 0, 0, 90
+
+ArmorMinDamage = 10
+DamageFactor = 0.0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 1.197, 0.696,  4.206, 2.78, 4.983, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 0.942, -2.711,  4.206, 2.311, 1.847, 1.3, DEFAULT, 引擎
+BoundingBox = 0.32, 1.21, 4.087,  2.02, 2.671, 1.846, 0.5, DEFAULT, 车体前部
+BoundingBox = 1.711, 1.21, 4.087,  0.779, 2.671, 1.846, 0.8, DEFAULT, 驾驶室
+BoundingBox = -1.401, 1.21, 4.087,  1.425, 2.671, 1.846, 0.5, DEFAULT, 车体前部
+BoundingBox = -1.551, 3.428, -0.684,  0.111, 1.731, 3.277, 1.0, TURRET, 炮塔侧面
+BoundingBox = 1.551, 3.428, -0.684,  0.111, 1.731, 3.277, 1.0, TURRET, 炮塔侧面
+BoundingBox = 0.0, 3.428, -2.19,  3.01, 1.731, 0.269, 1.3, TURRET, 炮塔后面
+BoundingBox = 0.0, 3.428, 0.196,  3.072, 1.731, 3.981, 0.6, TURRET, 炮塔正面
+BoundingBox = 0.0, 4.274, 0.196,  2.836, 0.08, 3.675, 1.0, TURRET, 炮塔顶部
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = 9K3
+NameOnModernAARadar = 9K3
+NameOnEarlyAARadar = SAM
+NameOnModernASRadar = 9K3
+NameOnEarlyASRadar = SAM
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor = 3.5
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -2.32,  0.4983,  4.107
+AddTrackRoller = -2.32,  0.1720, 3.312
+AddTrackRoller = -2.32,  0.1717, 2.409
+AddTrackRoller = -2.32,  0.1725,  1.521
+AddTrackRoller = -2.32,  0.1715, 0.6422
+AddTrackRoller = -2.32,  0.1703, -0.2333
+AddTrackRoller = -2.32,  0.1717, -1.112
+AddTrackRoller = -2.32,  0.1716, -1.980
+AddTrackRoller = -2.32,  0.4986, -2.808
+
+AddCrawlerTrack = true, 0.22, -2.0, -0.2458/1.521,-0.2458/3.312,0.1540/4.30,0.2988/4.445,0.4966/4.498,0.6945/4.445,0.8925/4.102,0.8944/-2.80,0.8412/-2.998,0.8961/-3.143,0.4980/-3.196,0.3001/-3.143,-0.19/-2.188,-0.2458/-1.980
+
+;Weapons
+AddWeapon = AA_TOR_SARH,  0.20, 5.35, -0.1,  0.0, -90.0, true,1, 0,-360,360, -90, 90
+AddWeapon = AA_TOR_SARH,   -0.20, 5.35, -0.1,  0.0, -90.0, true,1, 0,-360,360, -90, 90
+AddWeapon = AA_TOR_SARH,  0.20, 5.35, 0.3,  0.0, -90.0, true,1, 0,-360,360, -90, 90
+AddWeapon = AA_TOR_SARH,  0.20, 5.35, 0.3,  0.0, -90.0, true,1, 0,-360,360, -90, 90
+AddTurretWeapon = AA_TOR_LOSM,  0.20, 5.05, 0.73,  1.0, -90, true,1, 0,-360,360, -90, 90
+AddTurretWeapon = AA_TOR_LOSM,   -0.20, 5.05, 0.73,  1.0, -90, true,1, 0,-360,360, -90, 90
+AddTurretWeapon = AA_TOR_LOSM,  0.20, 5.05, 1.17,  1.0, -90, true,1, 0,-360,360, -90, 90
+AddTurretWeapon = AA_TOR_LOSM,  0.20, 5.05, 1.17,  1.0, -90, true,1, 0,-360,360, -90, 90
+
+AddPartWeapon = AA_TOR_SARH/AA_TOR_LOSM, false, true, false, 0.00, 2.01, 0.0, 0
+AddPartWeaponMissile = AA_TOR_SARH,    false,  false,  false,    0.20, 4.35, -0.1
+AddPartWeaponMissile = AA_TOR_SARH,    false,  false,  false,    -0.20, 4.35, -0.1
+AddPartWeaponMissile = AA_TOR_SARH,    false,  false,  false,    0.20, 4.35, 0.3
+AddPartWeaponMissile = AA_TOR_SARH,    false,  false,  false,    -0.20, 4.35, 0.3
+AddPartWeaponMissile = AA_TOR_LOSM,    false,  false,  false,   0.20, 4.05, 0.73
+AddPartWeaponMissile = AA_TOR_LOSM,    false,  false,  false,   -0.20, 4.05, 0.73
+AddPartWeaponMissile = AA_TOR_LOSM,    false,  false,  false,   0.20, 4.05, 1.17
+AddPartWeaponMissile = AA_TOR_LOSM,    false,  false,  false,   -0.20, 4.05, 1.17
+
+AddWeapon = IFV_bunker,          0, 0,6,  0.0, 90, true,1, 0,0,0, 0, 0
+
+weapongrouptype = 6
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorDamageFactor = 1
+AddPartRotation = 0.06009, 5.0693, -1.1883,  0,-1,0,     25,      false
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+engineshutdownthres = 20
+hudtype = 3
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+armorExplosionDamageMultiplier = 1.2
+
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR
+;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+
+;DUPLICATES
+AddPartWeaponBay = AA_TOR_SARH/AA_TOR_LOSM, 0.00, 4.005, 1.432, 1, 0, 0, 90
+hasMaintenance = true

@@ -1,0 +1,138 @@
+DisplayName = SU-25SM3 FROGFOOT
+AddDisplayName = zh_CN,SU-25SM3 蛙足
+AddDisplayName = en_US,SU-25SM3 FROGFOOT
+MaxHp = 500
+
+Category = M.A
+ItemID = 28705
+HUD = JET,JET_GUNNER
+ThirdPersonDist = 25
+Speed = 0.75
+MobilityPitch = 0.8
+MobilityRoll = 1
+MobilityYaw = 0.8
+ThrottleUpDown = 0.6
+MinRotationPitch = -30
+MaxRotationPitch = 90
+
+Gravity = -0.038
+motionfactor = 0.955
+MaxFuel = 1800
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.00, 1.73, 5.1
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.01,  2.205,  -0.0
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+AddPartNozzle = -1.109, 1.665, -10.0, -1,0,0
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 5
+explosionsizebycrash = 10
+BoundingBox = 0.00, 2.34, -4.06,  4.0, 3
+BoundingBox = 0.00, 2.34, -8.03,  4.0, 3
+BoundingBox = 0.00, 3.98, -12.02,  4.0, 3
+BoundingBox = 0.00, 1.69, -12.02,  4.0, 3,1.5
+BoundingBox = 0.00, 2.45, 2.34,  3.0, 3
+BoundingBox = 0.00, 2.45, -0.651,  3.0, 3
+BoundingBox = 4.31, 2.45, -6.36,  5.0, 1
+BoundingBox = 8.34, 2.45, -7.11,  3.0, 1
+BoundingBox = -4.31, 2.45, -6.36,  5.0, 1
+BoundingBox = -8.34, 2.45, -7.11,  3.0, 1
+EntityWidth = 0.85
+EntityHeight = 0.85
+
+FlareType = 5
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = S25
+NameOnModernAARadar = S25
+NameOnEarlyAARadar = S25
+NameOnModernASRadar = ATK
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartSteeringWheel = 0,3.06,-13.7, 1, 0, 0.0,   -25
+AddPartSteeringWheel = 6.0,2.6368,-7.7416, 1, 0, 0.0,   -20
+AddPartSteeringWheel = -6.0,2.6368,-7.7416,  -1, 0, 0.0,   -20
+AddPartSteeringWheel = 0.081,4.5,-13.1996, 0, 1, 0.0,   -20
+
+AddPartSteeringWheel = 0.081,2.52,0.4533, 0, 0, 1,   -20
+
+AddPartSteeringWheel = 0,3.06,-13.7, -1, 0, 0.0,   -25
+
+AddPartwing = 0.00,  2.7735,-7.5463,  1,0, 0, -25
+AddPartCanopy = -0.5749, 3.025,  -0.1514, 0,0,1,  60
+AddPartLG = 0, 1.7, -0.5,  1,0,0,110
+AddPartLG = -1.5, 1.6, -6,  0,0,1,100
+AddPartLG = 1.5, 1.6, -6,  0,0,1,-100
+AddPartLGRev = -0.3411, 1.251, -0.4256,  0,0,1,-120
+AddPartLGRev = 0.3641, 1.217, -0.8772,  0,0,1,120
+
+AddPartLGRev = -0.5408, 1.084, -4.507,  0,0,1,70
+AddPartLGRev = 0.5521, 1.084, -4.516,  0,0,1,-70
+
+;Weapons
+AddPartWeaponMissile = ATKJET_SU25_LASERM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU25_LASERM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU25_LASERM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU25_LASERM,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU25_HEAVYROCKET,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU25_HEAVYROCKET,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU25_HEAVYROCKET,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU25_HEAVYROCKET,  false, false, false,  -5.0, 0,  0
+
+AddWeapon = ATKJET_SU25_30MM_HEAVY,  0.45,    1.412,  3.012,   0.1, -0.1
+AddWeapon = ATKJET_SU25_HEAVYROCKET,  -4.997, 1.952, -3.396,   -1.6, 0.0
+AddWeapon = ATKJET_SU25_HEAVYROCKET, 4.997, 1.952, -3.396,  1.6, 0.0
+AddWeapon = ATKJET_SU25_HEAVYROCKET,  -6.144, 1.952, -3.696,   -2.0, 0.0
+AddWeapon = ATKJET_SU25_HEAVYROCKET, 6.144, 1.952, -3.696,  2.0, 0.0
+AddWeapon = ATKJET_SU25_LASERM,  -1.085, 1.952, 2.096,   -0.0,-0, true,1,  0,-0,0, -30,-30
+AddWeapon = ATKJET_SU25_LASERM, 1.085, 1.952, 2.096,  0.0, -0, true,1,  0,-0,0, -30,-30
+AddWeapon = ATKJET_SU25_LASERM,  -3.917, 1.952, -3.096,   0, -0, true,1,  0,-0,0, -30,-30
+AddWeapon = ATKJET_SU25_LASERM, 3.917, 1.952, -3.096,  0,-0, true,1,  0,-0,0, -30,-30
+
+weapongrouptype = 9
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;Front
+;RightLeft
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+AddPartNozzle = 1.109, 1.665, -10.0, -1,0,0

@@ -1,0 +1,41 @@
+DisplayName =  Patriot AA
+AddDisplayName = ja_JP, Patriot 
+AddDisplayName = en_US,Patriot AA
+MaxHP = 100
+Speed = 0
+CameraPosition = 0.0, 5, 0.0
+CameraZoom = 5
+MinRotationPitch = -90
+MaxRotationPitch = 0
+HideEntity = true
+AddSeat = 0.0,  1.85, -0.86
+ThirdPersonDist = 12
+Hud = AA
+AddTexture = patriotd
+EnableEntityRadar = true
+DamageFactor = 0
+Category = M.M
+
+WeightType = Tank
+ArmorMinDamage = 12
+HUD = AA
+hudtype=3
+AddPart = false, true, false, 0,   0.00, 1.5562, -7.1277
+
+AddWeapon = arh_patriot_pac2,  0.0, 4.1, 7.1,   0.0, 0.0
+AddWeapon = arh_patriot_pac2,  0.0, 4.1, 7.1,   0.0, 0.0
+AddWeapon = arh_patriot_pac2,  0.0, 4.1, 7.1,   0.0, 0.0
+AddWeapon = arh_patriot_pac2,  0.0, 4.1, 7.1,   0.0, 0.0
+
+BoundingBox =  0.0, 2.7, -0.8, 2, 2, 2, 1.5, DEFAULT, CONTROLS
+BoundingBox =  0.0, 1.5, -5, 2.3, 1, 10, 0.5, DEFAULT, TRAILER
+BoundingBox =  0.0, 3.4, -6, 2.3, 3, 5, 0.5, DEFAULT, LAUNCHER
+
+
+NameOnModernAARadar = AA
+NameOnEarlyAARadar = +
+NameOnModernASRadar = Patriot
+NameOnEarlyASRadar = AA
+RadarType = Modern_AA
+enablebvr = true
+enablerwr = true

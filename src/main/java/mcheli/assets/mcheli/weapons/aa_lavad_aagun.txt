@@ -1,0 +1,74 @@
+DisplayName = GAU-12 25MM [HE]
+Type = MachineGun2
+Power = 17
+Acceleration = 20
+modelbullet = bullet76mm
+Explosion = 1
+Explosionblock = 0
+Sight = MoveSight
+Flaming = false
+Sight = MoveSight
+Delay = 0
+SoundVolume = 0.6
+SoundPitch = 1.0
+Sound = m61a1_snd
+Accuracy = 2.2
+HeatCount = 2
+MaxHeatCount = 300
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+DamageFactor = plane, 1.2
+DamageFactor = tank, 1.2
+DamageFactor = heli, 1.2
+DamageFactor = player, 0.4
+DamageFactor = living, 0.4
+DamageFactor = ship, 1.5
+enableBVR=false
+
+AddMuzzleFlash      =   1.5293,      0.15,        3,  150,254,159,84
+AddMuzzleFlash      =   1.5493,      0.15,        2,  150,254,219,184
+AddMuzzleFlashSmoke   = 1.1,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke   = 1.2,  1,   3.0,  3.0,  5,  180,220,217,214
+
+RecoilPitch = 10
+RecoilYaw = 0.0
+RecoilPitchRange = 3
+RecoilYawRange = 0.5
+RecoilRecoverFactor = 0.05
+FlakParticlesCrack = 50
+NumParticlesFlak = 10
+FlakParticlesDiff = 0.3
+MaxAmmo = 2000
+SuppliedNum = 2000
+Item =  1, iron_ingot
+canBeIntercepted=false
+canBeIntercepted=false
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=1
+ExplosionDamageVsLiving=0.1
+ExplosionDamageVsPlayer=0.1
+ExplosionDamageVsTank=0.3
+ExplosionDamageVsPlane=0.1
+ExplosionDamageVsHeli=0.1
+ExplosionDamageVsVehicle=0.1
+ExplosionDamageVsShip=0.3
+
+
+BulletDecay = Segmented ,0, 1.3,  25, 1.2, 50, 1.1, 100, 1, 150 , 0.9, 200, 0.85, 250, 0.8, 300, 0.7
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1
+
+ProximityFuseDist = 20
+proximityFuseTick=10
+proximityFuseDamage = 10
+proximityFuseHeight = 40
+ExplosionAirburst = 4
+
+DragInAir = 0.01

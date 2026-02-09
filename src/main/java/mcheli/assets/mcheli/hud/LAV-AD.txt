@@ -1,0 +1,133 @@
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+If = hp_rto>0.25
+DrawTexture = M1A2BNK, (-800*width/683)-stick_x*3, (-800*height/353)-stick_y*3+pitch*3,1600*width/683,1600*height/353, 0,0, 1960,1960
+EndIf
+If = hp_rto<=0.25
+DrawTexture = M1A2BNKLOWHP, (-800*width/683)-stick_x*5, (-800*height/353)-stick_y*5+pitch*3,1600*width/683,1600*height/353, 0,0, 1960,1960
+EndIf
+If = reloading==1||wpn_heat==1.0
+DrawTexture = M1_Wait, -30, 75, 70,20 ,0,0, 280,80,0
+EndIf
+If = reloading==1&&wpn_heat<1.0
+DrawCenteredString =   -25, 82, "%.2f%%",   RELOAD_PER
+EndIf
+If = reloading==0&&wpn_heat<1.0
+DrawTexture = M1_Ready, -30, 75, 70,20 ,0,0, 280,80,0
+EndIf
+
+If = is_heat_wpn==1
+Color = 0xFFFFE400
+DrawRect = -150, 100, 41, 2
+Color = 0xFFDF0408
+DrawRect = -150, 100, 41*wpn_heat, 2
+EndIf
+
+Color =0xFFFFE400
+DrawGraduationYaw   = plyr_yaw, 0, 0, -100
+
+DrawLine = 0,-87,   2,-83,  -2,-83,   0,-87
+DrawCenteredString =   0, -81, "%.0f", PLYR_YAW
+
+DrawCenteredString =  -185, -4, "%.0f", PLYR_PITCH
+DrawLine =   -175,-5,    -195,-5,    -195,5,    -175,5,   -175,-5
+
+Color = 0xFFFFE400
+DrawString  = 167, -10, "%.0f%%"   , THROTTLE
+DrawString  = 148, -10, "KPH"
+
+DrawTexture = mbt_hud, 30,85,  32,32,  0, 0,64,64, yaw - plyr_yaw
+DrawTexture = mbt_hud, 30,85,  32,32, 64, 0,64,64, 
+
+Color = 0xFFFFE400
+DrawLine =  135, 100,   197, 100,    197, 92,    135, 92,   135,  100,
+Color = hp_rto>0.25? 0xFFFFE400: #FFFF6A6A
+DrawString  = 140,     83, "%3.0f", HP_PER
+DrawString  = 140+26,  83, "/   100", HP_PER
+DrawRect    = 136,    93,   hp_rto*60, 6
+
+If = cam_mode==0
+DrawTexture = 60HZ, 130, -40, 70,20 ,0,0, 280,80,0
+Endif
+If = cam_mode==1
+DrawTexture = IRNV, 130, -40, 70,20 ,0,0, 280,80,0
+Endif
+If = cam_mode==2
+DrawTexture = FLIR, 130, -40, 70,20 ,0,0, 280,80,0
+Endif
+If = have_flare==1
+DrawTexture = IRSmoke, -220, -60, 70,20 ,0,0, 280,80,0
+Endif
+If = have_flare==1&&can_flare==1
+DrawTexture = M1_Ready, -220, -40, 70,20 ,0,0, 280,80,0
+Endif
+If = have_flare==1&&can_flare==0
+DrawTexture = M1_Wait, -220, -40, 70,20 ,0,0, 280,80,0
+Endif
+
+DrawTexture = ZTZ99_bar1, -150, 95, 170,3 ,0,0, 512,6,0
+
+If = sight_type==0&&cam_zoom<2
+DrawTexture = AA1x, -500, -250,  1000,500, 0,0, 2048,1024
+DrawTexture = AA_20mm, -160, 75, 90,20 ,0,0, 360,80,0
+EndIf
+If = sight_type==2&&cam_zoom<2
+DrawTexture = AAM1x, -500, -250,  1000,500, 0,0, 2048,1024
+DrawTexture = AA_Heetseekers, -160, 75, 90,20 ,0,0, 360,80,0
+EndIf
+If = sight_type==0&&cam_zoom>=2
+DrawTexture = AA3x, -500, -250,  1000,500, 0,0, 2048,1024
+DrawTexture = AA_20mm, -160, 75, 90,20 ,0,0, 360,80,0
+EndIf
+If = sight_type==2&&cam_zoom>=2
+DrawTexture = AAM3x, -500, -250,  1000,500, 0,0, 2048,1024
+DrawTexture = AA_Heetseekers, -160, 75, 90,20 ,0,0, 360,80,0
+EndIf
+
+If=lock<=0.15&&lock>0
+DrawTexture = LOCK1 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.2&&lock>0.15
+DrawTexture = LOCK2 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.25&&lock>0.2
+DrawTexture = LOCK3 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.3&&lock>0.25
+DrawTexture = LOCK4 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.35&&lock>0.3
+DrawTexture = LOCK5 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.4&&lock>0.35
+DrawTexture = LOCK6 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.45&&lock>0.4
+DrawTexture = LOCK7 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.5&&lock>0.45
+DrawTexture = LOCK8 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.55&&lock>0.5
+DrawTexture = LOCK9 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.6&&lock>0.55
+DrawTexture = LOCK10 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.65&&lock>0.6
+DrawTexture = LOCK10 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.7&&lock>0.65
+DrawTexture = LOCK9 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.75&&lock>0.7
+DrawTexture = LOCK8 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.8&&lock>0.75
+DrawTexture = LOCK9 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=0.85&&lock>0.8
+DrawTexture = LOCK10 ,-64, -64,  128,128, 0,0, 256,256
+EndIf
+If=lock<=1&&lock>0.85
+DrawTexture = LOCK11 ,-64, -64,  128,128, 0,0, 256,256
+EndIf

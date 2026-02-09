@@ -1,0 +1,119 @@
+DisplayName = BK-16
+AddDisplayName = zh_CN, BK-16 攻击快艇
+AddDisplayName = en_US, BK-16
+MaxHp = 700
+
+HUD = FAC, FAC, FAC, FAC, FAC
+ThirdPersonDist = 16
+Speed = 0.4
+MobilityRoll = 0
+ThrottleUpDown = 1
+MinRotationPitch = -70
+MaxRotationPitch = 10
+throttledownfactor = 3
+StepHeight = 0.0
+MobilityYawOnGround = 4.0
+CanMoveOnGround = false
+DefaultFreelook = true
+enableback = true
+
+Sound = RCB90_idle
+Float = true
+FloatOffset = -0.3
+CanRotOnGround = false
+
+Gravity = -0.15
+GravityInWater = -0.1
+MaxFuel = 1500
+FuelConsumption = 2.0
+
+CameraPosition = -0.4, 3.41, 0.28, true
+CameraZoom = 6
+EnableNightVision = true
+AddSeat = -1.124, 0.9, -6.485
+AddSeat = 1.124, 0.9,  -6.485
+AddSeat = -0.90, 0.9, -8.3
+AddSeat = 0.90, 0.9, -8.3
+AddGunnerSeat = -0.63, 0.74, 3.42, -0.4, 3.41, 1.28,false,-70, 10, true
+
+AddParticleSplash = 1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+
+ArmorMinDamage = 15
+DamageFactor = 0.0
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.0, 0.0,  3.554, 3.086, 19.058, 0.4, DEFAULT, 船体
+BoundingBox = 0.0, 2.45, 0.377,  3.376, 1.722, 9.916, 0.8, DEFAULT, 上层建筑
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = NVL
+NameOnModernAARadar = NVL
+NameOnEarlyAARadar = NVL
+NameOnModernASRadar = BK16
+NameOnEarlyASRadar = NVL
+enablerwr = true
+
+hasMaintenance = true
+
+;Weapons
+AddPartWeapon = FAC_30mm, false, true, false, 0.00, 1.48, 0
+AddPartWeaponChild = false, true,  0.00, 2.947, 0.051
+AddPartWeaponChild = false, true,  0.00, 2.947, 0.051,0.1
+
+AddPartWeapon = FAC_MG_MINIGUN_l, false, true, false,  1.60, 1.414, -6.485
+AddPartWeaponChild = false, true,  1.60, 1.629, -6.486
+AddPartRotWeapon = FAC_MG_MINIGUN_l,     false, true, true,   1.604, 1.65,  -6.486,  0,0,1
+
+AddPartWeapon = FAC_MG_MINIGUN_R, false, true, false,  -1.60, 1.414, -6.486
+AddPartWeaponChild = false, true,  -1.60, 1.629, -6.486
+AddPartRotWeapon = FAC_MG_MINIGUN_R,      false, true, true,   -1.604, 1.65,  -6.486,  0,0,1
+
+AddWeapon = FAC_30mm, 0.00, 2.947, 0, 0.0,  0.0, false, 1,   0, -360, 360,  -70, 10
+
+AddWeapon = FAC_BK16_ATGM_LOSM, 0.00, 3.2, -0.4, 0.0,-20.0, false, 1, 180, -180, 180,  -90, 90
+
+AddWeapon = FAC_MG_MINIGUN_r, -1.604, 1.65,  -6.486, 0.0, 0.0, false, 2, 0, -0, 180, -50, 20
+
+AddWeapon = FAC_MG_MINIGUN_l,  1.604, 1.65,  -6.486, 0.0, 0.0, false, 3, 0, -180, 0, -50, 20
+
+weapongrouptype = 3
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 1200
+HideEntity = true
+AddPartRotor = 0,  3.85,     -2.31,  0,1.0,0
+AddBlade = 1, 0,  0,  3.85,     -2.31,  0,1.0,0
+maintenanceUseTime = 20
+maintenanceWaitTime = 1200
+
+; 水しぶき を発生させる
+;AddParticleSplash = 座標X,   Y,    Z,   表示数, サイズ,  速度,  表示時間, 上昇, 重力
+;操縦席
+;M134ガンナー
+;武器可動パーツ
+;RWS
+;ATGM
+;M134
+;AddPartNozzle =  0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  0.73, 0.00, -5.64, -1,0,0
+;AddPartNozzle = -0.73, 0.00, -5.64, -1,0,0
+
+;DUPLICATES
+AddParticleSplash = -1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash = 1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+FlareType = 10

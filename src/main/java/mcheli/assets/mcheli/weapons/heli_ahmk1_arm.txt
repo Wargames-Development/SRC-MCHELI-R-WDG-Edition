@@ -1,0 +1,65 @@
+DisplayName =长矛-3 主动雷达制导反坦克导弹
+Type = ATMissile
+Power = 500
+Acceleration = 2
+Explosion = 4
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 150
+
+ModeNum = 2
+Round =2
+reloadtime =100
+ModelBullet = spear3
+Sound = sa-2_snd
+RidableOnly = false
+HeatCount = 1000
+MaxHeatCount = 1100
+
+
+LockTime = 0
+
+timefuse=300
+
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 100
+MaxLockOnAngle = 40
+EnableOffAxis = false
+MaxDegreeOfMissile = 40
+ActiveRadar = true
+SpeedFactor = -0.02
+SpeedFactorStartTick = 5
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+turningFactor = 0.2
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1.1
+DamageFactor = tank, 1.1
+
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+RidableOnly = true
+
+
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=5
+
+DamageFactor = living, 0.5
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true

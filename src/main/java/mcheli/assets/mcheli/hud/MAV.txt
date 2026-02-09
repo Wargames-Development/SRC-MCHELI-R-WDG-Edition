@@ -1,0 +1,162 @@
+﻿;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+DrawTexture = TVM, -900,-900,  1800,1800, 0,0, 2048,2048
+;高度
+Color = 0xCFFFFFFF
+DrawString = -175, -120, "%3d", ALTITUDE
+
+;重力
+Color = 0xCFFFFFFF
+DrawString = -100, -100, "%.8f",motion_Y
+DrawString = -170, -80, "%s", G_FORCE
+Color = 0xCFFFFFFF
+DrawString = -170,  90, "REC  %02d:%02d:%02d",MC_THOR, MC_TMIN, MC_TSEC
+
+If = uav_fs > 0.01
+DrawString = -170, -100, "%.8f",UAV_DIST
+EndIf
+If = uav_fs <= 0.01
+DrawString = -170, -100, "----------"
+EndIf
+If = uav_fs < 0.3
+DrawCenteredString = 0, 40, "LOW SIGNAL"
+EndIf
+
+DrawTexture = MAVcross, -100, -100,  200,200, 0,0, 1024,1024
+
+If = is_heat_wpn==1
+	Color = 0xCFFFFFFF
+	DrawRect = -20, 105, 41, 2
+	Color = 0xFFDF0408
+	DrawRect = -20, 105, 41*wpn_heat, 2
+EndIf
+
+Color = 0xCFFFFFFF
+If = free_look==1
+	DrawString = -170, -10, "FREE LOOK"
+Endif
+
+Color = 0xCFFFFFFF
+DrawString = 170, 90, "%.2fs",    RELOAD_SEC
+
+If = hovering==1
+	Color = 0xCFFFFFFF
+	DrawString = -170, 10, "HOVERING"
+Endif
+;血量
+;Color = 0xCFFFFFFF
+DrawString  = 170, -100, "HP %3.0f", HP_PER
+
+Color = 0xCFFFFFFF
+DrawString = -185, 58, "%s",  WPN_AMMO
+DrawString = -160, 58, "/",   WPN_AMMO
+DrawString = -150, 58, "%s",  WPN_RM_AMMO
+; 武器名 (Weapon name)
+DrawCenteredString = 0, 90, "%s",  WPN_NAME
+
+If= lock<=0.1&&lock>0
+DrawString = 60, 10, "user_case 3rd_player@n 正在启动程序批次"
+DrawString = 60, -10, ">configuring>projects>root project>MAV_jammer"
+Endif
+
+If= lock<=0.2&&lock>0.1
+DrawString = 60, -30, "获取player.Cood.X = %+.1f", pos_X
+DrawString = 60, -20, "获取player.Cood.Y = %+.1f", pos_Y
+DrawString = 60, -10, "获取player.Cood.Z = %+.1f", pos_Z
+DrawString = 60, 0, "//成功获取player信息，连线中//"
+DrawString = 60, 10, "user_case 3rd_player@n 正在启动电子干扰"
+DrawString = 60, 20, "尝试使用exodus_handshake.dat打招呼"
+DrawString = 60, 25, "//player正在识别敌方目标//"
+DrawString = 60, 30, "//player正在处理入侵策略//"
+Endif
+
+If= lock<=0.3&&lock>0.2
+DrawString = 60, -35, "user_case 3rd_player@n 正在启动电子干扰"
+DrawString = 60, -25, "尝试使用exodus_handshake.dat打招呼"
+DrawString = 60, -15, "//player正在识别敌方目标//"
+DrawString = 60, -10, "//player正在处理入侵策略//"
+DrawString = 60, 0, "if request.url = https://tv90.top --fiter.runtime"
+DrawString = 60, 10, "ffpass import --from /dev/sdx/injection_package.dat"
+DrawString = 60, 20, ">load data from https://tv90.top/data/--metadata.xml"
+DrawString = 60, 30, "data loaded successfully "
+DrawString = 60, 35, "data loaded successfully "
+Endif
+
+If= lock<=0.4&&lock>0.3
+DrawString = 60, -35, "//player正在识别敌方目标//"
+DrawString = 60, -30, "//player正在处理入侵策略//"
+DrawString = 60, -20, "if request.url = https://tv90.top --fiter.runtime"
+DrawString = 60, -10, "ffpass import --from /dev/sdx/injection_package.dat"
+DrawString = 60, 0, ">load data from https://tv90.top/data/--metadata.xml"
+DrawString = 60, 10, "data loaded successfully "
+DrawString = 60, 15, "data loaded successfully "
+DrawString = 60, 25, ">load data from https://tv90.top/net/SNAPSHOT/data2.dat"
+DrawString = 60, 35, "zipStorePath = dev/dists"
+Endif
+
+If= lock<=0.5&&lock>0.4
+DrawString = 60, -35, ">load data from https://tv90.top/data/--metadata.xml"
+DrawString = 60, -25, "data loaded successfully"
+DrawString = 60, -20, "data loaded successfully"
+DrawString = 60, -10, ">load data from https://tv90.top/net/SNAPSHOT/data2.dat"
+DrawString = 60, 0, "zipStorePath = dev/dists"
+DrawString = 60, 10, "data loaded successfully"
+DrawString = 60, 20, "@served payloads = hash.new[0]"
+DrawString = 60, 25, "@served payloads = hash.new[1]"
+DrawString = 60, 35, "@served payloads = hash.new[2]"
+Endif
+
+If= lock<=0.6&&lock>0.5
+DrawString = 60, -35, "data loaded successfully "
+DrawString = 60, -25, "@served payloads = hash.new[0]"
+DrawString = 60, -20, "@served payloads = hash.new[1]"
+DrawString = 60, -10, "@served payloads = hash.new[2]"
+DrawString = 60, 0, "Baskmaling..."
+DrawString = 60, 10, ">loading resourse table"
+DrawString = 60, 20, "loaded successfully"
+DrawString = 60, 25, "Regular manifest package"
+DrawString = 60, 35, "ffpass import --from /dev/sdx/injection_package.dat"
+Endif
+
+If= lock<=0.7&&lock>0.6
+DrawString = 60, -35, "loaded successfully"
+DrawString = 60, -25, "Regular manifest package"
+DrawString = 60, -20, "ffpass import --from /dev/sdx/injection_package.dat"
+DrawString = 60, -10, "//player入侵策略处理完毕//"
+DrawString = 60, -5, "//player正在处理攻击向量//"
+DrawString = 60, 15, "@served payloads = hash.new[4]"
+DrawString = 60, 25, "@served payloads = hash.new[5]"
+DrawString = 60, 35, "//player攻击向量处理完毕//"
+Endif
+
+If= lock<=0.8&&lock>0.7
+DrawString = 60, -35, "//player攻击向量处理完毕//"
+DrawString = 60, -30, "//player正在启动电子干扰//"
+DrawString = 60, -20, "ffpass export --file /devsdx/jamming_package.csv"
+DrawString = 60, -10, "..................................."
+DrawString = 60, 0,   "..................................."
+DrawString = 60, 10,  "..................................."
+DrawString = 60, 20,  "..................................."
+DrawString = 60, 30,  "..................................."
+Endif
+
+If= lock<=0.9&&lock>0.8
+DrawString = 60, -30, "..................................."
+DrawString = 60, -20, "..................................."
+DrawString = 60, -10, "..................................."
+DrawString = 60, 0,   "..................................."
+DrawString = 60, 10,  "..................................."
+DrawString = 60, 20,  "..................................."
+DrawString = 60, 30,  "..................................."
+Endif
+
+If= lock<=1.0&&lock>0.9
+DrawString = 60, -35, "..................................."
+DrawString = 60, -25, "..................................."
+DrawString = 60, -15, "//player成功启动电子干扰//"
+DrawString = 60, -10, "//player正在生成日志记录//"
+DrawString = 60, 0,  "//player日志记录生成完毕//"
+DrawString = 60, 5,  "//player正在导出日志记录//"
+DrawString = 60, 15,  "ffpass export --file player/documents/log/latest.log"
+DrawString = 60, 25,  "TOTAL TIME：1.50sec"
+DrawString = 60, 35,  "end_"
+Endif

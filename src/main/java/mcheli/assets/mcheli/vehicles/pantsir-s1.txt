@@ -1,0 +1,45 @@
+DisplayName = PANTSIR-M
+AddDisplayName = zh_CN, PANTSIR-M
+AddDisplayName = en_US, PANTSIR-M
+MaxHp = 10000
+
+Category = M.A
+HUD = 9K22
+MinRotationPitch = -85
+MaxRotationPitch = -10
+
+
+CameraPosition = 0.0, 3.6, 0.0
+CameraZoom = 3
+EnableNightVision = true
+EnableEntityRadar = true
+AddGunnerSeat = 0.00, 0, 0.00,  0.0,1.314,-1.56, true
+
+ArmorMinDamage = 5
+DamageFactor = 0.0
+BoundingBox = 0.0, 2.5, 0.0,  2.0, 4.6
+
+RadarType = MODREN_AA
+NameOnAdvancedAARadar = SP
+NameOnModernAARadar = SP
+NameOnEarlyAARadar = SP
+NameOnModernASRadar = SP
+NameOnEarlyASRadar = SP
+
+;Weapons
+AddTurretWeapon = C-RAM_20mm,   1.31,  2.36, -0.0399,  0.0, 0.0, false,1, 0,-360,360, -85, 5
+AddTurretWeapon = C-RAM_20mm,  -1.31,  2.36, -0.0399,  0.0, 0.0, false,1, 0,-360,360, -85, 5
+
+;MISC
+;Place misc paramters here
+HideEntity = true
+ArmorMaxDamage = 0
+ArmorMinDamage = 10000
+AddPart = false, true, false, 0, 0.0, 1.674, 0.0
+AddPart = true, true, true, 0,  0, 2.33, -0.0399
+AddChildPart = true, false, false, 1, 1.31 , 2.36, -0.0399
+AddChildPart = true, false, false, 1, -1.31 , 2.36, -0.0399
+
+;  M = Military,  A = AAGun(対空砲)
+
+;DUPLICATES

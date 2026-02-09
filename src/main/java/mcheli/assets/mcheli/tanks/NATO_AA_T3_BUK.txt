@@ -1,0 +1,128 @@
+DisplayName = BUK-M1 NASAMS
+AddDisplayName = zh_CN, 山毛榉-M1 (NASAMS)
+AddDisplayName = en_US, BUK-M1 NASAMS
+MaxHp = 700
+
+ItemID = 91129
+HUD = SPAA, MBT_GUNNER
+Speed = 0.5
+MobilityRoll = 0
+ThrottleUpDown = 2
+MinRotationPitch = -70
+MaxRotationPitch = 1
+PivotTurnThrottle = 0.0
+throttledownfactor = 2.5
+StepHeight = 1.5
+MobilityYawOnGround = 2
+DefaultFreelook = true
+
+Sound = MBT_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.89
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.000, 4.567,2.775, true
+CameraRotationSpeed = 50
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.096, 0,   0.00, 1.096, -4.534,  false, -90, 90, true
+
+ArmorMinDamage = 10
+DamageFactor = 0.00
+explosionsizebycrash = 10
+BoundingBox = 0.0, 1.552, 3.518,  3.694, 1.214, 2.311, 0.8, DEFAULT, 乘员舱
+BoundingBox = 0.0, 0.414, 3.518,  3.694, 1.214, 2.311, 0.6, DEFAULT, 首下
+BoundingBox = 0.0, 0.937, -0.17,  3.694, 2.346, 5.16, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 0.937, -3.877,  3.694, 2.346, 2.243, 1.3, DEFAULT, 引擎
+BoundingBox = 0.0, 3.347, 3.041,  3.694, 2.346, 2.243, 0.5, TURRET, 电子设备
+BoundingBox = 0.0, 2.542, -1.217,  3.694, 0.727, 6.174, 0.5, TURRET, 基座
+BoundingBox = 0.0, 3.817, -1.718,  3.694, 1.574, 7.134, 1.8, TURRET, 导弹发射筒
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AA
+NameOnAdvancedAARadar = BUK
+NameOnModernAARadar = BUK
+NameOnEarlyAARadar = SAM
+NameOnModernASRadar = BUK
+NameOnEarlyASRadar = SAM
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 0.9
+OnGroundRollFactor = 0.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.4069,  3.741
+AddTrackRoller = -1.541,  0.1714,  2.697
+AddTrackRoller = -1.4555,  0.1714, 1.486
+AddTrackRoller = -1.4555,  0.1714,  0.2642
+AddTrackRoller = -1.4555,  0.1714,  -0.8844
+AddTrackRoller = -1.4555,  0.1714,  -2.087
+AddTrackRoller = -1.4555,  0.1714,  -3.263
+
+AddTrackRoller = -1.4555,  0.4786,  -4.123
+
+AddCrawlerTrack = true, 0.21, -2.0, -0.262/1.702, -0.262/2.697, -0.208/2.91, 0.017/3.862, 0.157/4.044, 0.328/4.123, 0.511/4.103, 0.721/3.947, 0.805/3.745, 0.819/-4.095, 0.785/-4.302, 0.647/-4.428, 0.478/-4.469, 0.288/-4.423, -0.208/-3.486, -0.197/-3.486, -0.262/-3.269
+
+;Weapons
+AddPartWeapon = AA_BUKM1_ARM/AA_BUKM1_IRM, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true, -0.000, 2.942,-4.734
+
+AddPartWeapon = AA_BUKM1_ARM/AA_BUKM1_IRM, true, true, false,  0.00, 1.788, 0.00, 0
+
+AddPartWeaponChild = false, true, -0.000, 4.240,2.775
+
+AddTurretWeapon = AA_BUKM1_ARM,         -1, 2.942,-4.734,  -0.2, 0.0, true,1, 0,-360,360, -70, 1
+AddTurretWeapon = AA_BUKM1_ARM,          1, 2.942,-4.734,  0.2, 0.0, true,1, 0,-360,360, -70, 1
+AddTurretWeapon = AA_BUKM1_ARM,          1, 3.942,-4.734,  -0.2, 0.0, true,1, 0,-360,360, -70, 1
+AddTurretWeapon = AA_BUKM1_ARM,          -1, 3.942,-4.734,  0.2, 0.0, true,1, 0,-360,360, -70, 1
+
+AddTurretWeapon = AA_BUKM1_IRM,         -1, 2.942,-4.734,  -0.2, 0.0, true,1, 0,-360,360, -70, 1
+AddTurretWeapon = AA_BUKM1_IRM,          1, 2.942,-4.734,  0.2, 0.0, true,1, 0,-360,360, -70, 1
+AddTurretWeapon = AA_BUKM1_IRM,          1, 3.942,-4.734,  -0.2, 0.0, true,1, 0,-360,360, -70, 1
+AddTurretWeapon = AA_BUKM1_IRM,          -1, 3.942,-4.734,  0.2, 0.0, true,1, 0,-360,360, -70, 1
+
+AddWeapon = IFV_bunker,          0, 0,6,  0.0, 90, true,1, 0,0,0, 0, 0
+
+weapongrouptype = 11
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 700
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+engineshutdownthres = 20
+hudtype = 3
+maintenanceUseTime = 20
+maintenanceWaitTime = 350
+armorExplosionDamageMultiplier = 1.2
+
+;CameraPosition = 0.6,  2.8, 0.8495, true
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR
+;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+
+;DUPLICATES
+hasMaintenance = true

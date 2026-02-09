@@ -1,0 +1,108 @@
+DisplayName = PROJ.1204-M
+AddDisplayName = zh_CN, PROJ.1204-M 武装炮艇
+AddDisplayName = en_US, PROJ.1204-M
+MaxHp = 1200
+
+HUD = FAC, FAC, FAC, FAC
+ThirdPersonDist = 28
+Speed = 0.6
+MobilityRoll = 0
+ThrottleUpDown = 0.9
+MinRotationPitch = 0
+MaxRotationPitch = 0
+throttledownfactor = 3
+MobilityYawOnGround = 2.0
+CanMoveOnGround = false
+DefaultFreelook = true
+
+Sound = boat
+Float = true
+FloatOffset = -0.3
+CanRotOnGround = false
+
+Gravity = -0.1
+GravityInWater = 0.1
+MaxFuel = 1500
+FuelConsumption = 2.0
+
+CameraPosition = 0.00, 2.54, 0.05, false
+CameraZoom = 6
+EnableNightVision = true
+AddGunnerSeat = 0.00, 1.22, -2.78, 0.00, 2.54,  0.05, false, -40.0, 4.0
+AddGunnerSeat = 0.00,  -0.20,-11.09, 0.00, 3.14,-11.09, false, -80.0, 0.0
+AddGunnerSeat = 0.00,  -0.20,-14.82, 0.00, 3.14,-14.82, false, -80.0, 5.0
+
+AddParticleSplash = 1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+
+DamageFactor = 0.0
+engineShutdownThreshold = 30
+explosionsizebycrash = 10
+BoundingBox = 0.0, -0.335, -7.23,  3.294, 3.639, 25.074, 0.5, DEFAULT, 舰体
+BoundingBox = 0.0, 2.283, -5.648,  2.504, 1.582, 8.538, 0.8, DEFAULT, 上层建筑
+EntityWidth = 0.85
+EntityHeight = 0.85
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = NVL
+NameOnModernAARadar = NVL
+NameOnEarlyAARadar = NVL
+NameOnModernASRadar = 1204
+NameOnEarlyASRadar = NVL
+enablerwr = true
+
+hasMaintenance = true
+
+;Weapons
+AddWeapon = FAC_1206_76MM_HEAT,    0.00, 1.7925,   0.05, 0.0, 0.0, true,  1,   0, -145,145, -35.0, 4.0
+AddWeapon = FAC_MG_762,    0.1, 1.7925,   0.05, 0.0, 0.0, true,  1,   0, -145,145, -35.0, 4.0
+AddWeapon = FAC_1206_Torpedo,    0.50, -0.5,   0.05, 0.0, 0, true,  1,   0, 0,0, -0.1, 0.0
+AddWeapon = FAC_1206_Torpedo,    -0.50, -0.5,   0.05, 0.0, 0, true,  1,   0, 0,0, -0.1, 0.0
+
+AddWeapon = FAC_1206_ROCKET, 0.00, 2.63, -11.09, 0.0, -0.0, false, 2, 180, -140,140, -85.0, 0.0
+AddWeapon = FAC_1206_ROCKET, 0.52, 2.63, -11.09, 0.0, -0.0, false, 2, 180, -140,140, -85.0, 0.0
+AddWeapon = FAC_1206_ROCKET, -0.52, 2.63, -11.09, 0.0, -0.0, false, 2, 180, -140,140, -85.0, 0.0
+AddWeapon = FAC_30MM_AHEAD,     0.00, 2.06, -14.82, 0.0, 0.0, false, 3, 180, -170,170, -80.0, 5.0
+AddWeapon = FAC_30MM_AHEAD,     0.00, 2.26, -14.82, 0.0, 0.0, false, 3, 180, -170,170, -80.0, 5.0
+
+AddPartWeapon = FAC_1206_76MM_HEAT , false, true, false, 0.00, 1.44, 0.14
+AddPartWeaponChild = false, true, 0.00, 1.7925, 0.2612
+AddPartWeaponChild = false, true, 0.00, 1.7925, 0.2612, 0.40
+AddPartWeapon = FAC_1206_ROCKET, false, true, false, 0.00, 1.72, -11.09
+AddPartWeapon = FAC_1206_ROCKET, false, true, true, 0.00, 2.31, -11.09
+
+AddPartWeapon = FAC_30MM_AHEAD, false, true, false, 0.00, 1.59, -14.85
+AddPartWeapon = FAC_30MM_AHEAD, false, true, true, 0.00, 2.055, -14.82
+
+weapongrouptype = 4
+
+;MISC
+;Place misc paramters here
+EnableBack = true
+AddPartCamera = 0.00, 3.95, -4.42, true, false
+AddPartCamera = 0.00, 3.95, -4.42, true, true
+AddPartRotation = 0.00,  4.78,-6.49,   0,-1,0,     25,      true
+maintenanceUseTime = 20
+maintenanceWaitTime = 350
+
+;AddSearchLight= 座標X, Y, Z,       開始地点の色, 終了地点の色,  距離, 終端の半径
+; 水しぶき を発生させる
+;AddParticleSplash = 座標X,   Y,    Z,   表示数, サイズ,  速度,  表示時間, 上昇, 重力
+
+;DUPLICATES
+AddParticleSplash = -1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash = 1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 1.5, -0.18,  -18.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash = -1.5, -0.18,  -18.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash = 1.0, -0.18,  -20.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.0, -0.18,  -20.0,   2,      9.0,    1.1,   60,       0.01,   0

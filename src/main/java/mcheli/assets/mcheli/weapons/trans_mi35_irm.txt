@@ -1,0 +1,71 @@
+DisplayName = KH39T 红外制导空对地导弹
+Type = ATMissile
+Power = 0
+Acceleration = 0.1
+Explosion = 8
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 100
+LockTime = 35
+ModeNum = 2
+Round =2
+reloadtime =100
+ModelBullet = KH39
+Sound = missile_11_snd
+RidableOnly = false
+HeatCount = 700
+MaxHeatCount = 1000
+
+RigidityTime = 15
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+MaxLockOnRange = 1500
+MaxLockOnAngle = 5
+
+EnableOffAxis = false
+MaxDegreeOfMissile = 120
+SpeedFactor = 0.08
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 40
+SpeedDependsAircraft = true
+turningFactor = 0.15
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1.1
+DamageFactor = tank, 1.1
+
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+
+modenum=2
+fixmode=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+RidableOnly = true
+
+
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=4
+
+DamageFactor = living, 0.5
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=3.5
+ExplosionDamageVsPlane=3.5
+ExplosionDamageVsHeli=3.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 0
+ExplosionDamageVsShip=4
+enableExhaustFlare=true

@@ -1,0 +1,124 @@
+DisplayName = T-72B3
+AddDisplayName = zh_CN,T-72B3 UBH 主战坦克
+AddDisplayName = en_US,T-72B3
+MaxHp = 1200
+
+ItemID = 91128
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.70
+ThrottleUpDown = 1.5
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 1
+StepHeight = 1.5
+MobilityYawOnGround = 2.6
+DefaultFreelook = true
+
+Sound = mbt_run
+
+Gravity = -0.1
+MotionFactor = 0.89
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.8,  2.6, 2.11, true
+CameraRotationSpeed = 40
+CameraZoom = 6
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+AddGunnerSeat = -0.6034, 4.304, -3.175,  -0.8436,3.711, -0.4643, false, -90, 90, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.645, 0.200820,   4.684, 2.02,  5.3,0.7,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.21, 3.6,   4.684, 0.8871,  1.5,0.4,DEFAULT,首上
+BoundingBox = 0.0, 0.191, 3.67,   4.684, 1.08,  1.7,0.8,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -3.53,   4.684, 2.1,  2.302,1.1,DEFAULT,引擎
+BoundingBox = 0.0, 2.16, 0.4,   3.9, 1,  3.8,0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.63, 0.4,   3.184, 0.1,  3.1,1.0, TURRET,车顶
+BoundingBox = 1.95, 2.24, -0.6,   0.212, 0.7087,  3.393,0.8, TURRET,炮塔侧面
+BoundingBox = -1.95, 2.24, -0.6,   0.212, 0.7087,  3.393,0.8, TURRET,炮塔侧面
+BoundingBox = 0, 2.24, -2.35,   4, 0.7087,  0.2,1.1, TURRET,炮塔后面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = T72
+NameOnEarlyASRadar = MBT
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.9
+OnGroundRollFactor = 3.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddCrawlerTrack = true, 0.20, -2.0,  -0.2533/2.547,-0.2533/3.251,0.03151/3.859,0.2996/4.429,0.4514/4.611,0.6497/4.662,0.8359/4.611,0.9801/4.4473,1.032/4.284,1.084/2.066,1.084/-2.037,1.087/-3.648,1.024/-3.843,0.8882/-3.962,0.6814/-3.990,0.5073/-3.929,0.3482/-3.734,-0.2427/-2.906,-0.2533/-2.8,
+AddTrackRoller = -2.32,  0.6723,  4.288
+AddTrackRoller = -2.32,  0.2861,  3.193
+AddTrackRoller = -2.32,  0.2861,  2.029
+AddTrackRoller = -2.32,  0.2861,  0.9014
+AddTrackRoller = -2.32,  0.2861,  -0.2974
+AddTrackRoller = -2.32,  0.2861,  -1.487
+AddTrackRoller = -2.32,  0.2861,  -2.624
+AddTrackRoller = -2.32,  0.7161,  -3.598
+
+;Weapons
+AddPartWeapon = MBT_T72B3_HEAT/MBT_T72B3_CANISTER, false, true, false,  0.00, 1.58, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 1.951, 1.358
+AddPartWeaponChild = false, true, 0.00, 1.951, 1.358, 0.5
+
+AddTurretWeapon = MBT_T72B3_HEAT,  0.8,  2.6, 2.11,  0.0, 0.0,  true,1, 0,-360,360, -17, 8,  0.00, 1.951, 1.358
+AddTurretWeapon = MBT_T72B3_CANISTER,  0.00, 1.951, 1.358,  0.0, 0.0, true,1, 0,-360,360, -17, 8
+
+AddTurretWeapon = MG_762,      -0.35, 1.876, 0.34,  0.0, 0.0, true,1, 0,-360,360, -17, 8
+
+AddPartTurretWeapon = GUNNER_MG_127, false, true, false, -0.8436, 2.511, -0.4643
+AddPartWeaponChild = false, true, -0.8436, 3.061, 0.4183
+AddTurretWeapon = GUNNER_MG_127, -0.8436, 3.061, 0.4183, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+AddTurretWeapon = GUNNER_DEFENSE,   -0.0, 3.68,  0.0,   0.0, 90, false, 2, 0, -0,0, -0,0
+
+weapongrouptype = 6
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 900
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 3
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T 10KF51 11 AP/STAFF
+;12HE/SACLOS
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES

@@ -1,0 +1,32 @@
+DisplayName = 无线电信标
+Type = Dispenser
+DispenseItem = flansmod:soldierspawner
+DispenseRange = 1
+Power = 1000
+Acceleration = 1
+Accuracy = 0
+
+Flaming = false
+Sight = None
+Delay = 10
+Round = 1
+HeatCount = 40
+MaxHeatCount = 40
+
+ModelBullet = GBU-32
+
+ReloadTime = 45
+Sound = MARK
+SoundVolume = 3
+SoundPitch = 1.0
+ModelBullet = FAB-500
+Gravity = -0.05
+
+TrajectoryParticle = largesmoke
+
+Group = MainGun
+MaxAmmo = 1
+SuppliedNum = 1
+Item =  4, iron_ingot
+Item =  4, gunpowder
+Item =  4, redstone

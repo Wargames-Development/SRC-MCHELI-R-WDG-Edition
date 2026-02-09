@@ -1,0 +1,144 @@
+DisplayName = ABRAMS X
+AddDisplayName = zh_CN, 通用动力 艾布拉姆斯-X
+AddDisplayName = en_US, ABRAMS X
+MaxHp = 1200
+
+ItemID = 30101
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.7
+MobilityRoll = 0
+ThrottleUpDown = 2
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 3.5
+DefaultFreelook = true
+
+Sound = tank_gte
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.89
+MaxFuel = 1200
+FuelConsumption = 0.1
+
+CameraPosition = 0.8,  2.9, 2.2, true
+CameraRotationSpeed = 30
+CameraZoom = 6
+EnableNightVision = true
+AddGunnerSeat = 0.00,  1.50,  0,    0.00,  2.50,  0.25,  false, -90, 90, true
+AddGunnerSeat = -0.0, 0.493, 0,  -0.0, 3.594, -1.029, false, -90, 90, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.0
+engineShutdownThreshold = 30
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.764, -0.486,  4.716, 2.0, 6.298, 1,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.423, 3.87,  4.716, 0.705, 2.346, 0.6,DEFAULT,首上
+BoundingBox = 0.0, 0.478, 3.87,  4.716, 1.167, 2.346, 0.5,DEFAULT,首下
+BoundingBox = 0.0, 0.805, -4.609,  4.716, 2.082, 1.941, 1.3,DEFAULT,引擎
+BoundingBox = 0.0, 2.38, -3.517,  4.812, 0.827, 0.136,1.3, TURRET,炮塔后面
+BoundingBox = 2.319, 2.38, -1.571,  0.184, 0.827, 3.768,1.0, TURRET,炮塔侧面
+BoundingBox = -2.319, 2.38, -1.571,  0.184, 0.827, 3.768,1.0, TURRET,炮塔侧面
+BoundingBox = 0.0, 2.38, -0.425,  4.376, 0.937, 5.844, 0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.857, -0.425,  3.938, 0.085, 5.26, 1, TURRET,车顶
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 3
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = M1
+NameOnEarlyASRadar = MBT
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 5
+OnGroundRollFactor = 5
+
+;Parts
+SetWheelPos = 1.82,  -0.24,  2.86,  0.70, -0.76, -2.22, -4.14
+
+AddTrackRoller = -1.82,  0.7818,  3.685
+AddTrackRoller = -1.82,  0.2253,  2.460
+AddTrackRoller = -1.82,  0.2253,  1.421
+AddTrackRoller = -1.82,  0.2253,  0.4138
+AddTrackRoller = -1.82,  0.2253,  -0.5999
+AddTrackRoller = -1.82,  0.2253,  -1.634
+AddTrackRoller = -1.82,  0.2253,  -2.680
+AddTrackRoller = -1.82,  0.2253, -3.755
+AddTrackRoller = -1.82,  0.7926, -4.678
+
+AddCrawlerTrack = true, 0.24, -2.0, -0.264/0.407, -0.264/2.472, 0.379/3.973, 0.634/4.183, 0.971/4.16, 1.226/3.935, 1.283/3.682, 1.195/-4.733, 1.056/-4.988, 0.788/-5.089, 0.495/-4.96, -0.225/-3.978, -0.258/-3.757
+
+;Weapons
+AddPartWeapon = MBT_M1AX_railgun/MBT_M1AX_railgun_he, false, true, false,  0.00, 2.074, 0.00, 0
+AddPartWeaponChild = false, true, 0.00, 2.0101, 2.010, 0.0
+AddPartWeaponChild = false, true, 0.00, 2.0101, 2.010, 0.5
+
+AddTurretWeapon = MBT_M1AX_railgun, 0.8,  2.9, 2.2,  0.0, 0.0, true,1, 0,-360,360, -18, 7, 0.085, 2.0101, 2.010
+AddTurretWeapon = MBT_M1AX_railgun_he, 0.8,  2.9, 2.2,  0.0, 0.0, true,1, 0,-360,360, -18, 7, 0.085, 2.0101, 2.010
+
+AddTurretWeapon = MG_40mmFrag,      -0.43, 2.18, 1.92,  0.0, 0.0, true,1, 0,-360,360, -18, 7
+
+AddPartTurretWeapon = mbt_m1ax_gunner_30mm, true, true, false, -0, 2.923, -0.8954
+AddPartWeaponChild = false, true, -0.0, 3.594, -1.029
+AddPartWeaponChild = false, true, -0.0, 3.594, -1.029, 0.1
+AddTurretWeapon = mbt_m1ax_gunner_30mm, -0.0, 3.594, -1.029, 0.0, 0.0, false, 2, 0, -360,360, -70,10
+AddTurretWeapon = gunner_mark, 0, 3.014, -0,  -0, 0.0, false,2, 0,-0,0, -0, 0
+AddTurretWeapon = mbt_m1ax_gunner_ucav, -0.0, 3.594, -1.029, 0.0, 0.0, false, 2, 0, -360,360, -70,10
+
+weapongrouptype = 4
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 900
+ArmorDamageFactor = 1
+ArmorDamageFactor = 1.0
+HideEntity = true
+WeightType = Tank
+WeightedCenterZ = 0.0
+EnableBack = true
+RideRack = lcac, 1
+hudtype = 1
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+;EnableEntityRadar = true
+; 指定した高さまでの水に触れてもダメージを受けない
+; 2であれば2ブロックまでダメージ無し
+; Tank or Car or Unknown
+; 重心Z座標設定
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+; 地面の滑りやすさ、小さいほど摩擦が大きくなり動きにくくなる
+;ArmorMinDamage 最小ダメージ、これより小さいダメージは無効化される
+;ArmorDamageFactor ダメージ係数上記のMin/Max範囲チェック後のダメージの係数 1で100%, 0.5で50%
+;後退可能にする
+;PivotTurnThrottle を0より大きい値にすると超信地旋回ができなくなる。デフォルトは0
+;AddCrawlerTrack = 履帯の表裏逆転,  1つの履帯の間隔, 履帯のXの位置, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, ...
+;転輪がなくても動作する
+;主砲
+;
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES
+hasMaintenance = true

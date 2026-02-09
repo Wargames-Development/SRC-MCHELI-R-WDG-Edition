@@ -1,0 +1,81 @@
+DisplayName =DTC191 µç´Å¶¯ÄÜÎ²ÒíÎÈ¶¨ÍÑ¿Ç´©¼×µ¯
+Type = Railgun
+Power = 700
+ModelBullet =tank_shell
+Acceleration = 50
+;Piercing =5
+Explosion = 0
+ExplosionBlock = 0
+Flaming = false
+locktime=15
+
+RailgunSound=Railgun_SND
+
+Sight = None
+Delay = 139
+ReloadTime = 139
+Round = 1
+SoundVolume = 10.0
+Sound = Railgun_F_snd
+Accuracy = 0.00
+BulletColor        = 255, 255, 100, 100
+Group = MainGun
+DisplayMortarDistance = true
+Recoil = 0.8
+Gravity = -0.000007
+DisplayMortarDistance = true
+TrajectoryParticle = largesmoke
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.0
+
+
+
+
+AddMuzzleFlash      =  5.5,      0.4,        7,  220,254,159,74
+AddMuzzleFlash      =  5.5,      0.4,        6,  220,254,219,104
+AddMuzzleFlash      =  5.5,      0.4,        5,  220,254,219,184
+AddMuzzleFlashSmoke =  4.5, 5,  12.0,  4.0, 65,  220,160,140,120
+AddMuzzleFlashSmoke = 4.5, 5,  13.0,  7.0, 55,  200,190,170,150
+RecoilBufCount = 40, 5
+
+MaxAmmo = 20
+SuppliedNum = 10
+Item =  10, iron_ingot
+Item =  5, gunpowder
+
+
+FlakParticlesCrack = 300
+NumParticlesFlak = 20
+FlakParticlesDiff = 0.8
+
+WeaponSwitchSound = Switch_Main_Cannon
+
+RecoilPitch = 100
+RecoilYaw = 0.5
+RecoilPitchRange = 20
+RecoilYawRange = 1
+RecoilRecoverFactor = 0.05
+canBeIntercepted=false
+canBeIntercepted=false
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+crosstype=1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.5
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=1
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

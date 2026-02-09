@@ -1,0 +1,76 @@
+DisplayName = AIM120C5主动雷达弹
+Type = AAMissile
+ModelBullet = aim120
+Power = 180
+Acceleration = 0.5
+Explosion = 2
+Flaming = false
+Sight = MissileSight
+Delay = 90
+ReloadTime = 45
+Group = MainGun
+Round =5
+HeatCount =500
+MaxHeatCount = 600
+LockTime = 0
+TimeFuse = 1000
+ProximityFuseDist = 1
+DisableSmoke = false
+Sound = AA11_F
+SoundVolume = 10
+RigidityTime = 20
+MaxAmmo = 2
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+DamageFactor = heli, 0.7
+predictTargetPos=true
+
+heatcount=700
+maxheatcount=1400
+
+AddMuzzleFlash      =  8.3,      1.10,        7,  220,254,159,74
+AddMuzzleFlash      =  8.2,      1.05,        6,  220,254,219,104
+AddMuzzleFlash      =  8.1,      1.00,        5,  220,254,219,184
+AddMuzzleFlashSmoke =  8.3, 15,  12.0,  4.0, 65,  220,160,140,120
+AddMuzzleFlashSmoke = 9.3, 10,  13.0,  7.0, 55,  200,190,170,150
+numLockedChaffMax=1
+predictTargetPos=true
+turningFactor = 0.12
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 150
+MaxLockOnAngle = 80
+PDHDNMaxDegree = 180
+LockMinHeight = 65
+EnableOffAxis = true
+MaxDegreeOfMissile = 30
+ActiveRadar = true
+enableBVR=true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+SpeedFactor = 0.08
+SpeedFactorStartTick = 5
+SpeedFactorEndTick = 60
+SpeedDependsAircraft = true
+timefuse=250
+pdHDNMaxDegreeLockOutCount = 1
+scanInterval=3
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=2
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+ExplosionDamageVsShip=1
+enableExhaustFlare=true

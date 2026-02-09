@@ -1,0 +1,145 @@
+DisplayName = SU-34M
+AddDisplayName = zh_CN,SU-34M 鸭嘴兽
+AddDisplayName = en_US,SU-34M
+MaxHp = 400
+
+Category = M.F
+HUD = JET, JET_GUNNER
+ThirdPersonDist = 25
+Speed = 1.8
+MobilityPitch = 0.7
+MobilityRoll = 1.0
+MobilityYaw = 0.7
+ThrottleUpDown = 0.7
+
+Gravity = -0.038
+motionfactor = 0.955
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.627, -4.173
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.4767,  2.5,  -0.45
+AddGunnerSeat = -0.4767,  2.5, -0.45 , 0.0, 1.627, -4.173, true
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = BIG_Exhaustflame, Exhaustflame_BLUE, 1.34, 2.273, -16, -1, 0, 0, 0, 1
+AddExhaustFlame = BIG_Exhaustflame, Exhaustflame_BLUE, -1.34, 2.273, -16, -1, 0, 0, 0, 1
+
+AddPartWeaponBay = ATKJET_SU34_GUNNER_GPSBOMB_SAP/ATKJET_SU34_GUNNER_GPSBOMB,  0, 2.352, -5.923,  1.000, 0.000, 0.000, 30
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.00, 2.40, 1.5,  3.0, 3.5
+BoundingBox = 0.00, 1.90, -3.0,  4.9, 3.2
+BoundingBox = 0.00, 1.90, -7.80, 5.0, 3.2
+BoundingBox = 0.00, 1.90, -12.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox = 4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox = 0.00, 2.20, -14.3,  3.5, 2.0,1.5
+EntityWidth = 0.75
+EntityHeight = 0.75
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = S34
+NameOnModernAARadar = S34
+NameOnEarlyAARadar = S34
+NameOnModernASRadar = ATK
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartLG = 0, 2.36, -1.816,  1,0,0,120
+AddPartLGRev = -0.0, 1.962, -0.1599,  1,0,0,-30
+AddPartLGRev = -0.4185, 2.266, -2.144,  0,0,1,-80
+AddPartLGRev = 0.4257, 2.266, -2.143,  0,0,1,80
+AddPartLGRev = -0.4836, 2.362, -3.839,  0,0,1,-100
+AddPartLGRev = 0.4934, 2.362, -3.839,  0,0,1,100
+
+AddPartLG = -2, 2.5, -9.623,  0,0,0,90
+AddPartLGRev = -2.43, 2.673, -7.353,  0,0,1,-100
+AddPartLGRev = -2.40, 2.522, -9.258,  0,0,1,-85
+
+AddPartLG = 2, 2.5, -9.623,  0,0,0,90
+AddPartLGRev = 2.446, 2.658, -7.346,  0,0,1,100
+AddPartLGRev = 2.423, 2.520, -9.257,  0,0,1,85
+
+AddPartSteeringWheel = 2.427, 2.880, -14.11, 0.0, -1.0, 0.337, 30
+AddPartSteeringWheel = -2.398, 2.880, -14.12, 0.0, -1.0, 0.337, 30
+AddPartSteeringWheel = 2.567,  2.904,  -11.31,   -4.4633, -0.0758, 1.9205,  25
+AddPartSteeringWheel = -2.545,  2.904,  -11.31,    4.4633, -0.0758, 1.9205,  25
+AddPartSteeringWheel = 2.10, 2.256,-14.99, 1, 0, 0.0,   -15
+AddPartSteeringWheel = -2.081, 2.256,-14.99,  -1, 0, 0.0,   -15
+AddPartSteeringWheel = 0.4856,2.838,-0.3173, 0, 0, 1,   -20
+AddPartSteeringWheel = 0.4736,2.841,-0.3173, 1, 0, 0,   -20
+
+AddPartwing = 0.00,  2.659,-4.721,  1,0, 0, 25
+AddPartLG = 0, 2.124, -0.1331,  1,0,0,45
+
+AddPartCanopy = 0.00, 4.089, -1.808,  -1,0,0,  40
+
+;Weapons
+AddPartWeaponMissile = ATKJET_SU34_IRM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_SU34_IRM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_SU34_GUNNER_GPSBOMB_SAP,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_SU34_GUNNER_GPSBOMB_SAP,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_SU34_GUNNER_GPSBOMB,   false, false, false,   0.297,  0.518, -8.699
+
+AddPartWeaponMissile = ATKJET_SU34_AAM_SARH,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_SU34_AAM_SARH,   false, false, false,  -0.297,  0.518, -8.699
+
+AddWeapon = ATKJET_SU34_30MM_AS,  -1.214,  3.02,  -3.465,  -0.5,  0.0
+AddWeapon = ATKJET_SU34_IRM,  -5,  2.09, -8,  -1.4,  -25
+AddWeapon = ATKJET_SU34_IRM,    5,  2.09, -8,  1.8 , -25
+AddWeapon = ATKJET_SU34_AAM_SARH,   -6.87,  1.985, -8.499,  0.0,  -30
+AddWeapon = ATKJET_SU34_AAM_SARH,   6.87,  1.985, -8.499,  0.0,  -30
+
+AddWeapon = ATKJET_SU34_GUNNER_GPSBOMB,     0.0, 0.327, -4.173,  0,0.0, false,2,  0,-360,360, 0,0
+
+AddWeapon = ATKJET_SU34_GUNNER_GPSBOMB_SAP,     0.32, 0.327, -4.173,  0,-0.0, false,2,  0,-360,360, 2,90
+AddWeapon = ATKJET_SU34_GUNNER_GPSBOMB_SAP,      -0.32, 0.327, -4.173,  0,-0.0,  false,2,  0,-360,360, 2,90
+AddTurretWeapon = AESA,   -0.846, 3.68,  0.373,   0.0, 0.0, false, 2, 0, -360,360, -70,10
+
+weapongrouptype = 16
+
+;MISC
+;Place misc paramters here
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  1.34, 2.273, -17.09, -1,0,0
+;AddPartNozzle = -1.34, 2.273, -17.09, -1,0,0
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 EF2000, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM ;16 SU34
+
+;DUPLICATES
+MobilityPitch = 0.85
+MobilityPitch = 0.85
+MobilityRoll = 1.8
+MobilityRoll = 1.8
+MobilityYaw = 0.55
+MobilityYaw = 0.55
+MotionFactor = 0.96
+MotionFactor = 0.96
+SweepWingSpeed = 0.9
+AddPartWeaponBay = ATKJET_SU34_GUNNER_GPSBOMB_SAP/ATKJET_SU34_GUNNER_GPSBOMB,  0,  2.352, -5.923,  1.000, 0.000, 0.000, 45

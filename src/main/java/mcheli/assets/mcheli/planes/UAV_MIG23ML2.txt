@@ -1,0 +1,39 @@
+DisplayName = UAV MIG23ML
+AddDisplayName = ja_JP, UAV MIG23ML
+MaxHp = 1000
+
+Category = M.Q
+ItemID = 28736
+Speed = 0.5
+ThrottleUpDown = 20.0
+
+MaxFuel = 180
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+AutoPilotRot = 0
+
+ParticlesScale = 2.5
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.00, 1.7, -8, -1, 0, 0, 0, 1
+
+BoundingBox = 0.0, 0.0, 0.0, 15, 10
+
+RadarType = Modern_AA
+NameOnModernAARadar = M23
+NameOnEarlyAARadar = JET
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+;MISC
+;Place misc paramters here
+onGroundPitch = 20
+UAV = true
+TargetDrone = true
+AddRecipe = "IRF", I,iron_ingot, R,redstone,  F,furnace
+
+; M = Military(軍用機).  Q = Drone(無人航空機)
+;AddPartNozzle = 0.00, 1.7, -8, -1,0,0
+
+;DUPLICATES

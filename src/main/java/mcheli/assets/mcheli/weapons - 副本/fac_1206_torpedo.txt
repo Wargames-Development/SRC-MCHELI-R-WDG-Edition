@@ -1,0 +1,31 @@
+DisplayName = 203∫¡√◊«·–Õ”„¿◊
+Type = Rocket
+Power = 400
+ModelBullet = YU-7
+Acceleration = 1
+Explosion = 10
+Explosionblock = 0
+ExplosionInWater = 10
+Flaming = false
+Sight = None
+Delay = 0
+round = 2
+reloadtime = 200
+Accuracy = 0.1
+Gravity = 0.0
+GravityInWater = 0.0
+Sound = bomb_snd
+HeatCount = 500
+MaxHeatCount = 900
+
+FixCameraPitch = true
+
+MaxAmmo = 2
+SuppliedNum = 1
+Item =  2, iron_ingot
+Item =  2, gunpowder
+Item =  2, redstone
+
+canBeIntercepted=false
+
+crosstype=11

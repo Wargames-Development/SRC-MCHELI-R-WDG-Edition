@@ -1,0 +1,46 @@
+DisplayName = CENTURION C-RAM
+AddDisplayName = zh_CN, CENTURION C-RAM
+AddDisplayName = en_US, CENTURION C-RAM
+MaxHp = 800
+
+Category = M.A
+ItemID = 28600
+HUD = LAV-AD
+ThirdPersonDist = 8
+MinRotationPitch = -85
+MaxRotationPitch = 10
+
+CameraPosition = 0.0, 4.4, 0.0
+CameraZoom = 3
+EnableNightVision = true
+EnableEntityRadar = true
+AddGunnerSeat = 0.00, 1.52, 0.00,  0.0, 1.314,-1.56, true
+
+ArmorMinDamage = 5
+BoundingBox = 0.0, 2.5, 0.0,  2.0, 4.6
+
+RadarType = MODREN_AA
+NameOnAdvancedAARadar = AA
+NameOnModernAARadar = AA
+NameOnEarlyAARadar = AA
+NameOnModernASRadar = AA
+NameOnEarlyASRadar = AA
+enablerwr = true
+
+;Weapons
+AddTurretWeapon = C-RAM_20mm,  0.00, 3.134, 0.54,   0.0, -3.0,   true,1, 0,-360,360, -80, 25
+
+;MISC
+;Place misc paramters here
+HideEntity = true
+ArmorMaxDamage = 2000
+AddPart = true, true, false, 0,   0, 1.564, 0.0
+AddPart = false,true, true,  0,   0, 3.514, 0.0
+AddChildPart = true, false,false, 1,   0, 3.134, 0.0
+AddRecipe = " Y ",  " X ",  "XZX",  X, iron_block, Y, glass, Z, iron_ingot
+
+; M = Military,  A = AAGun(対空砲)
+;AddPart = DrawFirstPerson[T/F], RotationYaw[T/F], RotationPitch[T/F], PartType[0~], PoxX, PoxY, PoxZ
+;脚
+
+;DUPLICATES

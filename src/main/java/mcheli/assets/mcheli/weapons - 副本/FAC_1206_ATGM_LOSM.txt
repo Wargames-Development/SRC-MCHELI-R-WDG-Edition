@@ -1,0 +1,60 @@
+DisplayName = 9M133 "¶ÌºÅ" ·´Ì¹¿Ëµ¼µ¯
+Type = TVMissile
+Power = 650
+Acceleration = 2
+Explosion = 4
+Explosionblock = 0
+Flaming = false
+Sight = MoveSight
+Delay = 200
+ModeNum = 2
+ModelBullet = 9m120
+Sound = sa-2_snd
+ReloadTime = 100
+Round =2
+HeatCount =500
+MaxHeatCount = 800
+DamageFactor = player, 1
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.0
+ProximityFuseDist = 1
+;DEBUG:Manual control only
+FixMode = 1
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+RecoilPitch = 50
+RecoilYaw = 0.5
+RecoilPitchRange = 5
+RecoilYawRange = 0.5
+RecoilRecoverFactor = 0.2
+FlakParticlesCrack = 50
+NumParticlesFlak = 10
+FlakParticlesDiff = 0.3
+
+MaxAmmo = 4
+SuppliedNum = 8
+Item =  1, iron_ingot
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;cross_type:0 CONNON,1 AAM_IRM, 2 AAM_SARH, 3 ATGM_IRM, 4 ATGM_LOSM, 5, ATGM_SARH, 6 HEAT, 7 AHEAD, 8 ROCKET ,9 40MM
+crosstype=4
+
+DamageFactor = living, 1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true

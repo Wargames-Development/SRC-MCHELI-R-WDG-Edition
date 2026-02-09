@@ -1,0 +1,30 @@
+DisplayName = FGM-148 ±Í«π∑…µØ
+Type = ATMissile
+Power = 400
+Acceleration = 2.5
+Explosion = 4
+Flaming = true
+Sight = MissileSight 
+Delay = 100
+LockTime = 45
+RidableOnly = true
+ModeNum = 2
+ProximityFuseDist = 1
+ModelBullet = fgm148
+Sound = FGM148_F
+RigidityTime = 3
+TrajectoryParticleStartTick = 10
+Zoom = 4
+HeatCount = 120
+MaxHeatCount = 120
+
+DamageFactor = plane, 1.0
+DamageFactor = helicopter, 1.0
+DamageFactor = tank, 1.0
+
+MaxAmmo = 1
+SuppliedNum = 1
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+enableExhaustFlare=true

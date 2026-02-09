@@ -1,0 +1,109 @@
+DisplayName = A129
+AddDisplayName = zh_CN,A129 猫鼬
+AddDisplayName = en_US,A129
+MaxHp = 400
+
+Category = M.A
+ItemID = 28800
+HUD = HELI, HELI_GUNNER
+ThirdPersonDist = 22
+Speed = 1.2
+MinRotationPitch = -85
+MaxRotationPitch = 85
+
+Gravity = -0.038
+MaxFuel = 1200
+FuelConsumption = 0
+
+EnableGunnerMode = false
+EnableNightVision = true
+EnableEntityRadar = true
+AddSeat = 0.00,  1.65,2.50
+AddGunnerSeat = 0.00,  1.05,  4.211,   0.00, 1.488, 6.531,  true ,-5, 70, false
+
+ArmorMinDamage = 12
+damagefactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.27, 5.06,  3.0, 3.5
+BoundingBox = 0.0, 2.27, 2.04,  3.0, 3.5
+BoundingBox = 0.0, 2.27, -1,  3.0, 3.5
+BoundingBox = 0.0, 1.93, -3.89,  3.0, 2.0
+BoundingBox = 0.0, 2.58, -7.04,  3.0,4.0,1.2
+BoundingBox = 0.0, 4.08, 0.85,  8.0,0.2,1.2
+EntityWidth = 0.75
+EntityHeight = 0.75
+
+FlareType = 3
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = A129
+NameOnModernAARadar = A129
+NameOnEarlyAARadar = HELI
+NameOnModernASRadar = HELI
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartSteeringWheel = 0.008999,1.801,2.897, 0, 0, 1,   -20
+
+AddRotor = 1,90,  -0.000000,  4.239,  1.041,  0.0, 1.0, 0.0, true
+AddRotor = 1, 0,  0.4281,  3.623, -7.988,  1.0, 0.0, 0.0, false
+
+;Weapons
+AddPartWeapon = HELI_A129_GUNNER_20MM,    false,  true, false,   0.00, 0.6965,6.067
+AddPartWeaponChild = false, true,   0.00, 0.3848,6.067
+AddPartRotWeapon = HELI_A129_GUNNER_20MM,     false, true,  true,    0.00, 0.3848,6.067
+
+AddPartWeapon = HELI_A129_GUNNER_IRM/HELI_A129_GUNNER_20MM,    true,  true, false,   0.00, 1.322, 5.919
+
+AddPartWeaponMissile = HELI_A129_GUNNER_IRM,   false,  false,  false,     -1.72,  0.96, -1.64
+AddPartWeaponMissile = HELI_A129_GUNNER_IRM,   false,  false,  false,    -1.72,  0.96, -1.64
+AddPartWeaponMissile = HELI_A129_GUNNER_IRM,   false,  false,  false,     -1.72,  0.96, -1.64
+AddPartWeaponMissile = HELI_A129_GUNNER_IRM,   false,  false,  false,    -1.72,  0.96, -1.64
+
+AddPartWeaponMissile = HELI_A129_AAM_IRM,   false,  false,  false,     -1.72,  0.96, -1.64
+AddPartWeaponMissile = HELI_A129_AAM_IRM,   false,  false,  false,    -1.72,  0.96, -1.64
+AddPartWeaponMissile = HELI_A129_AAM_IRM,   false,  false,  false,     -1.72,  0.96, -1.64
+AddPartWeaponMissile = HELI_A129_AAM_IRM,   false,  false,  false,    -1.72,  0.96, -1.64
+
+AddWeapon = HELI_A129_GUNNER_20MM,  0.00, 0.3848,6.067  ,  0,0, false,2, 0,-360,360, -5,70
+
+AddWeapon = HELI_A129_ROCKET,       1.365,  1.296, 2.06,  0.5, 0
+AddWeapon = HELI_A129_ROCKET,       -1.365,  1.296, 2.06,  0.5, 0
+
+AddWeapon = HELI_A129_GUNNER_IRM,  -1.0,  1.5, 0.0,  0, 0,false,2, 0,-360,360, -10,70
+
+AddWeapon = HELI_A129_AAM_IRM, 1.72,  0.96, -1.64, 0, -30
+AddWeapon = HELI_A129_AAM_IRM, 1.72,  0.96, -1.64, 0, -30
+
+weapongrouptype = 2
+
+;MISC
+;Place misc paramters here
+onGroundPitch = 3.5
+EnableFoldBlade = true
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+; FlareOption = 浣嶇疆X, 浣嶇疆Y, 浣嶇疆Z
+; TEST
+; FlareOption = 10.0,  5.0, -20.0
+; M = Military(杌嶇敤姗?.  A = Attacker(鏀绘拑姗?
+;椋涜鍙兘鏅傞枔[绉抅 = 鐕冩枡鎼級鍙兘閲?/ 1绉掗枔銇秷璨汇仚銈嬬噧鏂?
+; 鐕冩枡鎼級鍙兘閲?
+; 1绉掗枔銇秷璨汇仚銈嬬噧鏂?
+; AddPartWeapon      = 閫ｅ嫊銇欍倠姝﹀櫒鍚?鐒°仐銇檪銇痭one), 銈兂銉娿兗鏅傞潪琛ㄧず锛? Yaw閫ｅ嫊, Pitch閫ｅ嫊, 鍥炶虎搴фX,Y,Z
+; AddPartWeaponChild = Yaw閫ｅ嫊, Pitch閫ｅ嫊, 鍥炶虎搴фX,Y,Z
+; M230
+;AddWeapon = 姝﹀櫒鍚? 浣嶇疆X,Y,Z, Yaw, Pitch, 銉戙偆銉儍銉堛亴浣跨敤銇с亶銈嬶紵, 搴у腑鐣彿, DefaultYaw,RangeYaw, MinPitch, MaxPitch
+;驾驶位cross_type0_9:0rocket，1zuni，2rocket_arm，3aam_irm，4irm，5arm，6laserm，7losm，8bomb，9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+
+;DUPLICATES
+ThirdPersonDist = 20

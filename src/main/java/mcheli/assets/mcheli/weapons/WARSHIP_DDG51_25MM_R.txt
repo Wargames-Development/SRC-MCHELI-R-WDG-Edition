@@ -1,0 +1,72 @@
+DisplayName = M242 25ºÁÃ×»úÅÚ
+Type = MachineGun1
+Power = 40
+Acceleration = 12.0
+Explosion = 2
+Gravity = -0.0065
+DisplayMortarDistance = true
+explosionblock = 0
+modelbullet = ap
+Sight = MoveSight
+Flaming = false
+Sight = MoveSight
+Delay = 3
+SoundVolume = 10
+SoundPitch = 1.0
+Sound = DV15_F
+DisableSmoke = True
+ROUND=100
+reloadtime=100
+
+Accuracy = 1.5
+HeatCount = 20
+MaxHeatCount = 260
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+
+
+DamageFactor = player, 0.1
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.1
+
+AddMuzzleFlash      =  2.5,      0.22,        2,  170,254,159,84
+AddMuzzleFlash      =  2.9,      0.20,        1,  150,254,219,184
+AddMuzzleFlashSmoke =  4.8,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke =  5.2,  1,   3.0,  1.0,  5,  180,220,217,214
+
+MaxAmmo = 150
+SuppliedNum = 150
+Item =  2, iron_ingot
+Item =  2, gunpowder
+
+WeaponSwitchSound = Switch_APC_Cannon
+
+RecoilPitch = 15
+RecoilYaw = 0.001
+RecoilPitchRange = 3
+RecoilYawRange = 0.6
+RecoilRecoverFactor = 0.06
+FlakParticlesCrack = 50
+NumParticlesFlak = 10
+FlakParticlesDiff = 0.3
+canBeIntercepted=false
+canBeIntercepted=false
+
+
+DamageFactor = living, 0.1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+;cross_type:0 CONNON,1 AAM_IRM, 2 AAM_SARH, 3 ATGM_IRM, 4 ATGM_LOSM, 5, ATGM_SARH, 6 HEAT, 7 AHEAD, 8 ROCKET ,9 40MM
+crosstype=0
+DamageFactor = ship, 0.8
+ExplosionDamageVsShip=0.5
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

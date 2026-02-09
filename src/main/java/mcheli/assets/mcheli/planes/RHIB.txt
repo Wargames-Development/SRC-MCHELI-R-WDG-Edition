@@ -1,0 +1,65 @@
+DisplayName = RHIB
+AddDisplayName = zh_CN, 硬式充气艇
+AddDisplayName = en_US, RHIB
+MaxHp = 300
+
+Category = M.C
+ItemID = 28743
+HUD = none, bofors, none, none
+ThirdPersonDist = 5
+Speed = 1.2
+ThrottleUpDown = 1.8
+StepHeight = 0.0
+MobilityYawOnGround = 4.0
+CanMoveOnGround = false
+
+Sound = RHIB_idle
+Float = true
+FloatOffset = -0.35
+CanRotOnGround = false
+
+Gravity = -0.15
+GravityInWater = -0.1
+MaxFuel = 1200
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+AddSeat = 0.2,  0.3, -0.80
+AddGunnerSeat = 0.0,  0.5,  1.5, -0.06, 1.5, 2.21,true
+
+AddParticleSplash = -1.0,  0.15,  0.0,   3,      7.0,    1.0,   20,       0.20,  -0.02
+
+ArmorMinDamage = 8
+DamageFactor = 1.0
+BoundingBox = 0.0, 0.5, 2.72, 3.0, 1.0,1.0
+BoundingBox = 0.0, 0.5, -0.3, 3.0, 1.0,1.0
+BoundingBox = 0.0, 0.5, -2.5, 1.5, 1.0,1.2
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = NVL
+NameOnModernAARadar = NVL
+NameOnEarlyAARadar = NVL
+NameOnModernASRadar = NVL
+NameOnEarlyASRadar = NVL
+enablerwr = true
+
+;Parts
+AddPartSteeringWheel = 0.00,  0.00, -1.21,  0.0, -1.0, 0.0,   30
+
+;Weapons
+AddPartWeapon = RHIB_HMG,   false, true, true,  -0.06, 1.12, 2.49
+AddWeapon = RHIB_HMG,  -0.06, 1.12, 2.49,  0, 0, false,  2,   0,   -120,  120,  -50, 20
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 800
+RideRack = ch47, 5
+AddRecipe = " W ",  "W W",  " X ",  X, iron_ingot, W, wool
+
+; M = Military(軍用機).  C = Transport(輸送機)
+
+;DUPLICATES
+AddParticleSplash = 1.0,  0.15,  0.0,   3,      7.0,    1.0,   20,       0.20,  -0.02
+AddParticleSplash = -0.5,  0.15, -0.8,   2,      7.0,    1.0,   60,       0.01,   0
+AddParticleSplash = 0.5,  0.15, -0.8,   2,      7.0,    1.0,   60,       0.01,   0

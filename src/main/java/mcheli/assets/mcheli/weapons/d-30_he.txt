@@ -1,0 +1,47 @@
+DisplayName = 122mm¸ß±¬µ¯[HE]
+Type = MachineGun2
+Power = 500
+ModelBullet = TankShellLarge
+Acceleration = 8
+Explosion = 8
+ExplosionBlock = 0
+Flaming = false
+Sight = None
+Delay = 80
+ModeNum = 1
+SoundPitch = 1
+SoundVolume = 10
+Sound = M1A2_F
+Group = MainGun
+Recoil = 0
+Gravity = -0.1
+DisplayMortarDistance = true
+TrajectoryParticle = largesmoke
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1
+DamageFactor = heli, 1
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.0
+
+heatcount = 800
+maxheatcount = 1500
+
+RecoilBufCount = 40, 5
+
+
+AddMuzzleFlash      =  5.8,      1.80,        7,  220,254,159,74
+AddMuzzleFlash      =  5.9,      1.75,        6,  220,254,219,104
+AddMuzzleFlash      =  6.1,      1.70,        5,  220,254,219,184
+AddMuzzleFlashSmoke = 6.3, 20,  10.0,  3.0, 45,  220,160,140,120
+AddMuzzleFlashSmoke =6.4, 10,  11.0,  6.0, 35,  200,190,170,150
+
+MaxAmmo = 3
+SuppliedNum = 3
+Item =  2, iron_ingot
+Item =  2, gunpowder
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

@@ -1,0 +1,55 @@
+DisplayName = FAB500 M-62 ∫Ωø’’®µØ
+Type = rocket
+Power =0
+ModelBullet = fab-500
+Acceleration = 0.1
+Explosion = 9
+Explosionblock = 0
+ExplosionInWater = 10
+Flaming = false
+Sight = None
+Delay = 5
+Sound = bomb_snd
+
+ReloadTime = 150
+Round = 2
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+HeatCount = 200
+MaxHeatCount = 300
+
+MaxAmmo = 8
+SuppliedNum = 8
+Item =  1, iron_ingot
+
+ExplosionDamageVsLiving=2
+ExplosionDamageVsPlayer=2
+ExplosionDamageVsTank=4
+ExplosionDamageVsPlane=4
+ExplosionDamageVsHeli=4
+ExplosionDamageVsVehicle=4
+canBeIntercepted=false
+canBeIntercepted=false
+
+
+disablesmoke=true
+
+
+
+SpeedDependsAircraft = true
+Gravity = -0.04
+;º› ªŒªcross_type0_9:0rocket£¨1zuni£¨2rocket_arm£¨3aam_irm£¨4irm£¨5arm£¨6laserm£¨7losm£¨8bomb£¨9connon
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM
+crosstype=8
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=7
+ExplosionDamageVsPlane=4
+ExplosionDamageVsHeli=4
+ExplosionDamageVsVehicle=1
+
+ExplosionDamageVsShip=4

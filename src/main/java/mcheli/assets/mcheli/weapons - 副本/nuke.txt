@@ -1,0 +1,54 @@
+DisplayName = 左键发射战术核导弹，右键对目标进行持续引导直至导弹命中
+Type = TVMissile
+Power = 1000
+Acceleration = 1.8
+Explosion = 800
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 100
+
+ModeNum = 2
+Round =1
+reloadtime =1000
+
+ModelBullet = KH38
+Sound = nuke
+RidableOnly = false
+HeatCount = 100000
+MaxHeatCount = 120
+fixmode=1
+
+laserGuidance = true
+hasLaserGuidancePod = true
+nukeyield=120
+
+SoundVolume = 100.0
+
+turningFactor = 1
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+turningFactor = 0.05
+DamageFactor = player, 100
+DamageFactor = plane, 100
+DamageFactor = heli, 100
+DamageFactor =vehicle , 100
+DamageFactor = tank, 100
+
+ExplosionDamageVsLiving=1000
+ExplosionDamageVsPlayer=1000
+ExplosionDamageVsTank=1000
+ExplosionDamageVsPlane=1000
+ExplosionDamageVsHeli=1000
+ExplosionDamageVsVehicle=1000
+MaxAmmo = 1
+SuppliedNum = 2
+Item =  10, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+enableExhaustFlare=true
+maxDegreeOfMissile=120

@@ -1,0 +1,32 @@
+DisplayName = SCHIPUNOV 42
+AddDisplayName = zh_CN, SCHIPUNOV 42 金属风暴发射器
+AddDisplayName = en_US, SCHIPUNOV 42
+MaxHp = 100
+
+HUD = bofors
+RotationPitchMin = -30
+RotationPitchMax = 25
+
+CameraPosition = 0,  1.8,  0
+CameraZoom = 3
+EnableNightVision = false
+AddSeat = 0.3,0,0
+
+ArmorMinDamage = 8
+Boundingbox = 0.00,  1.10,  0.00,  0.7, 1.0
+EntityWidth = 0.9
+EntityHeight = 0.9
+
+;Weapons
+AddTurretWeapon = metalstorm,  0.00, 1.4,0.0,   0.0, 0.0,   true,1, 0,-360,360, -80, 25
+
+;MISC
+;Place misc paramters here
+HideEntity = false
+ArmorMaxDamage = 1200
+AddPart = false,true, false,  0,   0, 0.851, 0
+AddPart = false, true,true, 0,   0, 1.14, 0
+
+;ArmorMaxDamage 最大ダメージ、これより大きいダメージは最大ダメージに丸められる
+
+;DUPLICATES

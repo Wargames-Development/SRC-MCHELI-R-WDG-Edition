@@ -1,0 +1,22 @@
+DisplayName = M18 smoke (Green)
+AddDisplayName = ja_JP, M18 発煙手榴弾(緑)
+ItemID = 28906
+StackSize = 1
+AliveTime = 30
+Explosion = 0
+TimeFuse = 0
+Bound = 0.3
+sound=tank_smoke_snd
+Gravity = -0.02
+GravityInWater = 0.01
+SmokeMaxAge = 300
+SmokeSize = 50
+SmokeNum = 30
+SmokeColor = 225, 225, 225
+SmokeVelocityVertical   = 0.4
+SmokeVelocityHorizontal = 2.5
+AddRecipe = "DY",  Y, iron_ingot, D,dye,15
+DispenseAcceleration = 0.7
+
+
+handflare=true

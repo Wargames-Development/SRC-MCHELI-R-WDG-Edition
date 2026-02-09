@@ -1,0 +1,68 @@
+DisplayName = ATV
+AddDisplayName = zh_CN, 四轮越野机车
+AddDisplayName = en_US, ATV
+MaxHp = 200
+
+Category = C
+ThirdPersonDist = 10
+Speed = 1.5
+MobilityRoll = 0
+ThrottleUpDown = 100
+MinRotationPitch = 0
+MaxRotationPitch = 0
+StepHeight = 1.5
+MobilityYawOnGround = 8.2
+DefaultFreelook = true
+
+Sound = JeepMove
+
+Gravity = -0.2
+GravityInWater = -0.5
+MotionFactor = 0.94
+MaxFuel = 1200
+FuelConsumption = 1.0
+
+CameraRotationSpeed = 60
+EnableNightVision = false
+AddSeat = -0.02,  0.88,  -0.16
+AddSeat = 0.07,  0.95,  -1.10
+
+DamageFactor = 0.8
+BoundingBox = 0.00, 0.50, 0.85, 1.2, 1.5
+BoundingBox = 0.00, 0.50, -0.15, 1.2, 1.0
+BoundingBox = 0.00, 0.50, -1.15, 1.0, 1.0
+
+NameOnAdvancedAARadar = 
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = CAR
+NameOnEarlyASRadar = 
+
+OnGroundPitchFactor = 2.0
+OnGroundRollFactor = 0.5
+
+;Parts
+SetWheelPos = 0.015,  -0.24,  1.186, -0.943
+AddPartSteeringWheel = 0.018, 1.165,  0.524,   0, 1, 0,  30
+
+;Weapons
+AddWeapon = horn, 0, 1.79, 9.8,  0.0, 0.0, true,1, 0,-360,180, -30, 7
+
+;MISC
+;Place misc paramters here
+EnableBack = true
+WeightType = Car
+PartWheelRot = 35
+AddRack = container,    0.01,  1.31,  -1.17,   0.01,  0.61,  -2.15
+ExclusionSeat = 2, 3
+AddFixedSearchLight = 0.39, 0.68, 1.78,   0x50FFFFFF,   0x00FFFFC0,    20.0, 10.0,  -5,  0
+AddFixedSearchLight = -0.35, 0.68, 1.78,   0x50FFFFFF,   0x00FFFFC0,    20.0, 10.0,   5,  0
+AddPartWheel = 0.758, 0.12,  1.186,  30
+AddPartWheel = -0.728, 0.12,  1.186,  30
+AddPartWheel = 0.758, 0.12,  -0.943, 5
+AddPartWheel = -0.728, 0.12,  -0.943, 5
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+
+;DUPLICATES
+Sound = JeepMove

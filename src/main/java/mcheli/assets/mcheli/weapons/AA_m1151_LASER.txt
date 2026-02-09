@@ -1,0 +1,61 @@
+DisplayName =LRAS3 100KW近防激光器
+Type = Laser
+Power = 20
+Explosion = 0
+Explosionblock = 0
+Sight = None
+Flaming = false
+Delay = 0
+SoundVolume = 0.6
+SoundPitch = 1.0
+Accuracy = 0
+HeatCount = 15
+MaxHeatCount = 300
+sound=laser_shot_snd
+
+weaponSwitchCount = 10
+
+DamageFactor = plane, 2
+DamageFactor = tank, 1.2
+DamageFactor = heli, 2
+DamageFactor = player, 0.75
+DamageFactor = living, 0.75
+DamageFactor = ship, 1.2
+
+MaxAmmo = 2000
+SuppliedNum = 2000
+Item =  1, iron_ingot
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=1
+
+AddMuzzleFlash      =   0,      0.15,        3,  150,254,159,84
+AddMuzzleFlash      =   0,      0.15,        2,  150,254,219,184
+AddMuzzleFlashSmoke   = 0,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke   = 0,  1,   3.0,  3.0,  5,  180,220,217,214
+
+; 激光武器参数
+;ARGB
+BulletColor        = 160, 245, 10, 10
+; 线宽
+Radius = 0.4
+; 射程(m)
+Length = 300
+
+; 激光持续tick 最小设置为2
+TimeFuse = 2
+; 伤害衰减，格式：
+; BulletDecay = DecayType , pairs
+; pairs       = T | T , pairs
+; DecayType   = "Segmented"                 // 目前只支持分段式衰减
+; T           = distance , multiplier       // 距离,>=该距离后的伤害倍率
+; distance    = float
+; multiplier  = float
+BulletDecay = Segmented , 12.5, 0.95, 30, 0.9, 50, 0.8, 75 , 0.7, 75, 0.6, 125, 0.55, 200, 0.45
+
+LaserStartDistance=2
+LockEntity=true

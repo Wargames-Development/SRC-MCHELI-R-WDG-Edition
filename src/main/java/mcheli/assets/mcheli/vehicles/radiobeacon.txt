@@ -1,0 +1,23 @@
+DisplayName = RADIO BEACON
+AddDisplayName = zh_CN, 无线电信标
+AddDisplayName = en_US, RADIO BEACON
+MaxHp = 15
+
+ThirdPersonDist = 12
+MinRotationPitch = 0
+MaxRotationPitch = 0
+
+CameraPosition = 0.0, 0.50, 0.0
+AddSeat = 0.00,  -0.5, -1.00
+
+EntityWidth = 1.0
+EntityHeight = 1.0
+
+;Weapons
+AddWeapon = RadioBeacon, 0, 0, 0,   0.0, -1.0,   true,1, 0,-360,360, -90,90
+
+;MISC
+;Place misc paramters here
+HideEntity = false
+
+;DUPLICATES

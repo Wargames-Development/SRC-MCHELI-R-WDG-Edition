@@ -1,0 +1,134 @@
+DisplayName = F-45
+AddDisplayName = zh_CN,F-45 验证机
+AddDisplayName = en_US,F-45
+MaxHp = 400
+
+Category = M.F
+HUD = JET, su34_gnr
+ThirdPersonDist = 25
+Speed = 3.5
+MobilityPitch = 0.7
+MobilityRoll = 1
+MobilityYaw = 0.8
+ThrottleUpDown = 2
+
+Gravity = -0.038
+motionfactor = 0.965
+MaxFuel = 28000
+FuelConsumption = 20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.0, 0
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.00,  1.73,  6.95
+
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -2.157, 1.863, -10.052, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 2.157, 1.863, -10.052, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -1.6, 1.863, -10.052, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 1.6, 1.863, -10.052, -1, 0, 0, 0, 1
+
+AddPartWeaponBay = JET_NGAD_AAM_ARM,  1.078, 1.484, -1.821,  -0.0,-0.00,1, 95
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 2.109, 7.243,  4.0, 2.0, 6.753, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.109, 1.412,  9.11, 2.0, 4.884, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.109, -4.89,  16.166, 2.0, 7.612, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.109, -10.018,  6.49, 2.0, 2.579, 1.5, DEFAULT, 引擎
+EntityWidth = 0.7
+EntityHeight = 0.7
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = ADVANCED_AA
+NameOnAdvancedAARadar = AI
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartwing = 0.00, 3.542, -4.496,  -1,0,0,  -20
+AddPartLG = 0.00,  1.628,  5.443,    0, 0, 0,  92
+AddPartLGRev = 0.2658, 1.244, 5.092,  -0.002,-0.00,1,90
+AddPartLGRev = -0.2658, 1.244, 5.092,  0.002,-0.00,1,-90
+
+AddPartLG = 1.485,  1.764,  -5.621,    0, 0, 0,  100
+AddPartLGRev = 2.035, 1.254, -5.942,  0.0,0.0,1,95
+
+AddPartLG = -1.485,  1.764,  -5.621,    0, 0, 0,  100
+AddPartLGRev = -2.035, 1.254, -5.942,  0.0,0.0,-1,95
+
+AddPartSteeringWheel = 1.494,1.681,1.63, 1, 0, 0.0,   -30
+AddPartSteeringWheel = -1.494,1.681,1.63, 1, 0, 0.0,   30
+AddPartSteeringWheel = -0.3479,2.352,7.082, 0, 0, 1,   -15
+
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.2
+
+AddPartCanopy = 0.00, 3.0527, -0.6146,  -1,0,0,  50
+
+;Weapons
+AddPartWeaponMissile = JET_NGAD_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_NGAD_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_NGAD_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_NGAD_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_NGAD_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_NGAD_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_NGAD_AAM_HEAVY_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_NGAD_AAM_HEAVY_ARM,   false, false, false,  -0.297,  0.518, -8.699
+
+AddWeapon = JET_NGAD_AAM_ARM,     6.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_NGAD_AAM_ARM,     -6.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_NGAD_AAM_ARM,     4.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_NGAD_AAM_ARM,     -4.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_NGAD_AAM_HEAVY_ARM,     6.232,  1.758, -7.699,  0,-0
+AddWeapon = JET_NGAD_AAM_HEAVY_ARM,     -6.232,  1.758, -7.699,  0,-0
+
+weapongrouptype = 450
+
+;MISC
+;Place misc paramters here
+onGroundPitch = -1.0
+Stealth = 0.6
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+; M = Military(軍用機).  F = Fighter(戦闘機)
+;AddPartNozzle =  -2.157, 1.863, -10.052, -1,0,0
+;AddPartNozzle =  2.157, 1.863, -10.052, -1,0,0
+;AddPartNozzle =  -1.6, 1.863, -10.052, -1,0,0
+;AddPartNozzle =  1.6, 1.863, -10.052, -1,0,0
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+;DUPLICATES
+MobilityPitch = 1.00
+MobilityPitch = 1.00
+MobilityRoll = 2.39
+MobilityRoll = 2.39
+MobilityYaw = 0.60
+MobilityYaw = 0.60
+MotionFactor = 0.968
+MotionFactor = 0.968
+SweepWingSpeed = 0.9
+AddPartWeaponBay = JET_NGAD_AAM_ARM,  0.3035, 1.174, -1.821,  -0.0,-0.00,1, -95
+AddPartWeaponBay = JET_NGAD_AAM_ARM,  -1.078, 1.484, -1.821,  -0.0,-0.00,1, -95
+AddPartWeaponBay = JET_NGAD_AAM_ARM,  -0.3035, 1.174, -1.821,  -0.0,-0.00,1, 95
+AddPartWeaponBay = JET_NGAD_AAM_HEAVY_ARM,  0.8556, 1.015, -3.592,  -0.0,-0.00,1, 95
+AddPartWeaponBay = JET_NGAD_AAM_HEAVY_ARM,  -0.8556, 1.015, -3.592,  -0.0,-0.00,1, -95

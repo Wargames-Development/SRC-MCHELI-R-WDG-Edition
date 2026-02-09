@@ -1,0 +1,79 @@
+DisplayName =DTC10-30 ÍÑ¿Ç´©¼×µ¯
+Type = MachineGun1
+Power = 40
+Acceleration = 18.0
+Explosion = 0
+Gravity = -0.005
+DisplayMortarDistance = true
+explosionblock = 0
+modelbullet = ap
+Sight = MoveSight
+Flaming = false
+Sight = MoveSight
+Delay = 1
+SoundVolume = 10
+SoundPitch = 1.0
+Sound = BMP_30_snd
+DisableSmoke = True
+ROUND=100
+reloadtime=100
+
+Accuracy = 2
+HeatCount = 20
+MaxHeatCount = 460
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+
+
+DamageFactor = player, 0.3
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+DamageFactor =vehicle , 1
+DamageFactor = tank, 1.0
+
+AddMuzzleFlash      =  5,      0.22,        2,  170,254,159,84
+AddMuzzleFlash      =  4.9,      0.20,        1,  150,254,219,184
+AddMuzzleFlashSmoke =  4.8,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke =  5.2,  1,   3.0,  1.0,  5,  180,220,217,214
+
+MaxAmmo = 150
+SuppliedNum = 150
+Item =  2, iron_ingot
+Item =  2, gunpowder
+
+WeaponSwitchSound = Switch_APC_Cannon
+
+RecoilPitch = 15
+RecoilYaw = 0.001
+RecoilPitchRange = 3
+RecoilYawRange = 0.6
+RecoilRecoverFactor = 0.06
+FlakParticlesCrack = 50
+NumParticlesFlak = 10
+FlakParticlesDiff = 0.3
+canBeIntercepted=false
+canBeIntercepted=false
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 0.1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=1
+BulletDecay = Segmented , 25, 1.2, 50, 1.1, 100, 1, 150 , 0.9, 200, 0.85, 250, 0.8, 300, 0.7
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

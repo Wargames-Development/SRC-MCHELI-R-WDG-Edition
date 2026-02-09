@@ -1,0 +1,88 @@
+DisplayName =3USH11 破片霰弹
+Type = MachineGun1
+Power = 22
+Acceleration = 12.0
+Explosion = 0
+Gravity = -0.005
+DisplayMortarDistance = true
+explosionblock = 0
+modelbullet = bullet105mm
+Sight = MoveSight
+Flaming = false
+Sight = MoveSight
+Delay = 3
+
+HeatCount = 20
+MaxHeatCount = 180
+
+SoundVolume = 10
+SoundPitch = 1.0
+Sound = BMP_30_snd
+DisableSmoke = True
+ROUND=12
+reloadtime=100
+
+;霰弹数量 (现在只支持MachineGun1)
+Canister = 10
+;霰弹散布种类 
+;0为位置散布(不管距离多远，散布都相同)
+;1为角度散布（距离越远散布越大)
+;2为时间散布（用于模拟多连发弹药，同时支持角度散布）
+CanisterType = 1
+;霰弹角度散布参数 推荐值>0.5
+BombletDiff = 2
+;霰弹时间散布参数 推荐值>3
+BombletSTime = 0
+
+
+Group=maingun
+
+Accuracy = 1.5
+
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+
+
+DamageFactor = player, 0.3
+DamageFactor = living, 0.3
+DamageFactor = plane, 0.65
+DamageFactor = heli, 0.65
+DamageFactor = vehicle , 0.8
+DamageFactor = tank, 0.8
+DamageFactor = ship, 1.0
+
+
+AddMuzzleFlash      =  2.6,      0.22,        2,  170,254,159,84
+AddMuzzleFlash      =  2.7,      0.20,        1,  150,254,219,184
+AddMuzzleFlashSmoke =  2.6,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke =  2.7,  1,   3.0,  1.0,  5,  180,220,217,214
+
+MaxAmmo = 150
+SuppliedNum = 150
+Item =  2, iron_ingot
+Item =  2, gunpowder
+
+WeaponSwitchSound = Switch_APC_Cannon
+
+RecoilPitch = 15
+RecoilYaw = 0.001
+RecoilPitchRange = 3
+RecoilYawRange = 0.6
+RecoilRecoverFactor = 0.06
+FlakParticlesCrack = 50
+NumParticlesFlak = 10
+FlakParticlesDiff = 0.3
+canBeIntercepted=false
+canBeIntercepted=false
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=1
+
+
+
+BulletDecay = Segmented , 0, 1.0, 100 , 0.8, 200, 0.6, 300, 0.4
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

@@ -1,0 +1,13 @@
+DisplayName = ×Ô»Ù³ÌÐò
+Type = Bomb
+Sound = explMine
+SoundVolume = 10
+Power = 100
+Acceleration = 0.1
+Explosion = 5
+ExplosionInWater = 1
+Flaming = true
+Sight = None
+Delay = 1
+Destruct = true
+DamageFactor = player£¬5.0

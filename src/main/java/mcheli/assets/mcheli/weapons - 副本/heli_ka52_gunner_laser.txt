@@ -1,0 +1,56 @@
+DisplayName =9M127 激光制导反坦克导弹
+Type = TVMissile
+Power =450
+Acceleration = 4
+Explosion = 4
+Explosionblock = 0
+Flaming = false
+Sight = MoveSight
+Delay = 5
+ModeNum = 2
+ModelBullet =agm114
+Sound =9K118_F
+ReloadTime = 100
+Round = 6
+FIXMODE=1
+LOCKTIME = 0
+ProximityFuseDist = 1
+HeatCount = 300
+MaxHeatCount = 360
+TimeFuse = 100
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+
+
+laserGuidance = true
+hasLaserGuidancePod = true
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+ProximityFuseDist = 1
+MaxAmmo = 12
+SuppliedNum = 8
+Item =  1, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+;炮手位cross_type0_9 :0 TVM，1 MISSILESTRIKE，2 rocket_arm，3 CONNONSTRIKE，4 irm，5 arm，6 laserm，7 losm，8 SARH，9 connon
+;weapon_group_type: 0:SARH/MISSILESTRIKE;1:CONNON/SARH;2:CONNON/IRM;3:LASERM/CONNONSTRIKE
+;4:CONNON/TVM;5:CONNON/TVM;6:CONNON/TVM;7:CONNON/TVM
+crosstype=6
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true
+LockEntity=true

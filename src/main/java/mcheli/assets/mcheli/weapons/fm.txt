@@ -1,0 +1,35 @@
+DisplayName = ·ÉÂí»ð¼ýµ¯
+Type = Rocket
+Power = 400
+ModelBullet = bvvd
+Acceleration = 2
+Explosion = 12
+Explosionblock = 0
+
+Sound = rocket_snd
+Flaming = false
+Sight = MoveSight
+Delay = 20
+ReloadTime = 110
+Round = 10
+HeatCount = 200
+MaxHeatCount = 1000
+
+DisableSmoke = True
+
+
+
+
+
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+
+MaxAmmo = 20
+SuppliedNum = 20
+Item =  1, iron_ingot
+
+
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true

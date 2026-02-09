@@ -1,0 +1,60 @@
+DisplayName = 天雷-4 红外制导反坦克导弹
+Type = ATMissile
+Power = 600
+Acceleration = 0.1
+Explosion = 4
+ExplosionBLOCK = 0
+Flaming = false
+Sight = MissileSight 
+Delay = 160
+LockTime = 55
+ModeNum = 2
+Round =2
+reloadtime =160
+ModelBullet = 9m120
+Sound = missile_11_snd
+RidableOnly = false
+HeatCount = 700
+MaxHeatCount = 1000
+
+
+
+IsHeatSeekerMissile = true
+IsRadarMissile = false
+MaxLockOnRange = 1500
+MaxLockOnAngle = 10
+
+EnableOffAxis = true
+MaxDegreeOfMissile = 90
+SpeedFactor = 0.08
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 40
+SpeedDependsAircraft = true
+turningFactor = 0.15
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+;ExplosionType=hbmNT_Shell
+
+DamageFactor = player, 0.5
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor =vehicle , 1.1
+DamageFactor = tank, 1.0
+
+
+
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  10, iron_ingot
+
+modenum=2
+fixmode=1
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+RidableOnly = true
+DamageFactor = ship, 1.0
+enableExhaustFlare=true

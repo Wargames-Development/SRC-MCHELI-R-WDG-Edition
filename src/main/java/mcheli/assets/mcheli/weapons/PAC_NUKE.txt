@@ -1,0 +1,41 @@
+DisplayName = RN28M ’Ω ı∫ÀŒ‰∆˜
+Type = Bomb
+Power = 9000
+ModelBullet = fab500
+Acceleration = 0.1
+Explosion = 60
+Explosionblock = 60
+ExplosionInWater = 10
+Flaming = false
+Sight = None
+Delay = 5
+Sound = bomb_snd
+
+ReloadTime = 150
+Round = 1
+Gravity = -0.006
+Bomblet = 3
+BombletDiff = 0.0
+BombletSTime = 1
+
+
+DisplayMortarDistance = true
+NukeEffectOnly=true
+nukeyield = 80
+
+HeatCount = 1000000
+MaxHeatCount = 1
+
+MaxAmmo = 1
+SuppliedNum = 8
+Item =  1, iron_ingot
+ExplosionDamageVsLiving=1000
+ExplosionDamageVsPlayer=1000
+ExplosionDamageVsTank=1000
+ExplosionDamageVsPlane=1000
+ExplosionDamageVsHeli=1000
+ExplosionDamageVsVehicle=1000
+ExplosionDamageVsShip=1000
+ExplosionThroughWall=true
+crosstype=100
+ExplosionAltitude = 20

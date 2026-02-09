@@ -1,0 +1,24 @@
+DisplayName = MIM-23B 半主动重型雷达弹
+Type = AAMissile
+Power = 500
+Acceleration = 6
+Explosion = 5
+Flaming = false
+Sight = MissileSight
+Delay = 100
+ReloadTime = 500
+Round = 3
+LockTime = 60
+ModelBullet = aim9
+HeatCount = 500
+MaxHeatCount = 800
+Sound = HAWK_F
+AddMuzzleFlashSmoke   = 2.2,  2,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke   = 3.2,  1,   3.0,  3.0,  5,  180,220,217,214
+
+MaxAmmo = 3
+SuppliedNum = 3
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+enableExhaustFlare=true

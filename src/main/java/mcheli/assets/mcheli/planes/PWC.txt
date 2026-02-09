@@ -1,0 +1,63 @@
+DisplayName = PWC
+AddDisplayName = zh_CN, 水上摩托艇
+AddDisplayName = en_US, PWC
+MaxHp = 200
+
+HUD = M1161ITV, none
+ThirdPersonDist = 8
+Speed = 1.4
+MobilityRoll = 0
+ThrottleUpDown = 1.3
+MinRotationPitch = -60
+MaxRotationPitch = 60
+StepHeight = 0.0
+MobilityYawOnGround = 3.5
+CanMoveOnGround = false
+DefaultFreelook = true
+
+Sound = AH-6J_idle
+Float = true
+FloatOffset = -0.25
+CanRotOnGround = false
+
+Gravity = -0.15
+GravityInWater = -0.1
+MaxFuel = 1500
+FuelConsumption = 1.5
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+AddSeat = 0.0,  0.30,  -0.5
+AddSeat = 0.0,  0.40,  -1.2
+
+AddParticleSplash = 0.8,  0.02,  -3.0,   2,      9.0,    1.1,   60,       0.01,   0
+
+ArmorMinDamage = 8
+DamageFactor = 0.6
+BoundingBox = 0.00,  0.20, 0.3,  2.0, 1.0,1.0
+BoundingBox = 0.00,  0.20, -2.0,  2.0, 1.0,1.0
+BoundingBox = 0.00,  0.20, 2.05,  1.0, 1.0,1.0
+
+RadarType = MODERN_AA
+NameOnAdvancedAARadar = NVL
+NameOnModernAARadar = NVL
+NameOnEarlyAARadar = NVL
+NameOnModernASRadar = NVL
+NameOnEarlyASRadar = NVL
+enablerwr = true
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 800
+AddPartRotor = 0.44,  -0.25,  0.0,   0,0, 1
+AddPartRotor = -0.44,  -0.25,  0.0,   0,0, 1
+AddBlade = 1, 0,  0.44,  -0.25,  0.0,   0,0, 1
+AddBlade = 1, 0, -0.44,  -0.25,  0.0,   0,0, 1
+InventorySize = 4
+AddRecipe = "WRF",  "BXP",  "BBB",   X, iron_block,  B, boat , P, piston, F,furnace,  R, redstone, W,planks
+
+; 水しぶき を発生させる
+;AddParticleSplash = 座標X,   Y,    Z,   表示数, サイズ,  速度,  表示時間, 上昇, 重力
+
+;DUPLICATES
+AddParticleSplash = -0.8,  0.02,  -3.0,   2,      9.0,    1.1,   60,       0.01,   0

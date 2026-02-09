@@ -1,0 +1,109 @@
+DisplayName =UGM-84 鱼叉反舰导弹 指令线/主动雷达复合制导
+Type = TVMissile
+modenum=2
+fixmode=1
+ModelBullet = AGM84
+Power = 100
+Acceleration = 1
+Explosion = 11
+Flaming = false
+Sight = MissileSight
+Delay = 15
+ReloadTime = 45
+Group = MainGun
+Round = 4
+HeatCount = 400
+MaxHeatCount = 1200
+LockTime = 0
+TimeFuse = 1500
+ProximityFuseDist = 10
+DamageFactor = heli, 0.7
+Sound = AA11_F
+SoundVolume = 10
+RigidityTime = 0
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+enableBVR=true
+
+
+
+numLockedChaffMax=1
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 1500
+MaxLockOnAngle = 55
+PDHDNMaxDegree = 180
+LockMinHeight = 100
+EnableOffAxis = true
+predictTargetPos=false
+ActiveRadar = true
+enableBVR=true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+SpeedFactor = 0.02
+
+SpeedFactorStartTick = 1
+SpeedFactorEndTick = 51
+SpeedDependsAircraft = false
+pdHDNMaxDegreeLockOutCount = 1
+scanInterval=4
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=8
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=5
+ExplosionDamageVsPlane=5
+ExplosionDamageVsHeli=5
+ExplosionDamageVsVehicle=5
+DamageFactor = living, 0.5
+DamageFactor = ship, 1.1
+ExplosionDamageVsShip=5
+enableExhaustFlare=true
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+
+SmokeSize   = 10
+SmokeMaxAge = 500
+
+
+
+MaxLockOnAngle = 30
+MaxDegreeOfMissile = 359
+
+
+
+
+
+RigidityTime=30
+
+EnableOffAxis = false
+turningFactor = 0.04
+
+enableBVR=true
+MinRangeBVR = 10
+
+SemiActiveRadar = true
+EnableHMS = true
+
+DestructAfterSpawnBullet=true
+SpawnBulletInAir = true
+ModelBomblet = WARSHIP_DDG51_ASM_ARM_BULLET
+
+BombletDiff = 0.0
+SpawnBulletMaxNum = 1
+SpawnBulletIntervalTick = 120
+SpawnBulletPerNum=1
+SpawnBulletInheritSpeed = true

@@ -1,0 +1,123 @@
+DisplayName = B-2A
+AddDisplayName = zh_CN, B-2A 幽灵
+AddDisplayName = en_US,B-2A
+MaxHp = 800
+
+Category = M.A
+ItemID = 287381
+HUD = JET, JET_GUNNER
+ThirdPersonDist = 30
+Speed = 1.0
+MobilityPitch = 0.5
+MobilityRoll = 0.3
+MobilityYaw = 0.5
+ThrottleUpDown = 0.6
+MinRotationPitch = -60
+MaxRotationPitch = 60
+
+MaxFuel = 4800
+FuelConsumption = 2.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.00, 0.00
+EnableGunnerMode = true
+AutoPilotRot = 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+AddSeat = 0.80,  3.40,  0.28
+AddGunnerSeat = -0.80,  3.40,  0.28, 0.0, 2.66, 3.78, true
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 4.77, 3.34, -13.32, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -4.77, 3.34, -13.32, -1, 0, 0, 0, 1
+
+AddPartWeaponBay = BOMBER_JDAM/ BOMBER_LASER_AGM / BOMBER_IR_AGM   , -2.79, 1.86,-6.56,  0, -0.04, 1.0, -90
+
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 3.5, 1.8,  7.0, 4.0
+BoundingBox = 0.0, 3.5, -5.2,  7.0, 4.0
+BoundingBox = 0.0, 3.0,-13.8,  10, 2.0
+BoundingBox = 8.5, 3.2, -6.3, 10.0, 2.3
+BoundingBox = -8.5, 3.2, -6.3, 10.0, 2.3
+BoundingBox = 15.5, 3.2, -6.3, 6.0, 2.3
+BoundingBox = -15.5, 3.2, -6.3, 6.0, 2.3
+BoundingBox = 19.5, 3.2, -6.3, 4.0, 2.3
+BoundingBox = -19.5, 3.2, -6.3, 4.0, 2.3
+
+FlareType = 2
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 200
+
+RadarType = MORDEN_AS
+NameOnAdvancedAARadar = B2
+NameOnModernAARadar = ?
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+enablerwr = true
+
+hasMaintenance = true
+MaintenceUsetime = 60
+MaintenceWaittime = 300
+
+;Parts
+AddPartLG = 0.00,  2.96,  2.79,  1,0,0,      75
+AddPartLGRev = 0.00,  2.87,  3.29,  1,0,0,     -60
+AddPartLG = 0.00,  3.05, -7.96,  1,0,0,     -90
+AddPartLGRev = -7.74,  2.23, -7.02,  0,-0.02,1, -90
+AddPartLGRev = 7.74,  2.23, -7.02,  0,-0.02,1,  90
+
+AddPartLGRev = -5.06,  4.38, -5.57,  0.91, 0.10,1, -45
+AddPartLGRev = -4.06,  4.41, -5.57, -0.99,-0.07,1,  45
+AddPartLGRev = 5.06,  4.38, -5.57, -0.91, 0.10,1,  45
+AddPartLGRev = 4.06,  4.41, -5.57,  0.99,-0.07,1, -45
+
+;Weapons
+AddWeapon = dummy_bay_closed, 0,0,0,0,0         , true,  2
+AddWeapon = BOMBER_JDAM,  1.84,  2.80, -4.27,   0,0.0, false,1,  0,-360,360, 0,90
+AddWeapon = BOMBER_JDAM, -1.84,  2.80, -4.27,   0,0.0, false,1,  0,-360,360, 0,90
+AddWeapon = BOMBER_JDAM,  1.84,  2.80, -8.57,  0,0.0, false,1,  0,-360,360, 0,90
+AddWeapon = BOMBER_JDAM, -1.84,  2.80, -8.57,  0,0.0, false,1,  0,-360,360, 0,90
+
+AddWeapon = BOMBER_IR_AGM,   1.84,  1.80, -6.13,  0, 0 , false,  2
+AddWeapon = BOMBER_IR_AGM,  -1.84,  1.80, -6.13,  0, 0 , false,  2
+AddWeapon = BOMBER_LOS_AGM,   1.84,  1.80, -6.13,  0, 0 , false,  2
+AddWeapon = BOMBER_LOS_AGM,  -1.84,  1.80, -6.13,  0, 0 , false,  2
+
+AddWeapon = BOMBER_LASER_AGM,    1.84,  1.80, -6.13,  0, 0
+AddWeapon = BOMBER_LASER_AGM,   -1.84,  1.80, -6.13,  0, 0
+
+;MISC
+;Place misc paramters here
+ConcurrentGunnerMode = true
+MinRotationRoll = -60
+MaxRotationRoll = 60
+AddPartLGHatch = -0.65,  1.75,  0.25,  0,0.22,1,  -90
+AddPartSlideRotLG = 0.00,  2.74,  3.31,  0.00, 0.00, 0.00, 1,0,0, 0
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+; 前輪
+; 後輪
+; 補助空気口
+; 排気口
+;AddPartNozzle =  4.77, 3.34, -13.32, -1,0,0
+;AddPartNozzle = -4.77, 3.34, -13.32, -1,0,0
+; ウェポンベイ
+;武器設定
+;1番席が Mk82、  GBU-28、AGM-154、GBU-57、AGM-158　(無誘導[小]、誘導[中,散,大]、誘導[TV])
+;2番席が         GBU-38、AGM-154、GBU-57、AGM-158　(            誘導[小,散,大]、誘導[TV])
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+;weapongrouptype=15
+
+;DUPLICATES
+AddPartWeaponBay = BOMBER_JDAM/ BOMBER_LASER_AGM / BOMBER_IR_AGM  , -0.15, 1.72,-6.56,  0, -0.04, 1.0,  90
+AddPartWeaponBay = BOMBER_JDAM/ BOMBER_LASER_AGM / BOMBER_IR_AGM  ,  2.79, 1.86,-6.56,  0, -0.04, 1.0,  90
+AddPartWeaponBay = BOMBER_JDAM/ BOMBER_LASER_AGM / BOMBER_IR_AGM  ,  0.15, 1.72,-6.56,  0, -0.04, 1.0, -90

@@ -1,0 +1,57 @@
+DisplayName = SUAV
+AddDisplayName = zh_CN ,小型无人侦察机
+AddDisplayName = en_US, SUAV
+MaxHp = 40
+
+Category = M.Q
+ItemID = 28745
+HUD = SUAV
+ThirdPersonDist = 15
+Speed = 0.5
+ThrottleUpDown = 10
+MinRotationPitch = -60
+MaxRotationPitch = 60
+
+Sound = SUAV_idle
+
+MaxFuel = 120
+FuelConsumption = 0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraPosition = 0.0, 0.40, 0.34
+EnableGunnerMode = true
+AutoPilotRot = -0.55
+EnableNightVision = true
+EnableEntityRadar = true
+
+ParticlesScale = 1.0
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.00, 0.02, -1.59, -1, 0, 0, 0, 1
+
+ArmorMinDamage = 0
+
+RadarType = MORDEN_AA
+NameOnModernAARadar = UAV
+NameOnEarlyAARadar = UAV
+NameOnModernASRadar = UAV
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+;Weapons
+AddWeapon = targeting_pod_block,   0.0, 0.4, 0.3,  0.0, 0.0
+AddWeapon = targeting_pod_30s, 0.0, 0.4, 0.3,  0.0, 0.0
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 1200
+SmallUAV = true
+MinRotationRoll = -60
+MaxRotationRoll = 60
+AddRecipe = " I ",  " I ",  " F ",  I,iron_ingot, F,furnace
+AddPartRotor = 0.00,  0.00,  0.00,   1,0,0
+AddBlade = 1, 0,  0.00,  0.00,  0.00,   0,0,-1
+
+; M = Military(軍用機).  Q = Drone(無人航空機)
+;AddPartNozzle = 0.00, 0.02, -1.59, -1,0,0
+
+;DUPLICATES

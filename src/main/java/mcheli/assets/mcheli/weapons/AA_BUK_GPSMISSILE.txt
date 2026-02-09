@@ -1,0 +1,92 @@
+DisplayName =9M317MA导弹 [卫星制导对地打击模式]
+Type = ASMissile
+ModelBullet = 9M317
+Power = 200
+Acceleration = 1
+Explosion = 8
+Flaming = false
+Sight = MissileSight
+Delay = 15
+ReloadTime = 45
+Group = MainGun
+Round = 3
+HeatCount = 500
+MaxHeatCount = 1200
+LockTime = 0
+TimeFuse = 1500
+DamageFactor = heli, 0.7
+Sound = AA11_F
+SoundVolume = 10
+RigidityTime = 0
+MaxAmmo = 4
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+enableBVR=true
+
+
+
+numLockedChaffMax=1
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 800
+MaxLockOnAngle = 55
+PDHDNMaxDegree = 180
+LockMinHeight = 100
+EnableOffAxis = true
+
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+SpeedFactor = 0.03
+MaxDegreeOfMissile = 50
+SpeedFactorStartTick = 5
+SpeedFactorEndTick = 200
+SpeedDependsAircraft = false
+pdHDNMaxDegreeLockOutCount = 1
+
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=6
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=5
+ExplosionDamageVsPlane=3
+ExplosionDamageVsHeli=3
+ExplosionDamageVsVehicle=1
+
+ExplosionDamageVsShip=5
+
+enableExhaustFlare=true
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+Gravity = 0.025
+ExplosionThroughWall=true
+LockTime = 1
+TurningFactor = 0.05
+IsGPSMissile = true
+MaxDegreeOfMissile = 270
+RigidityTime = 40
+
+SmokeColor  = 230, 200, 20, 80
+SmokeSize   =10
+SmokeMaxAge = 500
+
+;GPS导弹自动锁定实体
+LockEntity=true
+;该参数作用于GPS导弹时，体现为锁定距离目标点的实体的最大距离
+MaxLockOnRange = 30
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+
+enableBVR=true
+MinRangeBVR = 10

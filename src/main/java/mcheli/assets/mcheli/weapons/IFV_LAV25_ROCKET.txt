@@ -1,0 +1,73 @@
+DisplayName = 阻尼人 127毫米火箭弹
+Type = Rocket
+Power = 80
+ModelBullet = hydra70
+Acceleration = 2.5
+Explosion = 4
+Explosionblock =0
+DisplayMortarDistance = true
+SoundVolume = 10
+Sound = rocket_snd
+Flaming = false
+Sight = MoveSight
+Gravity = -0.0066
+Delay = 6
+ReloadTime = 110
+Round = 8
+HeatCount = 80
+MaxHeatCount = 560
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+FIXMODE=1
+
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+
+MaxAmmo = 16
+SuppliedNum = 20
+Item =  1, iron_ingot
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+effectYield=3
+
+ExplosionDamageVsLiving=0.5
+ExplosionDamageVsPlayer=0.5
+ExplosionDamageVsTank=2
+ExplosionDamageVsPlane=2
+ExplosionDamageVsHeli=2
+ExplosionDamageVsVehicle=2
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=12
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=2
+enableExhaustFlare=true

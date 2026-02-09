@@ -1,0 +1,38 @@
+DisplayName = Close In Defense
+Type = Rocket
+Power = 10
+Acceleration = 1
+Explosion = 4
+Explosionblock = 0
+
+DelayFuse = 8
+TimeFuse = 8
+Bound = 0.05
+
+Bomblet = 12
+BombletSTime = 1
+BombletDiff = 4
+ModelBomblet = cbc
+ModelBullet = cbc
+
+Flaming = false
+Sight = MoveSight
+
+Delay = 2
+Round = 1
+SoundPitchRandom = 0.0
+SoundVolume = 3.0
+;SoundDelay = 3
+Accuracy = 0
+HeatCount = 200
+MaxHeatCount = 5
+SoundPitch = 1.0
+Sound = flare_deploy
+DamageFactor = tank,0
+DamageFactor = helicopter,0
+DamageFactor = plane,0
+DamageFactor = player, 1
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true
+DamageFactor = ship, 0

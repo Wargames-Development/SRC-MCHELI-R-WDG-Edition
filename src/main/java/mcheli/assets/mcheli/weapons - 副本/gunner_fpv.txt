@@ -1,0 +1,51 @@
+DisplayName = 主动雷达制导游荡式巡飞弹
+Type = ATMissile
+Power = 250
+Acceleration = 0.5
+Explosion = 3
+explosionblock=0
+ExplosionInWater = 3
+Flaming = false
+Sight = None
+Delay = 10
+heatcount=250
+maxheatcount=751
+Round = 2
+ReloadTime = 1
+HeatCount = 600
+MaxHeatCount = 1
+SoundVolume = 10
+SoundPitch = 0.1
+Sound = AGM158_F
+ModelBullet = lancet_rocket
+ProximityFuseDist = 1
+MaxAmmo = 4
+SuppliedNum = 1
+Gravity = 0
+RigidityTime = 60
+SmokeSize   = 2.0
+SmokeMaxAge = 500
+TimeFuse = 350
+DamageFactor = player, 2.0
+DamageFactor = plane, 1.0
+DamageFactor = heli, 3
+DamageFactor = vehicle , 2.0
+DamageFactor = tank, 2
+LockTime = 0
+
+
+LockTime = 0
+
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 70
+MaxLockOnAngle = 80
+
+EnableOffAxis = false
+MaxDegreeOfMissile = 190
+ActiveRadar = true
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+DamageFactor = ship, 2
+enableExhaustFlare=true

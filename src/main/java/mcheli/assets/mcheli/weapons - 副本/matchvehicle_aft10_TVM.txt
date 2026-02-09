@@ -1,0 +1,67 @@
+DisplayName =红箭10 重型反坦克导弹 [人在回路]
+Type = tvMissile
+Power = 500
+Acceleration = 2
+Explosion = 7
+Explosionblock = 0
+Flaming = false
+Sight = false
+Delay = 120
+ModeNum = 2
+ModelBullet =fgm148
+Sound = sa-2_snd
+ReloadTime = 100
+Round = 4
+
+
+ProximityFuseDist = 1
+HeatCount = 650
+MaxHeatCount = 1000
+TimeFuse = 620
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+DisplayMortarDistance = true
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+MaxAmmo = 8
+SuppliedNum = 8
+Item =  1, iron_ingot
+
+CameraRotationSpeedPitch = 0.5
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+crosstype=11
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank= 2
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=2
+ExplosionDamageVsShip=2
+enableExhaustFlare=true
+
+effectYield=0
+laserGuidance = true
+hasLaserGuidancePod = true
+
+EnableOffAxis = true
+SpeedFactor = -0.03
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 50
+SpeedDependsAircraft = true
+
+laserGuidance = true
+hasLaserGuidancePod = true
+turningFactor = 0.17
+MaxDegreeOfMissile = 50

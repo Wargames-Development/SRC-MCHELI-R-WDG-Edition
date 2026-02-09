@@ -1,0 +1,119 @@
+CALL=FAC_weapon_group
+CALL=FAC_cross
+;Smk, APS, Repair
+If = (have_flare==1&&can_flare==1)
+DrawTexture = button_smoke_Ready, (380*(width/960)), (20*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFFE400
+DrawCenteredString = (350*(width/960)), (30*(height/500)), "Activate:%s", KEY_FLARE
+Endif
+
+If = ((have_flare==1&&can_flare==0)||have_flare==0)
+DrawTexture = button_smoke_NoTReady, (380*(width/960)), (20*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFF4B4B
+DrawCenteredString = (337*(width/960)), (30*(height/500)), "CD:%.1fs", COOLDOWN_FLARE
+Endif
+
+If = (have_aps==1&&can_aps==1)
+DrawTexture = button_aps_Ready, (380*(width/960)), (60*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFFE400
+DrawCenteredString = (350*(width/960)), (70*(height/500)), "Activate:%s", KEY_APS
+Endif
+
+If = ((have_aps==1&&can_aps==0))
+DrawTexture = button_aps_NotReady, (380*(width/960)), (60*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFF4B4B
+DrawCenteredString = (337*(width/960)), (70*(height/500)), "CD:%.1fs", COOLDOWN_APS
+Endif
+
+If = (have_aps==0)
+DrawTexture = button_aps_NotReady, (380*(width/960)), (60*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Endif
+
+If = (have_maintenance==1&&can_maintenance==1)
+DrawTexture = button_maintence_Ready, (380*(width/960)), (100*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFFE400
+DrawCenteredString = (350*(width/960)), (110*(height/500)), "Activate:%s", KEY_MAINTENANCE
+Endif
+
+If = ((have_maintenance==1&&can_maintenance==0)||have_maintenance==0)
+DrawTexture = button_maintence_NotReady,(380*(width/960)), (100*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFF4B4B
+DrawCenteredString = (337*(width/960)), (110*(height/500)), "CD:%.1fs", COOLDOWN_MAINTENANCE
+Endif
+
+Color = 0xFFFFE400
+DrawCenteredString= (350*(width/960)), (155*(height/500)), "Toggle:%s", KEY_CAMERAMODE
+
+If = cam_mode==0
+DrawTexture = ZOOM, (380*(width/960)), (140*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Endif
+If = cam_mode==1
+DrawTexture = nightvision, (380*(width/960)), (140*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Endif
+If = cam_mode==2
+DrawTexture = Thermal, (380*(width/960)), (140*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Endif
+
+;Developed by TV90 & BFMC Team. Unauthorized use prohibited!!!
+
+Color = 0xFFFFE400
+DrawLine = (220*(width/960)), (145*(height/500)), (158*(width/960)), (145*(height/500)), (158*(width/960)), (155*(height/500)), (220*(width/960)), (155*(height/500)), (220*(width/960)), (145*(height/500))
+
+Color = hp_rto>0.25? 0xFFFFE400: 0xFFFF6A6A
+DrawString = (158*(width/960)), (127*(height/500)), "Durability:%3.0f%%", HP_PER
+DrawRect = (159*(width/960)), (147*(height/500)), (hp_rto*60*(width/960)), (6*(height/500))
+
+if=(reloading==0&&wpn_heat<1.0)
+Color = 0xFFFFE400
+DrawString = (0*(width/960)), (170*(height/500)), "Ammo:%s", WPN_AMMO
+endif
+
+if=(reloading==1||wpn_heat==1.0)
+Color = 0xFFFF4B4B
+DrawString = (0*(width/960)), (170*(height/500)), "Reloading"
+endif
+
+DrawLine = (0*(width/960)), (-117*(height/500)), (2*(width/960)), (-113*(height/500)), (-2*(width/960)), (-113*(height/500)), (0*(width/960)), (-117*(height/500))
+Color = 0xFFFFE400
+DrawCenteredString = (0*(width/960)), (-111*(height/500)), "%.0f", PLYR_YAW
+DrawString = (-310*(width/960)), (-50*(height/500)), "Pitch:%.1f°", PLYR_PITCH
+DrawString = (158*(width/960)), (87*(height/500)), "Throttle:%.0f%%", THROTTLE
+DrawString = (-310*(width/960)), (-75*(height/500)), "Zoom:%.1fx", CAM_ZOOM
+if=has_airburst!=0&&have_rwr==1
+Color = 0xFFFFE400
+DrawString  =(-310*(width/960)), (-25*(height/500)), "AB Range:%s.0m" , AIRBURST_DIST
+ENDIF
+Color = 0xFFFFE400
+DrawLine = (220*(width/960)), (105*(height/500)), (158*(width/960)), (105*(height/500)), (158*(width/960)), (115*(height/500)), (220*(width/960)), (115*(height/500)), (220*(width/960)), (105*(height/500))
+
+DrawRect = (159*(width/960)), (107*(height/500)), throttle*60*(width/960), 6*(height/500)
+
+;Wpn Name
+DrawTexture = ZTZ99_bar1, (-170*(width/960)), (130*(height/500)), (220*(width/960)), (3*(height/500)), 0,0,1024,12,0
+DrawString = (-170*(width/960)), (110*(height/500)), "%s", WPN_NAME
+
+If = is_heat_wpn==1
+Color = 0xFFFFE400
+DrawString = (-170*(width/960)), (150*(height/500)), "Overheat"
+DrawRect = (-170*(width/960)), (145*(height/500)), (50*(width/960)), (2*(height/500))
+Color = 0xFFDF0408
+DrawRect = (-170*(width/960)), (145*(height/500)), (50*wpn_heat*(width/960)), (2*(height/500))
+endif
+
+; Wpn Name (Heat Type)
+
+DrawTexture = FAC_Guide, (230*(width/960)), (-120*(height/500)), (50*(width/960)), (50*(height/500)), 0,0,128,128, yaw - plyr_yaw
+DrawTexture = FAC_Guide, (230*(width/960)), (-120*(height/500)), (50*(width/960)), (50*(height/500)), 128,0,128,128
+DrawTexture = FAC_Guide2, (215*(width/960)), (-137*(height/500)), (80*(width/960)), (80*(height/500)), 0,0,256,256
+
+Color = 0xFFFFE400
+If = dsp_mt_dist == 1 && mt_dist > 0
+Color = 0xFFFFE400
+DrawString = (-35*(width/960)), (80*(height/500)), "Impact %.2fm", MORTAR_DIST
+Endif
+
+Color = 0xFFFFE400
+If = dsp_mt_dist == 1 && mt_dist <= 0
+Color = 0xFFFFE400
+DrawString = (-35*(width/960)), (80*(height/500)), "Impact ----m"
+Endif

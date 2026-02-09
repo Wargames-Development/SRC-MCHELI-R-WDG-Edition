@@ -1,0 +1,76 @@
+DisplayName = S300PMU2 AA
+MaxHp = 200
+ThrottleUpDown = 1
+Speed = 0.4
+MobilityYawOnGround = 2.0
+StepHeight = 1.5
+Sound = heavy_disel
+MinRotationPitch = -90
+MaxRotationPitch = 90
+MobilityRoll     = 0
+Gravity        = -0.15
+GravityInWater = -0.1
+EnableNightVision = fase
+MaxFuel           = 1200
+FuelConsumption   = 1.0
+ThirdPersonDist = 15
+DefaultFreelook = true
+EnableEntityRadar = true
+EnableBack = true
+
+Category = C
+
+WeightType = Tank
+
+HUD = AA, AA
+hudtype=3
+EntityWidth  = 0.8
+EntityHeight = 0.8
+
+AddSeat =       1.2433,  0.85,  5.7235
+AddGunnerSeat = 1.2433,  0.95,  4.9393, 0.0, 10, 0.0, false, -360, 360, false
+DamageFactor = 0
+PivotTurnThrottle = 0.1
+
+PartWheelRot = 25
+
+AddPartWheel     =  1.2912,   0.3878,  4.1123, 35
+AddPartWheel     = -1.2912,   0.3878,  4.1123, 35
+AddPartWheel     =  1.2912,   0.3878,  1.7870, 35
+AddPartWheel     = -1.2912,   0.3878,  1.7870, 35
+
+AddPartWheel     =  1.2912,   0.3878, -1.7381
+AddPartWheel     = -1.2912,   0.3878, -1.7381
+AddPartWheel     =  1.2912,   0.3878, -4.0641
+AddPartWheel     = -1.2912,   0.3878, -4.0641
+
+AddPartWeaponBay	= arh_s300_48n6,  0, 1.4169, -5.10706, 1.0, 0.0, 0.0, -90
+
+AddTurretWeapon = arh_s300_48n6,  0.80, 8, -6.8,   0.0, -90.0, false, 2, 0, -360, 360, -360, 360
+AddTurretWeapon = arh_s300_48n6, -0.80, 8, -6.8,   0.0, -90.0, false, 2, 0, -360, 360, -360, 360
+AddTurretWeapon = arh_s300_48n6,  1.20, 8, -5.8,   0.0, -90.0, false, 2, 0, -360, 360, -360, 360
+AddTurretWeapon = arh_s300_48n6, -1.20, 8, -5.8,   0.0, -90.0, false, 2, 0, -360, 360, -360, 360
+
+;AddWeapon = rgm_s300_48n6,  0.80, 8, -6.8,   0.0, -90.0, false, 2, 0, 0, 0, -90, -90
+;AddWeapon = rgm_s300_48n6, -0.80, 8, -6.8,   0.0, -90.0, false, 2, 0, 0, 0, -90, -90
+;AddWeapon = rgm_s300_48n6,  1.20, 8, -5.8,   0.0, -90.0, false, 2, 0, 0, 0, -90, -90
+;AddWeapon = rgm_s300_48n6, -1.20, 8, -5.8,   0.0, -90.0, false, 2, 0, 0, 0, -90, -90
+
+AddPartSteeringWheel =  1.2433, 1.5278, 6.0613,  0,  1, -0.400,  130
+
+AddPartCanopy = 1.6503, 1.6872, 6.1585, 0, 1, 0, -70
+AddPartCanopy = 0, 0, 0, 0, 0, 0, 0
+
+BoundingBox =  0.00, 2.5,  2.00,  5.5, 3.0,  1.1
+BoundingBox =  0.00, 2.5, -3.50, 5.5, 3.0,  1.1
+BoundingBox =  0.00, 2.5,-9.00, 5.5, 3.0,  1.1
+ArmorMinDamage = 12
+engineshutdownthres = 5
+
+NameOnModernAARadar = AA
+NameOnEarlyAARadar = +
+NameOnModernASRadar = S300
+NameOnEarlyASRadar = AA
+RadarType = Modern_AA
+enablebvr = true
+enablerwr = true

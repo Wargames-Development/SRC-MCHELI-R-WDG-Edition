@@ -1,0 +1,24 @@
+DisplayName = ºô½Ð¿ÕÏ®
+Type = CAS
+Power = 40
+Acceleration = 10
+Explosion = 3
+ExplosionBlock = 0
+Flaming = false
+Sight = None
+Delay = 5
+ModelBullet = he
+heatcount =10000
+maxheatcount =1
+Accuracy = 2.5
+sound = kx
+
+MaxAmmo = 3
+SuppliedNum = 1
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+ExplosionType=hbmNT_Shell
+canBeIntercepted=false
+canBeIntercepted=false

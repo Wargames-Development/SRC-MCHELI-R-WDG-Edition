@@ -1,0 +1,61 @@
+DisplayName = ö±µ¯»úÇ¹
+Type = rocket
+Power = 5
+Acceleration = 7
+modelbullet =bullet105mm
+Explosion = 0
+Explosionblock = 0
+Sight = MoveSight
+Flaming = false
+Gravity = -0.008
+Sight = MoveSight
+Delay = 3
+SoundVolume = 8
+SoundPitch = 1.0
+Sound = 2S6_30MM_snd
+Accuracy =1.2
+;HeatCount = 2
+;MaxHeatCount = 10
+SetCartridge = cartridge, 0.1,  90, 30, 3.00, -0.04, 0.40
+DamageFactor = plane, 3
+DamageFactor = heli, 3
+DamageFactor = player, 1
+
+round=4
+reloadtime=30
+
+AddMuzzleFlashSmoke   = 3.0,  1,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke   = 2.8,  1,   3.0,  3.0,  5,  180,220,217,214
+DisableSmoke = True
+
+
+Bomblet = 8
+BombletSTime = 0
+BombletDiff = 0.5
+ModelBomblet =  bullet105mm
+
+RecoilPitch = 15
+RecoilYaw = 0.3
+RecoilPitchRange = 4
+RecoilYawRange = 0.8
+RecoilRecoverFactor = 0.06
+FlakParticlesCrack = 50
+NumParticlesFlak = 10
+FlakParticlesDiff = 0.3
+
+MaxAmmo = 2000
+SuppliedNum = 2000
+Item =  1, iron_ingot
+canBeIntercepted=true
+canBeIntercepted=true
+canBeIntercepted=true
+
+crosstype=0
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=1
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+DamageFactor = living, 1
+ExplosionDamageVsShip=1

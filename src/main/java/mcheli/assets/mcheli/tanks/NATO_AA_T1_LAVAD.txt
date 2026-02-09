@@ -1,0 +1,116 @@
+DisplayName = LAV-AD
+AddDisplayName = zh_CN, LAV-AD 防空装甲车
+AddDisplayName = en_US, LAV-AD
+MaxHp = 700
+
+ItemID = 91129
+HUD = SPAA, MBT_GUNNER
+Speed = 0.7
+MobilityRoll = 0
+ThrottleUpDown = 2
+MinRotationPitch = -85
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 2.5
+StepHeight = 1.5
+MobilityYawOnGround = 4
+DefaultFreelook = true
+
+Sound = vehicle_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.4
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.6,  2.7, 0.9, true
+CameraRotationSpeed = 80
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.0, 1.78, -3.44,  false, -90, 90, true
+AddGunnerSeat = 0.00, 2, 0,    -0.0, 3.78, 0,  false, -90, 90, true
+
+ArmorMinDamage = 10
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = -0.136, 0.89, 0.752,  2.78, 2.123, 3.753, 1.0, DEFAULT, HULL SIDE
+BoundingBox = -0.136, 1.491, 3.743,  2.78, 0.956, 2.228, 0.5, DEFAULT, FRONT UPPER
+BoundingBox = -0.136, 0.89, -1.948,  2.78, 2.123, 1.649, 1.3, DEFAULT, CREW / AMMO COMPARTMENT
+BoundingBox = -0.136, 0.534, 3.743,  2.78, 0.957, 2.228, 0.7, DEFAULT, FRONT LOWER
+BoundingBox = -0.033, 2.428, -1.067,  2.265, 0.878, 0.09, 1.3, TURRET, TURRET REAR
+BoundingBox = 1.046, 2.428, -0.552,  0.059, 0.84, 1.077, 1.0, TURRET, TURRET SIDE
+BoundingBox = -1.115, 2.428, -0.552,  0.06, 0.84, 1.077, 1.0, TURRET, TURRET SIDE
+BoundingBox = -0.033, 2.428, -0.147,  2.134, 1.015, 1.639, 0.6, TURRET, TURRET FRONT
+BoundingBox = -0.033, 2.925, -0.148,  2.051, 0.04, 1.575, 1.0, TURRET, TURRET TOP
+
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+NameOnAdvancedAARadar = LAV
+NameOnModernAARadar = LAV
+NameOnEarlyAARadar = *
+NameOnModernASRadar = LAV
+NameOnEarlyASRadar = AA
+enablerwr = false
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor = 3.5
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.3368,  3.185
+AddTrackRoller = -1.541,  0.3393,  1.87
+AddTrackRoller = -1.4555,  0.3427,  0.1993
+AddTrackRoller = -1.4555,  0.3452,  -1.101
+
+;Weapons
+AddTurretWeapon = AA_lavad_aagun,          -0.00, 2.42, 0.0,  0.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = AA_lavad_IRM,          -1, 2.7, 0.7919,  0.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = AA_lavad_ROCKET,          0.0, 2.7, 0.7919,  0.0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = GUNNER_SMOKE,          -0.00, 2.42, 0.0,  0.0, 0.0, false,2, 0,-360,360, -85, 10
+;AddTurretWeapon = GUNNER_DEFENSE,          -0.00, 2.42, 0.0,  0.0, 90, false,2, 0,0,0, 0, 0
+
+AddPartWeapon = AA_lavad_aagun/AA_lavad_ROCKET/AA_lavad_IRM, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true, -0.000, 2.42,0.00
+AddPartWeaponChild = false, true, -0.000, 2.426,-0.3462
+AddPartRotWeapon = AA_lavad_aagun, false, true, true,  -0.000, 2.42,   0.0, 0,0
+
+weapongrouptype = 1
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 700
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+engineshutdownthres = 20
+hudtype = 1
+maintenanceUseTime = 25
+maintenanceWaitTime = 1200
+armorExplosionDamageMultiplier = 1.2
+
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+
+;DUPLICATES
+ThrottleUpDown = 2.0
+throttledownfactor = 3
+explosionsizebycrash = 10

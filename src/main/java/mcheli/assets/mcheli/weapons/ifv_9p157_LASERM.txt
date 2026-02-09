@@ -1,0 +1,67 @@
+DisplayName =9M123 "菊花" 激光制导反坦克导弹
+Type = TVMissile
+Power =500
+Acceleration = 2
+Explosion = 4
+Explosionblock = 0
+Flaming = false
+Sight = MoveSight
+Delay = 0
+ModeNum = 2
+ModelBullet =agm114
+Sound =9K118_F
+ReloadTime = 180
+Round = 2
+
+FIXMODE=1
+LOCKTIME = 0
+
+TimeFuse = 200
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+
+EnableOffAxis = true
+DisableDestroyBlock=true
+NukeEffectOnly=true
+
+
+
+
+CameraRotationSpeedPitch = 0.3
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+MaxAmmo = 8
+SuppliedNum = 8
+Item =  1, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+Group = MainGun
+crosstype=15
+
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true
+
+turningFactor = 0.15
+Gravity = 0.005
+
+MaxDegreeOfMissile =25
+Group = MainGun
+
+;让激光导弹能照射上实体
+
+laserGuidance = true
+hasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+LockEntity=true
+TurningFactor=0.15

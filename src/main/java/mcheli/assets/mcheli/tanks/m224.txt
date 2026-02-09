@@ -1,0 +1,51 @@
+DisplayName = M224 MORTAR
+AddDisplayName = zh_CN, M224 迫击炮
+AddDisplayName = en_US, M224 MORTAR
+MaxHp = 50
+
+Category = W.A
+HUD = M224
+ThirdPersonDist = 12
+Speed = 0
+MobilityRoll = 50
+ThrottleUpDown = 0
+MinRotationPitch = -85
+MaxRotationPitch = -20
+PivotTurnThrottle = 0.0
+CanMoveOnGround = false
+DefaultFreelook = true
+
+CameraPosition = -0.3,2, 0,true
+CameraRotationSpeed = 30.0
+CameraZoom = 3
+EnableGunnerMode = true
+EnableEntityRadar = true
+AddGunnerSeat = 0.00,  0.0, -0.2, 0.00,  0.0, 0.0, false,-90,-20,true
+
+ArmorMinDamage = 5
+DamageFactor = 0.8
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = 
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+
+;Weapons
+AddPartWeapon = mortar, false,  true,  false,   0.00, -0.2,  0.00
+
+AddTurretWeapon = mortar,        0,  10 , 0,   0.0, -1.0,   false,1, 0,-360,360, -90,-20
+
+;MISC
+;Place misc paramters here
+HideEntity = false
+ArmorMaxDamage = 1200
+
+;ArmorMaxDamage 最大ダメージ、これより大きいダメージは最大ダメージに丸められる
+; W = WWII,  A = AAGun(対空砲)
+; AddPart = DrawFirstPerson[T/F], RotationYaw[T/F], RotationPitch[T/F], PartType[0~], PoxX, PoxY, PoxZ
+;本体-砲身
+;BoundingBox =  0.0, 1.5, 0.0,  4.0, 3.0
+
+;DUPLICATES

@@ -1,0 +1,21 @@
+DisplayName = AK-74M
+AddDisplayName = zh_CN, 战术人形AK-74M（可贴贴）
+AddDisplayName = en_US, AK-74M
+MaxHp = 30
+
+HUD = none
+ThirdPersonDist = 12
+MinRotationPitch = -30
+MaxRotationPitch = 30
+
+CameraPosition = 0.0, 0.70, -0.3
+AddSeat = 0.00,  -0.4, -0.30
+
+EntityWidth = 1.0
+EntityHeight = 1.0
+
+;MISC
+;Place misc paramters here
+HideEntity = false
+
+;DUPLICATES

@@ -1,0 +1,119 @@
+DisplayName = AMX-56 LECLERC
+AddDisplayName = zh_CN, AMX-56 勒克莱尔
+AddDisplayName = en_US, AMX-56 LECLERC
+MaxHp = 1000
+
+ItemID = 91128
+HUD = MBT, MBT_GUNNER
+Speed = 0.7
+ThrottleUpDown = 1.5
+MinRotationPitch = -20
+MaxRotationPitch = 10
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 4
+DefaultFreelook = true
+
+Sound = MBT_RUN
+
+Gravity = -0.1
+MotionFactor = 0.89
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = -0.8,  3.2, 2.25, true
+CameraRotationSpeed = 30
+CameraZoom = 4
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58,0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+AddGunnerSeat = -0.7540, 3.445, -2.039,  -0.7540, 3.445, -2.039,  false, -70, 10, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 30
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.772, -0.589,  4.692, 2.03, 6.143, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 0.772, -4.528,  4.692, 2.03, 1.714, 1.3, DEFAULT, 引擎
+BoundingBox = 0.0, 1.314, 3.306,  4.692, 0.994, 1.713, 0.4, DEFAULT, 首上
+BoundingBox = 0.0, 0.307, 3.307,  4.692, 1.11, 1.855, 0.8, DEFAULT, 首下
+BoundingBox = 0.0, 2.304, -0.46,  4.206, 1.191, 5.396, 0.4, TURRET, 炮塔正面
+BoundingBox = 2.117, 2.304, -1.749,  0.145, 1.191, 3.326, 1.0, TURRET, 炮塔侧面
+BoundingBox = -2.117, 2.304, -1.749,  0.145, 1.191, 3.326, 1.0, TURRET, 炮塔侧面
+BoundingBox = 0.0, 2.304, -3.374,  4.332, 1.191, 0.09, 1.3, TURRET, 炮塔后面
+BoundingBox = 0.0, 2.912, -0.461,  3.73, 0.05, 4.787, 1.0, TURRET, 炮塔顶部
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = AMX
+NameOnEarlyASRadar = MBT
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 5
+OnGroundRollFactor = 5
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -2.32,  0.8253,  3.566
+AddTrackRoller = -2.32,  0.2588,  2.493
+AddTrackRoller = -2.32,  0.2590,  1.322
+AddTrackRoller = -2.32,  0.2592,  0.1436
+AddTrackRoller = -2.32,  0.2594,  -1.044
+AddTrackRoller = -2.32,  0.2595,  -2.214
+AddTrackRoller = -2.32,  0.2597,  -3.435
+
+AddTrackRoller = -2.32,  0.8347, -4.454
+
+AddCrawlerTrack = true, 0.21, -2.0,  -0.25/1.323,-0.25/2.494,-0.2016/2.683,0.4697/3.778,0.6253/3.930,0.8352/3.896,1.045/3.930,1.199/3.777,1.251/3.568,1.252/-4.455,1.198/-4.664,1.048/-4.811,0.8449/-4.867,0.6418/-4.810,0.4931/-4.662,-0.2035/-3.631,-0.25/-3.437
+
+;Weapons
+AddTurretWeapon = MBT_AMX56_APFSDS,  -0.8,  3.2, 2.25,  0.0, 0.0,  true,1, 0,-360,360, -20, 10,  0.00, 2.14, 1.04
+AddTurretWeapon = MBT_AMX56_STAFF, 0.00, 2.14, 1.04,  0.0, 0.0, true,1, 0,-360,360, -20, 10
+
+AddTurretWeapon = mg_127,  0.5, 2.14, 1.04,  1, -1, true,1, 0,-360,360, -20, 10
+AddPartWeapon = MBT_AMX56_APFSDS, false, true, false,  0.00, 1.58, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 2.14, 1.04
+AddPartWeaponChild = false, true, 0.00, 2.14, 1.04, 0.5
+
+AddPartTurretWeapon = GUNNER_MG_127, true, true, false, -0.7540, 2.837, -1.853
+AddPartWeaponChild = false, true, -0.7540, 3.445, -2.039
+AddTurretWeapon = GUNNER_MG_127, -0.7540, 3.445, -2.039, 0.0, 0.0, false, 2, 0, -360,360, -70,10
+AddTurretWeapon = GUNNER_MARK, 0.7195, 3.25, -2.093, 0.0, 0.0, false, 2, 0, -360,360, -70,10
+
+weapongrouptype = 18
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorDamageFactor = 1
+ArmorMaxDamage = 900
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 1
+maintenanceUseTime = 25
+maintenanceWaitTime = 200
+
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+
+;DUPLICATES

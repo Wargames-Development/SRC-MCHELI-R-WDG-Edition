@@ -1,0 +1,101 @@
+DisplayName = AAV-7A1 AMTRAC
+AddDisplayName = zh_CN, AAV-7A1 两栖战车
+AddDisplayName = en_US, AAV-7A1 AMTRAC
+MaxHp = 750
+HUD = AAV-7A1, AAV-7A1,AAV-7A1,AAV-7A1,AAV-7A1,AAV-7A1,AAV-7A1
+ThirdPersonDist = 12
+Speed = 0.7
+MobilityRoll = 0
+ThrottleUpDown = 20.0
+MinRotationPitch = -50
+MaxRotationPitch = 5
+StepHeight = 1.5
+MobilityYawOnGround = 3
+DefaultFreelook = true
+
+Sound = AAV_idle
+Float = true
+FloatOffset = -1.5
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.91
+MaxFuel = 1200
+FuelConsumption = 3.0
+
+CameraPosition = 1.08,  2.58,  3.1, true
+CameraRotationSpeed = 15
+CameraZoom = 3
+EnableNightVision = true
+AddGunnerSeat = 0.00,  1.00,  0.63, 0.00,  3.00,  0.8,  false, -20, 20, false
+AddGunnerSeat = -0.81, 0.92, -0.37, 1.7,  2.2,-1.0,   false, -20, 20, false
+AddGunnerSeat = 0.81, 0.92, -0.37,-1.7,  2.2,-1.0,   false, -20, 20, false
+AddGunnerSeat = -0.81, 0.92, -1.27,1.7,  2.2,-2.0,   false, -20, 20, false
+AddGunnerSeat = 0.81, 0.92, -1.27, -1.7,  2.2,-2.0,   false, -20, 20, false
+AddGunnerSeat = 0.00,  1.00,  0.63, -1.19,  3.30,  1.4,  false, -80, 80, false
+
+ArmorMinDamage = 10
+DamageFactor = 0.0
+BoundingBox = 0.0, 1.199, 3.638,  3.602, 2.864, 2.0, 0.4, DEFAULT, 车体正面
+BoundingBox = 0.0, 1.199, 0.456,  3.602, 2.864, 4.376, 0.7, DEFAULT, 乘员舱
+BoundingBox = 0.0, 1.199, -2.881,  3.602, 2.864, 2.199, 1.0, DEFAULT, 尾舱门
+SubmergedDamageHeight = 3
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = MORDEN_AS
+NameOnAdvancedAARadar = IFV
+NameOnModernAARadar = IFV
+NameOnEarlyAARadar = 
+NameOnModernASRadar = AAV7
+NameOnEarlyASRadar = IFV
+
+OnGroundPitchFactor = 2.0
+OnGroundRollFactor = 1.5
+
+;Parts
+SetWheelPos = 1.82,  -0.24,  2.86,  0.70, -0.76, -2.22, -4.14
+
+AddCrawlerTrack = false, 0.37, -2.15,  0.74/-3.38, 0.63/-3.64, 0.37/-3.75, 0.11/-3.64, -0.13/-2.81, -0.18/-2.55, -0.18/1.71, -0.13/1.97, 0.11/2.73, 0.37/2.84, 0.63/2.73, 0.74/2.47, 0.77/-0.40
+AddCrawlerTrack = false, 0.37, -2.15,  0.74/-3.38, 0.63/-3.64, 0.37/-3.75, 0.11/-3.64, -0.13/-2.81, -0.18/-2.55, -0.18/1.71, -0.13/1.97, 0.11/2.73, 0.37/2.84, 0.63/2.73, 0.74/2.47, 0.77/-0.40
+AddTrackRoller = 0.00, 0.38, 2.47
+AddTrackRoller = 0.00, 0.13, 1.71
+AddTrackRoller = 0.00, 0.13, 0.92
+AddTrackRoller = 0.00, 0.13, 0.13
+AddTrackRoller = 0.00, 0.13,-0.99
+AddTrackRoller = 0.00, 0.13,-1.77
+AddTrackRoller = 0.00, 0.13,-2.55
+AddTrackRoller = 0.00, 0.38,-3.38
+AddTrackRoller = 0.00, 0.61,-0.40
+
+;Weapons
+AddPartWeapon = none
+AddPartWeapon = HMG / 40mmFrag, false, true, false,  -1.19, 2.42, 1.40, 0
+AddPartWeaponChild = false, true, -0.77, 2.57, 1.90, 0.0
+AddTurretWeapon = HMG, 0, 3.00, 0,  0.0, 0.0, false,6, 0,-360,360, -50, 7
+AddTurretWeapon = 40mmFrag, 0, 3.00, 0,  0.0, 0.0, false,6, 0,-360,360, -50, 7
+
+;MISC
+;Place misc paramters here
+HideEntity = true
+WeightType = Tank
+WeightType = Tank
+WeightedCenterZ = 0.35
+AddPartHatch = 0.00,  0.59,  -3.67, 1,0,0, -100
+EnableBack = true
+AddRecipe = "III",  "I I",  "XIX",  X, iron_block,  I, iron_ingot
+
+; 指定した高さまでの水に触れてもダメージを受けない
+; 2であれば2ブロックまでダメージ無し
+; Tank or Car or Unknown
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+;TrackRollerRot = 30
+
+;DUPLICATES
+MobilityYawOnGround = 4
+SubmergedDamageHeight = 3

@@ -1,0 +1,98 @@
+displayname =3SH33 榴霰弹
+Type = MachineGun1
+Power = 35
+
+;霰弹数量 (现在只支持MachineGun1)
+Canister = 25
+;霰弹散布种类 
+;0为位置散布(不管距离多远，散布都相同)
+;1为角度散布（距离越远散布越大)
+;2为时间散布（用于模拟多连发弹药，同时支持角度散布）
+CanisterType = 1
+;霰弹角度散布参数 推荐值>0.5
+BombletDiff = 2
+;霰弹时间散布参数 推荐值>3
+BombletSTime = 0
+
+ModelBomblet =  tank_ap
+
+
+
+Acceleration = 15
+Explosion = 0
+ExplosionBlock = 0
+flaming = false
+sight = movesight
+delay = 120
+modenum = 1
+soundvolume = 10.0
+round = 1
+reloadtime = 120
+sound =ru_125_snd
+group = maingun
+recoil = 0.8
+gravity = -0.01
+displaymortardistance = true
+trajectoryparticle = largesmoke
+
+ModelBullet =  tank_ap
+
+disabledestroyblock=true
+nukeeffectonly=true
+explosiontype=hbmnt_shell
+effectyield=1
+
+
+addmuzzleflash      =  8.3,      0.5,        7,  220,254,159,74
+addmuzzleflash      =  8.2,      0.5,        6,  220,254,219,104
+addmuzzleflash      =  8.1,      0.5,        5,  220,254,219,184
+addmuzzleflashsmoke =  9.3, 5,  12.0,  4.0, 65,  220,160,140,120
+addmuzzleflashsmoke = 11.3, 5,  13.0,  7.0, 55,  200,190,170,150
+
+recoilbufcount = 40, 5
+
+maxammo = 20
+suppliednum = 10
+item =  10, iron_ingot
+item =  20, gunpowder
+
+flakparticlescrack = 300
+numparticlesflak = 20
+flakparticlesdiff = 0.8
+
+weaponswitchsound = switch_main_cannon
+
+recoilpitch = 100
+recoilyaw = 0.5
+recoilpitchrange = 20
+recoilyawrange = 1
+recoilrecoverfactor = 0.05
+
+canbeintercepted=false
+canbeintercepted=false
+
+;cross_type0-11:0mg,1ap,2arm,3canister,4he,5heat,6irm,7losm,8sarh,9staff,10tvm,11ap_fast
+;weapon_group_type:0ap/heat;1ap/cansiter;2ap/he;3ap/arm;4ap/ap
+;5heat/he;6heat/canister;
+;7he/staff;8he/saclos
+crosstype=3
+ExplosionDamageVsLiving=1 
+ExplosionDamageVsPlayer=1 
+ExplosionDamageVsTank=0.1
+ExplosionDamageVsPlane=1 
+ExplosionDamageVsHeli=1 
+ExplosionDamageVsVehicle=0.1
+
+DamageFactor = player, 1
+DamageFactor = plane, 1
+DamageFactor = heli, 1
+DamageFactor = vehicle, 1
+DamageFactor = tank, 0.6
+DamageFactor = living, 1
+DamageFactor = ship, 1.0
+ExplosionDamageVsShip=0.1
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

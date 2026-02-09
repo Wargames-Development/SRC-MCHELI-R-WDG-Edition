@@ -1,0 +1,47 @@
+DisplayName = MK82 500°õ¸ß×èº½µ¯
+Type = Bomb
+Power = 0
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=5
+ExplosionDamageVsship=5
+ExplosionDamageVsPlane=5
+ExplosionDamageVsHeli=5
+ExplosionDamageVsVehicle=5
+SpeedDependsAircraft =false
+ExplosionType=hbmNT_Bomb
+effectyield = 0
+crosstype = 10
+DisableDestroyBlock=true
+ModelBullet = mk82se
+Acceleration = 0
+gravity = -0.01
+Explosion = 6
+explosionblock =2
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+ExplosionInWater = 0
+Flaming = false
+Sight = None
+Delay = 0
+Sound = bomb_snd
+SoundVolume = 15
+Bomblet = 1
+BombletDiff = 0
+BombletSTime = 10
+ModelBomblet = MK82se_1
+;SpeedFactor = -0.12
+;SpeedFactorStartTick = 10
+;SpeedFactorEndTick = 30
+
+ReloadTime = 250
+draginair = 0.05
+
+round=12
+heatcount=120
+maxheatcount=1320
+
+MaxAmmo = 12
+SuppliedNum = 2
+crosstype=8
+
+ExplosionThroughWall=true

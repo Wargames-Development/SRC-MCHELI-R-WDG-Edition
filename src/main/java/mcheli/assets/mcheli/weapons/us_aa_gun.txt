@@ -1,0 +1,61 @@
+DisplayName =M61A1 20ºÁÃ×»úÅÚ[¶Ô¿Õµ¯Á´]
+Type = MachineGun2
+Power = 9
+ModelBullet = 30mm
+Acceleration = 25
+Explosion = 0
+Flaming = false
+Sight = None
+Delay = 0
+ReloadTime = 50
+Round = 50
+SoundVolume = 10
+SoundPitch = 1.0
+Sound = m61a1_SND
+Accuracy = 1.5
+
+
+; 28 - armor dpb / 1400 - (50 * armor) dpm
+;
+; To FAV =  22 dpb  /  1100 dpm
+; To AA =   14 dpb  /  700 dpm
+; To Tank = 10 dpb  /  500 dpm
+; To IFV =  14 dpb  /  700 dpm
+DamageFactor = tank, 2.5
+
+
+; 20 - armor dpb / 1000 - (50 * armor) dpm
+;
+; To Jet =  8 dpb  / 400 dpm
+; To MV22 = 10 dpb / 500 dpm
+;DamageFactor = plane, 2.22
+DamageFactor = plane, 2.45
+
+; 25 - armor dpb / 1250 - (50 * armor) dpm
+;
+; To Attack Heli =          15 dpb / 750 dpm
+; To Scout Heli =           17 dpb / 850 dpm
+; To Light Transport Heli = 13 dpb / 650 dpm
+; To Heavy Transport Heli = 13 dpb / 650 dpm
+;DamageFactor = heli, 2.775
+DamageFactor = heli, 2.5
+
+DamageFactor = player, 1
+DamageFactor = vehicle , 2
+
+
+AddMuzzleFlash      =   4,      0.12,        3,  150,254,159,84
+AddMuzzleFlash      =  4.2,      0.1,        2,  150,254,219,184
+AddMuzzleFlashSmoke   = 2.2,  2,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke   = 3.2,  1,   3.0,  3.0,  5,  180,220,217,214
+Gravity = -0.006
+
+MaxAmmo = 500
+SuppliedNum = 500
+canBeIntercepted=false
+canBeIntercepted=false
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+CameraFollowLockEntity = true
+CameraFollowStrength = 1

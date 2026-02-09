@@ -1,0 +1,72 @@
+DisplayName = BVVDNMSL
+AddDisplayName = zh_CN,逼维为滴
+AddDisplayName = en_US,BVVDNMSL
+MaxHp = 2000
+
+Category = M.A
+ItemID = 28817
+HUD = Z10
+ThirdPersonDist = 20
+Speed = 1.3
+
+Sound = bvvd_snd
+
+MaxFuel = 1200
+FuelConsumption = 1.0
+
+CameraPosition = 0.00,  6.698, 1.889
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+AddSeat = 0.00,  6.698, 1.889
+
+damagefactor = 0.0
+BoundingBox = -3.28, 2.21,0.00,  7.0, 3.0
+BoundingBox = 3.28, 2.21,0.00,  7.0, 3.0
+BoundingBox = -1.9, 9.19,0.146,  4, 13
+BoundingBox = 1.9, 9.19,0.146,  4, 13
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 100
+ChaffWaitTime = 300
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = 死妈东西
+NameOnModernAARadar = 死妈东西
+NameOnEarlyAARadar = 死妈东西
+NameOnModernASRadar = 死妈东西
+NameOnEarlyASRadar = 死妈东西
+
+;Parts
+AddPartLG = 0.00, 1.68, 1.84,    -0,0,0,  100
+AddPartLG = 0.00, 1.68, -3.535,     0,0,0,  102
+AddPartLG = 0.00, 1.68, -3.535,     0,0, 0,-102
+
+AddRotor = 1, 0,  0.01032,  3.70,  -2.729,  0.0, 1.0, 0.0
+AddRotor = 1, 0,  0.01032,  3.70,  -2.729,  0.0, -1.0, 0.0
+
+;Weapons
+AddPartWeaponMissile = cp305,    false, false, false, -2.18,  0.38, -0.38
+AddPartWeaponMissile = cp305,    false, false, false, -2.73,  0.38, -0.38
+AddPartWeapon = fm/fmaa/fmtv/fmjp,    true,  true, false,   0.00,  6.698, 1.889
+AddPartWeaponChild = false, true,  0.00,  6.698, 1.889
+AddWeapon = fm,  0.00,  6.698, 1.889,  0,-0, true,1, 0,-360,360, -90,90
+AddWeapon = fmaa,  0.00,  6.698, 1.889,  0,-0, true,1, 0,-360,360, -90,90
+AddWeapon = fmtv,  0.00,  6.698, 1.889,  0,-0, true,1, 0,-360,360, -90,90
+AddWeapon = fmjp,  0.00,  6.698, 1.889,  0,-0, true,1, 0,-360,360, -90,90
+
+;MISC
+;Place misc paramters here
+onGroundPitch = 0.0
+HideEntity = true
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+;Front
+;Left
+;Right
+;AddPartWeapon = 連動する武器名(無しの時はnone), ガンナー時非表示？, Yaw連動, Pitch連動, 回転座標X,Y,Z
+;AddWeapon = 武器名, 位置X,Y,Z, Yaw, Pitch, パイロットが使用できる？, 座席番号, DefaultYaw,RangeYaw, MinPitch, MaxPitch
+;AddRecipe = "X X",  " I ",  "X X",  X, iron_block, I, iron_ingot
+
+;DUPLICATES

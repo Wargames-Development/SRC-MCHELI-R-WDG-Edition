@@ -1,0 +1,72 @@
+DisplayName = JAGM-MR 被动毫米波雷达制导反坦克导弹
+Type = ATMissile
+Power = 400
+Acceleration = 0.5
+Explosion = 4
+explosionblock=0
+Flaming = false
+Sight = MissileSight
+Delay = 0
+ModeNum = 1
+Sound = 9K118_F
+SoundVolume = 10
+RidableOnly = true
+ModelBullet = AGM114
+TimeFuse = 360
+LockTime = 10
+
+HeatCount = 500
+MaxHeatCount = 900
+
+DamageFactor = player, 1
+DamageFactor = plane, 1
+DamageFactor = heli, 1.0
+DamageFactor = vehicle , 1
+DamageFactor = tank, 1
+
+RigidityTime = 30
+
+MaxAmmo = 2
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+
+
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 600
+MaxDegreeOfMissile =135
+PassiveRadar = true
+EnableOffAxis = true
+SpeedFactor = 0.04
+SpeedFactorStartTick = 30
+SpeedFactorEndTick = 75
+SpeedDependsAircraft = true
+turningFactor = 0.09
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+;炮手位cross_type0_9 :0 TVM，1 MISSILESTRIKE，2 rocket_arm，3 CONNONSTRIKE，4 irm，5 arm，6 laserm，7 losm，8 SARH，9 connon
+;weapon_group_type: 0:SARH/MISSILESTRIKE;1:CONNON/SARH;2:CONNON/IRM;3:LASERM/CONNONSTRIKE
+;4:CONNON/TVM;5:CONNON/TVM;6:CONNON/TVM;7:CONNON/TVM
+crosstype=8
+
+DamageFactor = living, 1
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+DamageFactor = ship, 1
+ExplosionDamageVsShip=0.5
+enableExhaustFlare=true
+
+turningFactor = 0.15
+Gravity = 0.005

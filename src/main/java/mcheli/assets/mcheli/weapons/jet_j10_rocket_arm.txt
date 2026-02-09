@@ -1,0 +1,78 @@
+DisplayName = HF14R  70MM主动雷达制导火箭弹
+Type = atmissile
+Power = 50
+ModelBullet = hydra70
+Acceleration = 3
+Explosion = 2
+Explosionblock =0
+DisplayMortarDistance = true
+
+Sound = rocket_snd
+Flaming = false
+Sight = MoveSight
+Delay = 6
+ReloadTime = 110
+Round = 14
+HeatCount = 80
+MaxHeatCount = 1000
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+DamageFactor = plane, 1.5
+DamageFactor = heli, 1.5
+DamageFactor = tank, 1.0
+DamageFactor =vehicle , 1
+
+RidableOnly = true
+
+
+; Particle test
+;TrajectoryParticle = heart
+;TrajectoryParticle = fireworksSpark
+
+MaxAmmo = 16
+SuppliedNum = 20
+Item =  1, iron_ingot
+SoundVolume = 10
+LockTime = 0
+
+IsHeatSeekerMissile = false
+IsRadarMissile = true
+MaxLockOnRange = 30
+MaxLockOnAngle = 68
+;R=20,D=30,FOV=67.4
+EnableOffAxis = false
+MaxDegreeOfMissile = 85
+ActiveRadar = true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+scanInterval=2
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=1
+ExplosionDamageVsHeli=1
+ExplosionDamageVsVehicle=1
+ActiveRadar = true
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+
+turningFactor = 0.1
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+crosstype=15
+DamageFactor = ship, 0.5
+ExplosionDamageVsShip=1
+enableExhaustFlare=true

@@ -1,0 +1,57 @@
+DisplayName = 9M331 无线电指令导引
+Type = TVMissile
+ModelBullet = R37M
+Power = 250
+Acceleration = 3
+Gravity = 0
+Explosion = 4
+Flaming = false
+Sight = MoveSight
+ModeNum = 2
+Delay = 8
+ReloadTime = 45
+HeatCount = 400
+MaxHeatCount = 600
+Round = 4
+ProximityFuseDist = 4
+Group = MainGun
+Sound = Heatseekers_F
+TrajectoryParticleStartTick = 10
+DamageFactor = heli, 1.0
+DamageFactor = plane, 1
+DamageFactor = tank, 0.5
+RigidityTime = 2
+FixMode = 1
+MaxAmmo = 4
+SuppliedNum = 4
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+enableBVR=true
+MinRangeBVR = 10
+
+;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+;其中radar对应的DrawTexture名称固定为RADAR
+crosstype=10
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=0.1
+ExplosionDamageVsTank=0.1
+ExplosionDamageVsPlane=0.1
+ExplosionDamageVsHeli=0.1
+ExplosionDamageVsVehicle=0.1
+DamageFactor = ship, 0.5
+ExplosionDamageVsShip=0.1
+enableExhaustFlare=true
+ProximityFuseDist = 20
+proximityFuseTick=60
+proximityFuseDamage = 250
+proximityFuseHeight = 50
+ExplosionAirburst = 4
+EnableOffAxis = false
+LockMinHeight = 50

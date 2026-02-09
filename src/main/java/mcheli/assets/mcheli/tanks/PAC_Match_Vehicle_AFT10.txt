@@ -1,0 +1,120 @@
+DisplayName = AFT-10
+AddDisplayName = zh_CN,AFT-10 重型反坦克导弹发射车
+AddDisplayName = en_US,AFT-10
+MaxHp = 800
+
+ItemID = 91129
+HUD = IFV, MBT_GUNNER
+Speed = 0.8
+MobilityRoll = 0
+ThrottleUpDown = 2.0
+MinRotationPitch = -25
+MaxRotationPitch = 12
+PivotTurnThrottle = 0.0
+throttledownfactor = 3
+StepHeight = 1.5
+MobilityYawOnGround = 4
+DefaultFreelook = true
+
+Sound = mbt_run
+Float = false
+
+Gravity = -0.1
+GravityInWater = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.00, 4.149, -0.005633, true
+CameraRotationSpeed = 50
+CameraZoom = 7
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 2, 0,    0.00, 2, -4.00,  false, -90, 90, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.756, 0.227,  3.584, 2.06, 4.0, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 0.756, -2.569,  3.584, 2.06, 1.606, 1.3, DEFAULT, 乘员/弹药舱
+BoundingBox = 0.0, 1.325, 3.67,  3.584, 0.975, 2.936, 0.5, DEFAULT, 首上
+BoundingBox = 0.0, 0.353, 3.67,  3.584, 0.975, 2.936, 0.7, DEFAULT, 首下
+BoundingBox = -0.882, 2.806, -0.09,  1.127, 0.99, 3.567, 1.5, TURRET, 导弹箱
+BoundingBox = 0.882, 2.806, -0.09,  1.127, 0.99, 3.567, 1.5, TURRET, 导弹箱
+BoundingBox = 0.0, 2.048, -0.089,  1.792, 0.534, 2.177, 0.4, TURRET, 基座
+BoundingBox = 0.0, 2.931, -0.09,  0.52, 1.574, 0.464, 0.8, TURRET, 观瞄设备
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = IFV
+NameOnModernAARadar = IFV
+NameOnEarlyAARadar = 
+NameOnModernASRadar = Z04
+NameOnEarlyASRadar = IFV
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor = 3.5
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.5391,  4.109
+AddTrackRoller = -1.541,  0.1135,  3.250
+AddTrackRoller = -1.541,  0.1135,  2.224
+AddTrackRoller = -1.541,  0.1135,  1.315
+AddTrackRoller = -1.541,  0.1135,  0.2323
+AddTrackRoller = -1.541,  0.1135,  -0.8557
+AddTrackRoller = -1.541,  0.1135,  -1.862
+AddTrackRoller = -1.541,  0.5038,  -2.696
+
+AddCrawlerTrack = true, 0.18, -2.0,  -0.2521/3.249,-0.1982/3.429,0.3065/4.259,0.4255/4.36,0.6581/4.360,0.8095/4.184,0.8204/4.103,0.7997/-2.695,0.7560/-2.842,0.6514/-2.953,0.5036/-2.988,0.3556/-2.953,-0.1982/-2.042,-0.2521/-1.861
+
+;Weapons
+AddTurretWeapon = matchvehicle_aft10_TVM,          -1.415, 2.82, 1.627,  0.0, 0.0, true,1, 0,-360,360, -25, 15
+AddTurretWeapon = matchvehicle_aft10_TVM,          1.415, 2.82, 1.627,  0.0, 0.0, true,1, 0,-360,360, -25, 15
+AddTurretWeapon = matchvehicle_aft10_IRM,          -1.415, 2.82, 1.627,  0.0, 0.0, true,1, 0,-360,360, -25, 15
+AddTurretWeapon = matchvehicle_aft10_IRM,          1.415, 2.82, 1.627,  0.0, 0.0, true,1, 0,-360,360, -25, 15
+
+AddPartWeapon = matchvehicle_aft10_TVM/matchvehicle_aft10_irM, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 2.11, -1.279
+
+AddPartWeapon = matchvehicle_aft10_TVM/matchvehicle_aft10_irM, true, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 3.449, -0.005633
+
+weapongrouptype = 95
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 800
+WeightType = Tank
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.1
+HideEntity = true
+HideEntity = true
+hudtype = 2
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+armorExplosionDamageMultiplier = 1.52
+
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+;10 only HE/LOSM;11 only AP/TVM
+
+;DUPLICATES
+hasMaintenance = true

@@ -1,0 +1,59 @@
+DisplayName = UAV-1
+AddDisplayName = zh_CN, UAV-1 攻击无人机
+AddDisplayName = en_US, UAV-1
+MaxHp = 70
+
+Category = M.Q
+ItemID = 28812
+HUD = UAV1
+ThirdPersonDist = 12
+Speed = 0.5
+MobilityPitch = 1.1
+MobilityRoll = 1.1
+MobilityYaw = 1.1
+ThrottleUpDown = 0.8
+
+Sound = AH-6J_idle
+
+MaxFuel = 1000
+FuelConsumption = 1.0
+
+CameraPosition = 0.0, 0.30, 1.40
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+
+BoundingBox = 0.0, 1.7, -0.5,  2.4, 2.5
+BoundingBox = 0.0, 2.0, -6.5,  1.0, 1.0
+
+FlareType = 3
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = UAV
+NameOnModernAARadar = UAV
+NameOnEarlyAARadar = ?
+NameOnModernASRadar = UAV
+NameOnEarlyASRadar = ?
+enableRWR = false
+
+;Parts
+AddRotor = 4, 90,  0.00,  3.20, -0.75,   0.0, 1.0, 0.0, true
+AddRotor = 1,  0,  0.50,  1.97, -6.495,  1.0, 0.0, 0.0
+
+;Weapons
+AddWeapon = uav1_agm114,     1.86, 0.72, 0.09,   0.0, 0.0
+AddWeapon = targeting_pod_10s, 0,0,0,  0,0
+AddWeapon = targeting_pod_block,     0.0, 0.3, 1.4,   0.0, 0.0
+
+;MISC
+;Place misc paramters here
+EnableFoldBlade = true
+InventorySize = 9
+SmallUAV = true
+AddPartCamera = 0.0, 0.29, 1.20, true, false
+AddPartCamera = 0.0, 0.29, 1.20, true, true
+AddRecipe = " Y ", "YXY", " R ",  X, iron_block, Y, iron_ingot, R, redstone
+
+; M = Military(軍用機).  Q = Drone(無人航空機)
+
+;DUPLICATES

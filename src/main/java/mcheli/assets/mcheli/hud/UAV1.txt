@@ -1,0 +1,92 @@
+﻿;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+DrawTexture = TVM, -900,-900,  1800,1800, 0,0, 2048,2048
+;高度
+Color = 0xCFFFFFFF
+DrawString = -190, -120, "%3d", ALTITUDE
+Color = 0xCFFFFFFF
+DrawGraduationYaw   = plyr_yaw, 0,   0, -100
+;重力
+Color = 0xCFFFFFFF
+DrawString = 140, 0, "Overload  %s", G_FORCE
+DrawString = -190, -80, "%.2f",motion_X
+Color = 0xCFFFFFFF
+DrawString = 130,  110, "REC  %02d:%02d:%02d",MC_THOR, MC_TMIN, MC_TSEC
+
+If = uav_fs > 0.01
+DrawString = -190, -100, "%.8f",UAV_DIST
+EndIf
+If = uav_fs <= 0.01
+DrawString = -190, -100, "----------"
+EndIf
+If = uav_fs < 0.3
+DrawCenteredString = 0, 40, "LOW SIGNAL"
+EndIf
+
+DrawString  = 170, -100, "HP %3.0f", HP_PER
+
+DrawString = -190, 90, "%.2fs",    RELOAD_SEC
+
+Color = 0xCFFFFFFF
+DrawString = -190, -5, "x%.1f", CAM_ZOOM
+
+DrawTexture = SUAV, -86, -31,  172,62, 0,0, 690,248
+DrawTexture = SUAVbar, -130, -80,  5,60+throttle*100, 0,0, 20,512
+DrawTexture = SUAVbar, -90, 70-plyr_pitch*3,  180,2, 0,0, 20,512,-roll/3
+Color = 0xCFFFFFFF
+If = free_look==1
+	DrawString = -190, 25, "FREE LOOK"
+Endif
+
+If = hovering==1
+	Color = 0xCFFFFFFF
+	DrawString = -190, 10, "HOVERING"
+Endif
+;血量
+;Color = 0xCFFFFFFF
+;DrawString  = 120, 0, "HP %3.0f", HP_PER
+
+Color = 0xCFFFFFFF
+DrawString = -207, 58, "%s",  WPN_AMMO
+DrawString = -181, 58, "/",   WPN_AMMO
+DrawString = -172, 58, "%s",  WPN_RM_AMMO
+; 武器名 (Weapon name)
+DrawCenteredString = 0, 90, "%s",  WPN_NAME
+
+If = is_heat_wpn==1
+	Color = 0xCFFFFFFF
+	DrawRect = -20, 105, 41, 2
+	Color = 0xFFDF0408
+	DrawRect = -20, 105, 41*wpn_heat, 2
+EndIf
+
+If = (uav_fs > 0.7)&&(uav_fs <= 1)
+DrawTexture = UAVdist1, 120, 70,  76,25, 0,0, 76,25
+EndIf
+
+If = (uav_fs > 0.6)&&(uav_fs <= 0.7)
+DrawTexture = UAVdist2, 120, 70,  76,25, 0,0, 76,25
+EndIf
+
+If = (uav_fs > 0.5)&&(uav_fs <= 0.6)
+DrawTexture = UAVdist3, 120, 70,  76,25, 0,0, 76,25
+EndIf
+
+If = (uav_fs > 0.4)&&(uav_fs <= 0.5)
+DrawTexture = UAVdist4, 120, 70,  76,25, 0,0, 76,25
+EndIf
+
+If = (uav_fs > 0.3)&&(uav_fs <= 0.4)
+DrawTexture = UAVdist5, 120, 70,  76,25, 0,0, 76,25
+EndIf
+
+If = (uav_fs > 0.2)&&(uav_fs <= 0.3)
+DrawTexture = UAVdist6, 120, 70,  76,25, 0,0, 76,25
+EndIf
+
+If = (uav_fs > 0.1)&&(uav_fs <= 0.2)
+DrawTexture = UAVdist7, 120, 70,  76,25, 0,0, 76,25
+EndIf
+
+If = uav_fs <= 0.1
+DrawTexture = UAVdist8, 120, 70,  76,25, 0,0, 76,25
+EndIf

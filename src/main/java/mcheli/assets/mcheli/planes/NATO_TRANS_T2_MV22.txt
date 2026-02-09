@@ -1,0 +1,123 @@
+DisplayName = MV-22 OSPREY
+AddDisplayName = zh_CN, MV-22 鱼鹰
+AddDisplayName = en_US, MV-22 OSPREY
+MaxHp = 500
+
+Category = M.C
+HUD = HELI, HELI_GUNNER,HELI_GUNNER,HELI_GUNNER,TRANS_PASSENGER,TRANS_PASSENGER
+ThirdPersonDist = 30
+Speed = 1.5
+MobilityPitch = 0.9
+MobilityRoll = 0.6
+MobilityYaw = 1.5
+ThrottleUpDown = 0.8
+MinRotationPitch = -78
+MaxRotationPitch = 78
+
+Sound = MH60_idle
+
+MaxFuel = 1800
+FuelConsumption = 1.0
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+CameraZoom = 3
+EnableNightVision = true
+AddSeat = 0.60, 1.20,  0.00
+AddSeat = -0.70, 1.10, -3.96
+AddSeat = 0.70, 1.10, -3.96
+AddGunnerSeat = -0.60, 1.20,  0.00,  0.0, 0.555, 2.1,  true,-12, 80, false
+AddGunnerSeat = -0.70, 1.10, -2.87,  -2.9, 0.761, -3.19,  false,0, 55, false
+AddGunnerSeat = 0.70, 1.10, -2.87,  2.9, 0.761, -3.19,  false,0, 55, false
+
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+
+ArmorMinDamage = 12
+DamageFactor = 0.0
+BoundingBox = 0.0, 1.6, -1.0,  2.6, 2.0
+BoundingBox = 0.0, 1.8, -4.5,  3.0, 3.0
+BoundingBox = 0.0, 1.6, -8.0,  3.0, 2.5
+BoundingBox = 0.0, 1.6, -11.0,  3.0, 2.5
+BoundingBox = 0.0, 3.0, -14.0,  3.0, 1.0
+BoundingBox = -2.0, 3.5, -5.0,  3.0, 0.6
+BoundingBox = -5.0, 3.5, -5.0,  2.5, 0.6
+BoundingBox = 2.0, 3.5, -5.0,  3.0, 0.6
+BoundingBox = 5.0, 3.5, -5.0,  2.5, 0.6
+BoundingBox = -7.0, 3.0, -4.0,  2.0, 2.0,1.2
+BoundingBox = 7.0, 3.0, -4.0,  2.0, 2.0,1.2
+
+FlareType = 4
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = V22
+NameOnModernAARadar = V22
+NameOnEarlyAARadar = V22
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddPartLG = 0.00, 0.85,  1.19,  1,0,0
+AddPartLG = 0.00, 1.00, -5.85,  1,0,0
+AddPartLG = 2.33, 0.91, -5.96,  0,0,-1
+AddPartLG = -2.33, 0.91, -5.96,  0,0, 1
+
+;Weapons
+AddPartWeapon = TRANS_MG_MINIGUN_l,   false, false, false,  2.30, 0.403, -3.67
+AddPartWeaponChild = true, true,  2.30, 0.403, -3.67
+AddPartRotWeapon = TRANS_MG_MINIGUN_l, false, true, true,  2.30, 0.235, -3.67
+
+AddPartWeapon = TRANS_MG_MINIGUN_r,   false,false, false,  -2.30, 0.403, -3.67
+AddPartWeaponChild = true, true,  -2.30, 0.403, -3.67
+AddPartRotWeapon = TRANS_MG_MINIGUN_r, false, true, true,  -2.30, 0.235, -3.67
+
+AddPartWeapon = TRANS_MV22_40mmFrag,     true,  true,  false,   0.00, 0.293, 1.74
+AddPartWeaponChild = false, true,  0.00, 0.293, 1.74
+AddPartWeaponChild = false, true,  0.00, 0.293, 1.74
+
+AddWeapon = TRANS_MV22_40mmFrag, 0.00, 0.278, 1.74  ,0.0, 0.0, false, 2, 0,-100,100, -12,80
+AddWeapon = TRANS_MG_MINIGUN_r,     -2.30, 0.235, -3.67 ,  0,0,  false,3,   0,-360, 360, 0,55
+AddWeapon = TRANS_MG_MINIGUN_l,     2.30, 0.235, -3.67 ,  0,0,  false,4,   0,-360, 3600, 0,55
+
+AddWeapon = TRANS_Paratrooper,   -5.47, 1.15,-5.31,   0.0, 90,  false,  1,  0,0,0, 0, 30
+AddWeapon = TRANS_Paratrooper,  5.47,1.15, -5.31,  0.0, 90,  false,  1,  0,0,0, 0, 30
+
+AddWeapon = GUNNER_MARK,   -5.47, 1.15,-5.31,   0.0, 90,  false,  1,  0,0,0, 0, 30
+
+;MISC
+;Place misc paramters here
+EnableVtol = true
+EnableParachuting = true
+MobDropOption = 0.0, 0.0, -11.5,  10
+DefaultVtol = true
+VtolYaw = 0.7
+VtolPitch = 0.4
+ArmorMaxDamage = 500
+MinRotationRoll = -70
+MaxRotationRoll = 70
+AddPartRotor = 7.60,  3.83, -4.31, -1,0, 0
+AddPartRotor = -7.60,  3.83, -4.31, -1,0, 0
+AddBlade = 1,0,  7.60,  4.29, -1.49,  0,0,-1
+AddBlade = 1,0, -7.60,  4.29, -1.49,  0,0, 1
+AddPartHatch = 0.0,  0.43,  -9.06, -1,0, 0, 38
+AddPartHatch = 0.0,  2.48, -13.44, -1,0, 0, 27
+AddRecipe = " Y ",  "XXX",  "X X",  X, iron_block, Y, glass
+InventorySize = 54
+AddRack = growler, 0.0, 0.85, -7.0, 0.0, 0.00, -9.0, 7.0, 500000, 180
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+;MobDropOption = 降下位置X, 降下位置Y, 降下位置Z, 降下間隔(1/20秒)
+; M = Military(軍用機).  C = Transport(輸送機)
+;Front
+;RightLeft
+;LeftHatch
+;RightHatch
+
+;DUPLICATES

@@ -1,0 +1,126 @@
+DisplayName = T-90M
+AddDisplayName = zh_CN,T-90M 主战坦克
+AddDisplayName = en_US,T-90M
+MaxHp = 1200
+
+ItemID = 91128
+HUD = MBT, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.7
+ThrottleUpDown = 1.5
+MinRotationPitch = -17
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 1.8
+StepHeight = 1.5
+MobilityYawOnGround = 2.6
+DefaultFreelook = true
+
+Sound = mbt_run
+
+Gravity = -0.1
+MotionFactor = 0.9
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.8,  2.6, 2.11, true
+CameraRotationSpeed = 40
+CameraZoom = 6
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+AddGunnerSeat = -0.6034, 4.304, -4,  -0.5748, 3.064, -1.310, false, -80, 10, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 15
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.645, 0.200820,   4.684, 2.02,  5.3,0.7,DEFAULT,车体侧面
+BoundingBox = 0.0, 1.21, 3.6,   4.684, 0.8871,  1.5,0.4,DEFAULT,首上
+BoundingBox = 0.0, 0.191, 3.67,   4.684, 1.08,  1.7,0.8,DEFAULT,首下
+BoundingBox = 0.0, 0.683, -3.53,   4.684, 2.1,  2.302,1.1,DEFAULT,引擎
+BoundingBox = 0.0, 2.16, -0.44,   4.1, 1,  5.4,0.4, TURRET,炮塔正面
+BoundingBox = 0.0, 2.68, -0.44,   3.184, 0.1,  4.5,1.0, TURRET,车顶
+BoundingBox = 2.05, 2.24, -1.57,   0.212, 0.7087,  3.393,0.9, TURRET,炮塔侧面
+BoundingBox = -2.05, 2.24, -1.57,   0.212, 0.7087,  3.393,0.9, TURRET,炮塔侧面
+BoundingBox = 0, 2.24, -3.35,   4, 0.7087,  0.2,1.1, TURRET,炮塔后面
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasecmJammer = true
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = T90
+NameOnEarlyASRadar = MBT
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 3.9
+OnGroundRollFactor = 3.9
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddCrawlerTrack = true, 0.22, -2.0,  -0.27/3.10, -0.24/3.35,-0.17/3.46,0.155/4.05, 0.35/4.40, 0.41/4.516,0.76/4.62, 0.95/4.6,1.15/4.04, 1.2/3.10,1.2/-2.16,1.16/-2.56,1.12/-2.92,1.08/-3.20,1.05/-3.49,1.04/-3.59, 1.02/-3.5,1.0/-3.75, 0.61/-3.88, 0.34/-3.65,-0.20/-2.850, -0.27/-2.660,
+
+AddTrackRoller = -2.32,  0.7131,  4.241
+AddTrackRoller = -2.32,  0.2529,  3.10
+AddTrackRoller = -2.32,  0.2529,  2.005
+AddTrackRoller = -2.32,  0.2529,  0.8995
+AddTrackRoller = -2.32,  0.2529, -0.2314
+AddTrackRoller = -2.32,  0.2529, -1.370
+AddTrackRoller = -2.32,  0.2529, -2.513
+AddTrackRoller = -2.32,  0.7075, -3.476
+
+;Weapons
+AddPartWeapon = MBT_T90M_AHEAD /MBT_T90M_ATGM_LOSM, false, true, false,  0.00, 1.58, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 1.876, 1.475
+AddPartWeaponChild = false, true, 0.00, 1.876, 1.475, 0.5
+
+AddTurretWeapon = MBT_T90M_AHEAD,  0.8,  2.6, 2.11,  0.0, 0.0,  true,1, 0,-360,360, -17, 8,  0.00, 1.876, 1.475
+AddTurretWeapon = MBT_T90M_ATGM_LOSM,  0.00, 1.876, 1.475,  0.0, 0.0, true,1, 0,-360,360, -17, 8
+
+AddTurretWeapon = MG_762,      -0.35, 1.876, 0.34,  0.0, 0.0, true,1, 0,-360,360, -17, 8
+
+AddPartTurretWeapon = GUNNER_40MM_FRAG, true, true, false, -0.5748, 2.770, -1.310
+AddPartWeaponChild = false, true, -0.2194, 3.299, -1.491
+AddTurretWeapon = GUNNER_40MM_FRAG, -0.2194, 3.299, -1.491, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+AddTurretWeapon = GUNNER_MARK_BLOCK, -0.2194, 3.299, -1.491, 0.0, 0.0, false, 2, 0, -360,360, -80,-20
+
+weapongrouptype = 17
+
+;MISC
+;Place misc paramters here
+WeightType = Tank
+ArmorMaxDamage = 900
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 3
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11APF,12SAP,13AHEAD
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T 10KF51 11 AP/STAFF 12 T14  13 heat/LOSM/MG
+;m1128
+;15 AP/SAP, 16 AP/AHEAD, 17,LOSM/AHEAD
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES

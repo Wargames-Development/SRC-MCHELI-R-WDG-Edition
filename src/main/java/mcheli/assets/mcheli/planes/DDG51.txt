@@ -1,0 +1,175 @@
+DisplayName = DDG-51 “Arleigh Burke”
+AddDisplayName = zh_CN,DDG-51 "阿利·伯克" 号导弹驱逐舰
+AddDisplayName = en_US,DDG-51 “Arleigh Burke”
+MaxHp = 12000
+
+ItemID = 30514
+HUD = FAC,FAC,FAC,FAC,FAC
+ThirdPersonDist = 85
+Speed = 0.6
+MobilityRoll = 0
+MobilityYaw = 0.5
+ThrottleUpDown = 0.6
+MinRotationPitch = 0
+MaxRotationPitch = 0
+StepHeight = 0.0
+MobilityYawOnGround = 1.0
+CanMoveOnGround = false
+DefaultFreelook = true
+
+Sound = boat
+Float = true
+FloatOffset = -0.4
+CanRotOnGround = false
+
+Gravity = -0.15
+GravityInWater = -0.1
+MaxFuel = 1500
+FuelConsumption = 2.0
+
+CameraPosition = 0.7780, 12.84, 0.6481
+EnableNightVision = true
+AddgunnerSeat = 0.00, 9, 0,  0.00, 14.41, 0,  false, -360, 360,true
+AddgunnerSeat = 0.0, 11.07, 14.91, 0.0, 11.07, 14.91,  false, -360, 360,false
+AddgunnerSeat = 6.559, 7.5, -59.74, 6.559, 7.5, -59.74, false, -360, 360,false
+AddgunnerSeat = -6.559, 7.5, -59.74, -6.559, 7.5, -59.74, false, -360, 360,false
+AddgunnerSeat = 0.00, 10.72, -46.16, 0.00, 13.60, -46.16, false, -360, 360,false
+
+AddParticleSplash = 1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+
+AddPartWeaponBay = warship_DDG51_AAM_ARM, 2.5578,6.2739,9.1786,-5.1056,0.0,0.0,-90
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+explosionsizebycrash = 10
+BoundingBox = 0.0, 13.87, -21.788,  12.226, 13.713, 49.164, 1.5, DEFAULT, 舰岛
+BoundingBox = 0.0, 0.682, -21.788,  15.076, 13.713, 119.454, 1.0, DEFAULT, 舰体
+EntityWidth = 0.00
+EntityHeight = 0.00
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = DDG
+NameOnModernAARadar = DDG
+NameOnEarlyAARadar = DDG
+NameOnModernASRadar = Burke
+NameOnEarlyASRadar = DDG
+enableRWR = true
+
+hasMaintenance = true
+
+;Weapons
+AddPartWeapon = warship_DDG51_20MM, false, true, false, 0.00, 8.338, -0.0
+AddPartWeaponChild = false, true, 0.00, 12.37, 0.0
+AddPartRotWeapon = warship_DDG51_20MM, false, true, true,  -0.000, 12.25,   0.0, 0,0
+
+AddPartWeapon = warship_DDG51_20MM_2, false, true, false, 0.00, 9.609, -46.16
+AddPartWeaponChild = false, true, 0.00, 11.07, -46.16
+AddPartRotWeapon = warship_DDG51_20MM_2, false, true, true,  -0.000, 10.95,  -46.16, 0,0
+
+AddPartWeapon = warship_ddg51_HE/warship_ddg51_HE_VT, false, true, false,  0.0, 6.387, 14.91
+AddPartWeaponChild = false, true,  0.0, 8.758, 14.81
+AddPartWeaponChild = false, true,  0.0, 8.758, 14.81,0.1
+
+AddPartWeapon = warship_ddg51_torpedo_l, false, true, false,  6.761, 5.169, -53.39
+
+AddPartWeapon = warship_ddg51_torpedo_r, false, true, false,  -6.761, 5.169, -53.39
+
+AddPartWeapon = warship_ddg51_25mm_l, false, true, false,  6.559, 5.217, -59.74
+AddPartWeaponChild = false, true,  6.559, 6.657, -59.55
+
+AddPartWeapon = warship_ddg51_25mm_r, false, true, false,  -6.559, 5.217, -59.74
+AddPartWeaponChild = false, true,  -6.559, 6.657, -59.55
+
+AddPartWeapon = warship_DDG51_20MM_2, ture, true, ture, 0.00, 9.609, -46.16
+
+AddTurretWeapon = warship_DDG51_20MM,          -0.000, 12.55,   0.0,  0.0, 0.0, true,1, 0,-360,360, -85, 10
+
+AddWeapon = warship_DDG51_AAM_ARM, -0.9728, 6.310, 8.08,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_DDG51_AAM_ARM, 0.9728, 6.310, 8.08,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_DDG51_AAM_ARM, -0.3279, 6.310, 8.884,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_DDG51_AAM_ARM, -1.608, 6.310, 6.385,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_DDG51_AAM_ARM, 0.3279, 6.310, 8.884,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_DDG51_AAM_ARM, 1.608, 6.310, 6.385,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+
+AddWeapon = warship_ddg51_ASM_ARM, -1.775, 8.769, -50.83,  -75, -30.0, true,1, 0,-180,180, -75, 10
+AddWeapon = warship_ddg51_ASM_ARM, 1.775, 8.769, -47.83,  75, -30.0, true,1, 0,-180,180, -75, 10
+
+AddWeapon = warship_ddg51_HE,0.0, 8.758, 14.81,  0.0, 0.0, false,2, 0,-360,360, -85, 10
+AddWeapon = warship_ddg51_HE_VT,0.0, 8.758, 14.81,  0.0, 0.0, false,2, 0,-360,360, -85, 10
+
+AddWeapon = warship_ddg51_25mm_r, -6.559, 6.657, -59.55, 0.0, 0.0, false, 4, 0, -0, 180, -50, 20
+AddWeapon = warship_ddg51_torpedo_r, -6.761, 7.169, -53.39, 0.0, 0.0, false, 4, 0, -0, 180, -50, 20
+
+AddWeapon = warship_ddg51_25mm_l, 6.559, 6.657, -59.55, 0.0, 0.0, false, 3, 0, -180, 0, -50, 20
+AddWeapon = warship_ddg51_torpedo_l, 6.761, 7.169, -53.39, 0.0, 0.0, false, 3, 0,-180, 0, -50, 20
+
+AddWeapon = WARSHIP_DDG51_GPS_Missile, 2.665, 4.883, -53.33,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+AddWeapon = WARSHIP_DDG51_GPS_Missile, -2.665, 4.883, -54.23,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+AddWeapon = WARSHIP_DDG51_GPS_Missile, -2.665, 4.883, -53.33,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+AddWeapon = WARSHIP_DDG51_GPS_Missile, 2.665, 4.883, -54.23,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+
+AddWeapon = warship_DDG51_20MM_2,          -0.000, 10.95,  -46.16,  0.0, 0.0, false,5, 0,-360,360, -85, 10
+
+weapongrouptype = 51
+
+;MISC
+;Place misc paramters here
+InventorySize = 64
+maintenanceUseTime = 10
+maintenanceWaitTime = 400
+AddPartRotation = 0.00,  10.15,-38.13,   0,-1,0,     15,      true
+EnableBack = true
+AddPartRotor = 3.267,  -3.879,-71.75,   0,0, 1
+AddPartRotor = -3.267,  -3.879,-71.75,   0,0, 1
+AddBlade = 1, 0,  3.267,  -3.879,-71.75,   0,0, 1
+AddBlade = 1, 0,  -3.267,  -3.879,-71.75,   0,0, 1
+
+; 水しぶき を発生させる
+;AddParticleSplash = 座標X,   Y,    Z,   表示数, サイズ,  速度,  表示時間, 上昇, 重力
+;操縦席
+;主炮
+;M242机炮
+;M242机炮
+;密集阵2
+;标准2
+;スポット機能
+;BoundingBox = 0.0, 0.212, 26.368,  13.046, 11.985, 21.806, 0.9, DEFAULT, 舰艏
+;BoundingBox = 0.0, 0.212, 8.903,  13.046, 11.985, 13.242, 2.0, DEFAULT, 舰艏弹药库
+;BoundingBox = 0.0, 0.212, -46.6,  15.076, 10.371, 7.962, 2.0, DEFAULT, 舰舯弹药库
+;BoundingBox = 0.0, 0.212, -65.739,  15.076, 7.352, 30.156, 1.0, DEFAULT, 舰艉
+;BoundingBox = 0.0, 0.212, -20.011,  15.076, 9.818, 44.942, 0.8, DEFAULT, 舰舯
+;AddPartNozzle =  0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  0.73, 0.00, -5.64, -1,0,0
+;AddPartNozzle = -0.73, 0.00, -5.64, -1,0,0
+ ;AddRecipe = " Y ",  "XXX",  "DXD",  X, iron_block, Y, glass, D, diamond_block
+
+;DUPLICATES
+ThrottleUpDown = 0.3
+AddParticleSplash = -1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash = 1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = 0.42,  0.18,   11.56,   8,      12.0,    1.1,   80,       0.30,  -0.005
+AddParticleSplash = -0.42,  0.18,   11.56,   8,      12.0,    1.1,   80,       0.30,  -0.005
+AddParticleSplash = 5.84, -0.18,  13.25,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash = -5.84, -0.18,  13.25,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash = 4.15, -0.18,  -3.89,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash = -4.15, -0.18,  -3.89,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash = 4.7, 0.00, -46.67,   8,      12.0,    1.1,   80,       0.10,   -0.005
+AddParticleSplash = -4.7, 0.00, -46.67,   8,      12.0,    1.1,   80,       0.10,   -0.005
+AddParticleSplash = 4.6323, -0.18,  -54.4,   8,      12.0,    1.1,   60,       0.23,  -0.005
+AddParticleSplash = -4.6323, -0.18,  -54.4,   8,      12.0,    1.1,   60,       0.23,  -0.005
+AddParticleSplash = 5,  0.18,  -64.65,   8,      12.0,    1.1,   80,       0.20,   -0.005
+AddParticleSplash = -5,  0.18,  -64.65,   8,      12.0,    1.1,   80,       0.20,   -0.005
+AddPartWeaponBay = warship_DDG51_AAM_ARM, 2.5578,6.2739,7.787,-5.1056,0.0,0.0,90
+AddPartWeaponBay = warship_DDG51_AAM_ARM, 2.5578,6.2739,7.482,-5.1056,0.0,0.0,-90
+AddPartWeaponBay = warship_DDG51_AAM_ARM, 2.5578,6.2739,6.091,-5.1056,0.0,0.0,90
+AddPartWeaponBay = warship_DDG51_GPS_MISSILE, 2.5578,5.622,-53.04,-5.1056,0.0,0.0,-90
+AddPartWeaponBay = warship_DDG51_GPS_MISSILE, 2.5578,5.622,-54.43,-5.1056,0.0,0.0,90
+DamageFactor = 0.0

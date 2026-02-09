@@ -1,0 +1,28 @@
+DisplayName = ¶Ô¿Õ·ÉÂí
+Type = AAMissile
+ModelBullet = bvvd
+Power = 500
+Acceleration = 2.5
+Explosion = 6
+Flaming = false
+Sight = MissileSight
+Delay = 8
+ReloadTime = 45
+Round = 2
+HeatCount = 500
+MaxHeatCount = 900
+RigidityTime = 20
+DisableSmoke = True
+TimeFuse = 150
+
+Group = MainGun
+LockTime = 0
+Sound = missile_1_snd
+
+MaxAmmo = 6
+SuppliedNum = 6
+DamageFactor = heli, 1.5
+Item =  1, iron_ingot
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true

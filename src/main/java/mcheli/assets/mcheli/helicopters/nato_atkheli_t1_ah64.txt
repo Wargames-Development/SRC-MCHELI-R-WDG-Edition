@@ -1,0 +1,99 @@
+DisplayName = AH-64D APACHE
+AddDisplayName = zh_CN,AH-64D 长弓阿帕奇
+AddDisplayName = en_US,AH-64D APACHE
+MaxHp = 500
+
+Category = M.A
+ItemID = 28800
+HUD = HELI, HELI_GUNNER
+ThirdPersonDist = 22
+Speed = 0.7
+ThrottleUpDown = 0.4
+MinRotationPitch = -70
+MaxRotationPitch = 70
+
+Gravity = -0.038
+MaxFuel = 900
+FuelConsumption = 1
+
+CameraPosition = 0.00, 1.14, 7.27
+EnableGunnerMode = true
+EnableNightVision = true
+EnableEntityRadar = true
+AddSeat = 0.00,  1.68,  2.30
+AddGunnerSeat = 0.0,  1.38,  4.2,  -0.02904, 1.56, 6.234,  true,-10, 70, false
+
+ArmorMinDamage = 15
+damagefactor = 0.0
+engineShutdownThreshold = 10
+explosionsizebycrash = 3
+BoundingBox = 0.00, 1.72,  0.73,  2.5, 4.0, 4.0, 0.8, DEFAULT, MIDSECTION
+BoundingBox = 0.00, 1.72,  4.20,  2.5, 3.0, 3.0, 0.7, DEFAULT, FRONT BODY
+BoundingBox = 0.00, 1.72, -2.70,  2.3, 3.0, 3.0, 1.0, DEFAULT, BACK BODY
+BoundingBox = 0.00, 1.88, -5.18,  2, 1.5, 2.0, 1.1, DEFAULT, TAIL BOOM
+BoundingBox = 0.00, 1.88, -7.48,  2, 1.5, 2.6, 1.2, DEFAULT, TAIL BOOM
+BoundingBox = 0.00, 2.84, -10.3,  3, 4.0, 3.0, 2.0, DEFAULT, TAIL ROTOR
+BoundingBox = 0.00, 4.00,  0.70,  8, 0.2, 8.0, 1.2, DEFAULT, MAIN ROTOR
+BoundingBox = 1.70, 2.7,  -1.33,  0.9, 1, 3.9, 2.5, DEFAULT, ENGINE
+BoundingBox = -1.70, 2.7,  -1.33,  0.9, 1, 3.9, 2.5, DEFAULT, ENGINE
+EntityWidth = 0.9
+EntityHeight = 0.9
+
+FlareType = 3
+HasChaff = true
+ChaffUseTime = 40
+ChaffWaitTime = 500
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = A64
+NameOnModernAARadar = A64
+NameOnEarlyAARadar = HELI
+NameOnModernASRadar = HELI
+NameOnEarlyASRadar = *
+enablerwr = true
+
+hasMaintenance = true
+maintenanceUseTime = 20
+maintenanceWaitTime = 1200
+
+;Parts
+AddRotor = 1, 0,  0.03183,  3.70,  0.5581,  0.0, 1.0, 0.0
+AddRotor = 1, 0, -0.772,   4.233, -10.97,  1.0, 0.0, 0.0
+AddRotor = 1, 0, -0.772,  4.233, -10.97,  -1.0, 0.0, 0.0
+
+AddPartSteeringWheel = -0.002782,1.659,2.559, 0, 0, 1,   -15
+AddPartSteeringWheel = 0.07374,1.707,2.846, 1, 0, 0,   -30
+AddPartSteeringWheel = 0.07374,1.707,2.846, 1, 0, 0,   30
+AddPartThrottle = 0.4065, 1.874, 2.048,  1,0,0.00, -30
+
+;Weapons
+AddPartWeapon = ac_ah64d_30mm,     true,  true,  false,   0.00, 0.8517, 3.482
+AddPartWeaponChild = false, true,  0.00, 0.1113, 3.308
+
+AddPartWeapon = ac_ah64d_30mm,    true,  true, false,   -0.02904, 1.56, 6.234
+AddPartWeaponChild = false, true,   0.00, 1.162, 6.261
+
+AddPartWeaponMissile = tvl_ah64d_agm114k, false,  false,  false,     -1.72,  0.96, -1.64
+AddPartWeaponMissile = tvl_ah64d_agm114k, false,  false,  false,    1.72,  0.96, -1.64
+
+AddPartWeaponMissile = tvl_ah64d_agm114k, false,  false,  false,     -1.72,  0.96, -1.64
+AddPartWeaponMissile = tvl_ah64d_agm114k, false,  false,  false,    1.72,  0.96, -1.64
+
+AddPartRotWeapon = ac_ah64d_2x20mm,   false, true, true,  2.17, 1.104, 2.218
+AddPartRotWeapon = ac_ah64d_2x20mm,   false, true, true,  -2.179, 1.116, 2.218
+
+AddWeapon = ac_ah64d_30mm,     0.00, 0.1113, 3.308 ,  0,0,  false,2,  0,-360,360, -10,70
+AddWeapon = ac_ah64d_2x20mm,      2.17, 1.104, 2.218,  0.4, 0,  false,1,  0,0,0, 0, 0
+AddWeapon = ac_ah64d_2x20mm,     -2.179, 1.116, 2.218,  -0.4, 0,  false,1,  0,0,0, 0, 0
+
+AddWeapon = tvl_ah64d_agm114k,  1.72,  0.96, -1.64,  0, -40,false,1, 0,-360,360, -10,70
+AddWeapon = tvl_ah64d_agm114k,  -1.72,  0.96, -1.64,  0, -40,false,1, 0,-360,360, -10,70
+AddWeapon = tvl_ah64d_agm114k,  1.72,  0.96, -1.64,  0, -40,false,1, 0,-360,360, -10,70
+AddWeapon = tvl_ah64d_agm114k,  -1.72,  0.96, -1.64,  0, -40,false,1, 0,-360,360, -10,70
+
+weapongrouptype = 1
+
+;MISC
+;Place misc paramters here
+EnableFoldBlade = true
+onGroundPitch = 3.8

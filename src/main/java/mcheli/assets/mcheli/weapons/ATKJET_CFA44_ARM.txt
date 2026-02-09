@@ -1,0 +1,59 @@
+DisplayName =ADMM 主动雷达空对地导弹
+Type = ATMissile
+Power = 60
+Acceleration = 0.1
+Explosion = 2
+explosionblock=0
+Flaming = false
+Sight = MissileSight
+Delay = 0
+ModeNum = 1
+Sound = 9K118_F
+SoundVolume = 20
+RidableOnly = true
+ModelBullet = AGM114
+TimeFuse = 360
+LockTime = 6
+
+HeatCount = 300
+MaxHeatCount = 1500
+
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Shell
+
+DamageFactor = player, 1
+DamageFactor = plane, 1
+DamageFactor = heli, 1.0
+DamageFactor = vehicle , 1
+DamageFactor = tank, 1
+
+MaxAmmo = 6
+SuppliedNum = 2
+Item =  1, iron_ingot
+Item =  1, gunpowder
+Item =  1, redstone
+
+SpeedFactor = 0.001
+SpeedFactorStartTick = 10
+SpeedFactorEndTick = 40
+SpeedDependsAircraft = true
+IsHeatSeekerMissile = false
+SpeedDependsAircraft = true
+ActiveRadar = true
+IsRadarMissile = true
+MaxLockOnRange = 120
+MaxDegreeOfMissile =180
+EnableOffAxis = false
+maxLockOnAngle=50
+scanInterval=1
+effectYield=3
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+
+crosstype=5
+DamageFactor = ship, 1
+enableExhaustFlare=true

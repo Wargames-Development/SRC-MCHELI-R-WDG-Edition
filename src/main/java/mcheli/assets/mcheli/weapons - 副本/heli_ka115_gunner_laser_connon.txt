@@ -1,0 +1,51 @@
+DisplayName =红土地 激光制导炮弹指示器
+Type = TVMissile
+Power =350
+Acceleration = 4
+Explosion = 5
+Explosionblock = 0
+Flaming = false
+Sight = MoveSight
+Delay = 100
+ModeNum = 2
+ModelBullet =HTD
+Sound =ru_PJ_SND
+ReloadTime = 100
+Round = 6
+FIXMODE=1
+LOCKTIME = 0
+ProximityFuseDist = 1
+HeatCount = 1000
+MaxHeatCount = 1200
+TimeFuse = 1000
+DamageFactor = plane, 0.7
+DamageFactor = heli, 0.7
+
+DisableSmoke = True
+
+laserGuidance = true
+hasLaserGuidancePod = true
+
+DisableDestroyBlock=true
+NukeEffectOnly=true
+ExplosionType=hbmNT_Bomb
+
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+
+ExplosionDamageVsLiving=0.5
+ExplosionDamageVsPlayer=0.5
+ExplosionDamageVsTank=4
+ExplosionDamageVsPlane=4
+ExplosionDamageVsHeli=4
+ExplosionDamageVsVehicle=4
+
+ProximityFuseDist = 1
+MaxAmmo = 12
+SuppliedNum = 8
+Item =  1, iron_ingot
+WeaponSwitchSound = Switch_Jet_Weapon_Missile
+canBeIntercepted=false
+canBeIntercepted=false
+canBeIntercepted=true
+ExplosionDamageVsShip=4
+LockEntity=true

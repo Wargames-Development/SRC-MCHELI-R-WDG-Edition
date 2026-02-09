@@ -1,0 +1,137 @@
+DisplayName = ZPD-100
+AddDisplayName = zh_CN,ZPD-100 火力支援车
+AddDisplayName = en_US,ZPD-100
+MaxHp = 1000
+
+ItemID = 91128
+HUD = IFV, MBT_GUNNER
+ThirdPersonDist = 12
+Speed = 0.7
+ThrottleUpDown = 2.5
+MinRotationPitch = -30
+MaxRotationPitch = 8
+PivotTurnThrottle = 0.0
+throttledownfactor = 2.5
+StepHeight = 1.5
+MobilityYawOnGround = 4
+DefaultFreelook = true
+
+Sound = mbt_run
+
+Gravity = -0.1
+MotionFactor = 0.905
+MaxFuel = 1500
+FuelConsumption = 1.0
+
+CameraPosition = 0.8,  2.6, 2.11, true
+CameraRotationSpeed = 40
+CameraZoom = 6
+EnableNightVision = true
+EnableEntityRadar = false
+AddGunnerSeat = 0.00, 1.58, 0,    -0.6, 1.78, 2.0,  false, -90, 90, true
+AddGunnerSeat = -0.0, 3.412, -1.893,0,  3.412, -1.893, false, -60, 10, true
+
+ArmorMinDamage = 15
+DamageFactor = 0.00
+engineShutdownThreshold = 30
+explosionsizebycrash = 10
+BoundingBox = 0.0, 0.667, 0.0,  4.6, 1.828, 4.764, 1.1, DEFAULT, 车体侧面
+BoundingBox = 0.0, 1.157, 3.569,  4.6, 0.878, 2.382, 0.55, DEFAULT, 首上
+BoundingBox = 0.0, 0.27, 3.569,  4.6, 0.878, 2.382, 0.85, DEFAULT, 首下
+BoundingBox = 0.0, 0.644, -3.231,  4.6, 1.837, 1.731, 1.5, DEFAULT, 引擎
+BoundingBox = 0.0, 2.166, -2.493,  3.532, 1.094, 0.073, 1.5, TURRET, 炮塔后面
+BoundingBox = 1.705, 2.166, -1.511,  0.075, 1.094, 1.97, 1.0, TURRET, 炮塔侧面
+BoundingBox = -1.705, 2.166, -1.511,  0.075, 1.094, 1.97, 1.0, TURRET, 炮塔侧面
+BoundingBox = 0.0, 2.165, -0.409,  3.376, 1.179, 3.694, 0.65, TURRET, 炮塔正面
+BoundingBox = 0.0, 2.752, -0.409,  3.148, 0.062, 3.444, 1.2, TURRET, 炮塔顶部
+Entitywidth = 0
+Entityheight = 0
+SubmergedDamageHeight = 2
+
+FlareType = 10
+hasaps = true
+apsUseTime = 100
+apsWaitTime = 400
+apsRange = 8
+
+RadarType = MODERN_AS
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar = 
+NameOnModernASRadar = MBT
+NameOnEarlyASRadar = MBT
+enablerwr = true
+
+hasMaintenance = true
+
+OnGroundPitchFactor = 4
+OnGroundRollFactor = 4
+
+;Parts
+SetWheelPos = 1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+TrackRollerRot = 50
+
+AddCrawlerTrack = true, 0.21, -2.0, -0.261/-0.107, -0.261/0.919, -0.261/3.183, -0.228/3.408, 0.333/4.471, 0.518/4.579, 0.674/4.573, 0.81/4.492, 0.9/4.38, 0.941/4.238, 0.9/-3.037, 0.842/-3.245, 0.709/-3.369, 0.503/-3.394, 0.356/-3.34, -0.175/-2.498, -0.257/-2.203
+
+AddTrackRoller = -2.32,  0.6006,  4.24
+AddTrackRoller = -2.32,  0.1894,  3.183
+AddTrackRoller = -2.32,  0.1894,  2.067
+AddTrackRoller = -2.32,  0.1894,  0.9902
+AddTrackRoller = -2.32,  0.1894, -0.1101
+AddTrackRoller = -2.32,  0.1894, -1.171
+AddTrackRoller = -2.32,  0.1894, -2.211
+AddTrackRoller = -2.32,  0.5642, -3.085
+
+;Weapons
+AddPartWeapon = IFV_ZPD100_APFSDS, false, true, false,  0.00, 1.58, 0.0, 0
+AddPartWeaponChild = false, true, 0.00, 1.993, 1.037
+AddPartWeaponChild = false, true, 0.00, 1.993, 1.037, 0.5
+AddPartWeaponChild = false, true, 0.00, 2.164, -1.167
+
+AddTurretWeapon = IFV_ZPD100_APFSDS,  -0.1412, 1.993, 1.037,  0.0, 0.0, true,1, 0,-360,360, -30, 8
+AddTurretWeapon = IFV_ZPD100_APFSDS,  0.1412, 1.993, 1.037,  0.0, 0.0, true,1, 0,-360,360, -30, 8
+AddTurretWeapon = IFV_ZPD100_ATGM_SEAD,  2.00, 2.164, -1.167,  0.0, 0.0, true,1, 0,-360,360, -30, 8
+AddTurretWeapon = IFV_ZPD100_ATGM_SEAD,   -2.00, 2.164, -1.167,  0.0, 0.0, true,1, 0,-360,360, -30, 8
+
+AddTurretWeapon = MG_127,      0.4, 1.876, 0.34,  0.0, 0.0, true,1, 0,-360,360, -30, 8
+
+AddPartTurretWeapon = gunner_mg_127, true, true, false, -0.0003738, 2.677, -1.455
+AddPartWeaponChild = false, true, -0.0, 3.412, -1.893
+AddTurretWeapon = gunner_mg_127, -0.0, 3.412, -1.893, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+
+AddTurretWeapon = mbt_ztz100_gunner_laser, -0.665, 2.968, 0.1727, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+AddTurretWeapon = mbt_ztz100_gunner_laserBOMB, -0, 200.968, 0, 0.0, 0.0, false, 2, 0, -360,360, -60,10
+
+AddPartTurretWeapon = gunner_mg_127, false, true, false, 1.424, 2.534, -1.113
+AddPartTurretWeapon = gunner_mg_127, false, true, false, -1.424, 2.534, -1.113
+AddPartTurretWeapon = mbt_ztz100_gunner_laser/mbt_ztz100_gunner_laserbomb, false, true, false, -0.6652, 2.672, 0.02596
+
+weapongrouptype = 110
+
+;MISC
+;Place misc paramters here
+ArmorMaxDamage = 900
+WeightType = Tank
+ArmorDamageFactor = 1
+EnableBack = true
+WeightedCenterZ = 0.0
+HideEntity = true
+HideEntity = true
+hudtype = 2
+maintenanceUseTime = 20
+maintenanceWaitTime = 350
+armorExplosionDamageMultiplier = 1.2
+
+;FINISH
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 HT95,10M1A2T
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+
+;DUPLICATES

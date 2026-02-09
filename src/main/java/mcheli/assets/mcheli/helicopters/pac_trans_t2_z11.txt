@@ -1,0 +1,86 @@
+DisplayName = Z-11W
+AddDisplayName = zh_CN,直-11
+AddDisplayName = en_US,Z-11W
+MaxHp = 350
+
+Category = M.A
+ItemID = 28801
+HUD = HELI, HELI_GUNNER,TRANS_PASSENGER,TRANS_PASSENGER
+ThirdPersonDist = 12
+Speed = 2
+ThrottleUpDown = 1.2
+MinRotationPitch = -85
+MaxRotationPitch = 85
+
+Gravity = -0.038
+MaxFuel = 1200
+FuelConsumption = 1.0
+
+CameraPosition = 0.0, 0.0, 0.0
+EnableNightVision = true
+AddSeat = -0.4961,  0.9658,  2.408
+AddSeat = 1.4,  0.9568,  1.347
+AddSeat = -1.4,  0.9568,  1.347
+AddGunnerSeat = 0.4961,  0.9658,  2.408,0.0, 0.0, 0.0,  true
+
+ArmorMinDamage = 12
+damagefactor = 0.0
+engineShutdownThreshold = 0
+explosionsizebycrash = 10
+BoundingBox = 0.0, 1.65, 1.93,  3, 3
+BoundingBox = 0.0, 1.65, -1.06,  3, 3
+BoundingBox = 0.0, 2.08, -4.04,  3, 1
+BoundingBox = 0.0, 2.08, -9.0,  1.5, 2, 1.2
+BoundingBox = 0.0, 3.31, 0.665,  7, 0.2, 1.2
+
+FlareType = 3
+HasChaff = true
+ChaffUseTime = 50
+ChaffWaitTime = 250
+
+RadarType = EARLY_AS
+NameOnAdvancedAARadar = Z11
+NameOnModernAARadar = Z11
+NameOnEarlyAARadar = HELI
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+enablerwr = true
+
+hasMaintenance = true
+
+;Parts
+AddRotor = 1,0,  0.000,  3.662,  0.01089,  0.0, 1.0, 0.0
+AddRotor = 1,0,  0.0423,  2.133, -7.932,  1.0, 0.0, 0.0
+
+AddPartSteeringWheel = -0.4727,0.9548,2.935, 0, 0, 1,   -20
+
+;Weapons
+AddPartRotWeapon = HELI_Z11_2X127,   false, true, true,  -1.478, 0.1755, 1.550
+AddPartRotWeapon = HELI_Z11_2X127,   false, true, true,  1.478, 0.1755, 1.550
+AddPartWeaponMissile = HELI_Z11_IRM,   false,  false,  false,     -1.72,  0.96, -1.64
+
+AddWeapon = HELI_Z11_2X127, -1.478, 0.1755, 1.550,   -0.3, 0.0
+AddWeapon = HELI_Z11_2X127,  1.478, 0.1755, 1.550,  0.3, 0.0
+AddWeapon = HELI_Z11_IRM, -2, 0.6631, 1.8,   0.0, 0.0
+
+AddWeapon = HELI_Z11_GUNNER_JAMMER,  0,  0, 0,  0, -0,false,2, 0,-360,360, -10,70
+AddWeapon = GUNNER_connonstrike,  0,  0, 0,  0, -0,false,2, 0,-360,360, -10,70
+
+weapongrouptype = 8
+
+;MISC
+;Place misc paramters here
+EnableParachuting = true
+MobDropOption = 2.0, 0.0, -2.5,  10
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+ ;AddRecipe = " Y ",  "YXY",  " Y ",  X, iron_block, Y, iron_ingot
+; 启用跳伞功能（仅限第3席及之后玩家按空格跳伞）
+; 乘员投放设置 = 投放点X,Y,Z, 投放间隔（1/20秒）
+;驾驶位cross_type0_9:rocket，zuni，rocket_arm，aam_irm，irm，arm，laserm，losm，bomb，connon，AAM_sarh
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM;8,CONNON/IRM;9,CONNON/AAM_IRM;10,ROCKET/AAM_SARH
+
+;DUPLICATES
+DamageFactor = 0.00

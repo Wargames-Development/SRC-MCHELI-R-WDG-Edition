@@ -1,0 +1,66 @@
+DisplayName = 23-2型 23毫米机炮[通用弹链]
+Type = MachineGun2
+Power = 20
+Acceleration = 20
+ModelBullet = 30mm
+Explosion = 1
+Flaming = false
+Sight = None
+Delay = 0
+ReloadTime = 50
+Round = 60
+
+SoundVolume = 10
+
+Sound = m61a1_SND
+
+
+DamageFactor = tank, 1.0
+DamageFactor = plane, 1.2
+DamageFactor = heli, 1.2
+DamageFactor = player, 0.2
+DamageFactor = vehicle , 1.25
+DamageFactor = living, 0.2
+DamageFactor = ship, 1.2
+
+Accuracy = 1.2
+Group = MainGun
+;ModeNum = 2
+AddMuzzleFlash      =   5.5,      0.2,        2,  150,254,159,84
+AddMuzzleFlash      =   5,      0.1,        1,  150,254,219,184
+AddMuzzleFlashSmoke   = 4,  2,   5.0,  2.0, 15,  180,250,245,240
+AddMuzzleFlashSmoke   = 6,  1,   3.0,  3.0,  5,  180,220,217,214
+Gravity = -0.001
+MaxAmmo = 300
+SuppliedNum = 300
+Item =  2, iron_ingot
+Item =  2, gunpowder
+Item =  1, iron_ingot
+canBeIntercepted=false
+canBeIntercepted=false
+
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+
+crosstype=0
+ExplosionDamageVsLiving=1
+ExplosionDamageVsPlayer=1
+ExplosionDamageVsTank=0.5
+ExplosionDamageVsPlane=0.5
+ExplosionDamageVsHeli=0.5
+ExplosionDamageVsVehicle=0.5
+ExplosionDamageVsShip=0.5
+
+LaserGuidance = true
+HasLaserGuidancePod = true
+LockEntity=true
+
+
+DragInAir = 0.01
+BulletDecay = Segmented , 25, 1.2 , 50, 1, 100, 0.9 , 200 , 0.8, 300, 0.7

@@ -1,0 +1,185 @@
+﻿;Developed by TV90 & BFMC Team. Unauthorized use prohibited!!!
+
+DrawTexture = frame, (182*(width/960)), (162*(height/500)), (120*(width/960)), (30*(height/500)), 0,0,256,96,0
+
+;RWR parameters
+;AA IR lock
+DrawTexture = AAM_IRM, (-457*(width/960)), (-105*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+
+If = (missile_lock_type==2)&&(vehicle_lock_type==3)
+DrawTexture = AAM_IRM_FLASH, (-457*(width/960)), (-105*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+Endif
+
+;Active radar lock
+DrawTexture = AAM_ARM, (-407*(width/960)), (-105*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+
+If = (missile_lock_type==3)&&(vehicle_lock_type==3)
+DrawTexture = AAM_ARM_FLASH, (-407*(width/960)), (-105*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+Endif
+
+;SARH lock
+DrawTexture = AAM_SARH, (-357*(width/960)), (-105*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+If = (missile_lock_type==1)&&(vehicle_lock_type==3)
+DrawTexture = AAM_SARH_FLASH, (-357*(width/960)), (-105*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+Endif
+
+;IR tracking
+DrawTexture = SAM_IRM, (-457*(width/960)), (-85*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+If = (missile_lock_type==2)&&(vehicle_lock_type==2)
+DrawTexture = SAM_IRM_FLASH, (-457*(width/960)), (-85*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+Endif
+
+;Active tracking
+DrawTexture = SAM_ARM, (-407*(width/960)), (-85*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+If = (missile_lock_type==3)&&(vehicle_lock_type==2)
+DrawTexture = SAM_ARM_FLASH, (-407*(width/960)), (-85*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+Endif
+
+;SARH tracking
+DrawTexture = SAM_SARH, (-357*(width/960)), (-85*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+If = (missile_lock_type==1)&&(vehicle_lock_type==2)
+DrawTexture = SAM_SARH_FLASH, (-357*(width/960)), (-85*(height/500)), (48*(width/960)), (16*(height/500)), 0,0,256,96,0
+Endif
+
+;Lock tracking
+DrawTexture = LCK, (-450*(width/960)), (105*(height/500)), (60*(width/960)), (20*(height/500)), 0,0,256,96,0
+DrawTexture = TRK, (-380*(width/960)), (105*(height/500)), (60*(width/960)), (20*(height/500)), 0,0,256,96,0
+
+If = vehicle_lock_type==1
+DrawTexture = LCK_FLASH, (-450*(width/960)), (105*(height/500)), (60*(width/960)), (20*(height/500)), 0,0,256,96,0
+endif
+
+If = ((vehicle_lock_type==2)||(vehicle_lock_type==3)||(vehicle_lock_type==4))==1
+DrawTexture = TRK_FLASH, (-380*(width/960)), (105*(height/500)), (60*(width/960)), (20*(height/500)), 0,0,256,96,0
+endif
+
+CALL=HELI_weapon_group
+CALL=HELI_cross
+;Low HP Warning
+If = hp_rto>0.25 && hp_rto<0.75
+DrawTexture = AH6JWARN, (-41*(width/960)), (70*(height/500)), (86*(width/960)), (15*(height/500)), 0,0,460,80
+EndIf
+
+If = hp_rto<=0.25
+DrawTexture = AH6JBIGWARN, (-74*(width/960)), (70*(height/500)), (150*(width/960)), (15*(height/500)), 0,0,800,80
+EndIf
+
+If = is_heat_wpn==1
+Color = 0xFF00FF00
+DrawRect = (-40*(width/960)), (190*(height/500)), (81*(width/960)), (4*(height/500))
+
+Color = 0xFFDF0408
+DrawRect = (-40*(width/960)), (190*(height/500)), (81*wpn_heat*(width/960)), (4*(height/500))
+EndIf
+
+;Main BG
+DrawTexture = AH64_MainHUD, (-750*(width/960)), (-375*(height/500)), (1500*(width/960)), (750*(height/500)), 0,0,2048,1024
+DrawTexture = AH64Arrow, (265*(width/960)), (100*(height/500))-(Throttle*160*(height/500)), (20*(width/960)), (20*(height/500)), 0,0,256,256
+;Aircraft Guidance
+If = hovering==0
+DrawTexture = AH64Guide, (-64*(width/960)), (-130*(height/500))-(plyr_pitch*3*(height/500)), (128*(width/960)), (260*(height/500)), 0,0,256,500,-roll/3
+EndIf
+
+If = hovering==1
+DrawTexture = AH64Guide, (-64*(width/960)), (-130*(height/500)), (128*(width/960)), (260*(height/500)), 0,0,256,500
+EndIf
+
+;IR Flares
+If = (have_flare==1&&can_flare==1)&&(cam_zoom==1)
+DrawTexture = button_flare_Ready, (380*(width/960)), (20*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFF00FF00
+DrawCenteredString = (350*(width/960)), (30*(height/500)), "Activate:%s", KEY_FLARE
+Endif
+
+If = ((have_flare==1&&can_flare==0)||have_flare==0)&&(cam_zoom==1)
+DrawTexture = button_flare_NoTReady, (380*(width/960)), (20*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFF4B4B
+DrawCenteredString = (330*(width/960)), (30*(height/500)), "CD:%.1fs", COOLDOWN_FLARE
+Endif
+
+;Chaff Countermeasures
+If = (have_chaff==1&&can_chaff==1)&&(cam_zoom==1)
+DrawTexture = button_chaff_Ready, (380*(width/960)), (60*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFF00FF00
+DrawCenteredString = (350*(width/960)), (70*(height/500)), "Activate:%s", KEY_CHAFF
+Endif
+
+If = ((have_chaff==1&&can_chaff==0)||have_chaff==0)&&(cam_zoom==1)
+DrawTexture = button_chaff_NotReady, (380*(width/960)), (60*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFF4B4B
+DrawCenteredString = (330*(width/960)), (70*(height/500)), "CD:%.1fs", COOLDOWN_CHAFF
+Endif
+
+;Maintenance
+If = (have_maintenance==1&&can_maintenance==1)&&(cam_zoom==1)
+DrawTexture = button_maintence_Ready, (380*(width/960)), (100*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFF00FF00
+DrawCenteredString = (350*(width/960)), (110*(height/500)), "Activate:%s", KEY_MAINTENANCE
+Endif
+
+If = ((have_maintenance==1&&can_maintenance==0)||have_maintenance==0)&&(cam_zoom==1)
+DrawTexture = button_maintence_NotReady, (380*(width/960)), (100*(height/500)), (80*(width/960)), (40*(height/500)), 0,0,256,128,0
+Color = 0xFFFF4B4B
+DrawCenteredString = (330*(width/960)), (110*(height/500)), "CD:%.1fs", COOLDOWN_MAINTENANCE
+Endif
+
+;Throttle
+
+;Altitude
+Color = (altitude>10&&altitude<200)? 0xFF00FF00: 0xFFDF0408
+DrawCenteredString = (-257*(width/960)), (50*(height/500)), "ALT  %3d", ALTITUDE
+
+;G-Force
+Color = 0xFF00FF00
+DrawCenteredString = (-257*(width/960)), (-54*(height/500)), "G   %s", G_FORCE
+
+Color = 0xFF00FF00
+DrawCenteredString = (242*(width/960)), (-10*(height/500)), "%.1f", THROTTLE
+
+;Terrain Warning
+If = altitude<=15&&motion_y<=0&&(pitch>45||pitch<-60)&&free_look ==0
+DrawTexture = AH6JLandingWARN, (-150*(width/960)), (-150*(height/500)), (300*(width/960)), (300*(height/500)), 0,0,500,500,0
+EndIf
+
+;Control Stick
+DrawTexture = AH64hud, (-8*(width/960)) + stick_x*2, (155*(height/500)) + stick_y*2, (16*(width/960)), (16*(height/500)), 128,96,32,32
+;Weapon
+
+if=(reloading==0&&wpn_heat<1.0)
+Color = 0xFF00FF00
+DrawCenteredString = (0*(width/960)), (170*(height/500)), "%s", WPN_NAME
+endif
+if=(reloading==1||wpn_heat==1.0)
+Color = 0xFFFF4B4B
+DrawCenteredString = (0*(width/960)), (170*(height/500)), "%s", WPN_NAME
+endif
+
+if=(reloading==0&&wpn_heat<1.0)
+Color = 0xFF00FF00
+DrawCenteredString = (242*(width/960)), (170*(height/500)), "Ammo %s", WPN_AMMO
+endif
+
+if=(reloading==1||wpn_heat==1.0)
+Color = 0xFFFF4B4B
+DrawCenteredString = (242*(width/960)), (170*(height/500)), "Reload %.2fs", RELOAD_SEC
+endif
+
+Color = 0xFF00FF00
+If = free_look==1
+DrawCenteredString = (120*(width/960)), (-30*(height/500)), "FREE LOOK"
+Endif
+
+If = hovering==1
+Color = 0xFF00FF00
+DrawCenteredString = (-120*(width/960)), (-30*(height/500)), "HOVERING"
+Endif
+Color = 0xFF00FF00
+DrawCenteredString = (242*(width/960)), (-60*(height/500)), "P  %.2f", PLYR_PITCH
+;HP
+Color = hp_rto>0.25? 0xFF00FF00: 0xFFDF0408
+DrawCenteredString = (242*(width/960)), (50*(height/500)), "HP %3.0f", HP_PER
+Color = 0xFF00FF00
+DrawGraduationYaw = plyr_yaw, 0, 0, (-210*(width/960))
+DrawLine = (0*(width/960)), (-180*(height/500)), (4*(width/960)), (-170*(height/500)), (-4*(width/960)), (-170*(height/500)), (0*(width/960)), (-180*(height/500))
+Color = 0xFF00FF00
+DrawCameraRot = (0*(width/960)), (120*(height/500))
