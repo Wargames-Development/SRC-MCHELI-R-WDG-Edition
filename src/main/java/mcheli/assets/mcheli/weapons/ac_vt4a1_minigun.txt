@@ -29,8 +29,8 @@ AddMuzzleFlashSmoke =  3.2,  1,   3.0,  1.0,  5,  180,220,217,214
 
 MaxAmmo = 1000
 SuppliedNum = 100
-Item =  3, iron_ingot
-Item =  3, gunpowder
+Item =  1, iron_ingot
+Item =  1, gunpowder
 canBeIntercepted=false
 canBeIntercepted=false
 DamageFactor = ship, 3

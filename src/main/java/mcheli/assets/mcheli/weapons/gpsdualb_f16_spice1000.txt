@@ -26,7 +26,7 @@ ExplosionType=hbmNT_Bomb
 
 
 
-EnableOffAxis = true
+EnableOffAxis = false
 
 
 
@@ -45,7 +45,6 @@ Item =  1, redstone
 
 
 
-EnableOffAxis = false
 LockTime = 1
 TurningFactor = 0.05
 IsGPSMissile = true

@@ -1,7 +1,7 @@
 DisplayName = DTB100A [ARH Assisted Mortar]
 Type = ATmissile
 Power = 250
-Explosion =4
+Explosion = 4
 ExplosionBlock = 0
 Acceleration = 5
 Sound = bmp_100_SND
@@ -12,7 +12,7 @@ Flaming = true
 Round = 4
 Sight = None
 Delay = 80
-Gravity = -0.10
+Gravity = -0.07
 DamageFactor = plane, 3.0
 DamageFactor = helicopter, 3.0
 ModeNum = 2

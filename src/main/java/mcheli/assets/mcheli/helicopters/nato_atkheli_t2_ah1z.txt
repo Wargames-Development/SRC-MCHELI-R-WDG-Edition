@@ -1,23 +1,23 @@
 DisplayName = AH-1Z VIPER
 AddDisplayName = zh_CN, AH-1Z 蝰蛇
 AddDisplayName = en_US, AH-1Z VIPER
-MaxHp = 400
+MaxHp = 300
 
 Category = M.A
 ItemID = 28800
 HUD = HELI, HELI_GUNNER
 ThirdPersonDist = 25
 Speed = 1.2
-MinRotationPitch = -85
-MaxRotationPitch = 85
+MinRotationPitch = -70
+MaxRotationPitch = 70
 
 Gravity = -0.038
 MaxFuel = 1200
 FuelConsumption = 1.0
 
-CameraPosition = 0.0, 1.07, 3.5
+CameraPosition = 0, 0, 0
 CameraZoom = 3
-EnableGunnerMode = false
+EnableGunnerMode = true
 EnableNightVision = true
 EnableEntityRadar = true
 AddSeat = 0.00, 1.18, 0.835
@@ -49,8 +49,8 @@ RadarType = MODERN_AA
 NameOnAdvancedAARadar = AH1
 NameOnModernAARadar = AH1
 NameOnEarlyAARadar = HELI
-NameOnModernASRadar = HELI
-NameOnEarlyASRadar = *
+NameOnModernASRadar = AH1
+NameOnEarlyASRadar = HELI
 enablerwr = true
 
 hasMaintenance = true
@@ -80,7 +80,7 @@ weapongrouptype = 7
 
 ;MISC
 ;Place misc paramters here
-ConcurrentGunnerMode = true
+;ConcurrentGunnerMode = true
 EntityPitch = 0
 EntityRoll = 0
 AddRecipe = "YXY",  "X X",  "YXY", X, iron_block, Y, iron_ingot

@@ -1,7 +1,7 @@
 DisplayName = KA-52
 AddDisplayName = zh_CN,KA-52 短吻鳄
 AddDisplayName = en_US,KA-52
-MaxHp = 500
+MaxHp = 400
 
 Category = M.A
 ItemID = 28800

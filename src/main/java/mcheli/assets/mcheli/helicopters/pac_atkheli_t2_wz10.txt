@@ -1,21 +1,21 @@
 DisplayName = Z-10W
 AddDisplayName = zh_CN,直-10 霹雳火
 AddDisplayName = en_US,Z-10W
-MaxHp = 400
+MaxHp = 300
 
 Category = M.A
 ItemID = 28800
 HUD = HELI, HELI_GUNNER
 ThirdPersonDist = 22
 Speed = 1.2
-MinRotationPitch = -85
-MaxRotationPitch = 85
+MinRotationPitch = -70
+MaxRotationPitch = 70
 
 Gravity = -0.038
 MaxFuel = 1200
-FuelConsumption = 0
+FuelConsumption = 1
 
-EnableGunnerMode = false
+EnableGunnerMode = true
 EnableNightVision = true
 EnableEntityRadar = true
 AddSeat = 0.00,  1.68, 2.0
@@ -43,8 +43,8 @@ RadarType = MODERN_AA
 NameOnAdvancedAARadar = Z10
 NameOnModernAARadar = Z10
 NameOnEarlyAARadar = HELI
-NameOnModernASRadar = HELI
-NameOnEarlyASRadar = ?
+NameOnModernASRadar = Z10
+NameOnEarlyASRadar = HELI
 enablerwr = true
 
 hasMaintenance = true

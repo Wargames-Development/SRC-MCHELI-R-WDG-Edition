@@ -1,5 +1,5 @@
 DisplayName = JAGM-MR [ARH-AGM]
-Type = TVMissile
+Type = ATMissile
 Power = 450
 Acceleration = 0.5
 Explosion = 4
@@ -13,17 +13,16 @@ SoundVolume = 10
 RidableOnly = true
 ModelBullet = AGM114
 TimeFuse = 360
-LockTime = 0
+LockTime = 10
 Round = 4
-DisableSmoke = True
-ModeNum = 1
+
 DamageFactor = player, 1
 DamageFactor = plane, 1
 DamageFactor = heli, 1.0
 DamageFactor = vehicle , 1.5
 DamageFactor = tank, 1.5
 
-RigidityTime = 0
+RigidityTime = 10
 
 MaxAmmo = 4
 SuppliedNum = 2
@@ -36,24 +35,19 @@ NukeEffectOnly=true
 
 
 IsHeatSeekerMissile = false
-IsRadarMissile = false
+IsRadarMissile = true
 MaxLockOnRange = 400
-MaxDegreeOfMissile = 135
-ActiveRadar = false
+MaxDegreeOfMissile = 45
+ActiveRadar = true
 EnableOffAxis = false
 SpeedFactor = 0.01
 SpeedFactorStartTick = 30
 SpeedFactorEndTick = 75
 SpeedDependsAircraft = true
-turningFactor = 0.2
+turningFactor = 0.09
 WeaponSwitchSound = Switch_Jet_Weapon_Missile
-
-laserGuidance = true
-hasLaserGuidancePod = true
-LockEntity=true
-CameraFollowLockEntity = true
-cameraFollowstrength=1
-LockEntity=true
+canBeIntercepted=false
+canBeIntercepted=false
 
 
 ;≈⁄ ÷Œªcross_type0_9 :0 TVM£¨1 MISSILESTRIKE£¨2 rocket_arm£¨3 CONNONSTRIKE£¨4 irm£¨5 arm£¨6 laserm£¨7 losm£¨8 SARH£¨9 connon
@@ -74,12 +68,3 @@ enableExhaustFlare=false
 
 turningFactor = 0.15
 Gravity = 0.005
-
-DestructAfterSpawnBullet=true
-SpawnBulletInAir = true
-ModelBomblet = jet_f35A_gpsbomb - Copy
-BombletDiff = 0.0
-SpawnBulletMaxNum = 1
-SpawnBulletIntervalTick = 20
-SpawnBulletPerNum=1
-SpawnBulletInheritSpeed = true

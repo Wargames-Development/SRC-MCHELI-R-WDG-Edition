@@ -9,8 +9,8 @@ Sight = MissileSight
 Delay = 8
 ReloadTime = 45
 Group = MainGun
-Round = 4
-LockTime = 5
+Round = 8
+LockTime = 0
 TimeFuse = 250
 ProximityFuseDist = 10
 DamageFactor = heli, 0.7
@@ -18,8 +18,8 @@ DamageFactor = vehicle, 0.1
 DamageFactor = tank, 0.1
 Sound = AA11_F
 SoundVolume = 10
-RigidityTime = 20
-MaxAmmo = 4
+RigidityTime = 5
+MaxAmmo = 8
 SuppliedNum = 2
 Item =  1, iron_ingot
 Item =  1, gunpowder
@@ -40,11 +40,11 @@ EnableOffAxis = true
 PDHDNMaxDegree = 180
 enableBVR=true
 WeaponSwitchSound = Switch_Jet_wWeapon_Missile
-SpeedFactor = 0.06
+SpeedFactor = 0.15
 SpeedFactorStartTick = 5
 SpeedFactorEndTick = 36
 SpeedDependsAircraft = true
-canlockmissile=true
+canlockmissile=false
 canBeIntercepted=true
 
 
@@ -64,7 +64,7 @@ enableExhaustFlare=false
 
 
 ProximityFuseDist = 5
-proximityFuseTick=80
+proximityFuseTick = 80
 proximityFuseDamage = 250
 proximityFuseHeight = 50
 ExplosionAirburst = 4

@@ -9,3 +9,5 @@ Target = planes/helicopters/vehicles/players
 MarkTime = 8
 canBeIntercepted=false
 canBeIntercepted=false
+
+Item = 1, iron_ingot

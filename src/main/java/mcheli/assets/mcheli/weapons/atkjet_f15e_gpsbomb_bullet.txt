@@ -1,4 +1,4 @@
-DisplayName = SPICE1000 1000磅 卫星/主动红外复合制导炸弹 子弹药
+DisplayName = SPICE-1000
 Type = ATmissile
 Power = 0
 Acceleration = 0.0

@@ -41,7 +41,7 @@ NukeEffectOnly=true
 
 MaxAmmo = 4
 SuppliedNum = 4
-Item =  1,flansmod:81mmammo
+Item =  1, iron_ingot
 
 
 markerRocketSpawnNum = 10

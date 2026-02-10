@@ -18,7 +18,7 @@ DefaultFreelook = false
 
 Sound = JeepMove
 
-Gravity = -0.038
+Gravity = -0.1
 GravityInWater = -0.5
 MotionFactor = 0.94
 MaxFuel = 1200

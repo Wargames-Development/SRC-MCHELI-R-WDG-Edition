@@ -42,8 +42,8 @@ RecoilBufCount = 40, 5
 
 MaxAmmo = 20
 SuppliedNum = 5
-Item =  20, iron_ingot
-Item =  10, gunpowder
+Item =  1, iron_ingot
+Item =  1, gunpowder
 
 
 FlakParticlesCrack = 300

@@ -128,9 +128,9 @@ maintenanceWaitTime = 1200
 ;AddPartNozzle =  0.7529, 1.804, -8.873, -1,0,0
 ;AddPartNozzle =  -0.7529, 1.804, -8.873, -1,0,0
 ;前起落架
-;HasChaff = true
-;ChaffUseTime = 100
-;ChaffWaitTime = 400
+HasChaff = true
+ChaffUseTime = 100
+ChaffWaitTime = 1200
 ;HasChaff = true
 ;ChaffUseTime =50
 ;ChaffWaitTime = 200

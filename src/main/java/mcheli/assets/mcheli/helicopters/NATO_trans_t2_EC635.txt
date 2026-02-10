@@ -1,7 +1,7 @@
 DisplayName = EC635
 AddDisplayName = zh_CN,EC635
 AddDisplayName = en_US,EC635
-MaxHp = 350
+MaxHp = 250
 
 Category = M.A
 ItemID = 28801

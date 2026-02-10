@@ -5,7 +5,7 @@ MaxHp = 350
 
 Category = M.A
 ItemID = 28705
-HUD = JET
+HUD = JET,JET_GUNNER
 ThirdPersonDist = 25
 Speed = 0.9
 MobilityPitch = 1.0
@@ -20,7 +20,7 @@ FuelConsumption = 1
 VariableSweepWing = true
 SweepWingSpeed = 0.9
 
-CameraPosition = 0.00, 1.2, -0.7212
+CameraPosition = 0.00, 0, -0.7212
 EnableGunnerMode = true
 AutoPilotRot = 0
 EnableNightVision = true

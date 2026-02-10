@@ -3,8 +3,9 @@ AddDisplayName = zh_CN, F-16V BLK70 “蝰蛇"
 AddDisplayName = en_US, F-16V BLOCK 70
 MaxHp = 350
 
+Autopilotrot = 0
 Category = M.F
-HUD = JET, su34_gnr
+HUD = JET, JET_GUNNER
 ThirdPersonDist = 25
 Speed = 0.95
 MobilityPitch = 1.0

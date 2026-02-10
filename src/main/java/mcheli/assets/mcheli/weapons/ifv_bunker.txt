@@ -1,4 +1,4 @@
-DisplayName = Õ½ÊõÑÚÌå
+DisplayName = IFV Bunker
 Type = Dispenser
 ModelBullet = bullet76mm
 

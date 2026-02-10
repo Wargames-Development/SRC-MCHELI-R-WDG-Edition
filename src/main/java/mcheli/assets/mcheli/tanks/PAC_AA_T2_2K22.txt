@@ -57,11 +57,11 @@ ecmJammerUseTime = 75
 ecmJammerWaitTime = 350
 
 RadarType = MODERN_AA
-NameOnAdvancedAARadar = 2S6
-NameOnModernAARadar = 2S6
-NameOnEarlyAARadar = SAM
-NameOnModernASRadar = 2S6
-NameOnEarlyASRadar = SAM
+NameOnAdvancedAARadar = 2K2
+NameOnModernAARadar = 2K2
+NameOnEarlyAARadar = AA
+NameOnModernASRadar = 2K2
+NameOnEarlyASRadar = AA
 enablerwr = true
 
 hasMaintenance = true
@@ -101,7 +101,7 @@ AddTurretWeapon = AA_2K22_SARH,          -1.1393, 2.302,-0.9484,  0.0, 0, true,1
 AddTurretWeapon = gunner_smoke,          -0.00, 2.42, 0.0,  0.0, 0.0, false,2, 0,-360,360, -85, 10
 AddTurretWeapon = GUNNER_defense,          -0.00, 2.42, 0.0,  0.0, 90, false,2, 0,0,0, 0, 0
 
-AddWeapon = IFV_bunker,          0, 0,6,  0.0, 90, true,1, 0,0,0, 0, 0
+;AddWeapon = IFV_bunker,          0, 0,6,  0.0, 90, true,1, 0,0,0, 0, 0
 
 weapongrouptype = 2
 

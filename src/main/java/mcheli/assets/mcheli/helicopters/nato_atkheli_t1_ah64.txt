@@ -1,7 +1,7 @@
 DisplayName = AH-64D APACHE
 AddDisplayName = zh_CN,AH-64D 长弓阿帕奇
 AddDisplayName = en_US,AH-64D APACHE
-MaxHp = 500
+MaxHp = 400
 
 Category = M.A
 ItemID = 28800

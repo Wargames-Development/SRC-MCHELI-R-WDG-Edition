@@ -1,7 +1,7 @@
 DisplayName = MI-28NE
 AddDisplayName = zh_CN,MI-28NE 夜间猎手
 AddDisplayName = en_US,MI-28NE
-MaxHp = 500
+MaxHp = 400
 
 Category = M.A
 ItemID = 28800

@@ -36,8 +36,8 @@ RecoilPitchRange = 15
 RecoilYawRange = 1
 RecoilRecoverFactor = 0.07
 WeaponSwitchSound = Switch_Main_Cannon
-FlakParticlesCrack = 300
-NumParticlesFlak = 20
+FlakParticlesCrack = 100
+NumParticlesFlak = 10
 FlakParticlesDiff = 0.8
 
 

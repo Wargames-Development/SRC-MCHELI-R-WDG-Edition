@@ -34,8 +34,8 @@ RecoilYaw = 0.0
 RecoilPitchRange = 3
 RecoilYawRange = 0.5
 RecoilRecoverFactor = 0.05
-FlakParticlesCrack = 50
-NumParticlesFlak = 10
+FlakParticlesCrack = 10
+NumParticlesFlak = 2
 FlakParticlesDiff = 0.3
 MaxAmmo = 2000
 SuppliedNum = 2000
@@ -44,10 +44,10 @@ canBeIntercepted=false
 canBeIntercepted=false
 
 
-;本文件由TV90及BFMC开发团队制作，禁止盗用！！！
+;   募   TV90  BFMC     哦         止   茫     
 ;cross_type0_10:0radar,1 25MM,2 30MM,3 35MM,4 40MM,5 CANISTERR,6 SARH,7 ARM,8 IRM,9 ROCKET,10 LOSM
 ;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
-;其中radar对应的DrawTexture名称固定为RADAR
+;    radar  应  DrawTexture   乒潭 为RADAR
 crosstype=1
 ExplosionDamageVsLiving=0.1
 ExplosionDamageVsPlayer=0.1

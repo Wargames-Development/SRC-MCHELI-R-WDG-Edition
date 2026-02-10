@@ -52,14 +52,10 @@ Entityheight = 0
 SubmergedDamageHeight = 2
 
 FlareType = 10
-hasaps = true
-apsUseTime = 100
-apsWaitTime = 400
-apsRange = 8
 
 NameOnAdvancedAARadar = LAV
 NameOnModernAARadar = LAV
-NameOnEarlyAARadar = *
+NameOnEarlyAARadar = AA
 NameOnModernASRadar = LAV
 NameOnEarlyASRadar = AA
 enablerwr = false
@@ -102,7 +98,7 @@ EnableBack = true
 WeightedCenterZ = 0.1
 HideEntity = true
 HideEntity = true
-engineshutdownthres = 20
+engineshutdownthres = 10
 hudtype = 1
 maintenanceUseTime = 25
 maintenanceWaitTime = 1200

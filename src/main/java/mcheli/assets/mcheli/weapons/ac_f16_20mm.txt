@@ -6,7 +6,7 @@ ModelBullet = bullet76mm
 Explosion = 1
 Flaming = false
 Sight = None
-Delay = 1
+Delay = 0
 ReloadTime = 50
 Round = 675
 

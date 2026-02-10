@@ -1,5 +1,5 @@
 DisplayName = APKWS-III 70mm [SAL] 
-Type = atmissile
+Type = TVmissile
 Power = 45
 ModelBullet = hydra70
 Acceleration = 3
@@ -43,12 +43,11 @@ MaxLockOnAngle = 68
 ;R=20,D=30,FOV=67.4
 EnableOffAxis = false
 MaxDegreeOfMissile = 85
-ActiveRadar = true
+ActiveRadar = false
 WeaponSwitchSound = Switch_Jet_Weapon_Missile
 
 scanInterval=2
 
-ActiveRadar = false
 WeaponSwitchSound = Switch_Jet_Weapon_Missile
 canBeIntercepted=false
 canBeIntercepted=false

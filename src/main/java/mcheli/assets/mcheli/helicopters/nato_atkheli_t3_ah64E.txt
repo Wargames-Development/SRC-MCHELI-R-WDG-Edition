@@ -1,7 +1,7 @@
 DisplayName = AH-64E APACHE
 AddDisplayName = zh_CN,AH-64E 守护者阿帕奇
 AddDisplayName = en_US,AH-64E APACHE
-MaxHp = 500
+MaxHp = 400
 
 Category = M.A
 ItemID = 28800

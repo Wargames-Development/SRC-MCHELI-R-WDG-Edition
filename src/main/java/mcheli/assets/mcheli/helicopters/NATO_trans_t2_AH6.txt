@@ -1,7 +1,7 @@
 DisplayName = AH-6J LITTLE BIRD
 AddDisplayName = zh_CN,AH-6J 小鸟
 AddDisplayName = en_US,AH-6J LITTLE BIRD
-MaxHp = 350
+MaxHp = 250
 
 Category = M.A
 ItemID = 28801

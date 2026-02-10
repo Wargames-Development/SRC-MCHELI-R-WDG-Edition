@@ -1,7 +1,7 @@
 DisplayName = AIM260A [ARH-AAM]
 Type = AAMissile
 ModelBullet = aim260
-Power = 200
+Power = 300
 Acceleration = 0.1
 Explosion = 2
 Flaming = false
