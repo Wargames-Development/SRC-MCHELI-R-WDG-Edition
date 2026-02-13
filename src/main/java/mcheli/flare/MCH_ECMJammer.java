@@ -10,6 +10,9 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.List;
 
 public class MCH_ECMJammer {
 
@@ -52,7 +55,8 @@ public class MCH_ECMJammer {
                 aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
 
                 if (aircraft.getAcInfo().ecmJammerType == 1) {
-                    for (Object obj : worldObj.getLoadedEntityList()) {
+                    for (Object obj : getLoadedEntityListSafe(worldObj)) {
+
                         if (!(obj instanceof Entity)) continue;
 
                         Entity entity = (Entity) obj;
@@ -100,6 +104,33 @@ public class MCH_ECMJammer {
             }
         }
     }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> getLoadedEntityListSafe(net.minecraft.world.World w) {
+        // 1) Try normal Forge/vanilla method (some environments have it)
+        try {
+            return (List<Object>) w.getLoadedEntityList();
+        } catch (Throwable ignored) {
+        }
+
+        // 2) Fallback: access the field directly (most 1.7.10 Worlds have this)
+        try {
+            Field f = w.getClass().getField("loadedEntityList");
+            return (List<Object>) f.get(w);
+        } catch (Throwable ignored) {
+        }
+
+        // 3) Last resort: declared field access
+        try {
+            Field f = w.getClass().getDeclaredField("loadedEntityList");
+            f.setAccessible(true);
+            return (List<Object>) f.get(w);
+        } catch (Throwable ignored) {
+        }
+
+        return Collections.emptyList();
+    }
+
 
     private void onUsing() {
 
