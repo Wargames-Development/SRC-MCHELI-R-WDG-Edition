@@ -8,6 +8,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
+import mcheli.MCH_MOD;
+import mcheli.network.packets.PacketLockTargetBVR;
+import net.minecraft.entity.player.EntityPlayer;
+
 
 public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 
@@ -136,28 +140,16 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (!super.worldObj.isRemote) {
             // do nothing
         } else {
+
             if (getInfo().passiveRadar) {
+
+                // --- Classic SARH lock behavior (kept)
                 if (!super.guidanceSystem.lock(prm.user)) {
-//               if(getInfo().enableBVR && tick % 5 == 0) {
-//                  Map<Integer, MCH_EntityInfo> map = MCH_RenderBVRLockBox.currentLockedEntities;
-//                  if(!map.isEmpty()) {
-//                     MCH_EntityInfo info = (MCH_EntityInfo) map.values().toArray()[rand.nextInt(map.size())];
-//                     if(info != null) {
-//                        MCH_EntityAAMissile.clientTrackingMissile.forEach((K, V) -> {
-//                           int mslId = K;
-//                           if (V.getInfo() != null && V.getInfo().passiveRadar && V.getInfo().enableBVR) {
-//                              MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(
-//                                      mslId, (int) info.posX, (int) info.posY, (int) info.posZ
-//                              ));
-//                           }
-//                        });
-//                     }
-//                  }
-//               }
+                    // (nothing)
                 }
+
                 if (guidanceSystem.isLockComplete()) {
                     Entity target = guidanceSystem.lastLockEntity;
-                    //获取玩家射击的AA弹
                     for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
                         bullet.clientSetTargetEntity(target);
                         super.optionParameter1 = W_Entity.getEntityId(target);
@@ -168,16 +160,16 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                         super.optionParameter1 = 0;
                     }
                 }
-
-
             }
         }
         return false;
     }
 
+
     @Override
     public void onUnlock(MCH_WeaponParam prm) {
         if (worldObj.isRemote) {
+
             if (guidanceSystem != null && prm.user != null) {
                 if (!guidanceSystem.isLockComplete()) {
                     for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
@@ -186,16 +178,15 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                     }
                 }
             }
-//         if(getInfo().enableBVR) {
-//            if(tick % 10 == 0) {
-//               MCH_EntityAAMissile.clientTrackingMissile.forEach((K, V) -> {
-//                  int mslId = K;
-//                  if (V.getInfo() != null && V.getInfo().passiveRadar && V.getInfo().enableBVR) {
-//                     MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, -1, 0));
-//                  }
-//               });
-//            }
-//         }
+
+            // BVR: disable guidance on unlock
+            if (getInfo() != null && getInfo().enableBVR && getInfo().passiveRadar) {
+                int[] missileIds = MCH_EntityAAMissile.getClientTrackedBvrMissileIds();
+                for (int mslId : missileIds) {
+                    MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, -1, 0));
+                }
+            }
         }
     }
+
 }
