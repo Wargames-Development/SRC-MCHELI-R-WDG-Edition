@@ -391,7 +391,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     /**
      * 弹药在RWR上面显示什么
      */
-    public String nameOnRWR = "MSL";
+    public String nameOnRWR = "*";
 
     /**
      * 多久启用近炸引信，-1永不启用

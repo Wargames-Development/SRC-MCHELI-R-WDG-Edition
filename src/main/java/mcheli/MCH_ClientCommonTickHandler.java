@@ -58,6 +58,12 @@ import org.lwjgl.opengl.GL11;
 import java.util.ArrayList;
 import java.util.List;
 
+import mcheli.network.packets.PacketLockTargetBVR;
+import mcheli.render.MCH_RenderBVRLockBox;
+import mcheli.weapon.MCH_EntityAAMissile;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.MCH_MOD;
+
 @SideOnly(Side.CLIENT)
 public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
@@ -106,6 +112,63 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public MCH_Key KeyCamDistDown;
     public MCH_Key KeyScoreboard;
     public MCH_Key KeyMultiplayManager;
+    // Client-side cache of missile IDs we should keep sending BVR lock packets to
+    private static final java.util.HashMap<Integer, Long> BVR_MISSILE_ID_CACHE = new java.util.HashMap<Integer, Long>();
+    private static final long BVR_MISSILE_ID_TTL_MS = 30_000L; // keep for 30 seconds
+
+    private int[] getAndUpdateTrackedBvrMissileIds(MCH_EntityAircraft ac) {
+        long now = System.currentTimeMillis();
+
+        // 1) Add newly seen missiles from the loaded entity list (only ones near us / our aircraft)
+        if (mc != null && mc.theWorld != null && mc.thePlayer != null) {
+            for (Object o : mc.theWorld.loadedEntityList) {
+                if (!(o instanceof mcheli.weapon.MCH_EntityAAMissile)) continue;
+                mcheli.weapon.MCH_EntityAAMissile msl = (mcheli.weapon.MCH_EntityAAMissile) o;
+
+                mcheli.weapon.MCH_WeaponInfo info = msl.getInfo();
+                if (info == null) continue;
+                if (!info.enableBVR || !info.passiveRadar) continue;
+
+                // Heuristic ownership: only cache missiles that are close to our controlled aircraft or player shortly after launch.
+                // This avoids depending on shootingEntity/shootingAircraft which are often null on client.
+                double dSq = (ac != null) ? msl.getDistanceSqToEntity(ac) : msl.getDistanceSqToEntity(mc.thePlayer);
+
+                // Within 300 blocks of our aircraft/player OR just spawned recently (so we likely fired it)
+                if (dSq < (300.0 * 300.0) || msl.ticksExisted < 40) {
+                    int id = msl.getEntityId();
+                    if (!BVR_MISSILE_ID_CACHE.containsKey(id)) {
+                        BVR_MISSILE_ID_CACHE.put(id, now);
+                    }
+
+                }
+            }
+        }
+
+        // 2) Cull expired entries
+        java.util.Iterator<java.util.Map.Entry<Integer, Long>> it = BVR_MISSILE_ID_CACHE.entrySet().iterator();
+
+        while (it.hasNext()) {
+            java.util.Map.Entry<Integer, Long> e = it.next();
+            if (now - e.getValue() > BVR_MISSILE_ID_TTL_MS) {
+                it.remove();
+            }
+        }
+        // 2b) Cull entries whose entity no longer exists (exploded / despawned)
+        java.util.Iterator<java.util.Map.Entry<Integer, Long>> it2 = BVR_MISSILE_ID_CACHE.entrySet().iterator();
+        while (it2.hasNext()) {
+            java.util.Map.Entry<Integer, Long> e = it2.next();
+            Entity ent = mc.theWorld.getEntityByID(e.getKey());
+            if (ent == null || ent.isDead) {
+                it2.remove();
+            }
+        }
+
+        // 3) Return as int[]
+        int[] out = new int[BVR_MISSILE_ID_CACHE.size()];
+        int i = 0;
+        for (Integer id : BVR_MISSILE_ID_CACHE.keySet()) out[i++] = id;
+        return out;
+    }
 
     public MCH_ClientCommonTickHandler(Minecraft minecraft, MCH_Config config) {
         super(minecraft);
@@ -183,6 +246,56 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             t.updateKeybind(config);
         }
 
+    }
+
+    private void sendBvrSarhGuidancePackets() {
+        if (mc == null || mc.theWorld == null || mc.thePlayer == null) return;
+
+        // Only when player is in an aircraft/seat/UAV control and has a weapon selected that supports BVR SARH
+        mcheli.aircraft.MCH_EntityAircraft ac = null;
+        if (mc.thePlayer.ridingEntity instanceof mcheli.aircraft.MCH_EntityAircraft) {
+            ac = (mcheli.aircraft.MCH_EntityAircraft) mc.thePlayer.ridingEntity;
+        } else if (mc.thePlayer.ridingEntity instanceof mcheli.aircraft.MCH_EntitySeat) {
+            ac = ((mcheli.aircraft.MCH_EntitySeat) mc.thePlayer.ridingEntity).getParent();
+        } else if (mc.thePlayer.ridingEntity instanceof mcheli.uav.MCH_EntityUavStation) {
+            ac = ((mcheli.uav.MCH_EntityUavStation) mc.thePlayer.ridingEntity).getControlAircract();
+        }
+        if (ac == null || ac.getCurrentWeapon(mc.thePlayer) == null || ac.getCurrentWeapon(mc.thePlayer).getCurrentWeapon() == null) return;
+
+        MCH_WeaponInfo wi = ac.getCurrentWeapon(mc.thePlayer).getCurrentWeapon().getInfo();
+
+        if (wi == null) return;
+
+        // We only care about passive radar + BVR
+        if (!wi.enableBVR || !wi.passiveRadar) return;
+
+        // Throttle traffic a bit
+        if ((mc.thePlayer.ticksExisted % 5) != 0) return;
+
+        int[] missileIds = getAndUpdateTrackedBvrMissileIds(ac);
+
+        if (missileIds.length == 0) return;
+
+        // Use the “best locked” target picked by the renderer (red box)
+        MCH_EntityInfo tgt = MCH_RenderBVRLockBox.bestLockedEntity;
+
+        if (tgt != null && (System.currentTimeMillis() - MCH_RenderBVRLockBox.bestLockedEntityTimeMs) < 500L) {
+            int px = (int) Math.floor(tgt.posX);
+            int py = (int) Math.floor(tgt.posY);
+            int pz = (int) Math.floor(tgt.posZ);
+            if (py <= 0) py = 1;
+
+
+            for (int mslId : missileIds) {
+                MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, px, py, pz));
+            }
+        } else {
+            // No hard-lock target => disable BVR guidance
+            for (int mslId : missileIds) {
+                MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, -1, 0));
+
+            }
+        }
     }
 
     public void onTick() {
@@ -333,8 +446,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public void onTickPost() {
         if (super.mc.thePlayer != null && super.mc.theWorld != null) {
             MCH_GuiTargetMarker.onClientTick();
+            sendBvrSarhGuidancePackets(); // <-- NEW: BVR SARH guidance does NOT require RMB
         }
         MCH_PlayerViewHandler.onUpdate();
+
     }
 
     public void updateMouseDelta(boolean stickMode, float partialTicks) {

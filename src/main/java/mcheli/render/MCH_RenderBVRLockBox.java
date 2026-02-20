@@ -33,6 +33,10 @@ public class MCH_RenderBVRLockBox {
     private static final int BOX_SIZE = 24;
     public static Map<Integer, MCH_EntityInfo> currentLockedEntities = new HashMap<>();
 
+    // Best “hard lock” candidate this frame (red box target)
+    public static volatile MCH_EntityInfo bestLockedEntity = null;
+    public static volatile long bestLockedEntityTimeMs = 0L;
+
     public static double[] worldToScreen(Vector3f pos, float partialTicks) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityClientPlayerMP viewer = mc.thePlayer;
@@ -123,6 +127,14 @@ public class MCH_RenderBVRLockBox {
             return;
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
         if (wi == null || !wi.enableBVR) return;
+        // Clear per-frame state ONCE (the original code clears inside the loop, which breaks BVR selection)
+        currentLockedEntities.clear();
+        bestLockedEntity = null;
+        bestLockedEntityTimeMs = 0L;
+
+        double bestAngle = 9999.0;
+        double bestDistSq = 9.9e18;
+
         RenderManager rm = RenderManager.instance;
         final double camX = rm.viewerPosX;
         final double camY = rm.viewerPosY;
@@ -153,11 +165,34 @@ public class MCH_RenderBVRLockBox {
             float alpha = 0.4f;
             if (angle <= 90) {
                 alpha = 1.0f;
+                if (!isMSL && (Minecraft.getMinecraft().thePlayer.ticksExisted % 20) == 0) {
+                    cpw.mods.fml.common.FMLLog.info("[BVR-R] ang=%s maxAng=%s dist=%s maxR=%s lock=%s",
+                            String.valueOf(angle),
+                            String.valueOf(wi.maxLockOnAngle),
+                            String.valueOf(dist),
+                            String.valueOf(wi.maxLockOnRange),
+                            String.valueOf(lock)
+                    );
+                }
+
                 if (!isMSL) currentLockedEntities.put(entity.entityId, entity);
+
+                // Hard-lock condition (red box)
                 if (distSq <= wi.maxLockOnRange * wi.maxLockOnRange && angle <= wi.maxLockOnAngle) {
                     lock = true;
+
+                    // Track best hard-lock target ONLY (smallest angle, then nearest)
+                    if (!isMSL) {
+                        if (angle < bestAngle || (Math.abs(angle - bestAngle) < 1e-6 && distSq < bestDistSq)) {
+                            bestAngle = angle;
+                            bestDistSq = distSq;
+                            bestLockedEntity = entity;
+                            bestLockedEntityTimeMs = System.currentTimeMillis();
+                        }
+                    }
                 }
-            } else if (angle <= 100.0) alpha = 1.0f;
+            }
+            else if (angle <= 100.0) alpha = 1.0f;
             else if (angle <= 110.0) alpha = 0.8f;
             else if (angle <= 120.0) alpha = 0.6f;
             if (isMSL && dist >= 1000) continue;
@@ -210,9 +245,9 @@ public class MCH_RenderBVRLockBox {
                 GL11.glColor4f(1F, 1F, 1F, 1F);
             }
             GL11.glPopMatrix();
-            if (!lock) {
-                currentLockedEntities.clear();
-            }
+//            if (!lock) {
+//                currentLockedEntities.clear();
+//            }
         }
     }
 
