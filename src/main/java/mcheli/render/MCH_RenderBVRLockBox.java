@@ -247,24 +247,32 @@ public class MCH_RenderBVRLockBox {
     }
 
     private boolean canRenderEntity(MCH_EntityInfo entity, EntityPlayer player, MCH_WeaponInfo wi) {
-        boolean result = false;
         double distSq = entity.getDistanceSqToEntity(player);
+
+        if (entity.entityId == player.getEntityId()) return false;
+
+        if (entity.entityClassName != null && entity.entityClassName.contains("EntityPlayer")) {
+            return false;
+        }
+
+        if (entity.entityClassName != null) {
+            String cn = entity.entityClassName;
+            if (cn.contains("Drone") || cn.contains("UAV") || cn.contains("Uav") || cn.contains("uav") || cn.contains("Unmanned")) {
+                return distSq > wi.minRangeBVR * wi.minRangeBVR;
+            }
+        }
+
         if (entity.entityClassName.contains("MCP_EntityPlane")) {
-            if (entity.getDistanceSqToEntity(player) > wi.minRangeBVR * wi.minRangeBVR) {
-                return true;
-            }
+            return distSq > wi.minRangeBVR * wi.minRangeBVR;
         } else if (entity.entityClassName.contains("MCH_EntityHeli")) {
-            if (entity.getDistanceSqToEntity(player) > wi.minRangeBVR * wi.minRangeBVR) {
-                return true;
-            }
+            return distSq > wi.minRangeBVR * wi.minRangeBVR;
         } else if (entity.entityClassName.contains("MCH_EntityChaff") && wi.isRadarMissile) {
-            if (entity.getDistanceSqToEntity(player) > wi.minRangeBVR * wi.minRangeBVR) {
-                return true;
-            }
+            return distSq > wi.minRangeBVR * wi.minRangeBVR;
         } else if (isMissile(entity.entityClassName) && distSq > 20 * 20 && distSq < 300 * 300) {
             return true;
         }
-        return result;
+
+        return false;
     }
 
     private double interpolate(double now, double old, float partialTicks) {
@@ -279,6 +287,12 @@ public class MCH_RenderBVRLockBox {
         int color = 0x00FF00;
         switch (ac.getAcInfo().rwrType) {
             case DIGITAL: {
+                if (entity.entityClassName != null && entity.entityClassName.contains("EntityPlayer")) {
+                    // Use player name if available, otherwise generic
+                    String n = (entity.entityName != null && !entity.entityName.isEmpty()) ? entity.entityName : "PLAYER";
+                    if (n.length() > 10) n = n.substring(0, 10);
+                    return new MCH_RWRResult(n, 0x00FF00);
+                }
                 if (isVehicle(entity.entityClassName)) {
                     return new MCH_RWRResult(ac.getNameOnMyRadar(entity), color);
                 } else if (isMissile(entity.entityClassName)) {

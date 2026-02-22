@@ -11,7 +11,8 @@ import net.minecraft.world.World;
 import mcheli.MCH_MOD;
 import mcheli.network.packets.PacketLockTargetBVR;
 import net.minecraft.entity.player.EntityPlayer;
-
+import mcheli.MCH_EntityInfo;
+import mcheli.render.MCH_RenderBVRLockBox;
 
 public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 
@@ -143,22 +144,35 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 
             if (getInfo().passiveRadar) {
 
-                // --- Classic SARH lock behavior (kept)
-                if (!super.guidanceSystem.lock(prm.user)) {
-                    // (nothing)
+                Entity target = null;
+                if (getInfo().enableBVR) {
+                    MCH_EntityInfo tgtInfo = MCH_RenderBVRLockBox.bestLockedEntity;
+
+                    if (tgtInfo != null && (System.currentTimeMillis() - MCH_RenderBVRLockBox.bestLockedEntityTimeMs) < 500L) {
+                        Entity e = prm.user.worldObj.getEntityByID(tgtInfo.entityId);
+                        if (e != null && !e.isDead) {
+                            target = e;
+                        }
+                    }
+                }
+                if (target == null) {
+                    super.guidanceSystem.lock(prm.user); // updates lockCount/lastLockEntity
+                    if (guidanceSystem.isLockComplete() && guidanceSystem.lastLockEntity != null && !guidanceSystem.lastLockEntity.isDead) {
+                        target = guidanceSystem.lastLockEntity;
+                    }
                 }
 
-                if (guidanceSystem.isLockComplete()) {
-                    Entity target = guidanceSystem.lastLockEntity;
+                // Push the selected target into client bullets (this drives SARH illumination logic that already exists)
+                if (target != null) {
                     for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
                         bullet.clientSetTargetEntity(target);
-                        super.optionParameter1 = W_Entity.getEntityId(target);
                     }
+                    super.optionParameter1 = W_Entity.getEntityId(target);
                 } else {
                     for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
                         bullet.clientSetTargetEntity(null);
-                        super.optionParameter1 = 0;
                     }
+                    super.optionParameter1 = 0;
                 }
             }
         }

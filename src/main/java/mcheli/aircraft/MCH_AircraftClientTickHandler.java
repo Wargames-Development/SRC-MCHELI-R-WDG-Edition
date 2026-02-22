@@ -258,12 +258,26 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
         }
         if (!ac.isDestroyed() && !ac.isPilotReloading()) {
+            mcheli.weapon.MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+            mcheli.weapon.MCH_WeaponInfo wi = null;
+            if (ws != null && ws.getCurrentWeapon() != null) {
+                wi = ws.getCurrentWeapon().getInfo();
+            }
 
-            if (this.KeyCurrentWeaponLock.isKeyPress()) {
+// Treat "passiveRadar && !activeRadar" as SARH-style radar illumination weapons
+            boolean isSarh = (wi != null && wi.passiveRadar && !wi.activeRadar);
+
+            if (isSarh) {
+                // Always update lock state so that moving the mouse off-target drops lock immediately.
                 ac.currentWeaponLock(player);
                 send = true;
             } else {
-                ac.currentWeaponUnlock(player);
+                if (this.KeyCurrentWeaponLock.isKeyPress()) {
+                    ac.currentWeaponLock(player);
+                    send = true;
+                } else {
+                    ac.currentWeaponUnlock(player);
+                }
             }
 
             if (this.KeySwitchWeapon1.isKeyDown() || this.KeySwitchWeapon2.isKeyDown() || getMouseWheel() != 0) {
