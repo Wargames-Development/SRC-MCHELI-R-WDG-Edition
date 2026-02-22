@@ -165,15 +165,6 @@ public class MCH_RenderBVRLockBox {
             float alpha = 0.4f;
             if (angle <= 90) {
                 alpha = 1.0f;
-                if (!isMSL && (Minecraft.getMinecraft().thePlayer.ticksExisted % 20) == 0) {
-                    cpw.mods.fml.common.FMLLog.info("[BVR-R] ang=%s maxAng=%s dist=%s maxR=%s lock=%s",
-                            String.valueOf(angle),
-                            String.valueOf(wi.maxLockOnAngle),
-                            String.valueOf(dist),
-                            String.valueOf(wi.maxLockOnRange),
-                            String.valueOf(lock)
-                    );
-                }
 
                 if (!isMSL) currentLockedEntities.put(entity.entityId, entity);
 
