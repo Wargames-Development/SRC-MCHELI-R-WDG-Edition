@@ -20,12 +20,115 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import java.util.List;
-
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
     private int lockCount;
     private int prevLockCount;
 
+    // Matches any waypoint filename that contains "GPS" (case-insensitive)
+// and ends with _x,y,z.json (coords are extracted from the final underscore group).
+    private static final Pattern JM_GPS_COORDS = Pattern.compile(
+            "^.*GPS.*_(-?\\d+),(-?\\d+),(-?\\d+)\\.json$",
+            Pattern.CASE_INSENSITIVE
+    );
+    @SideOnly(Side.CLIENT)
+    private Vec3 tryGetGpsFromJourneyMapWaypoint(EntityPlayer player) {
+        try {
+            File mcDir = Minecraft.getMinecraft().mcDataDir;
+            File jmRoot = new File(mcDir, "journeymap/data");
+            if (!jmRoot.exists() || !jmRoot.isDirectory()) {
+                System.out.println("[GPS-JM] JourneyMap data folder not found: " + jmRoot.getAbsolutePath());
+                return null;
+            }
+
+            // Search both mp and sp trees, because you switch between them.
+            Vec3 v = findNewestGpsWaypointCoordsInTree(new File(jmRoot, "mp"), player);
+            if (v != null) return v;
+
+            v = findNewestGpsWaypointCoordsInTree(new File(jmRoot, "sp"), player);
+            return v;
+
+        } catch (Exception e) {
+            System.out.println("[GPS-JM] Exception: " + e);
+            return null;
+        }
+    }
+
+    @SideOnly(Side.CLIENT)
+    private Vec3 findNewestGpsWaypointCoordsInTree(File root, EntityPlayer player) {
+        if (root == null || !root.exists() || !root.isDirectory()) return null;
+
+        File newest = findNewestGpsWaypointFileRecursive(root);
+        if (newest == null) {
+            // System.out.println("[GPS-JM] No GPS waypoint found under: " + root.getAbsolutePath());
+            return null;
+        }
+
+        Matcher m = JM_GPS_COORDS.matcher(newest.getName());
+        if (!m.matches()) return null;
+
+        int x = Integer.parseInt(m.group(1));
+        int y = Integer.parseInt(m.group(2));
+        int z = Integer.parseInt(m.group(3));
+
+        System.out.println("[GPS-JM] Using waypoint file: " + newest.getAbsolutePath()
+                + " => xyz=" + x + "," + y + "," + z);
+
+        return W_WorldFunc.getWorldVec3(player.worldObj, x + 0.5, y + 0.5, z + 0.5);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private File findNewestGpsWaypointFileRecursive(File node) {
+        if (node == null || !node.exists()) return null;
+
+        if (node.isDirectory()) {
+            File[] kids = node.listFiles();
+            if (kids == null || kids.length == 0) return null;
+
+            // If we are in a "waypoints" directory, evaluate files directly (fast path)
+            if ("waypoints".equalsIgnoreCase(node.getName())) {
+                // Deterministic: newest modified GPS file wins
+                Arrays.sort(kids, new Comparator<File>() {
+                    @Override public int compare(File a, File b) {
+                        long da = a.lastModified();
+                        long db = b.lastModified();
+                        if (da == db) return a.getName().compareToIgnoreCase(b.getName());
+                        return (da < db) ? 1 : -1; // newest first
+                    }
+                });
+
+                for (File f : kids) {
+                    if (f != null && f.isFile() && JM_GPS_COORDS.matcher(f.getName()).matches()) {
+                        return f; // newest matching file
+                    }
+                }
+                return null;
+            }
+
+            // Otherwise recurse and keep the newest match
+            File best = null;
+            long bestTime = -1;
+
+            for (File k : kids) {
+                File found = findNewestGpsWaypointFileRecursive(k);
+                if (found != null) {
+                    long t = found.lastModified();
+                    if (best == null || t > bestTime) {
+                        best = found;
+                        bestTime = t;
+                    }
+                }
+            }
+            return best;
+        }
+
+        return null;
+    }
     public MCH_WeaponASMissile(World world, Vec3 position, float yaw, float pitch, String name, MCH_WeaponInfo weaponInfo) {
         super(world, position, yaw, pitch, name, weaponInfo);
         this.acceleration = 3.0F;  // 加速度
@@ -159,6 +262,14 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
     @SideOnly(Side.CLIENT)
     public void clientLock(MCH_WeaponParam prm) {
+        // --- JourneyMap GPS waypoint override ---
+        if (prm.user instanceof EntityPlayer) {
+            Vec3 jm = tryGetGpsFromJourneyMapWaypoint((EntityPlayer)prm.user);
+            if (jm != null) {
+                MCH_GPSPosition.set(jm.xCoord, jm.yCoord, jm.zCoord, true, prm.user);
+                return; // Skip look-at-block GPS marking
+            }
+        }
         Minecraft.getMinecraft().getSoundHandler().playSound(
             new PositionedSoundRecord(new ResourceLocation("mcheli:mark"), 10.0F, 1.0F,
                 (float) prm.user.posX, (float) prm.user.posY, (float) prm.user.posZ));
