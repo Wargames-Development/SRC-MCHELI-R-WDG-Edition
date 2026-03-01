@@ -41,17 +41,12 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         try {
             File mcDir = Minecraft.getMinecraft().mcDataDir;
             File jmRoot = new File(mcDir, "journeymap/data");
-            if (!jmRoot.exists() || !jmRoot.isDirectory()) {
-                System.out.println("[GPS-JM] JourneyMap data folder not found: " + jmRoot.getAbsolutePath());
-                return null;
-            }
+            if (!jmRoot.exists() || !jmRoot.isDirectory()) return null;
 
-            // Search both mp and sp trees, because you switch between them.
-            Vec3 v = findNewestGpsWaypointCoordsInTree(new File(jmRoot, "mp"), player);
+            Vec3 v = findNewestEnabledGpsWaypointCoordsInTree(new File(jmRoot, "mp"), player);
             if (v != null) return v;
 
-            v = findNewestGpsWaypointCoordsInTree(new File(jmRoot, "sp"), player);
-            return v;
+            return findNewestEnabledGpsWaypointCoordsInTree(new File(jmRoot, "sp"), player);
 
         } catch (Exception e) {
             System.out.println("[GPS-JM] Exception: " + e);
@@ -59,27 +54,112 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         }
     }
 
-    @SideOnly(Side.CLIENT)
-    private Vec3 findNewestGpsWaypointCoordsInTree(File root, EntityPlayer player) {
-        if (root == null || !root.exists() || !root.isDirectory()) return null;
+    private int extractInt(String json, String key) {
+        int idx = json.indexOf(key);
+        if (idx < 0) return 0;
 
-        File newest = findNewestGpsWaypointFileRecursive(root);
-        if (newest == null) {
-            // System.out.println("[GPS-JM] No GPS waypoint found under: " + root.getAbsolutePath());
-            return null;
+        int colon = json.indexOf(":", idx);
+        if (colon < 0) return 0;
+
+        int start = colon + 1;
+        while (start < json.length() &&
+                (json.charAt(start) == ' ' || json.charAt(start) == '\n')) {
+            start++;
         }
 
-        Matcher m = JM_GPS_COORDS.matcher(newest.getName());
-        if (!m.matches()) return null;
+        int end = start;
+        while (end < json.length() &&
+                (Character.isDigit(json.charAt(end)) || json.charAt(end) == '-')) {
+            end++;
+        }
 
-        int x = Integer.parseInt(m.group(1));
-        int y = Integer.parseInt(m.group(2));
-        int z = Integer.parseInt(m.group(3));
+        return Integer.parseInt(json.substring(start, end));
+    }
+    @SideOnly(Side.CLIENT)
+    private boolean isJourneyMapWaypointEnabled(File jsonFile) {
+        try {
+            // Simple & fast: read file and look for `"enable": false`
+            // (JourneyMap writes it exactly like that)
+            String json = new String(java.nio.file.Files.readAllBytes(jsonFile.toPath()), "UTF-8");
+            return !json.contains("\"enable\": false");
+        } catch (Exception e) {
+            System.out.println("[GPS-JM] Failed reading enable flag: " + jsonFile.getName() + " err=" + e);
+            return false;
+        }
+    }
 
-        System.out.println("[GPS-JM] Using waypoint file: " + newest.getAbsolutePath()
-                + " => xyz=" + x + "," + y + "," + z);
+    @SideOnly(Side.CLIENT)
+    private File[] collectGpsWaypointFilesRecursive(File node) {
+        java.util.ArrayList<File> out = new java.util.ArrayList<File>();
+        collectGpsWaypointFilesRecursive0(node, out);
+        return out.toArray(new File[out.size()]);
+    }
 
-        return W_WorldFunc.getWorldVec3(player.worldObj, x + 0.5, y + 0.5, z + 0.5);
+    @SideOnly(Side.CLIENT)
+    private void collectGpsWaypointFilesRecursive0(File node, java.util.ArrayList<File> out) {
+        if (node == null || !node.exists()) return;
+
+        if (node.isDirectory()) {
+            File[] kids = node.listFiles();
+            if (kids == null) return;
+            for (File k : kids) collectGpsWaypointFilesRecursive0(k, out);
+            return;
+        }
+
+        // Only care about JSON files in any folder (but practically waypoints/)
+        if (!node.isFile()) return;
+        if (!node.getName().toLowerCase().endsWith(".json")) return;
+
+        // Must match your GPS naming rule
+        if (JM_GPS_COORDS.matcher(node.getName()).matches()) {
+            out.add(node);
+        }
+    }
+    @SideOnly(Side.CLIENT)
+    private Vec3 findNewestEnabledGpsWaypointCoordsInTree(File root, EntityPlayer player) {
+        if (root == null || !root.exists() || !root.isDirectory()) return null;
+
+        File[] gpsFiles = collectGpsWaypointFilesRecursive(root);
+        if (gpsFiles == null || gpsFiles.length == 0) return null;
+
+        // Newest first (deterministic tie-break by name)
+        java.util.Arrays.sort(gpsFiles, new java.util.Comparator<File>() {
+            @Override public int compare(File a, File b) {
+                long da = a.lastModified();
+                long db = b.lastModified();
+                if (da == db) return a.getName().compareToIgnoreCase(b.getName());
+                return (da < db) ? 1 : -1;
+            }
+        });
+
+        // Walk newest -> oldest until we find an enabled one
+        for (File f : gpsFiles) {
+            if (!isJourneyMapWaypointEnabled(f)) {
+                System.out.println("[GPS-JM] Skipping disabled waypoint: " + f.getName());
+                continue;
+            }
+
+            // Read coords from JSON (recommended)
+            try {
+                String json = new String(java.nio.file.Files.readAllBytes(f.toPath()), "UTF-8");
+                int x = extractInt(json, "\"x\"");
+                int y = extractInt(json, "\"y\"");
+                int z = extractInt(json, "\"z\"");
+
+                System.out.println("[GPS-JM] Using ENABLED waypoint: " + f.getName()
+                        + " => xyz=" + x + "," + y + "," + z);
+
+                return W_WorldFunc.getWorldVec3(player.worldObj, x + 0.5, y + 0.5, z + 0.5);
+
+            } catch (Exception e) {
+                System.out.println("[GPS-JM] Failed reading coords: " + f.getName() + " err=" + e);
+                // keep searching older files
+            }
+        }
+
+        // None enabled / none readable
+        System.out.println("[GPS-JM] No enabled GPS waypoint found under: " + root.getAbsolutePath());
+        return null;
     }
 
     @SideOnly(Side.CLIENT)
