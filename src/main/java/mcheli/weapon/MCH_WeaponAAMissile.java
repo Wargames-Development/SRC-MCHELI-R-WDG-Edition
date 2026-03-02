@@ -137,31 +137,13 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 
     @Override
     public boolean lock(MCH_WeaponParam prm) {
-        if (!super.worldObj.isRemote) {
-            // do nothing
-        } else {
 
-            if (getInfo().passiveRadar) {
-
-                // --- Classic SARH lock behavior (kept)
-                if (!super.guidanceSystem.lock(prm.user)) {
-                    // (nothing)
-                }
-
-                if (guidanceSystem.isLockComplete()) {
-                    Entity target = guidanceSystem.lastLockEntity;
-                    for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
-                        bullet.clientSetTargetEntity(target);
-                        super.optionParameter1 = W_Entity.getEntityId(target);
-                    }
-                } else {
-                    for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
-                        bullet.clientSetTargetEntity(null);
-                        super.optionParameter1 = 0;
-                    }
-                }
-            }
+        // Disable SARH right-click locking entirely (hover/BVR guidance only)
+        if (worldObj.isRemote && getInfo() != null && getInfo().passiveRadar) {
+            return false;
         }
+
+        // Keep any non-SARH behavior unchanged (if needed)
         return false;
     }
 
@@ -183,7 +165,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             if (getInfo() != null && getInfo().enableBVR && getInfo().passiveRadar) {
                 int[] missileIds = MCH_EntityAAMissile.getClientTrackedBvrMissileIds();
                 for (int mslId : missileIds) {
-                    MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, -1, 0));
+                    MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, 0, -1, 0));
                 }
             }
         }

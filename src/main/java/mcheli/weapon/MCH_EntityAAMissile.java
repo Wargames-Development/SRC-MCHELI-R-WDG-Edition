@@ -162,22 +162,47 @@ private static EntityPlayer tryGetClientPlayer() {
 
         // SERVER: guidance
         if (!worldObj.isRemote && this.getInfo() != null) {
-            if (getInfo().passiveRadar && getInfo().enableBVR && passiveRadarBVRLocking && targetEntity == null) {
-                if (getCountOnUpdate() > getInfo().rigidityTime) {
-                    double tx = passiveRadarBVRLockingPosX + 0.5D;
-                    double ty = passiveRadarBVRLockingPosY + 0.5D;
-                    double tz = passiveRadarBVRLockingPosZ + 0.5D;
-                    guidanceToPos(tx, ty, tz);
+            // --- FIX: SARH BVR guidance should NOT switch to entity-homing when targetEntity is set for RWR.
+            if (getInfo().passiveRadar && getInfo().enableBVR) {
+
+                if (passiveRadarBVRLocking && passiveRadarBVRLockingPosY > 0) {
+
+                    if (getCountOnUpdate() > getInfo().rigidityTime) {
+
+                        double tx = passiveRadarBVRLockingPosX + 0.5D;
+                        double ty = passiveRadarBVRLockingPosY + 0.5D;
+                        double tz = passiveRadarBVRLockingPosZ + 0.5D;
+
+                        // Enforce SARH “painting cone” using the shooter/aircraft as viewer (same idea as classic SARH)
+                        Entity viewer = null;
+                        if (getInfo().enableHMS) {
+                            if (this.shootingEntity != null) viewer = this.shootingEntity;
+                        } else {
+                            if (this.shootingAircraft != null) viewer = this.shootingAircraft;
+                        }
+                        if (viewer == null) viewer = this;
+
+                        double dist = Math.sqrt(
+                                (tx - this.posX) * (tx - this.posX) +
+                                        (ty - this.posY) * (ty - this.posY) +
+                                        (tz - this.posZ) * (tz - this.posZ)
+                        );
+
+                        double ang = calculateAngle(viewer, tx, ty, tz);
+
+                        // If you stop painting, drop guidance (and RWR will stop because client stops sending packets)
+                        if (ang > getInfo().maxLockOnAngle || dist > getInfo().maxLockOnRange) {
+                            passiveRadarBVRLocking = false;
+                            // Optional: clear targetEntity to stop RWR instantly if packets continue briefly
+                            this.setTargetEntity(null);
+                        } else {
+                            guidanceToPos(tx, ty, tz);
+                        }
+                    }
+
+                    // IMPORTANT: do not fall through into normal targetEntity homing
+                    return;
                 }
-            }
-            // BVR SARH point guidance (no targetEntity required)
-            if (getInfo().passiveRadar && getInfo().enableBVR && passiveRadarBVRLocking && super.targetEntity == null) {
-                if (getCountOnUpdate() > getInfo().rigidityTime) {
-                    guidanceToPos(passiveRadarBVRLockingPosX + 0.5D,
-                            passiveRadarBVRLockingPosY + 0.5D,
-                            passiveRadarBVRLockingPosZ + 0.5D);
-                }
-                return;
             }
             // Normal entity-homing
             if (super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead) {
