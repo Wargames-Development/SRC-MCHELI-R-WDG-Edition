@@ -287,13 +287,14 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
 
             for (int mslId : missileIds) {
-                MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, px, py, pz));
+                MCH_MOD.getPacketHandler().sendToServer(
+                        new PacketLockTargetBVR(mslId, tgt.entityId, px, py, pz)
+                );
             }
         } else {
             // No hard-lock target => disable BVR guidance
             for (int mslId : missileIds) {
-                MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, -1, 0));
-
+                MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, 0, -1, 0));
             }
         }
     }
