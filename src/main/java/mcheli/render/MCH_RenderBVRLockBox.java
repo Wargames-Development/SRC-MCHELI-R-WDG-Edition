@@ -71,7 +71,7 @@ public class MCH_RenderBVRLockBox {
 
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
         if (wi == null || !wi.enableBVR) return;
-
+        float rollDeg = -ac.rotationRoll;
         // Per-frame state reset
         currentLockedEntities.clear();
         bestLockedEntity = null;
@@ -105,7 +105,7 @@ public class MCH_RenderBVRLockBox {
             double gz = interpolate(entity.posZ, entity.lastTickPosZ, partialTicks);
 
             // Convert world pos to screen pos (bypasses far plane)
-            double[] ws = worldToScreen(new Vector3f((float) gx, (float) gy, (float) gz), partialTicks);
+            double[] ws = worldToScreen(new Vector3f((float) gx, (float) gy, (float) gz), partialTicks, rollDeg);
             double sx = ws[0];
             double sy = ws[1];
 
@@ -184,31 +184,64 @@ public class MCH_RenderBVRLockBox {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glPopMatrix();
     }
-    public static double[] worldToScreen(Vector3f pos, float partialTicks) {
+    public static double[] worldToScreen(Vector3f pos, float partialTicks, float rollDeg) {
         Minecraft mc = Minecraft.getMinecraft();
-        EntityClientPlayerMP viewer = mc.thePlayer;
+        Entity viewer = mc.renderViewEntity; // IMPORTANT: camera, not always the player
+        if (viewer == null) viewer = mc.thePlayer;
         if (viewer == null) return new double[]{-1, -1, -1, -1};
+
         Vector3f camPos = new Vector3f(
-            (float) RenderManager.renderPosX,
-            (float) RenderManager.renderPosY,
-            (float) RenderManager.renderPosZ
+                (float) RenderManager.renderPosX,
+                (float) RenderManager.renderPosY,
+                (float) RenderManager.renderPosZ
         );
         Vector3f rPos = new Vector3f();
         Vector3f.sub(pos, camPos, rPos);
-        Vec3 fwdV3 = viewer.getLook(partialTicks);
+        // Compute forward vector from yaw/pitch (works for any Entity)
+        float yaw = viewer.rotationYaw;
+        float pitch = viewer.rotationPitch;
+
+        double yawRad = Math.toRadians(yaw);
+        double pitchRad = Math.toRadians(pitch);
+
+        Vec3 fwdV3 = Vec3.createVectorHelper(
+                -Math.sin(yawRad) * Math.cos(pitchRad),
+                -Math.sin(pitchRad),
+                Math.cos(yawRad) * Math.cos(pitchRad)
+        );
         Vector3f F = new Vector3f((float) fwdV3.xCoord, (float) fwdV3.yCoord, (float) fwdV3.zCoord);
         F.normalise();
         Vector3f worldUp = new Vector3f(0, 1, 0);
         Vector3f R = new Vector3f();
         Vector3f.cross(F, worldUp, R);
         if (R.lengthSquared() < 1e-5f) {
-            float yawRad = (float) Math.toRadians(viewer.rotationYaw + 90.0f);
-            R.set((float) Math.cos(yawRad), 0f, (float) -Math.sin(yawRad));
+            float yawRad2 = (float) Math.toRadians(viewer.rotationYaw + 90.0f);
+            R.set((float) Math.cos(yawRad2), 0f, (float) -Math.sin(yawRad2));
         }
         R.normalise();
         Vector3f U = new Vector3f();
         Vector3f.cross(R, F, U);
         U.normalise();
+
+        // Apply camera roll so screen axes match what you see
+        float rollRad = (float)Math.toRadians(rollDeg);
+        float c = (float)Math.cos(rollRad);
+        float s = (float)Math.sin(rollRad);
+
+// R' = R*c + U*s
+// U' = U*c - R*s
+        Vector3f Rr = new Vector3f(
+                R.x * c + U.x * s,
+                R.y * c + U.y * s,
+                R.z * c + U.z * s
+        );
+        Vector3f Ur = new Vector3f(
+                U.x * c - R.x * s,
+                U.y * c - R.y * s,
+                U.z * c - R.z * s
+        );
+        R.set(Rr.x, Rr.y, Rr.z);
+        U.set(Ur.x, Ur.y, Ur.z);
         float dx = Vector3f.dot(rPos, R);
         float dy = Vector3f.dot(rPos, U);
         float dz = Vector3f.dot(rPos, F);
