@@ -127,7 +127,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
                 mcheli.weapon.MCH_WeaponInfo info = msl.getInfo();
                 if (info == null) continue;
-                if (!info.enableBVR || !info.passiveRadar) continue;
+                if (!info.enableBVR || !(info.passiveRadar || info.semiActiveRadar)) continue;
 
                 // Heuristic ownership: only cache missiles that are close to our controlled aircraft or player shortly after launch.
                 // This avoids depending on shootingEntity/shootingAircraft which are often null on client.
