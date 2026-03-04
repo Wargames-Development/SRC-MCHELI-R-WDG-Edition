@@ -72,10 +72,14 @@ public class MCH_RenderBVRLockBox {
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
         if (wi == null || !wi.enableBVR) return;
 
-        // Optional: keep your per-frame state resets (your src.zip does this)
+        // Per-frame state reset
         currentLockedEntities.clear();
-        // bestLockedEntity = null;
-        // bestLockedEntityTimeMs = 0L;
+        bestLockedEntity = null;
+        bestLockedEntityTimeMs = 0L;
+
+// Track the "best" hard-lock target this frame (smallest angle, then nearest)
+        double bestAngle = 9999.0;
+        double bestDistSq = Double.MAX_VALUE;
 
         float partialTicks = event.partialTicks;
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
@@ -133,6 +137,19 @@ public class MCH_RenderBVRLockBox {
 
                 if (distSq <= wi.maxLockOnRange * wi.maxLockOnRange && angle <= wi.maxLockOnAngle) {
                     lock = true;
+
+                    // Pick ONE best target for BVR lock packets / SARH illumination
+                    if (!isMSL) {
+                        if (angle < bestAngle || (Math.abs(angle - bestAngle) < 1e-6 && distSq < bestDistSq)) {
+                            bestAngle = angle;
+                            bestDistSq = distSq;
+                            bestLockedEntity = entity;
+                            bestLockedEntityTimeMs = System.currentTimeMillis();
+                            if (bestLockedEntity != null) {
+                                System.out.println("BVR bestLockedEntity=" + bestLockedEntity.entityId + " time=" + bestLockedEntityTimeMs);
+                            }
+                        }
+                    }
                 }
             } else if (angle <= 100.0) alpha = 1.0f;
             else if (angle <= 110.0) alpha = 0.8f;

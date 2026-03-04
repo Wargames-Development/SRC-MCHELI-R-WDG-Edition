@@ -137,14 +137,12 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 
     @Override
     public boolean lock(MCH_WeaponParam prm) {
-
-        // Disable SARH right-click locking entirely (hover/BVR guidance only)
-        if (worldObj.isRemote && getInfo() != null && getInfo().passiveRadar) {
+        // Never show/use the lock-on cross for SARH.
+        // SARH lock is maintained automatically by "looking"/cone logic + BVR packets.
+        if (worldObj.isRemote && getInfo() != null && (getInfo().passiveRadar || getInfo().semiActiveRadar)) {
             return false;
         }
-
-        // Keep any non-SARH behavior unchanged (if needed)
-        return false;
+        return false; // (keep as-is unless you want non-SARH lock here)
     }
 
 

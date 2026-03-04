@@ -407,7 +407,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 近炸高度
      */
     public int proximityFuseHeight = 20;
-    
+
+    public boolean isSemiActiveLikePassive() {
+        return this.semiActiveRadar || this.passiveRadar;
+    }
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -993,7 +996,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 }
             }
         }
-
+        // Treat SemiActiveRadar as the primary SARH flag; keep PassiveRadar as legacy alias.
+        this.passiveRadar = this.passiveRadar || this.semiActiveRadar;
     }
 
     public float getDamageFactor(Entity e) {
