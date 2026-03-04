@@ -407,6 +407,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 近炸高度
      */
     public int proximityFuseHeight = 20;
+    
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
