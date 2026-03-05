@@ -165,6 +165,20 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 当前载具在早期对地雷达中显示的名字
      */
     public String nameOnEarlyASRadar = "";
+
+    /**
+     * Radar range limits (blocks). If 0, this mod behaves like it does today (no extra range restriction).
+     * AirRadarRange is used when my RadarType is AA.
+     * GroundRadarRange is used when my RadarType is AS.
+     */
+    public float airRadarRange = 0.0F;
+    public float groundRadarRange = 0.0F;
+
+    /**
+     * Visibility multiplier applied when this vehicle is the TARGET.
+     * 1.0 = normal, < 1 = stealthier (detected closer), > 1 = louder (detected farther)
+     */
+    public float stealthFactor = 1.0F;
     /**
      * 载具被摧毁时爆炸范围
      */
@@ -659,6 +673,15 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 nameOnModernASRadar = data;
             } else if (item.equalsIgnoreCase("NameOnEarlyASRadar")) {
                 nameOnEarlyASRadar = data;
+            } else if (item.equalsIgnoreCase("AirRadarRange")) {
+            this.airRadarRange = this.toFloat(data, 0.0F, 100000.0F);
+
+        } else if (item.equalsIgnoreCase("GroundRadarRange")) {
+            this.groundRadarRange = this.toFloat(data, 0.0F, 100000.0F);
+
+        } else if (item.equalsIgnoreCase("StealthFactor")) {
+                this.stealthFactor = this.toFloat(data, 0.05F, 5.0F);
+
             } else if (item.equalsIgnoreCase("ExplosionSizeByCrash")) {
                 explosionSizeByCrash = this.toInt(data, 0, 100);
             } else if (item.equalsIgnoreCase("ThrottleDownFactor")) {
