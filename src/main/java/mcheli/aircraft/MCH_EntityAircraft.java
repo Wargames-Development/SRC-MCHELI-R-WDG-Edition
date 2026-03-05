@@ -6157,34 +6157,120 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public String getNameOnMyRadar(MCH_EntityAircraft other) {
-        switch (getAcInfo().radarType) {
-            case MODERN_AA:
-                return other.getAcInfo().nameOnModernAARadar;
-            case EARLY_AA:
-                return other.getAcInfo().nameOnEarlyAARadar;
-            case MODERN_AS:
-                return other.getAcInfo().nameOnModernASRadar;
-            case EARLY_AS:
-                return other.getAcInfo().nameOnEarlyASRadar;
+        // Prevent "self" from appearing as a radar contact (avoids 2D radar flicker)
+        if (other == this) {
+            return "";
         }
-        return "?";
+        if (other == null || other.getAcInfo() == null || this.getAcInfo() == null) return "";
+
+        String name = "";
+        switch (this.getAcInfo().radarType) {
+            case MODERN_AA: name = other.getAcInfo().nameOnModernAARadar; break;
+            case EARLY_AA:  name = other.getAcInfo().nameOnEarlyAARadar;  break;
+            case MODERN_AS: name = other.getAcInfo().nameOnModernASRadar; break;
+            case EARLY_AS:  name = other.getAcInfo().nameOnEarlyASRadar;  break;
+            default:        name = ""; break;
+        }
+
+        if (name == null || name.isEmpty()) return "";
+
+        float baseRange = 0.0F;
+        switch (this.getAcInfo().radarType) {
+            case MODERN_AA:
+            case EARLY_AA:
+                baseRange = this.getAcInfo().airRadarRange;
+                break;
+            case MODERN_AS:
+            case EARLY_AS:
+                baseRange = this.getAcInfo().groundRadarRange;
+                break;
+            default:
+                baseRange = 0.0F;
+                break;
+        }
+
+        if (baseRange <= 0.0F) return name;
+
+        float stealth = other.getAcInfo().stealthFactor;
+        if (stealth <= 0.0F) stealth = 1.0F;
+
+        float effRange = baseRange * stealth;
+        double distSq = this.getDistanceSqToEntity(other);
+
+        return (distSq > (double)effRange * (double)effRange) ? "" : name;
     }
 
     public String getNameOnMyRadar(MCH_EntityInfo other) {
-        MCH_AircraftInfo info = MCH_AircraftInfo.allAircraftInfo.getOrDefault(other.entityName, null);
-        if (info != null) {
-            switch (getAcInfo().radarType) {
-                case MODERN_AA:
-                    return info.nameOnModernAARadar;
-                case EARLY_AA:
-                    return info.nameOnEarlyAARadar;
-                case MODERN_AS:
-                    return info.nameOnModernASRadar;
-                case EARLY_AS:
-                    return info.nameOnEarlyASRadar;
-            }
+        MCH_AircraftInfo targetInfo = MCH_AircraftInfo.allAircraftInfo.getOrDefault(other.entityName, null);
+        if (targetInfo == null || this.getAcInfo() == null) {
+            return "";
         }
-        return "?";
+
+        // Prevent "self" from appearing as a radar contact (fixes 2D radar flicker/ghosting)
+        if (other.entityId == this.getEntityId()) {
+            return "";
+        }
+
+        // 1) Choose the *existing* name field based on my RadarType (current system)
+        String name = "";
+        switch (this.getAcInfo().radarType) {
+            case MODERN_AA:
+                name = targetInfo.nameOnModernAARadar;
+                break;
+            case EARLY_AA:
+                name = targetInfo.nameOnEarlyAARadar;
+                break;
+            case MODERN_AS:
+                name = targetInfo.nameOnModernASRadar;
+                break;
+            case EARLY_AS:
+                name = targetInfo.nameOnEarlyASRadar;
+                break;
+            default:
+                name = "";
+                break;
+        }
+
+        // If the target does not define a name for my radar type, it should not appear
+        if (name == null || name.isEmpty()) {
+            return "";
+        }
+
+        // 2) Apply NEW range restriction (but only if configured; defaults keep old behavior)
+        float baseRange = 0.0F;
+        switch (this.getAcInfo().radarType) {
+            case MODERN_AA:
+            case EARLY_AA:
+                baseRange = this.getAcInfo().airRadarRange;
+                break;
+            case MODERN_AS:
+            case EARLY_AS:
+                baseRange = this.getAcInfo().groundRadarRange;
+                break;
+            default:
+                baseRange = 0.0F;
+                break;
+        }
+
+        // If baseRange is not set (0), keep legacy behavior: do NOT range-limit here
+        if (baseRange <= 0.0F) {
+            return name;
+        }
+
+        float stealth = targetInfo.stealthFactor;
+        if (stealth <= 0.0F) stealth = 1.0F;
+
+        float effRange = baseRange * stealth;
+        double dx = other.posX - this.posX;
+        double dy = other.posY - this.posY;
+        double dz = other.posZ - this.posZ;
+        double distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq > (double)effRange * (double)effRange) {
+            return "";
+        }
+
+        return name;
     }
 
 
