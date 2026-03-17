@@ -60,29 +60,30 @@ public abstract class MCH_ItemAircraft extends W_Item {
 
         KeyBinding shift = Minecraft.getMinecraft().gameSettings.keyBindSneak;
 
-        lines.add("\u00a7b\u00a7o" + info.displayName);
-
         if (!GameSettings.isKeyDown(shift)) {
             lines.add(MCH_I18n.format("aircraft.info.hold_shift", GameSettings.getKeyDisplayString(shift.getKeyCode())));
         } else {
+
+            // Category directly under white name (NO blank line before)
+            if (info.category != null && !info.category.isEmpty()) {
+                String cat = info.category;
+
+                cat = cat.replace("_", " ");
+
+                lines.add("\u00a7b\u00a7oTier: " + cat);
+            }
+
+            // Single spacing AFTER category
             lines.add("");
 
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.max_hp") + "\u00a77: " + info.maxHp);
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.engine_shutdown_threshold") + "\u00a77: " + info.engineShutdownThreshold + "%");
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_min_damage") + "\u00a77: " + roundFloat(info.armorMinDamage, 2));
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_max_damage") + "\u00a77: " + roundFloat(info.armorMaxDamage, 2));
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_damage_factor") + "\u00a77: " + roundFloat(info.armorDamageFactor, 2));
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.throttle_up_down") + "\u00a77: " + roundFloat(info.throttleUpDown, 2));
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.camera_zoom") + "\u00a77: " + info.cameraZoom);
-            if (info.stealth != 0) {
-                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.stealth") + "\u00a77: " + roundFloat(info.stealth, 2));
-            }
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.speed") + "\u00a77: " + roundFloat(info.speed, 2));
-            if (info.hasRWR) {
-                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.radar_type") + "\u00a77: " + info.radarType);
-                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.rwr_type") + "\u00a77: " + info.rwrType);
-            }
-            lines.add("\u00a79" + MCH_I18n.format("aircraft.info.armor_explosion_damage_multiplier") + "\u00a77: " + roundFloat(info.armorExplosionDamageMultiplier, 2));
+            lines.add("\u00a79Max HP\u00a77: " + info.maxHp);
+            lines.add("\u00a79Speed\u00a77: " + roundFloat(info.speed, 2));
+            lines.add("\u00a79Throttle\u00a77: " + roundFloat(info.throttleUpDown, 2));
+            lines.add("\u00a79Fuel\u00a77: " + info.maxFuel);
+            lines.add("\u00a79RadarType\u00a77: " + info.radarType);
+            lines.add("\u00a79AirRadarRange\u00a77: " + roundFloat(info.airRadarRange, 2));
+            lines.add("\u00a79GroundRadarRange\u00a77: " + roundFloat(info.groundRadarRange, 2));
+            lines.add("\u00a79StealthFactor\u00a77: " + roundFloat(info.stealthFactor, 2));
 
             lines.add("");
             if (info.haveFlare()) {
