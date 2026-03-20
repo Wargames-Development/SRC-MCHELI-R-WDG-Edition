@@ -19,7 +19,7 @@ public class MCH_EntityInfoClientTracker {
     /**
      * 可调：心跳缺席的毫秒阈值（例如 5s）
      */
-    public static long EXPIRATION_MS = 1_000L;
+    public static long EXPIRATION_MS = 5_000L;
     /**
      * 可调：心跳缺席的序号阈值（以服务器 tick 计数，20TPS 下 100≈5s）
      */
