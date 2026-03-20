@@ -19,7 +19,7 @@ public class MCH_EntityInfoClientTracker {
     /**
      * 可调：心跳缺席的毫秒阈值（例如 5s）
      */
-    public static long EXPIRATION_MS = 5_000L;
+    public static long EXPIRATION_MS = 4_000L;
     /**
      * 可调：心跳缺席的序号阈值（以服务器 tick 计数，20TPS 下 100≈5s）
      */
@@ -27,7 +27,7 @@ public class MCH_EntityInfoClientTracker {
     /**
      * 可调：清理扫描的 Tick 周期（例如每 10 个客户端 Tick 扫描一次）
      */
-    public static int CLEANUP_TICK_INTERVAL = 10;
+    public static int CLEANUP_TICK_INTERVAL = 20;
     private static volatile long lastAppliedSeq = -1L;    // 已应用的最新快照序号
     private static volatile long latestSeqObserved = -1L; // 最近接收到的最大序号（用于缺席判断）
     private static int clientTickCounter = 0;

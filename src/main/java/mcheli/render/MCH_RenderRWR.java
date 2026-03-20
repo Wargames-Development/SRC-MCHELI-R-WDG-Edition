@@ -40,7 +40,7 @@ public class MCH_RenderRWR {
     private static final double SCREEN_HEIGHT_ADAPT_CONSTANT = 520;
 
     private static final double _MIN_DISTANCE = 25.0;  // 最小显示距离（米）
-    private static final double _MAX_DISTANCE = 2000; // 最大显示距离（米）
+    private static final double _MAX_DISTANCE = 5000; // 最大显示距离（米）
     private static final int _MIN_RADIUS = 30;          // 最小显示半径（像素
 
     @SubscribeEvent
