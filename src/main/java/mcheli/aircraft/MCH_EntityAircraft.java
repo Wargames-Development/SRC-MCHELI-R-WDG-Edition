@@ -729,6 +729,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return this.getAcInfo() != null ? this.getAcInfo().isEnableEntityRadar : false;
     }
 
+    public boolean hasAARadar() {
+        return this.getAcInfo() != null ? this.getAcInfo().hasAARadar : false;
+    }
+
     public boolean canFloatWater() {
         return this.getAcInfo() != null && this.getAcInfo().isFloat && !this.isDestroyed();
     }

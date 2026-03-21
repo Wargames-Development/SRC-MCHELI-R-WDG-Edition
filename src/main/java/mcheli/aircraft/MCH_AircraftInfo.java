@@ -234,7 +234,15 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     /**
      * 是否有RWR
      */
+    /**
+     * 是否有RWR
+     */
     public boolean hasRWR = false;
+
+    /**
+     * 是否属于可被反辐射导弹（HARM）攻击的地面防空雷达目标
+     */
+    public boolean hasAARadar = false;
     /**
      * hud自定义字段，用于指示载具hud
      */
@@ -272,6 +280,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.isEnableConcurrentGunnerMode = false;
         this.isEnableNightVision = false;
         this.isEnableEntityRadar = false;
+        this.hasAARadar = false;
         this.isEnableEjectionSeat = false;
         this.isEnableParachuting = false;
         this.flare = new MCH_AircraftInfo.Flare();
@@ -651,6 +660,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 }
             } else if (item.equalsIgnoreCase("EnableRWR")) {
                 hasRWR = this.toBool(data);
+            } else if (item.equalsIgnoreCase("HasAARadar")) {
+                hasAARadar = this.toBool(data);
             } else if (item.equalsIgnoreCase("HUDType")) {
                 hudType = this.toInt(data);
             } else if (item.equalsIgnoreCase("WeaponGroupType")) {

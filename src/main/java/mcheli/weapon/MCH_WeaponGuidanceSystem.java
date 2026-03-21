@@ -339,7 +339,24 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
 
         return entity;
     }
+    private boolean isHarmGroundRadarTarget(Entity entity) {
+        // HARM should never target aircraft.
+        // It should only target ground MC Heli entities explicitly marked with HasAARadar = true.
 
+        if (entity instanceof MCH_EntityTank) {
+            return ((MCH_EntityTank) entity).hasAARadar();
+        }
+
+        if (entity instanceof MCH_EntityVehicle) {
+            return ((MCH_EntityVehicle) entity).hasAARadar();
+        }
+
+        if (entity instanceof MCH_EntityAircraft) {
+            return false;
+        }
+
+        return false;
+    }
     public boolean canLockEntity(Entity entity) {
         // 如果不允许锁定玩家，且实体为玩家，则返回false
         if (this.ridableOnly && entity instanceof EntityPlayer && entity.ridingEntity == null) {
@@ -347,6 +364,13 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
         } else {
             // 获取实体的类名
             String className = entity.getClass().getName();
+
+            // HARM: only ground vehicles/tanks with HasAARadar = true are valid
+            if (this.antiRadiationMissile) {
+                if (!isHarmGroundRadarTarget(entity)) {
+                    return false;
+                }
+            }
             // IR-only restriction: only MCHELI vehicles or flares
             if (this.isHeatSeekerMissile) {
                 boolean isMcheliVehicle =
@@ -428,7 +452,14 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                 return false;
             } else {
                 // 判断实体是否在地面上
+                // 判断实体是否在地面上
                 boolean ong = isEntityOnGround(entity, lockMinHeight);
+
+                // HARM targets were already filtered above, so allow them through here.
+                if (this.antiRadiationMissile) {
+                    return true;
+                }
+
                 // 如果可以锁定地面上的实体或实体不在地面上，且可以锁定空中的实体，则返回true
                 return (this.canLockOnGround || !ong) && (this.canLockInAir || ong);
             }
