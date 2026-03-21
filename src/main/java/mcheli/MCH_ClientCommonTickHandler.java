@@ -116,6 +116,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private static final java.util.HashMap<Integer, Long> BVR_MISSILE_ID_CACHE = new java.util.HashMap<Integer, Long>();
     private static final long BVR_MISSILE_ID_TTL_MS = 30_000L; // keep for 30 seconds
 
+    //Tracks the last camera mode like normal, thermal, nigth vision
+    private int lastAppliedCameraMode = -1;
+
     private int[] getAndUpdateTrackedBvrMissileIds(MCH_EntityAircraft ac) {
         long now = System.currentTimeMillis();
 
@@ -408,7 +411,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
 
         if (var7 != null && var7.ridingEntity == null) {
-            MCH_Camera.currentCameraMode = 0;
+            //MCH_Camera.currentCameraMode = 0;
+            applyLocalCameraMode(0);
         }
 
         //第三人称摄像机视角
@@ -518,6 +522,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             }
         }
 
+        if (super.mc == null || super.mc.thePlayer == null || super.mc.theWorld == null) {
+            applyLocalCameraMode(0);
+            return;
+        }
+
         if (!W_McClient.isGamePaused()) {
             EntityClientPlayerMP var17 = super.mc.thePlayer;
             if (var17 != null) {
@@ -527,14 +536,21 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 }
 
                 ridingAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(var17);
+                int localMode;
+
                 if (ridingAircraft != null) {
-                    cameraMode = ridingAircraft.getCameraMode(var17);
+                    //cameraMode = ridingAircraft.getCameraMode(var17);
+                    localMode = ridingAircraft.getCameraMode(var17);
                 } else if (var17.ridingEntity instanceof MCH_EntityGLTD) {
                     MCH_EntityGLTD ac = (MCH_EntityGLTD) var17.ridingEntity;
-                    cameraMode = ac.camera.getMode(0);
+                    //cameraMode = ac.camera.getMode(0);
+                    localMode = ac.camera.getMode(0);
                 } else {
-                    cameraMode = 0;
+                    //cameraMode = 0;
+                    localMode = 0;
                 }
+
+                applyLocalCameraMode(localMode);
 
                 MCH_EntityAircraft var19 = null;
                 if (!(var17.ridingEntity instanceof MCH_EntityHeli) && !(var17.ridingEntity instanceof MCP_EntityPlane) && !(var17.ridingEntity instanceof MCH_EntityTank)) {
@@ -911,5 +927,36 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         public String hitDisplay;
         public float hitDamage;
         public byte hitDamageType;
+    }
+
+    private void applyLocalCameraMode(int mode) {
+        if (mode < 0 || mode > 2) mode = 0;
+
+        if (mode != MCH_Camera.MODE_NORMAL && !W_EntityRenderer.isShaderSupport()) {
+            mode = MCH_Camera.MODE_NORMAL;
+        }
+
+        cameraMode = mode;
+        MCH_Camera.currentCameraMode = mode;
+
+        boolean modeChanged = (lastAppliedCameraMode != mode);
+        boolean shaderMissing = (mode != MCH_Camera.MODE_NORMAL)
+                && (Minecraft.getMinecraft().entityRenderer.theShaderGroup == null);
+
+        if (!modeChanged && !shaderMissing) return;
+
+        lastAppliedCameraMode = mode;
+
+        switch (mode) {
+            case MCH_Camera.MODE_NIGHTVISION:
+                W_EntityRenderer.activateShader("nightvision");
+                break;
+            case MCH_Camera.MODE_THERMALVISION:
+                W_EntityRenderer.activateShader("thermal");
+                break;
+            default:
+                W_EntityRenderer.deactivateShader();
+                break;
+        }
     }
 }

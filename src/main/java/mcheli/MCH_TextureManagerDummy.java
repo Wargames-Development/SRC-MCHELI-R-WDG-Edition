@@ -6,7 +6,7 @@ import net.minecraft.util.ResourceLocation;
 
 public class MCH_TextureManagerDummy extends TextureManager {
 
-    public static ResourceLocation R = new ResourceLocation("mcheli", "textures/test.png");
+    //public static ResourceLocation R = new ResourceLocation("mcheli", "textures/test.png");
     private TextureManager tm;
 
 
@@ -15,6 +15,7 @@ public class MCH_TextureManagerDummy extends TextureManager {
         this.tm = t;
     }
 
+    /*
     public void bindTexture(ResourceLocation resouce) {
         if (MCH_ClientCommonTickHandler.cameraMode == 2) {
             this.tm.bindTexture(R);
@@ -22,6 +23,10 @@ public class MCH_TextureManagerDummy extends TextureManager {
             this.tm.bindTexture(resouce);
         }
 
+    }
+     */
+    public void bindTexture(ResourceLocation resouce) {
+        this.tm.bindTexture(resouce);
     }
 
     public ResourceLocation getResourceLocation(int p_130087_1_) {

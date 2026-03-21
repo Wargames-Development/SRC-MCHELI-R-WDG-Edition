@@ -58,6 +58,7 @@ public class MCH_Camera {
         this.updateViewer(uid, viewer);
     }
 
+    /*
     public void setMode(int uid, int m) {
         if (this.isValidUid(uid)) {
             this.mode[uid] = m < 0 ? 0 : m % this.getModeNum(uid);
@@ -79,6 +80,12 @@ public class MCH_Camera {
                     break;
             }
             currentCameraMode = mode[uid];
+        }
+    }
+     */
+    public void setMode(int uid, int m) {
+        if (this.isValidUid(uid)) {
+            this.mode[uid] = m < 0 ? 0 : m % this.getModeNum(uid);
         }
     }
 
