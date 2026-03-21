@@ -38,6 +38,8 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public static Random rand = new Random();
 
+    private static final ResourceLocation THERMAL_WHITE = new ResourceLocation(W_MOD.DOMAIN, "textures/test.png");
+
     public static boolean shouldSkipRender(Entity entity) {
         if (entity instanceof MCH_IEntityCanRideAircraft) {
             MCH_IEntityCanRideAircraft e = (MCH_IEntityCanRideAircraft) entity;
@@ -1052,9 +1054,25 @@ public abstract class MCH_RenderAircraft extends W_Render {
         GL11.glEnable(2896);
     }
 
+    /*
     protected void bindTexture(String path, MCH_EntityAircraft ac) {
         if (MCH_ClientCommonTickHandler.cameraMode == 2) {
             super.bindTexture(new ResourceLocation(W_MOD.DOMAIN, "textures/test.png"));
+        } else {
+            super.bindTexture(new ResourceLocation(W_MOD.DOMAIN, path));
+        }
+    }
+
+
+    protected void bindTexture(String path, MCH_EntityAircraft ac) {
+        super.bindTexture(new ResourceLocation(W_MOD.DOMAIN, path));
+    }
+    */
+
+    //@Override
+    protected void bindTexture(String path, MCH_EntityAircraft ac) {
+        if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+            super.bindTexture(THERMAL_WHITE);
         } else {
             super.bindTexture(new ResourceLocation(W_MOD.DOMAIN, path));
         }
