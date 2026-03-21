@@ -25,7 +25,15 @@ public abstract class MCH_EntityGuidanceSystem implements MCH_IGuidanceSystem {
     /**
      * 是否为雷达弹，会受到箔条干扰
      */
+    /**
+     * 是否为雷达弹，会受到箔条干扰
+     */
     public boolean isRadarMissile = false;
+
+    /**
+     * 是否为反辐射导弹
+     */
+    public boolean antiRadiationMissile = false;
 
     /**
      * 半主动雷达弹需要持续引导

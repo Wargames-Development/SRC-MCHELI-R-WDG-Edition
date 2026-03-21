@@ -43,7 +43,8 @@ import org.lwjgl.opengl.GL11;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
+import mcheli.tank.MCH_EntityTank;
+import mcheli.vehicle.MCH_EntityVehicle;
 public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChunkLoader {
 
     public static final int DATAWT_RESERVE1 = 26;
@@ -1629,22 +1630,44 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                 }
                 // AT 导弹：只对地面上的 MCH_EntityAircraft 进行主动雷达搜索
+                // AT missile HARM-style active scan:
+                // only ground vehicles/tanks with HasAARadar = true
+                // AT missile active scan
                 else if (this instanceof MCH_EntityATMissile) {
                     if (entity instanceof MCH_EntityAircraft) {
                         MCH_EntityAircraft ac = (MCH_EntityAircraft) entity;
+
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
-                        if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
+
+                        if (shootingEntity instanceof EntityLivingBase
+                                && entity.riddenByEntity instanceof EntityPlayer
                                 && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
                             continue;
                         }
+
                         boolean isTargetOnGround = MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().lockMinHeight);
                         if (!isTargetOnGround) continue;
+
+                        // HARM-only filtering
+                        if (getInfo().antiRadiationMissile) {
+                            // Never target actual aircraft with HARM
+                            if (ac instanceof mcheli.plane.MCP_EntityPlane
+                                    || ac instanceof mcheli.helicopter.MCH_EntityHeli) {
+                                continue;
+                            }
+
+                            if (!ac.hasAARadar()) {
+                                continue;
+                            }
+                        }
+
                         double dx = entity.posX - super.posX;
                         double dy = entity.posY - super.posY;
                         double dz = entity.posZ - super.posZ;
                         Vector3f targetDirection = new Vector3f((float) dx, (float) dy, (float) dz);
                         double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
                         if (angle > Math.toRadians(getInfo().maxDegreeOfMissile)) continue;
+
                         if (angle < closestAngle) {
                             closestAngle = angle;
                             closestTarget = entity;
