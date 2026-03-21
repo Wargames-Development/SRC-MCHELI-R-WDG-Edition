@@ -25,7 +25,7 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
-
+import net.minecraft.util.AxisAlignedBB;
 public class MCP_EntityPlane extends MCH_EntityAircraft {
 
     public float soundVolume;
@@ -222,11 +222,66 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public boolean canUpdatePitch(Entity player) {
-        return super.canUpdatePitch(player) && !this.isHovering();
+        if (this.isHovering()) {
+            return false;
+        }
+
+        if (this.hasBlockImmediatelyInFrontOfEntityBox()) {
+            return false;
+        }
+
+        return super.canUpdatePitch(player);
     }
 
     public boolean canUpdateRoll(Entity player) {
         return super.canUpdateRoll(player) && !this.isHovering();
+    }
+
+    private boolean isNearGroundForFrontBlockCheck() {
+        return super.onGround || MCH_Lib.getBlockIdY(this, 1, -2) > 0;
+    }
+
+    private boolean hasBlockImmediatelyInFrontOfEntityBox() {
+        if (this.getAcInfo() == null) {
+            return false;
+        }
+
+        // Ignore this logic in VTOL / nozzle mode
+        if (this.getNozzleRotation() > 0.01F) {
+            return false;
+        }
+
+        // Only care while on or very near the ground
+        if (!this.isNearGroundForFrontBlockCheck()) {
+            return false;
+        }
+
+        // Use plane forward direction based on yaw only
+        Vec3 fwd = MCH_Lib.Rot2Vec3(this.getRotYaw(), -10.0F);
+
+        double len = Math.sqrt(fwd.xCoord * fwd.xCoord + fwd.zCoord * fwd.zCoord);
+        if (len < 1.0E-4D) {
+            return false;
+        }
+
+        double dirX = fwd.xCoord / len;
+        double dirZ = fwd.zCoord / len;
+
+        // Probe the lower 1-block slice of the main entity box
+        AxisAlignedBB baseSlice = AxisAlignedBB.getBoundingBox(
+                super.boundingBox.minX,
+                super.boundingBox.minY + 0.05D,
+                super.boundingBox.minZ,
+                super.boundingBox.maxX,
+                super.boundingBox.minY + 1.05D,
+                super.boundingBox.maxZ
+        );
+
+        // Move that slice just in front of the blue entity box face
+        double forwardOffset = (super.width * 0.5D) + 0.10D;
+        AxisAlignedBB probe = baseSlice.offset(dirX * forwardOffset, 0.0D, dirZ * forwardOffset);
+
+        return !super.worldObj.getCollidingBoundingBoxes(this, probe).isEmpty();
     }
 
     public float getYawFactor() {
@@ -772,7 +827,19 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         // 计算油门1的值，当前油门除以10
-        float throttle1 = (float) (this.getCurrentThrottle() / 10.0D);
+        boolean frontBlocked = this.hasBlockImmediatelyInFrontOfEntityBox();
+
+        // Smoothly reduce current throttle while a block is directly in front
+        if (frontBlocked) {
+            double ct = this.getCurrentThrottle() - 0.08D;
+            if (ct < 0.0D) {
+                ct = 0.0D;
+            }
+            this.setCurrentThrottle(ct);
+        }
+
+        // 计算油门1的值，当前油门除以10
+        float throttle1 = (float)(this.getCurrentThrottle() / 10.0D);
         Vec3 v;
 
         // 如果喷嘴的旋转角度大于0.001F
@@ -819,6 +886,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         // 如果可以移动，则更新水平速度
+        // 如果可以移动，则更新水平速度
         if (canMove) {
             // 如果启用了倒车功能，并且油门向后，则根据油门倒退
             if (this.getAcInfo().enableBack && super.throttleBack > 0.0F) {
@@ -828,6 +896,12 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                 // 否则，根据油门前进
                 super.motionX += v.xCoord * (double) throttle1;
                 super.motionZ += v.zCoord * (double) throttle1;
+            }
+
+            // 顶着前方障碍物时，额外衰减水平速度，避免“蓄力弹出”
+            if (frontBlocked) {
+                super.motionX *= 0.75D;
+                super.motionZ *= 0.75D;
             }
         }
 
@@ -873,7 +947,14 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         // 更新飞行器位置
+        // 更新飞行器位置
+        float prevStepHeight = super.stepHeight;
+        if (frontBlocked) {
+            super.stepHeight = 0.0F;
+        }
+
         this.moveEntity(super.motionX, super.motionY, super.motionZ);
+        super.stepHeight = prevStepHeight;
 
         // 更新旋转角度
         this.setRotation(this.getRotYaw(), this.getRotPitch());
