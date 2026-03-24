@@ -28,6 +28,11 @@ public class MCH_GuiWrench extends MCH_Gui {
     }
 
     public void drawGui(EntityPlayer player, boolean isThirdPersonView) {
+        MCH_EntityAircraft ridden = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        if (ridden != null) {
+            return;
+        }
+
         if (!isThirdPersonView) {
             GL11.glLineWidth((float) MCH_Gui.scaleFactor);
             if (this.isDrawGui(player)) {

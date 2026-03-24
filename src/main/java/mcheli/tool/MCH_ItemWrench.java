@@ -113,6 +113,11 @@ public class MCH_ItemWrench extends W_Item {
     }
 
     public void onUsingTick(ItemStack stack, EntityPlayer player, int count) {
+        MCH_EntityAircraft ridden = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        if (ridden != null) {
+            return;
+        }
+
         MCH_EntityAircraft ac;
         if (player.worldObj.isRemote) {
             ac = this.getMouseOverAircraft(player);
