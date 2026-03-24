@@ -155,11 +155,13 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     }
 
     public void worldEventUnload(Unload event) {
+        MCH_EntityInfoClientTracker.resetTracker();
         MCH_ViewEntityDummy.onUnloadWorld();
     }
 
     public void entityJoinWorldEvent(EntityJoinWorldEvent event) {
         if (event.entity.isEntityEqual(MCH_Lib.getClientPlayer())) {
+            MCH_EntityInfoClientTracker.resetTracker();
             MCH_Lib.DbgLog(true, "MCH_ClientEventHook.entityJoinWorldEvent : " + event.entity, new Object[0]);
             MCH_ItemRangeFinder.mode = Minecraft.getMinecraft().isSingleplayer() ? 1 : 0;
             MCH_ParticlesUtil.clearMarkPoint();

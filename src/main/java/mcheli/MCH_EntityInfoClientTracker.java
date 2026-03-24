@@ -109,6 +109,13 @@ public class MCH_EntityInfoClientTracker {
         }
     }
 
+    public static void resetTracker() {
+        tracked.clear();
+        lastAppliedSeq = -1L;
+        latestSeqObserved = -1L;
+        clientTickCounter = 0;
+    }
+
     private static final class Tracked {
         MCH_EntityInfo info;
         long lastSeenMillis;
