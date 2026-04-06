@@ -1,11 +1,45 @@
-.gradle
-.idea
-bin
-build
-eclipse
-.classpath
-.project
-*.iml
-*.ipr
-*.iws
+# Eclipse
+/eclipse
+/bin
+/*.launch
+/.settings
+/.metadata
+/.classpath
+/.project
+
+# IntelliJ
+/out
+/*.ipr
+/*.iws
+/*.iml
+/.idea
+
+# Gradle
+/build
+/.gradle
+!gradle/wrapper/gradle-wrapper.jar
+
+# VS Code
+/.vscode
+
+# Runtime
+/run
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Packaging / generated archives
+*.zip
+!gradle/wrapper/gradle-wrapper.jar
+
+# OS files
 .DS_Store
+**/.DS_Store
+Thumbs.db
+__MACOSX/
+._*
+
+# Local extracted / staging junk
+/out/
