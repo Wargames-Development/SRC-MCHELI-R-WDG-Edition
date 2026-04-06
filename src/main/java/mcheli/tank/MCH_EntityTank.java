@@ -2,6 +2,7 @@ package mcheli.tank;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.wgc.Integrations;
 import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
@@ -40,6 +41,7 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -1015,17 +1017,17 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
 
                 // Get the aircraft entity the tank is riding on, if applicable
                 final MCH_EntityAircraft rideAc = super.ridingEntity instanceof MCH_EntityAircraft
-                    ? (MCH_EntityAircraft) super.ridingEntity
-                    : (super.ridingEntity instanceof MCH_EntitySeat
-                    ? ((MCH_EntitySeat) super.ridingEntity).getParent()
-                    : null);
+                        ? (MCH_EntityAircraft) super.ridingEntity
+                        : (super.ridingEntity instanceof MCH_EntitySeat
+                        ? ((MCH_EntitySeat) super.ridingEntity).getParent()
+                        : null);
 
                 // Get a list of entities within the bounding box
                 List<Entity> list = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, bb.expand(0.3D, 0.3D, 0.3D), e -> {
                     // Exclude certain entity types from being affected by collision
                     if (e != rideAc && !(e instanceof EntityItem) && !(e instanceof EntityXPOrb)
-                        && !(e instanceof MCH_EntityBaseBullet) && !(e instanceof MCH_EntityChain)
-                        && !(e instanceof MCH_EntitySeat)) {
+                            && !(e instanceof MCH_EntityBaseBullet) && !(e instanceof MCH_EntityChain)
+                            && !(e instanceof MCH_EntitySeat)) {
 
                         // Special handling for tanks
                         if (e instanceof MCH_EntityTank) {
@@ -1058,15 +1060,19 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
 
                         // Determine the damage source
                         DamageSource ds = (rider instanceof EntityLivingBase)
-                            ? DamageSource.causeMobDamage((EntityLivingBase) rider)
-                            : DamageSource.generic;
+                                ? DamageSource.causeMobDamage((EntityLivingBase) rider)
+                                : DamageSource.generic;
+
+                        boolean allowDamage = !(e instanceof EntityPlayer) || Integrations.canHarmPlayerWGC(rider, e, super.worldObj);
 
                         // Apply damage and collision effects
                         MCH_Lib.applyEntityHurtResistantTimeConfig(e);
 
-                        if (!(e instanceof MCH_EntityTank && this.getTankInfo().weightType <= ((MCH_EntityTank) e).getTankInfo().weightType)) {
-                            if (rand.nextInt(3) == 0) {
-                                e.attackEntityFrom(ds, damage);
+                        if (allowDamage) {
+                            if (!(e instanceof MCH_EntityTank && this.getTankInfo().weightType <= ((MCH_EntityTank) e).getTankInfo().weightType)) {
+                                if (rand.nextInt(3) == 0) {
+                                    e.attackEntityFrom(ds, damage);
+                                }
                             }
                         }
 
@@ -1086,10 +1092,10 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
                         }
 
                         // Damage self based on collision with large entities
-                        if (this.getTankInfo().weightType != 2 && (e.width >= 1.0F || e.height >= 1.5D)) {
+                        if (allowDamage && this.getTankInfo().weightType != 2 && (e.width >= 1.0F || e.height >= 1.5D)) {
                             ds = (e instanceof EntityLivingBase)
-                                ? DamageSource.causeMobDamage((EntityLivingBase) e)
-                                : DamageSource.generic;
+                                    ? DamageSource.causeMobDamage((EntityLivingBase) e)
+                                    : DamageSource.generic;
                             if (rand.nextInt(3) == 0) {
                                 this.attackEntityFrom(ds, damage / 3.0F);
                             }
@@ -1180,6 +1186,77 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
         }
     }
 
+    private Entity getWGCoreVehicleActingEntity() {
+        return this.getRiddenByEntity();
+    }
+
+    private boolean canVehicleDamageBlockAt(int x, int y, int z) {
+        return Integrations.canVehicleDamageBlockWGC(
+                super.worldObj,
+                getWGCoreVehicleActingEntity(),
+                x,
+                y,
+                z,
+                "mcheli:vehicle_collision"
+        );
+    }
+
+    private static boolean isTankSoftFoliageMaterial(Material mat) {
+        return mat == Material.leaves || mat == Material.vine || mat == Material.plants;
+    }
+
+    public static List getCollidingBoundingBoxes(Entity par1Entity, AxisAlignedBB par2AxisAlignedBB) {
+        ArrayList collidingBoundingBoxes = new ArrayList();
+        collidingBoundingBoxes.clear();
+        int i = MathHelper.floor_double(par2AxisAlignedBB.minX);
+        int j = MathHelper.floor_double(par2AxisAlignedBB.maxX + 1.0D);
+        int k = MathHelper.floor_double(par2AxisAlignedBB.minY);
+        int l = MathHelper.floor_double(par2AxisAlignedBB.maxY + 1.0D);
+        int i1 = MathHelper.floor_double(par2AxisAlignedBB.minZ);
+        int j1 = MathHelper.floor_double(par2AxisAlignedBB.maxZ + 1.0D);
+
+        MCH_EntityTank tank = par1Entity instanceof MCH_EntityTank ? (MCH_EntityTank) par1Entity : null;
+
+        for (int d0 = i; d0 < j; ++d0) {
+            for (int l1 = i1; l1 < j1; ++l1) {
+                if (par1Entity.worldObj.blockExists(d0, 64, l1)) {
+                    for (int list = k - 1; list < l; ++list) {
+                        Block j2 = W_WorldFunc.getBlock(par1Entity.worldObj, d0, list, l1);
+                        if (j2 != null) {
+                            Material mat = j2.getMaterial();
+
+                            if (tank != null && isTankSoftFoliageMaterial(mat) && !tank.canVehicleDamageBlockAt(d0, list, l1)) {
+                                continue;
+                            }
+
+                            j2.addCollisionBoxesToList(par1Entity.worldObj, d0, list, l1, par2AxisAlignedBB, collidingBoundingBoxes, par1Entity);
+                        }
+                    }
+                }
+            }
+        }
+
+        double var15 = 0.25D;
+        List var16 = par1Entity.worldObj.getEntitiesWithinAABBExcludingEntity(par1Entity, par2AxisAlignedBB.expand(var15, var15, var15));
+
+        for (int var17 = 0; var17 < var16.size(); ++var17) {
+            Entity entity = (Entity) var16.get(var17);
+            if (!W_Lib.isEntityLivingBase(entity) && !(entity instanceof MCH_EntitySeat) && !(entity instanceof MCH_EntityHitBox)) {
+                AxisAlignedBB axisalignedbb1 = entity.getBoundingBox();
+                if (axisalignedbb1 != null && axisalignedbb1.intersectsWith(par2AxisAlignedBB)) {
+                    collidingBoundingBoxes.add(axisalignedbb1);
+                }
+
+                axisalignedbb1 = par1Entity.getCollisionBox(entity);
+                if (axisalignedbb1 != null && axisalignedbb1.intersectsWith(par2AxisAlignedBB)) {
+                    collidingBoundingBoxes.add(axisalignedbb1);
+                }
+            }
+        }
+
+        return collidingBoundingBoxes;
+    }
+
     public void updateCollisionBox() {
         if (this.getAcInfo() != null) {
             this.WheelMng.updateBlock();
@@ -1233,6 +1310,10 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
                                 Block block = by >= 0 && by < 256 ? super.worldObj.getBlock(bx, by, bz) : Blocks.air;
                                 Material mat = block.getMaterial();
                                 if (!Block.isEqualTo(block, Blocks.air)) {
+                                    if (!this.canVehicleDamageBlockAt(bx, by, bz)) {
+                                        break label102;
+                                    }
+
                                     Iterator i$ = noDestroyBlocks.iterator();
 
                                     Block m;

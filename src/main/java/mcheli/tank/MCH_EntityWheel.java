@@ -1,11 +1,13 @@
 package mcheli.tank;
 
+import mcheli.wgc.Integrations;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntityHitBox;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_Lib;
 import mcheli.wrapper.W_WorldFunc;
+import net.minecraft.block.material.Material;
 import net.minecraft.block.Block;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
@@ -179,12 +181,21 @@ public class MCH_EntityWheel extends W_Entity {
         int i1 = MathHelper.floor_double(par2AxisAlignedBB.minZ);
         int j1 = MathHelper.floor_double(par2AxisAlignedBB.maxZ + 1.0D);
 
+        Entity actingEntity = this.parents != null ? this.parents.getRiddenByEntity() : null;
+
         for (int d0 = i; d0 < j; ++d0) {
             for (int l1 = i1; l1 < j1; ++l1) {
                 if (par1Entity.worldObj.blockExists(d0, 64, l1)) {
                     for (int list = k - 1; list < l; ++list) {
                         Block j2 = W_WorldFunc.getBlock(par1Entity.worldObj, d0, list, l1);
                         if (j2 != null) {
+                            Material mat = j2.getMaterial();
+                            boolean ignoreSoftFoliage = mat == Material.leaves || mat == Material.vine || mat == Material.plants;
+
+                            if (ignoreSoftFoliage && !Integrations.canVehicleDamageBlockWGC(par1Entity.worldObj, actingEntity, d0, list, l1, "mcheli:vehicle_collision")) {
+                                continue;
+                            }
+
                             j2.addCollisionBoxesToList(par1Entity.worldObj, d0, list, l1, par2AxisAlignedBB, collidingBoundingBoxes, par1Entity);
                         }
                     }

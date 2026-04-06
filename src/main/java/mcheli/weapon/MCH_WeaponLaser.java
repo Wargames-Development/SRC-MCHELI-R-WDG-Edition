@@ -3,6 +3,7 @@ package mcheli.weapon;
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.wgc.Integrations;
 import mcheli.*;
 import mcheli.aircraft.*;
 import mcheli.chain.MCH_EntityChain;
@@ -182,49 +183,52 @@ public class MCH_WeaponLaser extends MCH_WeaponBase {
             if (result.entityHit != null) {
                 if (!worldObj.isRemote) {
                     Entity hit = result.entityHit;
-                    MCH_Lib.applyEntityHurtResistantTimeConfig(hit);
-                    DamageSource ds = DamageSource.causeThrownDamage(prm.entity, prm.user);
-                    float damage = MCH_Config.applyDamageVsEntity(hit, ds, power);
-                    damage *= (this.getInfo() != null) ? this.getInfo().getDamageFactor(hit) : 1.0F;
-                    if (weaponInfo.enableBulletDecay) {
-                        float decayFactor = 1f;
-                        float dist = (float) start.distanceTo(hitVec);
-                        for (MCH_IBulletDecay decay : weaponInfo.bulletDecay) {
-                            decayFactor = decay.calculateDecayFactor(dist);
+
+                    if (!(hit instanceof EntityPlayer) || Integrations.canHarmPlayerWGC(prm.user, hit, worldObj)) {
+                        MCH_Lib.applyEntityHurtResistantTimeConfig(hit);
+                        DamageSource ds = DamageSource.causeThrownDamage(prm.entity, prm.user);
+                        float damage = MCH_Config.applyDamageVsEntity(hit, ds, power);
+                        damage *= (this.getInfo() != null) ? this.getInfo().getDamageFactor(hit) : 1.0F;
+                        if (weaponInfo.enableBulletDecay) {
+                            float decayFactor = 1f;
+                            float dist = (float) start.distanceTo(hitVec);
+                            for (MCH_IBulletDecay decay : weaponInfo.bulletDecay) {
+                                decayFactor = decay.calculateDecayFactor(dist);
+                            }
+                            damage *= decayFactor;
                         }
-                        damage *= decayFactor;
-                    }
-                    //药水/火焰效果
-                    List<EntityLivingBase> livingList = new ArrayList<>();
-                    if (hit instanceof EntityLivingBase) {
-                        hit.setFire(5);
-                        livingList.add((EntityLivingBase) hit);
-                    }
-                    if (hit instanceof MCH_EntityAircraft) {
-                        MCH_EntityAircraft ac = (MCH_EntityAircraft) hit;
-                        if (ac.getRiddenByEntity() instanceof EntityLivingBase) {
-                            livingList.add((EntityLivingBase) ac.getRiddenByEntity());
+                        //药水/火焰效果
+                        List<EntityLivingBase> livingList = new ArrayList<>();
+                        if (hit instanceof EntityLivingBase) {
+                            hit.setFire(5);
+                            livingList.add((EntityLivingBase) hit);
                         }
-                        if (ac.getSeats() != null) {
-                            for (MCH_EntitySeat seat : ac.getSeats()) {
-                                if (seat != null && seat.riddenByEntity instanceof EntityLivingBase) {
-                                    livingList.add((EntityLivingBase) seat.riddenByEntity);
+                        if (hit instanceof MCH_EntityAircraft) {
+                            MCH_EntityAircraft ac = (MCH_EntityAircraft) hit;
+                            if (ac.getRiddenByEntity() instanceof EntityLivingBase) {
+                                livingList.add((EntityLivingBase) ac.getRiddenByEntity());
+                            }
+                            if (ac.getSeats() != null) {
+                                for (MCH_EntitySeat seat : ac.getSeats()) {
+                                    if (seat != null && seat.riddenByEntity instanceof EntityLivingBase) {
+                                        livingList.add((EntityLivingBase) seat.riddenByEntity);
+                                    }
                                 }
                             }
                         }
-                    }
-                    for (EntityLivingBase livingBase : livingList) {
-                        float dist = (float) start.distanceTo(hitVec);
-                        for (MCH_PotionEffect effect : getInfo().potionEffect) {
-                            if ((effect.startDist < 0 && effect.endDist < 0)
-                                || (effect.startDist <= dist && dist < effect.endDist)) {
-                                livingBase.addPotionEffect(new PotionEffect(effect.potionEffect));
+                        for (EntityLivingBase livingBase : livingList) {
+                            float dist = (float) start.distanceTo(hitVec);
+                            for (MCH_PotionEffect effect : getInfo().potionEffect) {
+                                if ((effect.startDist < 0 && effect.endDist < 0)
+                                        || (effect.startDist <= dist && dist < effect.endDist)) {
+                                    livingBase.addPotionEffect(new PotionEffect(effect.potionEffect));
+                                }
                             }
                         }
-                    }
-                    hit.attackEntityFrom(ds, damage);
-                    if (prm.user instanceof EntityPlayer && prm.entity instanceof MCH_EntityAircraft) {
-                        MCH_PacketNotifyHitBullet.send((MCH_EntityAircraft) prm.entity, (EntityPlayer) prm.user);
+                        hit.attackEntityFrom(ds, damage);
+                        if (prm.user instanceof EntityPlayer && prm.entity instanceof MCH_EntityAircraft) {
+                            MCH_PacketNotifyHitBullet.send((MCH_EntityAircraft) prm.entity, (EntityPlayer) prm.user);
+                        }
                     }
                 } else {
                     spawnBlockPar(result);

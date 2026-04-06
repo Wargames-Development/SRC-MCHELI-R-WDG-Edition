@@ -4,6 +4,7 @@ import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.*;
+import mcheli.wgc.Integrations;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntityHitBox;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -1348,16 +1349,24 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void onImpactEntity(Entity entity, float damageFactor, Vec3 hitVec) {
+        boolean allowDamage = true;
+
         if (!entity.isDead) {
-            MCH_Lib.DbgLog(super.worldObj, "MCH_EntityBaseBullet.onImpactEntity:Damage=%d:" + entity.getClass(), this.getPower());
-            MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
-            DamageSource ds = DamageSource.causeThrownDamage(this, this.shootingEntity);
-            ds = MCH_IndicatedDamageSource.build(ds, hitVec, Vec3.createVectorHelper(motionX, motionY, motionZ));
-            float damage = MCH_Config.applyDamageVsEntity(entity, ds, (float) this.getPower() * damageFactor);
-            damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
-            entity.attackEntityFrom(ds, damage);
-            if (this instanceof MCH_EntityBullet && entity instanceof EntityVillager && this.shootingEntity != null && this.shootingEntity.ridingEntity instanceof MCH_EntitySeat) {
-                MCH_Achievement.addStat(this.shootingEntity, MCH_Achievement.aintWarHell, 1);
+            if (entity instanceof EntityPlayer && !Integrations.canHarmPlayerWGC(this.shootingEntity, entity, this.worldObj)) {
+                allowDamage = false;
+            }
+
+            if (allowDamage) {
+                MCH_Lib.DbgLog(super.worldObj, "MCH_EntityBaseBullet.onImpactEntity:Damage=%d:" + entity.getClass(), this.getPower());
+                MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
+                DamageSource ds = DamageSource.causeThrownDamage(this, this.shootingEntity);
+                ds = MCH_IndicatedDamageSource.build(ds, hitVec, Vec3.createVectorHelper(motionX, motionY, motionZ));
+                float damage = MCH_Config.applyDamageVsEntity(entity, ds, (float) this.getPower() * damageFactor);
+                damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
+                entity.attackEntityFrom(ds, damage);
+                if (this instanceof MCH_EntityBullet && entity instanceof EntityVillager && this.shootingEntity != null && this.shootingEntity.ridingEntity instanceof MCH_EntitySeat) {
+                    MCH_Achievement.addStat(this.shootingEntity, MCH_Achievement.aintWarHell, 1);
+                }
             }
         }
 
@@ -1859,13 +1868,15 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         }
 
                         if (!entity.isDead) {
-                            MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
-                            DamageSource ds = DamageSource.setExplosionSource(result == null ? null : result.explosion);
-                            float damage = MCH_Config.applyDamageVsEntity(entity, ds, this.getInfo().proximityFuseDamage);
-                            damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
-                            entity.attackEntityFrom(ds, damage);
-                            if(damage > 0) {
-                                this.notifyHitBullet();
+                            if (!(entity instanceof EntityPlayer) || Integrations.canHarmPlayerWGC(this.shootingEntity, entity, this.worldObj)) {
+                                MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
+                                DamageSource ds = DamageSource.setExplosionSource(result == null ? null : result.explosion);
+                                float damage = MCH_Config.applyDamageVsEntity(entity, ds, this.getInfo().proximityFuseDamage);
+                                damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
+                                entity.attackEntityFrom(ds, damage);
+                                if (damage > 0) {
+                                    this.notifyHitBullet();
+                                }
                             }
                         }
                         this.setDead();
