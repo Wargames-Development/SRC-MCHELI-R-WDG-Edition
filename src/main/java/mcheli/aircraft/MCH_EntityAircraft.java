@@ -3297,6 +3297,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public boolean useMaintenance() {
         if (this.getAcInfo() != null && this.getAcInfo().haveMaintenance()) {
             if (this.maintenance.onUse()) {
+                if (!this.worldObj.isRemote) {
+                    this.recoverERABoundingBoxesByMaintenance();
+                }
                 return true;
             }
             return false;
@@ -5701,6 +5704,28 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.eraStateForSync = watcherState;
             this.applyERAStateString(watcherState);
         }
+    }
+
+    private void recoverERABoundingBoxesByMaintenance() {
+        List<MCH_BoundingBox> destroyedERA = new ArrayList<MCH_BoundingBox>();
+        for (MCH_BoundingBox bb : this.extraBoundingBox) {
+            if (bb.isERA && !bb.eraActive) {
+                destroyedERA.add(bb);
+            }
+        }
+        if (destroyedERA.isEmpty()) {
+            return;
+        }
+        int recoverCount = (destroyedERA.size() + 3) / 4;
+        if (recoverCount < 1) {
+            recoverCount = 1;
+        }
+        Collections.shuffle(destroyedERA, this.rand);
+        int maxRecover = Math.min(recoverCount, destroyedERA.size());
+        for (int i = 0; i < maxRecover; i++) {
+            destroyedERA.get(i).eraActive = true;
+        }
+        this.syncERAStateWatcher(false);
     }
 
     public void setAcInfo(MCH_AircraftInfo info) {
