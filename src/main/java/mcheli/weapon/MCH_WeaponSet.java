@@ -508,6 +508,26 @@ public class MCH_WeaponSet {
         }
     }
 
+    public Vec3 getPredictedImpactPoint(MCH_WeaponParam prm) {
+        MCH_WeaponBase crtWpn = this.getCurrentWeapon();
+        if (crtWpn != null && crtWpn.getInfo() != null) {
+            prm.rotYaw = prm.entity != null ? prm.entity.rotationYaw : 0.0F;
+            prm.rotPitch = prm.entity != null ? prm.entity.rotationPitch : 0.0F;
+            prm.rotRoll = prm.entity instanceof mcheli.aircraft.MCH_EntityAircraft ? ((mcheli.aircraft.MCH_EntityAircraft)prm.entity).getRotRoll() : 0.0F;
+            prm.rotYaw += this.rotationYaw + crtWpn.fixRotationYaw;
+            prm.rotPitch += this.rotationPitch + crtWpn.fixRotationPitch;
+            prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
+            prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
+            Vec3 shotPos = crtWpn.getShotPos(prm.entity);
+            prm.posX += shotPos.xCoord;
+            prm.posY += shotPos.yCoord;
+            prm.posZ += shotPos.zCoord;
+            return crtWpn.getPredictedImpactPoint(prm);
+        } else {
+            return null;
+        }
+    }
+
 
     public class Recoil {
 

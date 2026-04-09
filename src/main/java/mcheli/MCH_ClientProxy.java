@@ -582,6 +582,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MinecraftForge.EVENT_BUS.register(new MCH_RenderLaser());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderDamageIndicator());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderGPSPosition());
+        MinecraftForge.EVENT_BUS.register(new MCH_RenderCCIP());
     }
 
     public void setCreativeDigDelay(int n) {

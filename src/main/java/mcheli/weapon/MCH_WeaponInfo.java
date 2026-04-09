@@ -246,6 +246,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      */
     public boolean speedDependsAircraft = false;
     /**
+     * 是否启用CCIP投弹圈
+     */
+    public boolean ccip = false;
+    /**
      * 是否可以锁定导弹实体
      */
     public boolean canLockMissile = false;
@@ -525,6 +529,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.delay = 1000000;
         }
 
+        if (!this.type.equalsIgnoreCase("rocket")) {
+            this.ccip = false;
+        }
+
         this.angle = (float) (Math.atan2(this.radius, this.length) * 180.0D / 3.141592653589793D);
     }
 
@@ -674,6 +682,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.speedFactorEndTick = this.toInt(data);
             } else if (item.equalsIgnoreCase("SpeedDependsAircraft")) {
                 this.speedDependsAircraft = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CCIP")) {
+                this.ccip = this.toBool(data);
             } else if (item.equalsIgnoreCase("CanLockMissile")) {
                 this.canLockMissile = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableBVR")) {

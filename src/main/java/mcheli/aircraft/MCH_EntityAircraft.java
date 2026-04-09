@@ -227,6 +227,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private boolean dismountedUserCtrl;
     private double lastCalcLandInDistanceCount;
     private double lastLandInDistance;
+    private double lastCalcPredictedImpactPointCount;
+    private Vec3 lastPredictedImpactPoint;
     private boolean switchSeat = false;
     public int jammingTick = 0;
 
@@ -5161,6 +5163,24 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         return this.lastLandInDistance;
+    }
+
+    public Vec3 getPredictedImpactPoint(Entity user) {
+        if (this.lastCalcPredictedImpactPointCount != (double)this.getCountOnUpdate()) {
+            this.lastCalcPredictedImpactPointCount = this.getCountOnUpdate();
+            this.lastPredictedImpactPoint = null;
+            MCH_WeaponParam prm = new MCH_WeaponParam();
+            prm.setPosition(super.posX, super.posY, super.posZ);
+            prm.entity = this;
+            prm.user = user;
+            if (prm.user != null) {
+                MCH_WeaponSet currentWs = this.getCurrentWeapon(prm.user);
+                if (currentWs != null && currentWs.getInfo() != null && currentWs.getInfo().type != null && currentWs.getInfo().type.equalsIgnoreCase("rocket") && currentWs.getInfo().ccip) {
+                    this.lastPredictedImpactPoint = currentWs.getPredictedImpactPoint(prm);
+                }
+            }
+        }
+        return this.lastPredictedImpactPoint;
     }
 
     public boolean useCurrentWeapon(Entity user) {
