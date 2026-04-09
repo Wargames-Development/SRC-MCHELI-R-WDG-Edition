@@ -190,6 +190,8 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.gps_input.title", "zh_CN", "设置GPS坐标");
         addTranslation("gui.mcheli.gps_input.invalid", "en_US", "Invalid coordinate input");
         addTranslation("gui.mcheli.gps_input.invalid", "zh_CN", "坐标输入无效");
+        addTranslation("gui.mcheli.gps_input.fill_player_pos", "en_US", "Get Player Position");
+        addTranslation("gui.mcheli.gps_input.fill_player_pos", "zh_CN", "获取玩家当前坐标");
 
         addTranslation("aircraft.info.hold_shift", "en_US", "Hold \u00a7b\u00a7o%s\u00a7r\u00a77 to see more data");
         addTranslation("aircraft.info.hold_shift", "zh_CN", "按住 \u00a7b\u00a7o%s\u00a7r\u00a77 查看更多数据");

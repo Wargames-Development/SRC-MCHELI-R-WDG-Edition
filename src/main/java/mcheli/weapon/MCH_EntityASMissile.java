@@ -14,12 +14,14 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
     public double originTargetPosY;
     public double originTargetPosZ;
     public boolean targeting;
+    public boolean gpsGuidanceReleased;
 
     public MCH_EntityASMissile(World par1World) {
         super(par1World);
         this.targetPosX = 0.0D;
         this.targetPosY = 0.0D;
         this.targetPosZ = 0.0D;
+        this.gpsGuidanceReleased = false;
     }
 
     public MCH_EntityASMissile(World par1World, double posX, double posY, double posZ, double targetX, double targetY, double targetZ, float yaw, float pitch, double acceleration) {
@@ -50,6 +52,18 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
             }
 
             if (!super.worldObj.isRemote && !super.isDead && targeting && this.getCountOnUpdate() > this.getInfo().rigidityTime) {
+                if (!gpsGuidanceReleased && getInfo().isGPSMissile && !getInfo().lockEntity) {
+                    double dx = originTargetPosX - this.posX;
+                    double dy = originTargetPosY - this.posY;
+                    double dz = originTargetPosZ - this.posZ;
+                    if (dx * dx + dy * dy + dz * dz <= 25.0D) {
+                        gpsGuidanceReleased = true;
+                        targeting = false;
+                    }
+                }
+                if (gpsGuidanceReleased) {
+                    return;
+                }
                 if (getInfo().lockEntity) {
                     int range = getInfo().maxLockOnRange;
                     for (Entity entity : super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.expand(100, 100, 100))) {
