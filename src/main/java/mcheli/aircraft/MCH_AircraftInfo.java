@@ -1090,6 +1090,28 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                                     this.bbZmin = (float) Math.min(this.bbZmin, bb.boundingBox.minZ);
                                                                                     this.bbZmax = (float) Math.min(this.bbZmax, bb.boundingBox.maxZ);
                                                                                 }
+                                                                            } else if (item.equalsIgnoreCase("BoundingERABox")) {
+                                                                                s = data.split("\\s*,\\s*");
+                                                                                if (s.length >= 11) {
+                                                                                    MCH_BoundingBox bb = new MCH_BoundingBox(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]),
+                                                                                        this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]));
+                                                                                    bb.isERA = true;
+                                                                                    bb.eraExplosion = this.toFloat(s[7], 0.0F, 100000.0F);
+                                                                                    bb.setBoundingBoxType(EnumBoundingBoxType.valueOf(s[8].toUpperCase()));
+                                                                                    bb.setBoundingBoxName(s[9]);
+                                                                                    bb.eraMinDamage = this.toFloat(s[10], 0.0F, 100000.0F);
+                                                                                    bb.eraActive = true;
+                                                                                    this.extraBoundingBox.add(bb);
+                                                                                    if (bb.boundingBox.maxY > (double) this.markerHeight) {
+                                                                                        this.markerHeight = (float) bb.boundingBox.maxY;
+                                                                                    }
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.maxX) / 2.0D);
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.minX) / 2.0D);
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.maxZ) / 2.0D);
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.minZ) / 2.0D);
+                                                                                    this.bbZmin = (float) Math.min(this.bbZmin, bb.boundingBox.minZ);
+                                                                                    this.bbZmax = (float) Math.min(this.bbZmax, bb.boundingBox.maxZ);
+                                                                                }
                                                                             } else if (item.equalsIgnoreCase("RotorSpeed")) {
                                                                                 this.rotorSpeed = this.toFloat(data, -10000.0F, 10000.0F);
                                                                                 if ((double) this.rotorSpeed > 0.01D) {

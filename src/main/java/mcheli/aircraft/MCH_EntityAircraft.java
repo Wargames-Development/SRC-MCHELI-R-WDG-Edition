@@ -69,6 +69,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private static final int DATAWT_ID_FUEL = 25;
     private static final int DATAWT_ID_ROT_ROLL = 26;
     private static final int DATAWT_ID_COMMAND = 27;
+    private static final int DATAWT_ID_ERA_STATE = 28;
     private static final int DATAWT_ID_THROTTLE = 29;
     private static final int DATAWT_ID_FOLD_STAT = 30;
     private static final int DATAWT_ID_PART_STAT = 31;
@@ -135,6 +136,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public MCH_BoundingBox[] extraBoundingBox;
     public float lastBBDamageFactor;
     public String lastBBName;
+    public int lastBBIndex;
     public MCH_EntityAircraft.WeaponBay[] weaponBays;
     public float[] rotPartRotation;
     public float[] prevRotPartRotation;
@@ -183,6 +185,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     protected int[] currentWeaponID;
     protected MCH_WeaponSet dummyWeapon;
     protected int useWeaponStat;
+    protected String eraStateForSync;
     protected int hitStatus;
     protected Entity lastRidingEntity;
     protected boolean isGunnerMode = false;
@@ -242,6 +245,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.entityRadar = new MCH_Radar(world);
         this.radarRotate = 0;
         this.currentWeaponID = new int[0];
+        this.eraStateForSync = "";
         //this.aircraftPosRotInc = 0;
         this.aircraftX = 0.0D;
         this.aircraftY = 0.0D;
@@ -297,6 +301,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         W_Reflection.setBoundingBox(this, new MCH_AircraftBoundingBox(this));
         this.lastBBDamageFactor = 1.0F;
         this.lastBBName = null;
+        this.lastBBIndex = -1;
         this.inventory = new MCH_AircraftInventory(this);
         this.fuelConsumption = 0.0D;
         this.fuelSuppliedCount = 0;
@@ -388,6 +393,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.getDataWatcher().addObject(22, 0);
         this.getDataWatcher().addObject(26, 0.0F);
         this.getDataWatcher().addObject(27, "");
+        this.getDataWatcher().addObject(28, "");
         this.getDataWatcher().addObject(29, 0);
         this.getDataWatcher().addObject(31, 0);
         if (!super.worldObj.isRemote) {
@@ -879,6 +885,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.setSearchLight(nbt.getBoolean("SearchLight"));
         }
 
+        if (nbt.hasKey("AcERAState")) {
+            this.applyERAStateString(nbt.getString("AcERAState"));
+        }
+        if (!super.worldObj.isRemote) {
+            this.syncERAStateWatcher(true);
+        }
         this.dismountedUserCtrl = nbt.getBoolean("AcDismounted");
     }
 
@@ -907,6 +919,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         nbt.setTag("AcWeaponsAmmo", W_NBTTag.newTagIntArray("AcWeaponsAmmo", wa_list));
         nbt.setInteger("AcDamage", this.getDamageTaken());
+        nbt.setString("AcERAState", this.buildERAStateString());
         nbt.setBoolean("AcDismounted", this.dismountedUserCtrl);
     }
 
@@ -918,6 +931,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         lastBBDamageFactor = 1.0F;
         String bbName = this.lastBBName;
         lastBBName = null;
+        int bbIndex = this.lastBBIndex;
+        this.lastBBIndex = -1;
         boolean damageExplosion = false;
         if (this.isEntityInvulnerable()) {
             return false;
@@ -1030,6 +1045,29 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 }
                             }
                             MCH_Lib.DbgLog(super.worldObj, "MCH_EntityAircraft.attackEntityFrom:damage=%.1f(factor=%.2f):%s", damage, damageFactor, dmt);
+                            if (bbName != null) {
+                                MCH_BoundingBox eraBox = this.getActiveERABoundingBox(bbName, bbIndex);
+                                if (eraBox != null && damage > eraBox.eraMinDamage) {
+                                    eraBox.eraActive = false;
+                                    this.syncERAStateWatcher(false);
+                                    if (eraBox.eraExplosion > 0.0F) {
+                                        MCH_ExplosionParam eraExplosion = MCH_ExplosionParam.builder()
+                                            .exploder(null)
+                                            .player(entity instanceof EntityPlayer ? (EntityPlayer) entity : null)
+                                            .x(eraBox.center.xCoord).y(eraBox.center.yCoord).z(eraBox.center.zCoord)
+                                            .size(eraBox.eraExplosion)
+                                            .sizeBlock(0.0F)
+                                            .isPlaySound(true)
+                                            .isSmoking(true)
+                                            .isFlaming(false)
+                                            .isDestroyBlock(false)
+                                            .countSetFireEntity(0)
+                                            .isInWater(this.isInWater())
+                                            .build();
+                                        MCH_Explosion.newExplosion(super.worldObj, eraExplosion);
+                                    }
+                                }
+                            }
                             //触发载具伤害事件
                             String name = (String) getAcInfo().displayNameLang.get("en_US");
                             if (lastRiddenByEntity instanceof EntityPlayer && lastAttackedEntity instanceof EntityLivingBase) {
@@ -1149,6 +1187,24 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean isExploded() {
         return this.isDestroyed() && this.damageSinceDestroyed > this.getMaxHP() / 10 + 1;
+    }
+
+    private MCH_BoundingBox getActiveERABoundingBox(String bbName, int bbIndex) {
+        if (bbIndex >= 0 && bbIndex < this.extraBoundingBox.length) {
+            MCH_BoundingBox bb = this.extraBoundingBox[bbIndex];
+            if (bb.isERA && bb.eraActive) {
+                return bb;
+            }
+        }
+        if (bbName == null || bbName.isEmpty()) {
+            return null;
+        }
+        for (MCH_BoundingBox bb : this.extraBoundingBox) {
+            if (bb.isERA && bb.eraActive && bbName.equalsIgnoreCase(bb.name)) {
+                return bb;
+            }
+        }
+        return null;
     }
 
     public void destruct() {
@@ -1577,6 +1633,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.prevCurrentThrottle = this.getCurrentThrottle();
         this.lastBBDamageFactor = 1.0F;
         this.lastBBName = null;
+        this.lastBBIndex = -1;
         this.updateControl();
         this.checkServerNoMove();
         this.onUpdate_RidingEntity();
@@ -5301,6 +5358,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void updateWeapons() {
         if (this.getAcInfo() != null) {
+            if (!this.worldObj.isRemote) {
+                this.syncERAStateWatcher(false);
+            } else {
+                this.updateERAStateFromWatcher();
+            }
             if (this.getAcInfo().getWeaponNum() > 0) {
                 int prevUseWeaponStat = this.useWeaponStat;
                 if (!this.worldObj.isRemote) {
@@ -5591,6 +5653,54 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public MCH_AircraftInfo getAcInfo() {
         return this.acInfo;
+    }
+
+    private String buildERAStateString() {
+        StringBuilder sb = new StringBuilder();
+        for (MCH_BoundingBox bb : this.extraBoundingBox) {
+            if (bb.isERA) {
+                sb.append(bb.eraActive ? '1' : '0');
+            }
+        }
+        return sb.toString();
+    }
+
+    private void applyERAStateString(String state) {
+        if (state == null) {
+            return;
+        }
+        int eraIndex = 0;
+        for (MCH_BoundingBox bb : this.extraBoundingBox) {
+            if (!bb.isERA) {
+                continue;
+            }
+            if (eraIndex < state.length()) {
+                bb.eraActive = state.charAt(eraIndex) != '0';
+            }
+            eraIndex++;
+        }
+    }
+
+    private void syncERAStateWatcher(boolean force) {
+        if (this.worldObj.isRemote) {
+            return;
+        }
+        String state = this.buildERAStateString();
+        if (force || !state.equals(this.eraStateForSync)) {
+            this.eraStateForSync = state;
+            this.getDataWatcher().updateObject(DATAWT_ID_ERA_STATE, state);
+        }
+    }
+
+    private void updateERAStateFromWatcher() {
+        String watcherState = this.getDataWatcher().getWatchableObjectString(DATAWT_ID_ERA_STATE);
+        if (watcherState == null) {
+            watcherState = "";
+        }
+        if (!watcherState.equals(this.eraStateForSync)) {
+            this.eraStateForSync = watcherState;
+            this.applyERAStateString(watcherState);
+        }
     }
 
     public void setAcInfo(MCH_AircraftInfo info) {

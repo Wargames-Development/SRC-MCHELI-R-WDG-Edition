@@ -34,6 +34,7 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
         double dist = 1.0E7D;
         this.ac.lastBBDamageFactor = 1.0F;
         this.ac.lastBBName = null;
+        this.ac.lastBBIndex = -1;
 
         // 仍先用整体外接 AABB 快速判定
         if (super.intersectsWith(aabb)) {
@@ -42,7 +43,12 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
         }
 
         // 遍历各部件包围盒
+        int i = 0;
         for (MCH_BoundingBox bb : this.ac.extraBoundingBox) {
+            if (bb.isERA && !bb.eraActive) {
+                i++;
+                continue;
+            }
             // 先用部件的轴对齐外包围盒做快速过滤
             if (bb.boundingBox.intersectsWith(aabb)) {
                 // 用完整的 OBB-AABB 判定代替原来的 corners 判定
@@ -52,10 +58,12 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
                         dist = dist2;
                         this.ac.lastBBDamageFactor = bb.damageFactor;
                         this.ac.lastBBName = bb.name;
+                        this.ac.lastBBIndex = i;
                     }
                     ret = true;
                 }
             }
+            i++;
         }
         return ret;
     }
@@ -150,11 +158,17 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
     public MovingObjectPosition calculateIntercept(Vec3 start, Vec3 end) {
         this.ac.lastBBDamageFactor = 1.0F;
         this.ac.lastBBName = null;
+        this.ac.lastBBIndex = -1;
         MovingObjectPosition bestMop = super.calculateIntercept(start, end);
         double bestDist = (bestMop != null) ? start.distanceTo(bestMop.hitVec) : Double.MAX_VALUE;
 
         // 遍历旋转部件包围盒，使用 OBB 射线检测
+        int i = 0;
         for (MCH_BoundingBox bb : this.ac.extraBoundingBox) {
+            if (bb.isERA && !bb.eraActive) {
+                i++;
+                continue;
+            }
             // 将射线转换到 bb 的局部坐标系
             Vec3 dir = end.subtract(start);
             // 计算射线在 bb.axis 上的分量
@@ -238,8 +252,10 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
                     bestMop = new MovingObjectPosition(bx, by, bz, 0, hitVec);
                     this.ac.lastBBDamageFactor = bb.damageFactor;
                     this.ac.lastBBName = bb.name;
+                    this.ac.lastBBIndex = i;
                 }
             }
+            i++;
         }
         return bestMop;
     }

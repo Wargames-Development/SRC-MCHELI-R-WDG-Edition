@@ -372,6 +372,26 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     }
 
+    public static void renderERA(MCH_EntityAircraft ac, MCH_AircraftInfo info) {
+        if (!(info.model instanceof W_ModelCustom)) {
+            return;
+        }
+        W_ModelCustom bodyModel = (W_ModelCustom) info.model;
+        int eraIndex = 0;
+        for (MCH_BoundingBox bb : ac.extraBoundingBox) {
+            if (!bb.isERA) {
+                continue;
+            }
+            if (bb.eraActive) {
+                String partName = "$ERA" + eraIndex;
+                if (bodyModel.containsPart(partName)) {
+                    bodyModel.renderPart(partName);
+                }
+            }
+            eraIndex++;
+        }
+    }
+
     public static void renderWeaponChild(MCH_EntityAircraft ac, MCH_AircraftInfo info, MCH_AircraftInfo.PartWeaponChild w, MCH_WeaponSet ws, Entity e, float tickTime) {
         float rotYaw = 0.0F;
         float prevYaw = 0.0F;
@@ -1198,7 +1218,11 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 // 缩放到包围盒的实际大小
                 GL11.glScalef(bb.width, bb.height, bb.widthZ);
                 // 绘制包围盒模型
-                bindTexture("textures/bounding_box.png");
+                String texture = "textures/bounding_box.png";
+                if (bb.isERA) {
+                    texture = bb.eraActive ? "textures/bounding_era_active.png" : "textures/bounding_era_negative.png";
+                }
+                bindTexture(texture);
                 debugModel.renderAll();
 
                 GL11.glPopMatrix();
@@ -1266,6 +1290,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public void renderCommonPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, double x, double y, double z, float tickTime) {
         renderRope(ac, info, x, y, z, tickTime);
+        renderERA(ac, info);
         renderWeapon(ac, info, tickTime);
         renderRotPart(ac, info, tickTime);
         renderHatch(ac, info, tickTime);

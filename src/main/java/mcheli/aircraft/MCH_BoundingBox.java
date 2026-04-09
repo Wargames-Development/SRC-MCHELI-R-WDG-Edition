@@ -58,6 +58,10 @@ public class MCH_BoundingBox {
      */
     public EnumBoundingBoxType boundingBoxType = EnumBoundingBoxType.DEFAULT;
     public String name = "";
+    public boolean isERA = false;
+    public float eraExplosion = 0.0F;
+    public float eraMinDamage = 0.0F;
+    public boolean eraActive = true;
 
     // === 新增字段：记录包围盒朝向和局部轴向量 ===
     /**
@@ -141,6 +145,10 @@ public class MCH_BoundingBox {
         bb.backupBoundingBox = this.backupBoundingBox.copy();
         bb.boundingBoxType = this.boundingBoxType;
         bb.name = this.name;
+        bb.isERA = this.isERA;
+        bb.eraExplosion = this.eraExplosion;
+        bb.eraMinDamage = this.eraMinDamage;
+        bb.eraActive = this.eraActive;
         return bb;
     }
 

@@ -178,3 +178,81 @@
 3. 载具 hitbox 并非只靠 `MCH_EntityHitBox`，真正命中细分核心是 `MCH_AircraftBoundingBox` 组合 `extraBoundingBox`（OBB）判定。  
 4. 命中部位的伤害倍率通过 `lastBBDamageFactor` 传递到 `attackEntityFrom`，可用于部位化伤害与HUD提示。  
 
+---
+
+## 6. ERA 方案疑问点确认（按最新约束）
+
+### 6.1 模型消失实现原则
+
+- ERA 模型消失将走 **ERA 专用渲染部件链路**。  
+- 参考武器挂载件“发射后隐藏”的思路，但 **不直接复用 weapon 逻辑**（不复用 `useWeaponStat/isWeaponNotCooldown`）。  
+- 建议新增 ERA 部件定义（例如 `AddPartERA`）并绑定模型 `$ERA0..$ERAn`，渲染时按 ERA 状态位决定显示/隐藏。
+
+### 6.2 mindamage 判定口径
+
+- 采用 **最终伤害值** 判定是否触发 ERA 失效：  
+  - `finalDamage > mindamage`：ERA 失效并触发 ERA 爆炸。  
+  - `finalDamage <= mindamage`：ERA 保持激活。
+
+### 6.3 ERA 对伤害的作用定位
+
+- ERA **不吸收本次伤害**，仅作为特殊碰撞箱与触发器。  
+- 高额免伤效果由配置实现：通常给 ERA box 设置更低 `multiplier`（damageFactor）来模拟。
+
+### 6.4 调试贴图命名
+
+- 采用：  
+  - 激活：`bounding_era_active`  
+  - 失效：`bounding_era_negative`  
+- 原 `nagative` 拼写统一更正为 `negative`。
+
+---
+
+## 7. ERA 实施步骤（不改现有武器隐藏链路）
+
+1. **扩展数据结构**  
+   - 在 `MCH_BoundingBox` 扩展 ERA 字段：`isERA`, `eraExplosion`, `eraMinDamage`, `eraActive`。  
+   - `copy()` 需完整复制 ERA 字段。
+
+2. **扩展配置解析**  
+   - 在 `MCH_AircraftInfo` 新增 `BoundingERABox` 解析分支：  
+     `center_x, center_y, center_z, width, height, length, multiplier, explosion, type, name, mindamage`。  
+   - 兼容 `DEFAULT/TURRET`，并写入 `extraBoundingBox`。
+
+3. **接入命中判定过滤**  
+   - 在 `MCH_AircraftBoundingBox.intersectsWith/calculateIntercept` 遍历时：  
+     - 普通 box：按现有逻辑。  
+     - ERA box：仅 `eraActive==true` 参与碰撞判定。
+
+4. **接入伤害阶段触发**  
+   - 在 `MCH_EntityAircraft.attackEntityFrom(...)` 中，拿到 `bbName` 后定位命中的 ERA box。  
+   - 按最终伤害判定：`damage > eraMinDamage` 触发失效：  
+     - `eraActive=false`  
+     - 触发一次 ERA 爆炸（半径用 `eraExplosion`）。  
+   - 不修改本次伤害结算值（符合“ERA 不吸收本次伤害”）。
+
+5. **新增 ERA 渲染链路**  
+   - 在 `MCH_AircraftInfo` 增加 ERA 部件列表（如 `partERA`）及解析（如 `AddPartERA`）。  
+   - 在 `MCH_RenderAircraft` 增加 `renderERA(...)`：  
+     - 通过 ERA 部件顺序与 ERA box 状态位关联；  
+     - `eraActive=true` 渲染 `$ERAx`，`false` 不渲染。  
+   - 该链路独立于武器挂载件渲染。
+
+6. **调试可视化（TestMode）**  
+   - 在 `renderDebugHitBox(...)` 中对 ERA box 分支绘制：  
+     - `eraActive=true`：`bounding_era_active`  
+     - `eraActive=false`：`bounding_era_negative`  
+   - 普通 box 继续使用 `bounding_box`。
+
+7. **状态同步与存档**  
+   - 服务端权威维护 ERA 状态；客户端只渲染。  
+   - ERA 状态加入 NBT（存档/读档恢复），必要时加同步包或 DataWatcher 字段。
+
+8. **验证清单**  
+   - 命中伤害高于/低于 `mindamage` 两组验证。  
+   - `DEFAULT` 与 `TURRET` 旋转部位都验证。  
+   - ERA 失效后：  
+     - 不再碰撞；  
+     - 模型隐藏；  
+     - 调试贴图切到 `negative`；  
+     - 重进世界状态保持一致。  
