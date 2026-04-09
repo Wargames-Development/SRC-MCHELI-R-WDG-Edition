@@ -1,6 +1,7 @@
 package mcheli.weapon;
 
 import mcheli.MCH_Lib;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.wrapper.W_McClient;
 import net.minecraft.entity.Entity;
@@ -382,7 +383,8 @@ public class MCH_WeaponSet {
                 prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
                 prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
                 if (crtWpn.use(prm)) {
-                    if (prm.entity.worldObj.isRemote) {
+                    boolean applyShotState = prm.entity.worldObj.isRemote || prm.user instanceof MCH_EntityGunner;
+                    if (applyShotState) {
                         if (info.maxHeatCount > 0) {
                             this.cooldownSpeed = 1;
                             this.currentHeat += crtWpn.heatCount;

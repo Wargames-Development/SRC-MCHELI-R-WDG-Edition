@@ -156,3 +156,77 @@
 - 建议按“分阶段 cherry-pick 代码块”迁移，不要一把全量覆盖。
 - 下一步建议执行阶段 5：开展单机/局域网回归与目录版实装验证，形成可回退补丁集。
 
+## 8. Gunner 无视 Delay 问题专项调研与解决方案（仅方案，不改代码）
+
+### 8.1 现象与问题定义
+
+- 现象：AI 炮手（`MCH_EntityGunner`）在可射击状态下接近“每 tick 一次”触发开火。
+- 预期：应受武器配置 `Delay` 限制，遵循武器冷却节奏。
+- 范围：仅针对 AI 炮手，玩家手动开火链路保持现状。
+
+### 8.2 参数链路确认（Delay 本身无问题）
+
+- `Delay` 定义：`MCH_WeaponInfo.delay`。
+- `Delay` 解析：武器配置读取后写入 `delay`。
+- 运行时映射：`MCH_WeaponCreator` 将 `info.delay` 赋给 `weapon.interval`。
+- 结论：`Delay -> interval` 映射链路正常，不是配置项失效。
+
+### 8.3 根因定位
+
+- Gunner 开火发生在服务端 AI 更新：
+  - `MCH_EntityGunner.onUpdate()` -> `shotTarget(...)` -> `ac.useCurrentWeapon(prm)`。
+- 武器是否可用由 `MCH_WeaponSet.canUse()` 决定，门控条件是 `countWait == 0`。
+- 当前主线 `MCH_WeaponSet.use()` 在成功开火后：
+  - 客户端分支会写 `countWait = crtWpn.interval`，并推进 `currentHeat`、弹药、装填等状态。
+  - 服务端分支仅处理少量状态，不完整推进 `countWait/currentHeat/ammo/reload`。
+- 由于 Gunner 是服务端驱动，服务端冷却状态未完整推进，导致 `canUse()` 频繁为真，表现为高频射击。
+
+### 8.4 与历史实现对照
+
+- 在 `MCH-Reforged-nukeesteve` 对照版本中，`MCH_WeaponSet.use()` 成功开火后会统一设置 `countWait = crtWpn.interval`，不依赖客户端分支。
+- 该差异与当前问题现象一致，说明这是一次“客户端预测迁移后，旧服务端 AI 链路未同步演进”的兼容性缺口。
+
+### 8.5 目标方案（采纳原作者建议）
+
+- 设计原则：
+  - 玩家射击链路不改，避免影响现有手感和联机行为。
+  - 仅对 AI 炮手启用服务端权威冷却/过热/装填状态推进。
+- 方案摘要：
+  - 在 `MCH_WeaponSet.use()` 成功开火后，增加“AI 炮手服务端状态提交”分支。
+  - 分支条件：`!worldObj.isRemote && prm.user instanceof MCH_EntityGunner`。
+  - 提交内容：`countWait`、`currentHeat`、`lastUsedCount`、`ammo/reload`、`optionParameter` 等与冷却相关状态。
+- 预期效果：
+  - Gunner 严格遵循 `Delay` 与过热规则。
+  - 玩家维持原有客户端预测链路，不引入额外操作延迟感。
+
+### 8.6 备选方案对比
+
+| 方案 | 说明 | 优点 | 风险 |
+|---|---|---|---|
+| A（推荐）AI 炮手服务端冷却专用分支 | 仅对 `MCH_EntityGunner` 在服务端补齐状态推进 | 改动小、影响面可控、与当前诉求完全一致 | 维护上存在“玩家/AI 双轨”逻辑 |
+| B 全量回归服务端权威 | 玩家与 AI 都统一服务端结算 | 逻辑最统一，长期一致性最好 | 改动面大，可能影响玩家操作手感与现有包同步 |
+| C Gunner 侧额外 tick 门控 | 在 `MCH_EntityGunner` 里自建冷却计数 | 修改点集中在 AI 类 | 与武器系统双重冷却，后续维护复杂 |
+
+### 8.7 风险与防护
+
+- 风险1：同一发射事件重复扣弹或重复叠加热量。
+  - 防护：AI 服务端分支仅在 `crtWpn.use(prm)` 成功后单次提交状态。
+- 风险2：组武器（group）联动节奏异常。
+  - 防护：保持 `waitAndReloadByOther(...)` 现有逻辑不变，仅补齐当前武器状态。
+- 风险3：多人同步显示与服务器判定不一致。
+  - 防护：服务端以 `countWait/currentHeat` 为唯一权威，客户端仅显示同步结果。
+
+### 8.8 验证计划
+
+- 用例1：同武器不同 `Delay`（1/5/20）下 Gunner 射击间隔应明显变化并与配置一致。
+- 用例2：高热武器触发过热后，Gunner 停火并按冷却恢复。
+- 用例3：弹药耗尽后触发装填，装填窗口内 Gunner 不可射击。
+- 用例4：玩家手动射击行为与手感无回归变化。
+- 用例5：单机与局域网多人均无“服务端高频射击、客户端显示异常”的分叉。
+
+### 8.9 实施建议
+
+- 按方案 A 先做最小改动验证。
+- 若验证通过，再评估是否进入方案 B 的长期重构。
+- 保留回退点：仅单文件局部修改，失败可快速回滚。
+
