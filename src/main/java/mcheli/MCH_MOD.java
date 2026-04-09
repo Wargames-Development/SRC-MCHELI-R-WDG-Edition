@@ -29,6 +29,8 @@ import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.helicopter.MCH_ItemHeli;
 import mcheli.lweapon.MCH_ItemLightWeaponBase;
 import mcheli.lweapon.MCH_ItemLightWeaponBullet;
+import mcheli.mob.MCH_EntityGunner;
+import mcheli.mob.MCH_ItemSpawnGunner;
 import mcheli.network.PacketHandler;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.parachute.MCH_ItemParachute;
@@ -105,8 +107,8 @@ public class MCH_MOD {
     public static MCH_ItemFuel itemFuel;
     public static MCH_ItemWrench itemWrench;
     public static MCH_ItemRangeFinder itemRangeFinder;
-    //public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
-    //public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
@@ -280,6 +282,7 @@ public class MCH_MOD {
         MCH_SoundsJson.update(sourcePath + "/assets/" + "mcheli" + "/");
         MCH_Lib.Log("Register item");
         this.registerItemRangeFinder();
+        this.registerItemSpawnGunner();
         this.registerItemWrench();
         this.registerItemFuel();
         this.registerItemGLTD();
@@ -362,26 +365,28 @@ public class MCH_MOD {
         proxy.registerServerTick();
     }
 
-    //private void registerItemSpawnGunner() {
-    //   /* 270 */     String name = "spawn_gunner_vs_monster";
-    //   /* 271 */     MCH_ItemSpawnGunner item = new MCH_ItemSpawnGunner();
-    //   /* 272 */     item.targetType = 0;
-    //   /* 273 */     item.primaryColor = 12632224;
-    //   /* 274 */     item.secondaryColor = 12582912;
-    //   /* 275 */     itemSpawnGunnerVsMonster = item;
-    //   /* 276 */     registerItem((W_Item)item, name, creativeTabs);
-    //   /* 277 */     W_LanguageRegistry.addName(item, "Gunner (vs Monster)");
-    //   /* 278 */     W_LanguageRegistry.addNameForObject(item, "ja_JP", "対モンスター 射撃手");
-    //   /* 279 */     name = "spawn_gunner_vs_player";
-    //   /* 280 */     item = new MCH_ItemSpawnGunner();
-    //   /* 281 */     item.targetType = 1;
-    //   /* 282 */     item.primaryColor = 12632224;
-    //   /* 283 */     item.secondaryColor = 49152;
-    //   /* 284 */     itemSpawnGunnerVsPlayer = item;
-    //   /* 285 */     registerItem((W_Item)item, name, creativeTabs);
-    //   /* 286 */     W_LanguageRegistry.addName(item, "Gunner (vs Player of other team)");
-    //   /* 287 */     W_LanguageRegistry.addNameForObject(item, "ja_JP", "対他チームプレイヤー 射撃手");
-    //   /*     */   }
+    private void registerItemSpawnGunner() {
+        String name = "spawn_gunner_vs_monster";
+        MCH_ItemSpawnGunner item = new MCH_ItemSpawnGunner();
+        item.targetType = 0;
+        item.primaryColor = 12632224;
+        item.secondaryColor = 12582912;
+        itemSpawnGunnerVsMonster = item;
+        registerItem((W_Item)item, name, creativeTabs);
+        W_LanguageRegistry.addName(item, "Gunner (vs Monster)");
+        W_LanguageRegistry.addNameForObject(item, "ja_JP", "対モンスター 射撃手");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手（对怪物）");
+        name = "spawn_gunner_vs_player";
+        item = new MCH_ItemSpawnGunner();
+        item.targetType = 1;
+        item.primaryColor = 12632224;
+        item.secondaryColor = 49152;
+        itemSpawnGunnerVsPlayer = item;
+        registerItem((W_Item)item, name, creativeTabs);
+        W_LanguageRegistry.addName(item, "Gunner (vs Player of other team)");
+        W_LanguageRegistry.addNameForObject(item, "ja_JP", "対他チームプレイヤー 射撃手");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手（对敌方玩家）");
+    }
 
     public void registerEntity() {
         EntityRegistry.registerModEntity(MCH_EntitySeat.class, "MCH.E.Seat", 100, this, 200, 10, true);
@@ -410,6 +415,7 @@ public class MCH_MOD {
         EntityRegistry.registerModEntity(MCH_EntityDispensedItem.class, "MCH.E.DispItem", 210, this, 530, 5, true);
         EntityRegistry.registerModEntity(MCH_EntityFlare.class, "MCH.E.Flare", 300, this, 330, 10, true);
         EntityRegistry.registerModEntity(MCH_EntityThrowable.class, "MCH.E.Throwable", 400, this, 330, 10, true);
+        EntityRegistry.registerModEntity(MCH_EntityGunner.class, "MCH.E.Gunner", 500, this, 530, 5, true);
         EntityRegistry.registerModEntity(MCH_EntityLockBox.class, "MCH.E.LockBox", 401, this, 32, 20, false);
         EntityRegistry.registerModEntity(MCH_EntityChaff.class, "MCH.E.Chaff", 402, this, 330, 10, true);
         EntityRegistry.registerModEntity(EntityNukeTorex.class, "MCH.E.Nuke", 403, this, 1000, 20, false);
