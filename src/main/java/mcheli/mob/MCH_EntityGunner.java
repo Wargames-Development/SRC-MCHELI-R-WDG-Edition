@@ -27,6 +27,9 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 public class MCH_EntityGunner extends EntityLivingBase {
+    public static final int TARGET_MONSTER = 0;
+    public static final int TARGET_PLAYER = 1;
+    public static final int TARGET_AA_AMMO = 2;
     public boolean isCreative = false;
     public String ownerUUID = "";
     public int targetType = 0;
@@ -156,7 +159,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
 
     public boolean canAttackEntity(EntityLivingBase entity, MCH_EntityAircraft ac, MCH_WeaponSet ws) {
         boolean ret = false;
-        if (this.targetType == 0) {
+        if (this.targetType == TARGET_MONSTER) {
             ret = (entity != this && !(entity instanceof net.minecraft.entity.monster.EntityEnderman) && !entity.isDead && !isOnSameTeam(entity) && entity.getHealth() > 0.0F && !ac.isMountedEntity((Entity)entity));
         } else {
             ret = (entity != this && !((EntityPlayer)entity).capabilities.isCreativeMode && !entity.isDead && !getTeamName().isEmpty() && !isOnSameTeam(entity) && entity.getHealth() > 0.0F && !ac.isMountedEntity((Entity)entity));
@@ -180,30 +183,47 @@ public class MCH_EntityGunner extends EntityLivingBase {
         if (ws == null || ws.getInfo() == null || ws.getCurrentWeapon() == null)
             return;
         MCH_WeaponBase cw = ws.getCurrentWeapon();
-        if (this.targetEntity != null && (this.targetEntity.isDead || ((EntityLivingBase)this.targetEntity).getHealth() <= 0.0F))
+        if (this.targetEntity != null && (this.targetEntity.isDead || (this.targetEntity instanceof EntityLivingBase && ((EntityLivingBase)this.targetEntity).getHealth() <= 0.0F)))
             if (this.switchTargetCount > 20)
                 this.switchTargetCount = 20;
         Vec3 pos = getGunnerWeaponPos(ac, ws);
         if ((this.targetEntity == null && this.switchTargetCount <= 0) || this.switchTargetCount <= 0) {
             List<? extends Entity> list;
             this.switchTargetCount = 20;
-            EntityLivingBase nextTarget = null;
-            if (this.targetType == 0) {
+            Entity nextTarget = null;
+            if (this.targetType == TARGET_MONSTER) {
                 int rh = MCH_Config.RangeOfGunner_VsMonster_Horizontal.prmInt;
                 int rv = MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt;
                 list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
-            } else {
+            } else if (this.targetType == TARGET_PLAYER) {
                 int rh = MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt;
                 int rv = MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt;
                 list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
+            } else {
+                list = this.worldObj.getEntitiesWithinAABBExcludingEntity((Entity)this, this.boundingBox.expand(150.0D, 150.0D, 150.0D));
             }
             for (int i = 0; i < list.size(); i++) {
                 Entity candidate = list.get(i);
-                if (!(candidate instanceof EntityLivingBase)) {
+                if (this.targetType == TARGET_AA_AMMO) {
+                    if (!isAATarget(candidate))
+                        continue;
+                    if (this.getDistanceSqToEntity(candidate) > 22500.0D)
+                        continue;
+                    if (!canTrackTargetAltitude(candidate))
+                        continue;
+                    if (!checkPitch(candidate, ac, pos))
+                        continue;
+                    if ((nextTarget == null || this.getDistanceSqToEntity(candidate) < this.getDistanceSqToEntity(nextTarget)) && this.canEntityBeSeen(candidate))
+                        if (isInAttackable(candidate, ac, ws, pos)) {
+                            nextTarget = candidate;
+                            this.switchTargetCount = 60;
+                        }
                     continue;
                 }
-                EntityLivingBase entity = (EntityLivingBase) candidate;
-                if (this.targetType == 0) {
+                if (!(candidate instanceof EntityLivingBase))
+                    continue;
+                EntityLivingBase entity = (EntityLivingBase)candidate;
+                if (this.targetType == TARGET_MONSTER) {
                     if (!(entity instanceof IMob)) {
                         continue;
                     }
@@ -223,7 +243,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 this.targetPrevPosY = nextTarget.posY;
                 this.targetPrevPosZ = nextTarget.posZ;
             }
-            this.targetEntity = (Entity)nextTarget;
+            this.targetEntity = nextTarget;
         }
         if (this.targetEntity != null) {
             float rotSpeed = 10.0F;
@@ -279,7 +299,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
         }
     }
 
-    private boolean checkPitch(EntityLivingBase entity, MCH_EntityAircraft ac, Vec3 pos) {
+    private boolean checkPitch(Entity entity, MCH_EntityAircraft ac, Vec3 pos) {
         try {
             double d0 = entity.posX - pos.xCoord;
             double d1 = entity.posY - pos.yCoord;
@@ -287,7 +307,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
             double d3 = MathHelper.sqrt_double(d0 * d0 + d2 * d2);
             float pitch = (float)-(Math.atan2(d1, d3) * 180.0D / Math.PI);
             MCH_AircraftInfo ai = ac.getAcInfo();
-            if (ac instanceof mcheli.vehicle.MCH_EntityVehicle && ac.isPilot((Entity)this))
+            if ((this.targetType == TARGET_AA_AMMO || ac instanceof mcheli.vehicle.MCH_EntityVehicle) && ac.isPilot((Entity)this))
                 if (Math.abs(ai.minRotationPitch) + Math.abs(ai.maxRotationPitch) > 0.0F) {
                     if (pitch < ai.minRotationPitch)
                         return false;
@@ -315,7 +335,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
         return ac.getTransformedPosition((ws.getCurrentWeapon()).position);
     }
 
-    private boolean isInAttackable(EntityLivingBase entity, MCH_EntityAircraft ac, MCH_WeaponSet ws, Vec3 pos) {
+    private boolean isInAttackable(Entity entity, MCH_EntityAircraft ac, MCH_WeaponSet ws, Vec3 pos) {
         if (ac instanceof mcheli.vehicle.MCH_EntityVehicle)
             return true;
         try {
@@ -333,6 +353,27 @@ public class MCH_EntityGunner extends EntityLivingBase {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private boolean isAATarget(Entity entity) {
+        return entity instanceof MCH_EntityRocket || entity instanceof MCH_EntityASMissile || entity instanceof MCH_EntityTvMissile || entity instanceof MCH_EntityATMissile || entity instanceof MCH_EntityBomb || entity instanceof MCH_EntityMarkerRocket;
+    }
+
+    private boolean canTrackTargetAltitude(Entity entity) {
+        return getHeightAboveGround(entity) > 30.0D;
+    }
+
+    private double getHeightAboveGround(Entity entity) {
+        int x = MathHelper.floor_double(entity.posX);
+        int z = MathHelper.floor_double(entity.posZ);
+        int startY = MathHelper.floor_double(entity.posY);
+        for (int y = startY; y >= 0; y--) {
+            if (!this.worldObj.isAirBlock(x, y, z)) {
+                if (W_WorldFunc.getBlock(this.worldObj, x, y, z).canCollideCheck(0, true))
+                    return entity.posY - y;
+            }
+        }
+        return entity.posY;
     }
 
     public MCH_EntityAircraft getAc() {
@@ -361,8 +402,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
 
     public void setDead() {
         if (!this.worldObj.isRemote && !this.isDead && !this.isCreative)
-            if (this.targetType == 0) {
+            if (this.targetType == TARGET_MONSTER) {
                 dropItem((Item)MCH_MOD.itemSpawnGunnerVsMonster, 1);
+            } else if (this.targetType == TARGET_AA_AMMO) {
+                dropItem((Item)MCH_MOD.itemSpawnGunnerAA, 1);
             } else {
                 dropItem((Item)MCH_MOD.itemSpawnGunnerVsPlayer, 1);
             }

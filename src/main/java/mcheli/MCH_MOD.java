@@ -109,6 +109,7 @@ public class MCH_MOD {
     public static MCH_ItemRangeFinder itemRangeFinder;
     public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
     public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerAA;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
@@ -386,6 +387,16 @@ public class MCH_MOD {
         W_LanguageRegistry.addName(item, "Gunner (vs Player of other team)");
         W_LanguageRegistry.addNameForObject(item, "ja_JP", "対他チームプレイヤー 射撃手");
         W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手（对敌方玩家）");
+        name = "gunner_aa";
+        item = new MCH_ItemSpawnGunner();
+        item.targetType = 2;
+        item.primaryColor = 12632224;
+        item.secondaryColor = 32768;
+        itemSpawnGunnerAA = item;
+        registerItem((W_Item)item, name, creativeTabs);
+        W_LanguageRegistry.addName(item, "Gunner AA");
+        W_LanguageRegistry.addNameForObject(item, "ja_JP", "対弾薬迎撃 射撃手");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手（防空拦截）");
     }
 
     public void registerEntity() {
