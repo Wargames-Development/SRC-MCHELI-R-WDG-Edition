@@ -5,6 +5,7 @@ import mcheli.mob.MCH_EntityGunner;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.wrapper.W_McClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 
@@ -422,6 +423,12 @@ public class MCH_WeaponSet {
 
                         prm.result = true;
                     } else {
+                        if (prm.user instanceof EntityPlayer) {
+                            this.lastUsedCount[this.currentWeaponIndex] = crtWpn.interval > 0 ? crtWpn.interval : -crtWpn.interval;
+                            if (crtWpn.isCooldownCountReloadTime() && crtWpn.getReloadCount() - 10 > this.lastUsedCount[this.currentWeaponIndex]) {
+                                this.lastUsedCount[this.currentWeaponIndex] = crtWpn.getReloadCount() - 10;
+                            }
+                        }
                         this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
                         this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
                         this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
