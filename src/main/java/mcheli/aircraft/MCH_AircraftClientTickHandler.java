@@ -1,6 +1,7 @@
 package mcheli.aircraft;
 
 import mcheli.*;
+import mcheli.gui.MCH_GuiGPSInput;
 import mcheli.network.packets.PacketUseWeapon;
 import mcheli.wrapper.W_Network;
 import mcheli.wrapper.W_PacketBase;
@@ -47,6 +48,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
      */
     public MCH_Key KeyECMJammer;
     public MCH_Key KeyAirburstDistReset;
+    public MCH_Key KeyOpenGPSPanel;
     protected boolean isRiding = false;
     protected boolean isBeforeRiding = false;
 
@@ -81,6 +83,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         this.KeyAPS = new MCH_Key(MCH_Config.KeyAPS.prmInt);
         this.KeyECMJammer = new MCH_Key(MCH_Config.KeyECMJammer.prmInt);
         this.KeyAirburstDistReset = new MCH_Key(MCH_Config.KeyAirburstDistReset.prmInt);
+        this.KeyOpenGPSPanel = new MCH_Key(MCH_Config.KeyOpenGPSPanel.prmInt);
     }
 
     protected void commonPlayerControlInGUI(EntityPlayer player, MCH_EntityAircraft ac, boolean isPilot, MCH_PacketPlayerControlBase pc) {
@@ -258,6 +261,9 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
         }
         if (!ac.isDestroyed() && !ac.isPilotReloading()) {
+            if (this.KeyOpenGPSPanel.isKeyDown()) {
+                this.mc.displayGuiScreen(new MCH_GuiGPSInput(player));
+            }
 
             if (this.KeyCurrentWeaponLock.isKeyPress()) {
                 ac.currentWeaponLock(player);

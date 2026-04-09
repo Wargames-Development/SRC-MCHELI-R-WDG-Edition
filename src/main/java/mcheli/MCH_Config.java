@@ -68,6 +68,7 @@ public class MCH_Config {
     public static MCH_ConfigPrm KeyAPS;
     public static MCH_ConfigPrm KeyECMJammer;
     public static MCH_ConfigPrm KeyAirburstDistReset;
+    public static MCH_ConfigPrm KeyOpenGPSPanel;
     public static List DamageVs;
     public static List IgnoreBulletHitList;
     public static MCH_ConfigPrm IgnoreBulletHitItem;
@@ -241,6 +242,7 @@ public class MCH_Config {
         KeyAPS = new MCH_ConfigPrm("KeyAPS", 47);
         KeyECMJammer = new MCH_ConfigPrm("KeyECMJammer", 47);
         KeyAirburstDistReset = new MCH_ConfigPrm("KeyAirburstDistReset", -99);
+        KeyOpenGPSPanel = new MCH_ConfigPrm("KeyOpenGPSPanel", 37);
         KeyExtra = new MCH_ConfigPrm("KeyExtra", 33);
         KeyCameraDistUp = new MCH_ConfigPrm("KeyCameraDistanceUp", 201);
         KeyCameraDistDown = new MCH_ConfigPrm("KeyCameraDistanceDown", 209);
@@ -251,7 +253,7 @@ public class MCH_Config {
         KeyDownFromRack = new MCH_ConfigPrm("KeyDownFromRack", 22);
         KeyScoreboard = new MCH_ConfigPrm("KeyScoreboard", 38);
         KeyMultiplayManager = new MCH_ConfigPrm("KeyMultiplayManager", 50);
-        KeyConfig = new MCH_ConfigPrm[]{KeyUp, KeyDown, KeyRight, KeyLeft, KeySwitchMode, KeySwitchHovering, KeySwitchWeapon1, KeySwitchWeapon2, KeySwWeaponMode, KeyZoom, KeyCameraMode, KeyUnmount, KeyFlare, KeyExtra, KeyCameraDistUp, KeyCameraDistDown, KeyFreeLook, KeyGUI, KeyGearUpDown, KeyPutToRack, KeyDownFromRack, KeyScoreboard, KeyMultiplayManager, KeyChaff, KeyMaintenance, KeyAPS, KeyECMJammer, KeyAirburstDistReset};
+        KeyConfig = new MCH_ConfigPrm[]{KeyUp, KeyDown, KeyRight, KeyLeft, KeySwitchMode, KeySwitchHovering, KeySwitchWeapon1, KeySwitchWeapon2, KeySwWeaponMode, KeyZoom, KeyCameraMode, KeyUnmount, KeyFlare, KeyExtra, KeyCameraDistUp, KeyCameraDistDown, KeyFreeLook, KeyGUI, KeyGearUpDown, KeyPutToRack, KeyDownFromRack, KeyScoreboard, KeyMultiplayManager, KeyChaff, KeyMaintenance, KeyAPS, KeyECMJammer, KeyAirburstDistReset, KeyOpenGPSPanel};
         DamageVs = new ArrayList();
         CommandPermission = new ArrayList();
         CommandPermissionList = new ArrayList();

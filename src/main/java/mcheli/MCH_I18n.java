@@ -178,12 +178,18 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.key.ecm_jammer", "zh_CN", "电子战干扰系统");
         addTranslation("gui.mcheli.key.reset_airburst_dist", "en_US", "Reset Airburst Dist");
         addTranslation("gui.mcheli.key.reset_airburst_dist", "zh_CN", "重置空爆距离");
+        addTranslation("gui.mcheli.key.open_gps_panel", "en_US", "Open GPS Panel");
+        addTranslation("gui.mcheli.key.open_gps_panel", "zh_CN", "打开GPS坐标面板");
         addTranslation("gui.mcheli.key.key_reset", "en_US", "Reset");
         addTranslation("gui.mcheli.key.key_reset", "zh_CN", "重置按键");
         addTranslation("gui.mcheli.key.key_on", "en_US", "ON");
         addTranslation("gui.mcheli.key.key_on", "zh_CN", "开启");
         addTranslation("gui.mcheli.key.key_off", "en_US", "OFF");
         addTranslation("gui.mcheli.key.key_off", "zh_CN", "关闭");
+        addTranslation("gui.mcheli.gps_input.title", "en_US", "Set GPS Coordinate");
+        addTranslation("gui.mcheli.gps_input.title", "zh_CN", "设置GPS坐标");
+        addTranslation("gui.mcheli.gps_input.invalid", "en_US", "Invalid coordinate input");
+        addTranslation("gui.mcheli.gps_input.invalid", "zh_CN", "坐标输入无效");
 
         addTranslation("aircraft.info.hold_shift", "en_US", "Hold \u00a7b\u00a7o%s\u00a7r\u00a77 to see more data");
         addTranslation("aircraft.info.hold_shift", "zh_CN", "按住 \u00a7b\u00a7o%s\u00a7r\u00a77 查看更多数据");
