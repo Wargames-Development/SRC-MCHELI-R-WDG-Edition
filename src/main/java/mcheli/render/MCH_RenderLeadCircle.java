@@ -126,7 +126,7 @@ public class MCH_RenderLeadCircle {
             return null;
         }
         MCH_EntityInfo locked = MCH_EntityInfoClientTracker.getEntityInfo(fireControlLockedTargetId);
-        if (locked == null || !isVehicle(locked.entityClassName)) {
+        if (locked == null || !isLockableTarget(locked.entityClassName)) {
             fireControlLockedTargetId = -1;
             return null;
         }
@@ -139,7 +139,7 @@ public class MCH_RenderLeadCircle {
         double bestDistSq = Double.MAX_VALUE;
         double maxRangeSq = FIRE_CONTROL_MAX_RANGE * FIRE_CONTROL_MAX_RANGE;
         for (MCH_EntityInfo entity : all) {
-            if (!isVehicle(entity.entityClassName)) {
+            if (!isLockableTarget(entity.entityClassName)) {
                 continue;
             }
             double dx = entity.posX - ac.posX;
@@ -161,11 +161,16 @@ public class MCH_RenderLeadCircle {
         return best;
     }
 
-    private static boolean isVehicle(String className) {
+    private static boolean isLockableTarget(String className) {
         return className != null && (className.contains("MCH_EntityHeli")
             || className.contains("MCP_EntityPlane")
             || className.contains("MCH_EntityTank")
-            || className.contains("MCH_EntityVehicle"));
+            || className.contains("MCH_EntityVehicle")
+            || className.contains("MCH_EntityASMissile")
+            || className.contains("MCH_EntityATMissile")
+            || className.contains("MCH_EntityRocket")
+            || className.contains("MCH_EntityBomb")
+            || className.contains("MCH_EntityTvMissile"));
     }
 
     private static double calculateAngle(EntityPlayer viewer, double x, double y, double z) {

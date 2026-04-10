@@ -333,6 +333,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int spawnBulletPerNum = 1;
     public boolean spawnBulletInheritSpeed;
     public boolean destructAfterSpawnBullet;
+    public boolean ahead;
+    public int aheadSolveIntervalTick = 2;
 
     /**
      * 子弹伤害衰减
@@ -411,6 +413,16 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 近炸高度
      */
     public int proximityFuseHeight = 20;
+    private boolean hasProximityFuseDistSet = false;
+    private boolean hasProximityFuseTickSet = false;
+    private boolean hasProximityFuseHeightSet = false;
+    private boolean hasBombletDiffSet = false;
+    private boolean hasSpawnBulletMaxNumSet = false;
+    private boolean hasSpawnBulletIntervalTickSet = false;
+    private boolean hasSpawnBulletPerNumSet = false;
+    private boolean hasSpawnBulletInheritSpeedSet = false;
+    private boolean hasDestructAfterSpawnBulletSet = false;
+    private boolean hasAheadSolveIntervalTickSet = false;
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -527,6 +539,48 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
 
         if (this.destruct) {
             this.delay = 1000000;
+        }
+
+        if (this.ahead && this.spawnBulletInAir) {
+            this.ahead = false;
+        } else if (this.ahead) {
+            if (!this.hasProximityFuseDistSet) {
+                this.proximityFuseDist = 15.0F;
+            }
+            if (!this.hasProximityFuseTickSet) {
+                this.proximityFuseTick = 5;
+            }
+            if (!this.hasProximityFuseHeightSet) {
+                this.proximityFuseHeight = 30;
+            }
+            if (!this.hasDestructAfterSpawnBulletSet) {
+                this.destructAfterSpawnBullet = true;
+            }
+            if (!this.hasBombletDiffSet) {
+                this.bombletDiff = 1.0F;
+            }
+            if (!this.hasSpawnBulletMaxNumSet) {
+                this.spawnBulletMaxNum = 1;
+            }
+            if (!this.hasSpawnBulletIntervalTickSet) {
+                this.spawnBulletIntervalTick = 1;
+            }
+            if (!this.hasSpawnBulletPerNumSet) {
+                this.spawnBulletPerNum = 10;
+            }
+            if (!this.hasSpawnBulletInheritSpeedSet) {
+                this.spawnBulletInheritSpeed = true;
+            }
+            if (!this.hasAheadSolveIntervalTickSet) {
+                this.aheadSolveIntervalTick = 2;
+            }
+        }
+
+        if (this.spawnBulletIntervalTick < 1) {
+            this.spawnBulletIntervalTick = 1;
+        }
+        if (this.aheadSolveIntervalTick < 1) {
+            this.aheadSolveIntervalTick = 1;
         }
 
         if (!this.type.equalsIgnoreCase("rocket")) {
@@ -746,14 +800,24 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.spawnBulletInAir = this.toBool(data);
             } else if (item.equalsIgnoreCase("SpawnBulletMaxNum")) {
                 this.spawnBulletMaxNum = this.toInt(data);
+                this.hasSpawnBulletMaxNumSet = true;
             } else if (item.equalsIgnoreCase("SpawnBulletIntervalTick")) {
                 this.spawnBulletIntervalTick = this.toInt(data);
+                this.hasSpawnBulletIntervalTickSet = true;
             } else if (item.equalsIgnoreCase("SpawnBulletPerNum")) {
                 this.spawnBulletPerNum = this.toInt(data);
+                this.hasSpawnBulletPerNumSet = true;
             } else if (item.equalsIgnoreCase("SpawnBulletInheritSpeed")) {
                 this.spawnBulletInheritSpeed = this.toBool(data);
+                this.hasSpawnBulletInheritSpeedSet = true;
             } else if (item.equalsIgnoreCase("DestructAfterSpawnBullet")) {
                 this.destructAfterSpawnBullet = this.toBool(data);
+                this.hasDestructAfterSpawnBulletSet = true;
+            } else if (item.equalsIgnoreCase("AHEAD")) {
+                this.ahead = this.toBool(data);
+            } else if (item.equalsIgnoreCase("AheadSolveIntervalTick")) {
+                this.aheadSolveIntervalTick = this.toInt(data);
+                this.hasAheadSolveIntervalTickSet = true;
             } else if (item.equalsIgnoreCase("AddPotionEffect")) {
                 String[] split = data.split("\\s*,\\s*");
                 int potionID = Integer.parseInt(split[0]);
@@ -798,10 +862,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.nameOnRWR = "NULL".equals(name) ? "" : name;
             } else if (item.equalsIgnoreCase("ProximityFuseTick")) {
                 this.proximityFuseTick = this.toInt(data);
+                this.hasProximityFuseTickSet = true;
             } else if (item.equalsIgnoreCase("ProximityFuseDamage")) {
                 this.proximityFuseDamage = this.toFloat(data);
             } else if (item.equalsIgnoreCase("ProximityFuseHeight")) {
                 this.proximityFuseHeight = this.toInt(data);
+                this.hasProximityFuseHeightSet = true;
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {
@@ -867,6 +933,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     this.ridableOnly = this.toBool(data);
                 } else if (item.compareTo("proximityfusedist") == 0) {
                     this.proximityFuseDist = this.toFloat(data, 0.0F, 2000.0F);
+                    this.hasProximityFuseDistSet = true;
                 } else if (item.equalsIgnoreCase("RigidityTime")) {
                     this.rigidityTime = this.toInt(data, 0, 1000000);
                 } else if (item.compareTo("accuracy") == 0) {
@@ -877,6 +944,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     this.bombletSTime = this.toInt(data, 0, 1000);
                 } else if (item.equalsIgnoreCase("BombletDiff")) {
                     this.bombletDiff = this.toFloat(data, 0.0F, 1000.0F);
+                    this.hasBombletDiffSet = true;
                 } else if (item.equalsIgnoreCase("RecoilBufCount")) {
                     s = this.splitParam(data);
                     if (s.length >= 1) {

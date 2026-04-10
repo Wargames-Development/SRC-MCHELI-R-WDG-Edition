@@ -86,6 +86,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private List<ChunkCoordIntPair> loadedChunks = new ArrayList<>();
     private double airburstTravelled = 0.0D;
     private boolean airburstTriggered = false;
+    private boolean aheadTriggered = false;
     public String nameOnRWR = "MSL";
 
     public MCH_EntityBaseBullet(World par1World) {
@@ -260,6 +261,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (!super.worldObj.isRemote) {
             this.isBomblet = 0;
         }
+        this.aheadTriggered = false;
 
         if (this.getInfo().bomblet > 0) {
             this.sprinkleTime = this.getInfo().bombletSTime;
@@ -818,6 +820,14 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             double ez = this.posZ + dz * t;
 
             if (!this.worldObj.isRemote) {
+                if (this.getInfo().ahead) {
+                    if (this.getInfo().proximityFuseTick < 0 || this.ticksExisted > this.getInfo().proximityFuseTick) {
+                        this.aheadTriggered = true;
+                    }
+                    this.airburstTriggered = true;
+                    this.airburstTravelled = 0.0D;
+                    return;
+                }
                 if (this.getInfo().explosion > 0) {
                     this.newExplosion(ex, ey, ez, getInfo().explosionAirburst,
                         (float) this.getInfo().explosionBlock, false);
@@ -1689,7 +1699,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public void onUpdateSpreader() {
         if (!super.worldObj.isRemote) {
-            if (this.getInfo().spawnBulletInAir && this.spawnedBulletNum < getInfo().spawnBulletMaxNum && !super.isDead) {
+            boolean canSpawnBulletInAir = this.getInfo().spawnBulletInAir;
+            boolean canSpawnAhead = this.getInfo().ahead && this.aheadTriggered;
+            if ((canSpawnBulletInAir || canSpawnAhead) && this.spawnedBulletNum < getInfo().spawnBulletMaxNum && !super.isDead) {
                 if (this.ticksExisted > 5 && this.ticksExisted % getInfo().spawnBulletIntervalTick == 0) {
                     ++this.spawnedBulletNum;
                     for (int i = 0; i < this.getInfo().spawnBulletPerNum; ++i) {

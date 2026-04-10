@@ -2,13 +2,18 @@ package mcheli.aircraft;
 
 import mcheli.*;
 import mcheli.gui.MCH_GuiGPSInput;
+import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketUseWeapon;
 import mcheli.render.MCH_RenderLeadCircle;
+import mcheli.weapon.MCH_WeaponBase;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_Network;
 import mcheli.wrapper.W_PacketBase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.Vec3;
 import org.lwjgl.input.Keyboard;
 
 public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandlerBase {
@@ -283,6 +288,8 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 ac.currentWeaponUnlock(player);
             }
 
+            updateAheadPreSolve(player, ac);
+
             if (this.KeySwitchWeapon1.isKeyDown() || this.KeySwitchWeapon2.isKeyDown() || getMouseWheel() != 0) {
                 if (getMouseWheel() > 0) {
                     pc.switchWeapon = (byte) ac.getNextWeaponID((Entity) player, -1);
@@ -308,5 +315,105 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
 
         }
         return (send || player.ticksExisted % 100 == 0);
+    }
+
+    private void updateAheadPreSolve(EntityPlayer player, MCH_EntityAircraft ac) {
+        if (ac.getSeatIdByEntity(player) > 1) {
+            return;
+        }
+        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+        if (ws == null || ws.getInfo() == null || ws.getCurrentWeapon() == null) {
+            return;
+        }
+        MCH_WeaponInfo info = ws.getInfo();
+        MCH_WeaponBase wb = ws.getCurrentWeapon();
+        if (!info.ahead) {
+            return;
+        }
+        if (info.spawnBulletInAir) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        int lockTargetId = MCH_RenderLeadCircle.getFireControlLockedTargetId();
+        if (lockTargetId <= 0) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        int interval = Math.max(1, info.aheadSolveIntervalTick);
+        if (player.ticksExisted % interval != 0) {
+            return;
+        }
+        MCH_EntityInfo target = MCH_EntityInfoClientTracker.getEntityInfo(lockTargetId);
+        if (target == null) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        Vec3 shotPos = wb.getShotPos(ac);
+        double sx = ac.posX + shotPos.xCoord;
+        double sy = ac.posY + shotPos.yCoord;
+        double sz = ac.posZ + shotPos.zCoord;
+        double tx = target.posX;
+        double ty = target.posY + 1.0D;
+        double tz = target.posZ;
+        double tvx = target.posX - target.lastTickPosX;
+        double tvy = target.posY - target.lastTickPosY;
+        double tvz = target.posZ - target.lastTickPosZ;
+        double speed = wb.acceleration;
+        if (info.speedDependsAircraft) {
+            speed += Math.sqrt(ac.motionX * ac.motionX + ac.motionY * ac.motionY + ac.motionZ * ac.motionZ);
+        }
+        if (speed <= 1.0E-6D) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        double rx = tx - sx;
+        double ry = ty - sy;
+        double rz = tz - sz;
+        double a = tvx * tvx + tvy * tvy + tvz * tvz - speed * speed;
+        double b = 2.0D * (rx * tvx + ry * tvy + rz * tvz);
+        double c = rx * rx + ry * ry + rz * rz;
+        double t = -1.0D;
+        if (Math.abs(a) < 1.0E-6D) {
+            if (Math.abs(b) > 1.0E-6D) {
+                t = -c / b;
+            }
+        } else {
+            double d = b * b - 4.0D * a * c;
+            if (d < 0.0D) {
+                syncAirburstDistance(ac, wb, 0);
+                return;
+            }
+            double sqrtD = Math.sqrt(d);
+            double t1 = (-b - sqrtD) / (2.0D * a);
+            double t2 = (-b + sqrtD) / (2.0D * a);
+            if (t1 > 0.0D && t2 > 0.0D) {
+                t = Math.min(t1, t2);
+            } else if (t1 > 0.0D) {
+                t = t1;
+            } else if (t2 > 0.0D) {
+                t = t2;
+            }
+        }
+        if (t <= 0.0D || t > 200.0D) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        double px = tx + tvx * t;
+        double py = ty + tvy * t;
+        double pz = tz + tvz * t;
+        double impactDist = Math.sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy) + (pz - sz) * (pz - sz));
+        int triggerDist = (int) Math.floor(impactDist - info.proximityFuseDist);
+        if (triggerDist <= 5 || triggerDist >= 300) {
+            triggerDist = 0;
+        }
+        syncAirburstDistance(ac, wb, triggerDist);
+    }
+
+    private void syncAirburstDistance(MCH_EntityAircraft ac, MCH_WeaponBase wb, int dist) {
+        if (wb.airburstDist == dist) {
+            return;
+        }
+        wb.setAirburstDist(dist);
+        MCH_MOD.getPacketHandler().sendToServer(new PacketAirburstDistReset(ac.getEntityId(), dist));
     }
 }
