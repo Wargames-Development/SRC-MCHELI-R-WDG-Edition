@@ -133,6 +133,8 @@ public class MCH_RenderBVRLockBox {
         double fovRad = Math.toRadians(fovDeg);
         float rollDeg = getViewRollDeg(mc, ac, partialTicks);
         List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
+        currentLockedEntities.clear();
+        int fireControlLockedId = MCH_RenderLeadCircle.getFireControlLockedTargetId();
         for (MCH_EntityInfo entity : entities) {
             if (!canRenderEntity(entity, player, wi)) continue;
             if(ac.jammingTick > 0) {
@@ -167,12 +169,13 @@ public class MCH_RenderBVRLockBox {
             String text;
             int color;
             if("".equals(rwrResult.name)) continue;
+            boolean isFireControlLocked = entity.entityId == fireControlLockedId;
             if (isMSL) {
                 text = String.format("[%s %.1fm]", rwrResult.name, dist);
                 color = 0xFF0000;
             } else {
                 text = String.format("[%s %.1fm]", rwrResult.name, dist);
-                color = lock ? 0xFF0000 : 0x00FF00;
+                color = (lock || isFireControlLocked) ? 0xFF0000 : 0x00FF00;
             }
             boolean drawText = isMSL || (alpha >= 0.6f);
             GL11.glPushMatrix();
@@ -187,7 +190,7 @@ public class MCH_RenderBVRLockBox {
                 GL11.glEnable(GL11.GL_BLEND);
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                 GL11.glDisable(GL11.GL_LIGHTING);
-                if (isMSL || lock) GL11.glColor4f(1.0F, 0F, 0F, alpha);
+                if (isMSL || lock || isFireControlLocked) GL11.glColor4f(1.0F, 0F, 0F, alpha);
                 else GL11.glColor4f(0F, 1.0F, 0F, alpha);
                 Minecraft.getMinecraft().getTextureManager().bindTexture(isMSL ? MSL : FRAME);
                 Tessellator tess = Tessellator.instance;
@@ -210,9 +213,6 @@ public class MCH_RenderBVRLockBox {
                 GL11.glColor4f(1F, 1F, 1F, 1F);
             }
             GL11.glPopMatrix();
-            if (!lock) {
-                currentLockedEntities.clear();
-            }
         }
     }
 

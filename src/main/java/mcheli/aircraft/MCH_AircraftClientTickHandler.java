@@ -3,6 +3,7 @@ package mcheli.aircraft;
 import mcheli.*;
 import mcheli.gui.MCH_GuiGPSInput;
 import mcheli.network.packets.PacketUseWeapon;
+import mcheli.render.MCH_RenderLeadCircle;
 import mcheli.wrapper.W_Network;
 import mcheli.wrapper.W_PacketBase;
 import net.minecraft.client.Minecraft;
@@ -49,6 +50,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
     public MCH_Key KeyECMJammer;
     public MCH_Key KeyAirburstDistReset;
     public MCH_Key KeyOpenGPSPanel;
+    public MCH_Key KeyFireControlLock;
     protected boolean isRiding = false;
     protected boolean isBeforeRiding = false;
 
@@ -84,6 +86,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         this.KeyECMJammer = new MCH_Key(MCH_Config.KeyECMJammer.prmInt);
         this.KeyAirburstDistReset = new MCH_Key(MCH_Config.KeyAirburstDistReset.prmInt);
         this.KeyOpenGPSPanel = new MCH_Key(MCH_Config.KeyOpenGPSPanel.prmInt);
+        this.KeyFireControlLock = new MCH_Key(MCH_Config.KeyFireControlLock.prmInt);
     }
 
     protected void commonPlayerControlInGUI(EntityPlayer player, MCH_EntityAircraft ac, boolean isPilot, MCH_PacketPlayerControlBase pc) {
@@ -261,6 +264,14 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
         }
         if (!ac.isDestroyed() && !ac.isPilotReloading()) {
+            if (ac.getSeatIdByEntity(player) <= 1) {
+                int fireControlToggle = MCH_RenderLeadCircle.handleFireControlLockKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                if (fireControlToggle == 1 || fireControlToggle == -1) {
+                    playSoundOK();
+                } else if (fireControlToggle == 2) {
+                    playSoundNG();
+                }
+            }
             if (this.KeyOpenGPSPanel.isKeyDown()) {
                 this.mc.displayGuiScreen(new MCH_GuiGPSInput(player));
             }
