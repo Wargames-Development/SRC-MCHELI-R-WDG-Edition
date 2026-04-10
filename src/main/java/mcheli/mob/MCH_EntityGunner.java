@@ -8,8 +8,10 @@ import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.aircraft.MCH_SeatInfo;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.weapon.*;
 import mcheli.wrapper.W_WorldFunc;
+import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.IMob;
@@ -42,6 +44,26 @@ public class MCH_EntityGunner extends EntityLivingBase {
     public boolean waitCooldown = false;
     public int idleCount = 0;
     public int idleRotation = 0;
+    private int lastTargetUpdateTick = -1;
+    private int wanderTurnTicks = 0;
+    private int wanderTurnDir = 0;
+    private int combatMoveTicks = 0;
+    private float combatYawBias = 0.0F;
+    private int combatStrafeDir = 1;
+    private int throttlePulseTicks = 0;
+    private boolean throttlePulseOn = true;
+    private int leftTurnAccum = 0;
+    private int rightTurnAccum = 0;
+    private int turnSampleTicks = 0;
+    private int turnFeedbackTicks = 0;
+    private int turnFeedbackDir = 0;
+    private int prevRideEntityId = -1;
+    private int noMoveTicks = 0;
+    private int noMoveTurnThreshold = 340;
+    private int noMoveTurnCooldownTicks = 0;
+    private int obstacleTurnDir = 0;
+    private float largeTurnRemain = 0.0F;
+    private int largeTurnDir = 0;
 
     public MCH_EntityGunner(World world) {
         super(world);
@@ -132,10 +154,51 @@ public class MCH_EntityGunner extends EntityLivingBase {
         if (!this.worldObj.isRemote && !this.isDead) {
             if (this.ridingEntity != null && this.ridingEntity.isDead)
                 this.ridingEntity = null;
+            int rideId = this.ridingEntity != null ? this.ridingEntity.getEntityId() : -1;
+            if (rideId != this.prevRideEntityId) {
+                this.prevRideEntityId = rideId;
+                this.switchTargetCount = 0;
+                this.targetEntity = null;
+                this.turnSampleTicks = 0;
+                this.leftTurnAccum = 0;
+                this.rightTurnAccum = 0;
+                this.turnFeedbackTicks = 0;
+                this.turnFeedbackDir = 0;
+                this.noMoveTicks = 0;
+                this.noMoveTurnThreshold = 300 + this.rand.nextInt(101);
+                this.noMoveTurnCooldownTicks = 0;
+                this.obstacleTurnDir = 0;
+                this.largeTurnRemain = 0.0F;
+                this.largeTurnDir = 0;
+                this.lastTargetUpdateTick = -1;
+            }
+            MCH_EntityAircraft ac = null;
             if (this.ridingEntity instanceof MCH_EntityAircraft) {
-                shotTarget((MCH_EntityAircraft)this.ridingEntity);
+                ac = (MCH_EntityAircraft)this.ridingEntity;
             } else if (this.ridingEntity instanceof MCH_EntitySeat && ((MCH_EntitySeat)this.ridingEntity).getParent() != null) {
-                shotTarget(((MCH_EntitySeat)this.ridingEntity).getParent());
+                ac = ((MCH_EntitySeat)this.ridingEntity).getParent();
+            }
+            if (ac != null) {
+                if (!ac.getGunnerStatus()) {
+                    ac.setGunnerStatus(true);
+                }
+                if (this.targetEntity != null && (this.targetEntity.isDead || this.getDistanceSqToEntity(this.targetEntity) > 160000.0D)) {
+                    this.targetEntity = null;
+                    this.switchTargetCount = 0;
+                    this.lastTargetUpdateTick = -1;
+                }
+                if (this.targetEntity == null && this.switchTargetCount > 0) {
+                    this.switchTargetCount = 0;
+                }
+                if (ac instanceof MCH_EntityTank && ac.getGunnerStatus()) {
+                    MCH_WeaponSet ws = ac.getCurrentWeapon((Entity)this);
+                    if (ws != null && ws.getInfo() != null && ws.getCurrentWeapon() != null) {
+                        Vec3 pos = getGunnerWeaponPos(ac, ws);
+                        updateTargetForWeapon(ac, ws, pos);
+                    }
+                    updateTankDrive((MCH_EntityTank)ac);
+                }
+                shotTarget(ac);
             } else if (this.despawnCount < 20) {
                 this.despawnCount++;
             } else if (this.ridingEntity == null || this.ticksExisted > 100) {
@@ -182,69 +245,13 @@ public class MCH_EntityGunner extends EntityLivingBase {
         MCH_WeaponSet ws = ac.getCurrentWeapon((Entity)this);
         if (ws == null || ws.getInfo() == null || ws.getCurrentWeapon() == null)
             return;
+        applyInfinityAmmoForGunner(ac, ws);
         MCH_WeaponBase cw = ws.getCurrentWeapon();
         if (this.targetEntity != null && (this.targetEntity.isDead || (this.targetEntity instanceof EntityLivingBase && ((EntityLivingBase)this.targetEntity).getHealth() <= 0.0F)))
             if (this.switchTargetCount > 20)
                 this.switchTargetCount = 20;
         Vec3 pos = getGunnerWeaponPos(ac, ws);
-        if ((this.targetEntity == null && this.switchTargetCount <= 0) || this.switchTargetCount <= 0) {
-            List<? extends Entity> list;
-            this.switchTargetCount = 20;
-            Entity nextTarget = null;
-            if (this.targetType == TARGET_MONSTER) {
-                int rh = MCH_Config.RangeOfGunner_VsMonster_Horizontal.prmInt;
-                int rv = MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt;
-                list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
-            } else if (this.targetType == TARGET_PLAYER) {
-                int rh = MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt;
-                int rv = MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt;
-                list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
-            } else {
-                list = this.worldObj.getEntitiesWithinAABBExcludingEntity((Entity)this, this.boundingBox.expand(150.0D, 150.0D, 150.0D));
-            }
-            for (int i = 0; i < list.size(); i++) {
-                Entity candidate = list.get(i);
-                if (this.targetType == TARGET_AA_AMMO) {
-                    if (!isAATarget(candidate))
-                        continue;
-                    if (this.getDistanceSqToEntity(candidate) > 22500.0D)
-                        continue;
-                    if (!canTrackTargetAltitude(candidate))
-                        continue;
-                    if (!checkPitch(candidate, ac, pos))
-                        continue;
-                    if ((nextTarget == null || this.getDistanceSqToEntity(candidate) < this.getDistanceSqToEntity(nextTarget)) && this.canEntityBeSeen(candidate))
-                        if (isInAttackable(candidate, ac, ws, pos)) {
-                            nextTarget = candidate;
-                            this.switchTargetCount = 60;
-                        }
-                    continue;
-                }
-                if (!(candidate instanceof EntityLivingBase))
-                    continue;
-                EntityLivingBase entity = (EntityLivingBase)candidate;
-                if (this.targetType == TARGET_MONSTER) {
-                    if (!(entity instanceof IMob)) {
-                        continue;
-                    }
-                } else if (!(entity instanceof EntityPlayer)) {
-                    continue;
-                }
-                if (canAttackEntity(entity, ac, ws))
-                    if (checkPitch(entity, ac, pos))
-                        if ((nextTarget == null || getDistanceToEntity((Entity)entity) < getDistanceToEntity((Entity)nextTarget)) && canEntityBeSeen((Entity)entity))
-                            if (isInAttackable(entity, ac, ws, pos)) {
-                                nextTarget = entity;
-                                this.switchTargetCount = 60;
-                            }
-            }
-            if (nextTarget != null && this.targetEntity != nextTarget) {
-                this.targetPrevPosX = nextTarget.posX;
-                this.targetPrevPosY = nextTarget.posY;
-                this.targetPrevPosZ = nextTarget.posZ;
-            }
-            this.targetEntity = nextTarget;
-        }
+        updateTargetForWeapon(ac, ws, pos);
         if (this.targetEntity != null) {
             float rotSpeed = 10.0F;
             if (ac.isPilot((Entity)this))
@@ -361,6 +368,311 @@ public class MCH_EntityGunner extends EntityLivingBase {
 
     private boolean canTrackTargetAltitude(Entity entity) {
         return getHeightAboveGround(entity) > 30.0D;
+    }
+
+    private void updateTargetForWeapon(MCH_EntityAircraft ac, MCH_WeaponSet ws, Vec3 pos) {
+        if (this.lastTargetUpdateTick == this.ticksExisted)
+            return;
+        this.lastTargetUpdateTick = this.ticksExisted;
+        if (!((this.targetEntity == null && this.switchTargetCount <= 0) || this.switchTargetCount <= 0))
+            return;
+        List<? extends Entity> list;
+        this.switchTargetCount = 5;
+        Entity nextTarget = null;
+        if (this.targetType == TARGET_MONSTER) {
+            int rh = MCH_Config.RangeOfGunner_VsMonster_Horizontal.prmInt;
+            int rv = MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt;
+            list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
+        } else if (this.targetType == TARGET_PLAYER) {
+            int rh = MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt;
+            int rv = MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt;
+            list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
+        } else {
+            list = this.worldObj.getEntitiesWithinAABBExcludingEntity((Entity)this, this.boundingBox.expand(150.0D, 150.0D, 150.0D));
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Entity candidate = list.get(i);
+            if (this.targetType == TARGET_AA_AMMO) {
+                if (!isAATarget(candidate))
+                    continue;
+                if (this.getDistanceSqToEntity(candidate) > 22500.0D)
+                    continue;
+                if (!canTrackTargetAltitude(candidate))
+                    continue;
+                if (!checkPitch(candidate, ac, pos))
+                    continue;
+                if ((nextTarget == null || this.getDistanceSqToEntity(candidate) < this.getDistanceSqToEntity(nextTarget)) && this.canEntityBeSeen(candidate))
+                    if (isInAttackable(candidate, ac, ws, pos)) {
+                        nextTarget = candidate;
+                        this.switchTargetCount = 60;
+                    }
+                continue;
+            }
+            if (!(candidate instanceof EntityLivingBase))
+                continue;
+            EntityLivingBase entity = (EntityLivingBase)candidate;
+            if (this.targetType == TARGET_MONSTER) {
+                if (!(entity instanceof IMob))
+                    continue;
+            } else if (!(entity instanceof EntityPlayer)) {
+                continue;
+            }
+            if (canAttackEntity(entity, ac, ws))
+                if (checkPitch(entity, ac, pos))
+                    if ((nextTarget == null || getDistanceToEntity((Entity)entity) < getDistanceToEntity((Entity)nextTarget)) && canEntityBeSeen((Entity)entity))
+                        if (isInAttackable(entity, ac, ws, pos)) {
+                            nextTarget = entity;
+                            this.switchTargetCount = 60;
+                        }
+        }
+        if (nextTarget != null && this.targetEntity != nextTarget) {
+            this.targetPrevPosX = nextTarget.posX;
+            this.targetPrevPosY = nextTarget.posY;
+            this.targetPrevPosZ = nextTarget.posZ;
+        }
+        this.targetEntity = nextTarget;
+    }
+
+    private void updateTankDrive(MCH_EntityTank tank) {
+        if (!tank.isPilot((Entity)this))
+            return;
+        boolean throttleUp = false;
+        boolean throttleDown = false;
+        boolean moveLeft = false;
+        boolean moveRight = false;
+        boolean brake = false;
+        double mdx = tank.posX - tank.prevPosX;
+        double mdz = tank.posZ - tank.prevPosZ;
+        double moveDistSq = mdx * mdx + mdz * mdz;
+        if (this.noMoveTurnCooldownTicks > 0)
+            this.noMoveTurnCooldownTicks--;
+        if (moveDistSq > 0.0009D) {
+            this.noMoveTicks++;
+        }
+        if (tank.isDestroyed() || (!tank.canUseFuel() && !tank.isInfinityFuel((Entity)this, true))) {
+            brake = true;
+        } else {
+            Entity target = this.targetEntity;
+            if (target != null && (target.isDead || this.getDistanceSqToEntity(target) > 160000.0D))
+                target = null;
+            if (target != null) {
+                double dx = target.posX - tank.posX;
+                double dz = target.posZ - tank.posZ;
+                double distSq = dx * dx + dz * dz;
+                float targetYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
+                if (this.combatMoveTicks <= 0) {
+                    this.combatMoveTicks = 20 + this.rand.nextInt(60);
+                    this.combatYawBias = (this.rand.nextFloat() - 0.5F) * 44.0F;
+                    this.combatStrafeDir = this.rand.nextBoolean() ? 1 : -1;
+                } else {
+                    this.combatMoveTicks--;
+                }
+                if (this.throttlePulseTicks <= 0) {
+                    this.throttlePulseTicks = 8 + this.rand.nextInt(18);
+                    this.throttlePulseOn = !this.throttlePulseOn;
+                } else {
+                    this.throttlePulseTicks--;
+                }
+                if (distSq < 900.0D) {
+                    float orbit = 26.0F * this.combatStrafeDir;
+                    targetYaw = MathHelper.wrapAngleTo180_float(targetYaw + orbit);
+                } else {
+                    targetYaw = MathHelper.wrapAngleTo180_float(targetYaw + this.combatYawBias);
+                }
+                float yawDiff = MathHelper.wrapAngleTo180_float(targetYaw - tank.getRotYaw());
+                float absYaw = Math.abs(yawDiff);
+                if (yawDiff > 1.0F) {
+                    moveRight = true;
+                } else if (yawDiff < -1.0F) {
+                    moveLeft = true;
+                }
+                applyTurnFeedback();
+                if (this.turnFeedbackTicks > 0) {
+                    if (this.turnFeedbackDir > 0 && this.rand.nextInt(100) < 78) {
+                        moveRight = true;
+                        if (Math.abs(yawDiff) < 5.0F || this.rand.nextInt(100) < 40)
+                            moveLeft = false;
+                    } else if (this.turnFeedbackDir < 0 && this.rand.nextInt(100) < 78) {
+                        moveLeft = true;
+                        if (Math.abs(yawDiff) < 5.0F || this.rand.nextInt(100) < 40)
+                            moveRight = false;
+                    }
+                }
+                if (distSq < 100.0D && absYaw < 28.0F) {
+                    throttleDown = true;
+                } else {
+                    throttleUp = this.throttlePulseOn && tank.getCurrentThrottle() < 0.22D && (distSq > 169.0D || absYaw > 12.0F);
+                }
+                if (moveDistSq < 0.0025D && absYaw > 6.0F) {
+                    float step = Math.max(-3.2F, Math.min(3.2F, yawDiff * 0.28F));
+                    tank.setRotYaw(tank.getRotYaw() + step);
+                }
+                if (distSq < 64.0D && absYaw < 24.0F && tank.getCurrentThrottle() > 0.28D) {
+                    brake = true;
+                }
+            } else {
+                applyTurnFeedback();
+                if (this.wanderTurnTicks <= 0) {
+                    this.wanderTurnTicks = 8 + this.rand.nextInt(28);
+                    int turn = this.rand.nextInt(7) - 3;
+                    this.wanderTurnDir = turn > 0 ? 1 : (turn < 0 ? -1 : 0);
+                } else {
+                    this.wanderTurnTicks--;
+                }
+                throttleUp = tank.getCurrentThrottle() < 0.16D && (this.rand.nextInt(100) < 80);
+                if (this.wanderTurnDir > 0) {
+                    moveRight = true;
+                } else if (this.wanderTurnDir < 0) {
+                    moveLeft = true;
+                }
+                if (this.turnFeedbackTicks > 0) {
+                    if (this.turnFeedbackDir > 0 && this.rand.nextInt(100) < 65) {
+                        moveRight = true;
+                        moveLeft = false;
+                    } else if (this.turnFeedbackDir < 0 && this.rand.nextInt(100) < 65) {
+                        moveLeft = true;
+                        moveRight = false;
+                    }
+                }
+                if (moveDistSq < 0.0016D) {
+                    if (moveRight && !moveLeft) {
+                        tank.setRotYaw(tank.getRotYaw() + 1.8F);
+                    } else if (moveLeft && !moveRight) {
+                        tank.setRotYaw(tank.getRotYaw() - 1.8F);
+                    }
+                }
+                if (!throttleUp && tank.getCurrentThrottle() > 0.3D)
+                    brake = true;
+            }
+        }
+        if (this.noMoveTurnCooldownTicks <= 0 && this.noMoveTicks >= this.noMoveTurnThreshold) {
+            int dir = this.rand.nextBoolean() ? 1 : -1;
+            startLargeTurn(120.0F + this.rand.nextFloat() * 60.0F, dir);
+            this.noMoveTicks = 0;
+            this.noMoveTurnThreshold = 300 + this.rand.nextInt(101);
+            this.noMoveTurnCooldownTicks = 120;
+            this.wanderTurnTicks = 0;
+            this.combatMoveTicks = 0;
+        }
+        boolean blockTooHigh = hasTooHighObstacleAhead(tank);
+        if (blockTooHigh) {
+            if (this.obstacleTurnDir == 0) {
+                this.obstacleTurnDir = this.rand.nextBoolean() ? 1 : -1;
+            }
+            if (this.largeTurnRemain <= 0.0F) {
+                startLargeTurn(120.0F + this.rand.nextFloat() * 60.0F, this.obstacleTurnDir);
+            }
+        } else if (this.largeTurnRemain <= 0.0F) {
+            this.obstacleTurnDir = 0;
+        }
+        if (this.largeTurnRemain > 0.0F && this.largeTurnDir != 0) {
+            float turnStep = getLargeTurnStep(tank);
+            float apply = this.largeTurnRemain < turnStep ? this.largeTurnRemain : turnStep;
+            tank.setRotYaw(MathHelper.wrapAngleTo180_float(tank.getRotYaw() + apply * this.largeTurnDir));
+            this.largeTurnRemain -= apply;
+            if (this.largeTurnRemain <= 0.0F) {
+                this.largeTurnRemain = 0.0F;
+                this.largeTurnDir = 0;
+            }
+            moveLeft = this.largeTurnDir < 0;
+            moveRight = this.largeTurnDir > 0;
+            throttleUp = true;
+            throttleDown = false;
+            brake = false;
+        }
+        if (moveLeft && !moveRight) {
+            this.leftTurnAccum++;
+        } else if (moveRight && !moveLeft) {
+            this.rightTurnAccum++;
+        }
+        this.turnSampleTicks++;
+        if (this.turnSampleTicks >= 90) {
+            int diff = this.leftTurnAccum - this.rightTurnAccum;
+            if (diff > 10) {
+                this.turnFeedbackDir = 1;
+                this.turnFeedbackTicks = 120;
+            } else if (diff < -10) {
+                this.turnFeedbackDir = -1;
+                this.turnFeedbackTicks = 120;
+            } else if (this.turnFeedbackTicks <= 0) {
+                this.turnFeedbackDir = 0;
+            }
+            this.turnSampleTicks = 0;
+            this.leftTurnAccum = 0;
+            this.rightTurnAccum = 0;
+        }
+        if (brake) {
+            throttleUp = false;
+        }
+        tank.throttleUp = throttleUp;
+        tank.throttleDown = throttleDown;
+        tank.moveLeft = moveLeft;
+        tank.moveRight = moveRight;
+        tank.setBrake(brake);
+    }
+
+    private boolean hasTooHighObstacleAhead(MCH_EntityTank tank) {
+        double yawRad = Math.toRadians(tank.getRotYaw());
+        double dirX = -Math.sin(yawRad);
+        double dirZ = Math.cos(yawRad);
+        double sideX = Math.cos(yawRad);
+        double sideZ = Math.sin(yawRad);
+        int baseY = MathHelper.floor_double(tank.boundingBox.minY + 0.01D);
+        int step = Math.max(1, MathHelper.ceiling_float_int(tank.stepHeight + 0.01F));
+        for (double dist = 2.0D; dist <= 5.0D; dist += 1.0D) {
+            for (double side = -0.9D; side <= 0.9D; side += 0.9D) {
+                int x = MathHelper.floor_double(tank.posX + dirX * dist + sideX * side);
+                int z = MathHelper.floor_double(tank.posZ + dirZ * dist + sideZ * side);
+                for (int h = 0; h <= step + 2; h++) {
+                    Block b = W_WorldFunc.getBlock(this.worldObj, x, baseY + h, z);
+                    if (b != null && b.canCollideCheck(0, true) && !this.worldObj.isAirBlock(x, baseY + h, z)) {
+                        return h > step;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private void startLargeTurn(float angle, int dir) {
+        this.largeTurnRemain = Math.max(0.0F, angle);
+        this.largeTurnDir = dir >= 0 ? 1 : -1;
+    }
+
+    private float getLargeTurnStep(MCH_EntityTank tank) {
+        MCH_AircraftInfo info = tank.getAcInfo();
+        if (info == null) {
+            return 2.0F;
+        }
+        float base = Math.max(0.6F, info.mobilityYawOnGround);
+        float pitchFactor = info.onGroundPitchFactor > 0.0F ? info.onGroundPitchFactor : 1.0F;
+        float rollFactor = info.onGroundRollFactor > 0.0F ? info.onGroundRollFactor : 1.0F;
+        float groundFactor = MathHelper.clamp_float((pitchFactor + rollFactor) * 0.5F, 0.3F, 1.5F);
+        float pivotFactor = info.pivotTurnThrottle <= 0.0F ? 1.0F : MathHelper.clamp_float(1.0F - info.pivotTurnThrottle * 0.5F, 0.5F, 1.0F);
+        float throttle = (float)MathHelper.clamp_double(tank.getCurrentThrottle(), 0.0D, 1.0D);
+        float throttleFactor = MathHelper.clamp_float(1.0F - throttle * 0.5F, 0.45F, 1.0F);
+        return MathHelper.clamp_float(base * groundFactor * pivotFactor * throttleFactor, 0.6F, 6.0F);
+    }
+
+    private void applyTurnFeedback() {
+        if (this.turnFeedbackTicks > 0) {
+            this.turnFeedbackTicks--;
+            if (this.turnFeedbackTicks <= 0) {
+                this.turnFeedbackDir = 0;
+            }
+        }
+    }
+
+    private void applyInfinityAmmoForGunner(MCH_EntityAircraft ac, MCH_WeaponSet ws) {
+        if (!ac.isInfinityAmmo((Entity)this))
+            return;
+        int ammoMax = ws.getAmmoNumMax();
+        if (ammoMax <= 0)
+            return;
+        if (ws.getRestAllAmmoNum() < ammoMax)
+            ws.setRestAllAmmoNum(ammoMax);
+        if (ws.getAmmoNum() <= 0 && ws.getRestAllAmmoNum() > 0)
+            ws.reloadMag();
     }
 
     private double getHeightAboveGround(Entity entity) {

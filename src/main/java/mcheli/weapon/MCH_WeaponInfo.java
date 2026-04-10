@@ -249,6 +249,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 是否启用CCIP投弹圈
      */
     public boolean ccip = false;
+    public String ccipTexture = "CCIP";
     /**
      * 是否可以锁定导弹实体
      */
@@ -738,6 +739,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.speedDependsAircraft = this.toBool(data);
             } else if (item.equalsIgnoreCase("CCIP")) {
                 this.ccip = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CCIPtexture")) {
+                this.ccipTexture = data.trim();
             } else if (item.equalsIgnoreCase("CanLockMissile")) {
                 this.canLockMissile = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableBVR")) {
