@@ -8,6 +8,7 @@ import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.aircraft.MCH_SeatInfo;
+import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.weapon.*;
 import mcheli.wrapper.W_WorldFunc;
@@ -32,6 +33,9 @@ public class MCH_EntityGunner extends EntityLivingBase {
     public static final int TARGET_MONSTER = 0;
     public static final int TARGET_PLAYER = 1;
     public static final int TARGET_AA_AMMO = 2;
+    private static final int HELI_STATE_CRUISE = 0;
+    private static final int HELI_STATE_ATTACK = 1;
+    private static final int HELI_STATE_DISENGAGE = 2;
     public boolean isCreative = false;
     public String ownerUUID = "";
     public int targetType = 0;
@@ -64,6 +68,18 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private int obstacleTurnDir = 0;
     private float largeTurnRemain = 0.0F;
     private int largeTurnDir = 0;
+    private int heliState = 0;
+    private int heliStateTicks = 0;
+    private int heliStateDuration = 0;
+    private float heliCruiseAltitude = 50.0F;
+    private boolean heliAllowFire = true;
+    private int heliPatrolYawTicks = 0;
+    private float heliPatrolYawStep = 0.0F;
+    private int heliCruiseTurnCooldown = 0;
+    private float heliCruiseTurnRemain = 0.0F;
+    private int heliCruiseTurnDir = 0;
+    private double heliLastTargetX = 0.0D;
+    private double heliLastTargetZ = 0.0D;
 
     public MCH_EntityGunner(World world) {
         super(world);
@@ -170,6 +186,18 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 this.obstacleTurnDir = 0;
                 this.largeTurnRemain = 0.0F;
                 this.largeTurnDir = 0;
+                this.heliState = 0;
+                this.heliStateTicks = 0;
+                this.heliStateDuration = 0;
+                this.heliCruiseAltitude = 40.0F + this.rand.nextFloat() * 20.0F;
+                this.heliAllowFire = true;
+                this.heliPatrolYawTicks = 0;
+                this.heliPatrolYawStep = 0.0F;
+                this.heliCruiseTurnCooldown = 40 + this.rand.nextInt(81);
+                this.heliCruiseTurnRemain = 0.0F;
+                this.heliCruiseTurnDir = 0;
+                this.heliLastTargetX = 0.0D;
+                this.heliLastTargetZ = 0.0D;
                 this.lastTargetUpdateTick = -1;
             }
             MCH_EntityAircraft ac = null;
@@ -197,6 +225,13 @@ public class MCH_EntityGunner extends EntityLivingBase {
                         updateTargetForWeapon(ac, ws, pos);
                     }
                     updateTankDrive((MCH_EntityTank)ac);
+                } else if (ac instanceof MCH_EntityHeli && ac.getGunnerStatus()) {
+                    MCH_WeaponSet ws = ac.getCurrentWeapon((Entity)this);
+                    if (ws != null && ws.getInfo() != null && ws.getCurrentWeapon() != null) {
+                        Vec3 pos = getGunnerWeaponPos(ac, ws);
+                        updateTargetForWeapon(ac, ws, pos);
+                    }
+                    updateHeliDrive((MCH_EntityHeli)ac);
                 }
                 shotTarget(ac);
             } else if (this.despawnCount < 20) {
@@ -245,6 +280,8 @@ public class MCH_EntityGunner extends EntityLivingBase {
         MCH_WeaponSet ws = ac.getCurrentWeapon((Entity)this);
         if (ws == null || ws.getInfo() == null || ws.getCurrentWeapon() == null)
             return;
+        if (ac instanceof MCH_EntityHeli && ac.isPilot((Entity)this) && !this.heliAllowFire)
+            return;
         applyInfinityAmmoForGunner(ac, ws);
         MCH_WeaponBase cw = ws.getCurrentWeapon();
         if (this.targetEntity != null && (this.targetEntity.isDead || (this.targetEntity instanceof EntityLivingBase && ((EntityLivingBase)this.targetEntity).getHealth() <= 0.0F)))
@@ -256,6 +293,8 @@ public class MCH_EntityGunner extends EntityLivingBase {
             float rotSpeed = 10.0F;
             if (ac.isPilot((Entity)this))
                 rotSpeed = (ac.getAcInfo()).cameraRotationSpeed / 10.0F;
+            if (ac instanceof MCH_EntityHeli && ac.isPilot((Entity)this) && this.heliState == HELI_STATE_ATTACK)
+                rotSpeed = Math.max(rotSpeed, 18.0F);
             this.rotationPitch = MathHelper.wrapAngleTo180_float(this.rotationPitch);
             this.rotationYaw = MathHelper.wrapAngleTo180_float(this.rotationYaw);
             double dist = getDistanceToEntity(this.targetEntity);
@@ -417,10 +456,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
             } else if (!(entity instanceof EntityPlayer)) {
                 continue;
             }
+            boolean heliPilot = (ac instanceof MCH_EntityHeli && ac.isPilot((Entity)this));
             if (canAttackEntity(entity, ac, ws))
-                if (checkPitch(entity, ac, pos))
+                if ((heliPilot || checkPitch(entity, ac, pos)))
                     if ((nextTarget == null || getDistanceToEntity((Entity)entity) < getDistanceToEntity((Entity)nextTarget)) && canEntityBeSeen((Entity)entity))
-                        if (isInAttackable(entity, ac, ws, pos)) {
+                        if (heliPilot) {
+                            nextTarget = entity;
+                            this.switchTargetCount = 30;
+                        } else if (isInAttackable(entity, ac, ws, pos)) {
                             nextTarget = entity;
                             this.switchTargetCount = 60;
                         }
@@ -609,6 +652,139 @@ public class MCH_EntityGunner extends EntityLivingBase {
         tank.moveLeft = moveLeft;
         tank.moveRight = moveRight;
         tank.setBrake(brake);
+    }
+
+    private void updateHeliDrive(MCH_EntityHeli heli) {
+        if (!heli.isPilot((Entity)this))
+            return;
+        if (heli.isDestroyed() || (!heli.canUseFuel() && !heli.isInfinityFuel((Entity)this, true))) {
+            this.heliAllowFire = false;
+            heli.throttleUp = false;
+            heli.throttleDown = false;
+            heli.moveLeft = false;
+            heli.moveRight = false;
+            return;
+        }
+        if (this.heliCruiseAltitude < 40.0F || this.heliCruiseAltitude > 60.0F) {
+            this.heliCruiseAltitude = 40.0F + this.rand.nextFloat() * 20.0F;
+        }
+        if (this.heliState == HELI_STATE_CRUISE && this.targetEntity != null) {
+            enterHeliState(HELI_STATE_ATTACK, 100 + this.rand.nextInt(51));
+        } else if (this.heliState == HELI_STATE_ATTACK && (this.targetEntity == null || this.heliStateTicks >= this.heliStateDuration)) {
+            enterHeliState(HELI_STATE_DISENGAGE, 100 + this.rand.nextInt(51));
+        } else if (this.heliState == HELI_STATE_DISENGAGE && this.heliStateTicks >= this.heliStateDuration) {
+            this.heliCruiseAltitude = 40.0F + this.rand.nextFloat() * 20.0F;
+            enterHeliState(HELI_STATE_CRUISE, 0);
+        }
+        this.heliStateTicks++;
+        double altitude = getHeightAboveGround((Entity)heli);
+        boolean throttleUp = false;
+        boolean throttleDown = false;
+        boolean moveLeft = false;
+        boolean moveRight = false;
+        float desiredYaw = heli.getRotYaw();
+        float desiredPitch = heli.getRotPitch();
+        if (this.heliState == HELI_STATE_ATTACK) {
+            this.heliAllowFire = true;
+            if (this.targetEntity != null) {
+                double dx = this.targetEntity.posX - heli.posX;
+                double dz = this.targetEntity.posZ - heli.posZ;
+                this.heliLastTargetX = this.targetEntity.posX;
+                this.heliLastTargetZ = this.targetEntity.posZ;
+                desiredYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
+            }
+            desiredPitch = MathHelper.clamp_float(7.0F + (float)((altitude - this.heliCruiseAltitude) * 0.05D), 4.0F, 13.0F);
+            if (altitude < this.heliCruiseAltitude - 8.0F) {
+                throttleUp = true;
+            } else if (altitude > this.heliCruiseAltitude + 6.0F) {
+                throttleDown = true;
+            }
+        } else if (this.heliState == HELI_STATE_DISENGAGE) {
+            this.heliAllowFire = false;
+            if (this.targetEntity != null) {
+                this.heliLastTargetX = this.targetEntity.posX;
+                this.heliLastTargetZ = this.targetEntity.posZ;
+            }
+            double awayX = heli.posX - this.heliLastTargetX;
+            double awayZ = heli.posZ - this.heliLastTargetZ;
+            if (awayX * awayX + awayZ * awayZ > 4.0D) {
+                desiredYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(awayZ, awayX) * 180.0D / Math.PI) - 90.0F);
+            } else {
+                desiredYaw = MathHelper.wrapAngleTo180_float(heli.getRotYaw() + (this.combatStrafeDir >= 0 ? 120.0F : -120.0F));
+            }
+            if (this.heliStateTicks < this.heliStateDuration / 2) {
+                desiredPitch = -10.0F;
+            } else {
+                desiredPitch = 2.0F;
+            }
+            if (altitude < this.heliCruiseAltitude + 4.0F) {
+                throttleUp = true;
+            } else if (altitude > this.heliCruiseAltitude + 12.0F) {
+                throttleDown = true;
+            }
+        } else {
+            this.heliAllowFire = false;
+            if (this.heliPatrolYawTicks <= 0) {
+                this.heliPatrolYawTicks = 15 + this.rand.nextInt(31);
+                this.heliPatrolYawStep = (this.rand.nextFloat() - 0.5F) * 2.0F;
+            } else {
+                this.heliPatrolYawTicks--;
+            }
+            desiredYaw = MathHelper.wrapAngleTo180_float(heli.getRotYaw() + this.heliPatrolYawStep);
+            if (this.heliCruiseTurnCooldown > 0) {
+                this.heliCruiseTurnCooldown--;
+            }
+            if (this.targetEntity == null && this.heliCruiseTurnRemain <= 0.0F && this.heliCruiseTurnCooldown <= 0) {
+                this.heliCruiseTurnRemain = 60.0F + this.rand.nextFloat() * 30.0F;
+                this.heliCruiseTurnDir = this.rand.nextBoolean() ? 1 : -1;
+                this.heliCruiseTurnCooldown = 80 + this.rand.nextInt(101);
+            }
+            if (this.heliCruiseTurnRemain > 0.0F && this.heliCruiseTurnDir != 0) {
+                float add = this.heliCruiseTurnRemain > 3.0F ? 3.0F : this.heliCruiseTurnRemain;
+                desiredYaw = MathHelper.wrapAngleTo180_float(desiredYaw + add * this.heliCruiseTurnDir);
+                this.heliCruiseTurnRemain -= add;
+                if (this.heliCruiseTurnRemain <= 0.0F) {
+                    this.heliCruiseTurnRemain = 0.0F;
+                    this.heliCruiseTurnDir = 0;
+                }
+            }
+            desiredPitch = 4.5F;
+            if (altitude < this.heliCruiseAltitude - 2.0F) {
+                throttleUp = true;
+            } else if (altitude > this.heliCruiseAltitude + 2.0F) {
+                throttleDown = true;
+            }
+        }
+        float yawDiff = MathHelper.wrapAngleTo180_float(desiredYaw - heli.getRotYaw());
+        float yawStep = Math.max(-3.6F, Math.min(3.6F, yawDiff * 0.28F));
+        heli.setRotYaw(MathHelper.wrapAngleTo180_float(heli.getRotYaw() + yawStep));
+        if (yawDiff > 2.0F) {
+            moveRight = true;
+        } else if (yawDiff < -2.0F) {
+            moveLeft = true;
+        }
+        float pitchDiff = desiredPitch - heli.getRotPitch();
+        float pitchStep = Math.max(-1.4F, Math.min(1.4F, pitchDiff * 0.25F));
+        heli.setRotPitch(MathHelper.clamp_float(heli.getRotPitch() + pitchStep, -25.0F, 25.0F));
+        if (throttleUp && throttleDown) {
+            throttleDown = false;
+        }
+        heli.throttleUp = throttleUp;
+        heli.throttleDown = throttleDown;
+        heli.moveLeft = moveLeft;
+        heli.moveRight = moveRight;
+    }
+
+    private void enterHeliState(int state, int duration) {
+        this.heliState = state;
+        this.heliStateTicks = 0;
+        this.heliStateDuration = duration;
+        if (state == HELI_STATE_ATTACK) {
+            this.heliAllowFire = true;
+            this.combatStrafeDir = this.rand.nextBoolean() ? 1 : -1;
+        } else {
+            this.heliAllowFire = false;
+        }
     }
 
     private boolean hasTooHighObstacleAhead(MCH_EntityTank tank) {

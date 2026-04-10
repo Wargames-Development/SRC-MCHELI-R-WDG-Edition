@@ -88,6 +88,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private boolean airburstTriggered = false;
     private boolean aheadTriggered = false;
     public String nameOnRWR = "MSL";
+    private boolean delayFuseMarkerActive = false;
+    private double delayFuseMarkerX = 0.0D;
+    private double delayFuseMarkerY = 0.0D;
+    private double delayFuseMarkerZ = 0.0D;
 
     public MCH_EntityBaseBullet(World par1World) {
         super(par1World);
@@ -723,6 +727,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
 
             if (this.delayFuse > 0) {
+                if (this.delayFuseMarkerActive) {
+                    super.motionX = 0.0D;
+                    super.motionY = 0.0D;
+                    super.motionZ = 0.0D;
+                }
                 --this.delayFuse;
                 if (this.delayFuse == 0) {
                     this.onUpdateTimeout();
@@ -1001,6 +1010,18 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 this.boundBullet(m.sideHit);
                 if (this.delayFuse == 0) {
                     this.delayFuse = this.getInfo().delayFuse;
+                    if (isDelayFuseMarkerTarget()) {
+                        this.delayFuseMarkerActive = true;
+                        this.delayFuseMarkerX = m.hitVec.xCoord;
+                        this.delayFuseMarkerY = m.hitVec.yCoord;
+                        this.delayFuseMarkerZ = m.hitVec.zCoord;
+                        super.posX = this.delayFuseMarkerX;
+                        super.posY = this.delayFuseMarkerY;
+                        super.posZ = this.delayFuseMarkerZ;
+                        super.motionX = 0.0D;
+                        super.motionY = 0.0D;
+                        super.motionZ = 0.0D;
+                    }
                 }
             }
 
@@ -1051,6 +1072,30 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
             }
         }
+    }
+
+    private boolean isDelayFuseMarkerTarget() {
+        MCH_WeaponInfo info = this.getInfo();
+        if (info == null || info.type == null) {
+            return false;
+        }
+        return info.type.equalsIgnoreCase("bomb") || info.type.equalsIgnoreCase("rocket");
+    }
+
+    public boolean hasDelayFuseMarker() {
+        return this.delayFuseMarkerActive && this.delayFuse > 0;
+    }
+
+    public double getDelayFuseMarkerX() {
+        return this.delayFuseMarkerX;
+    }
+
+    public double getDelayFuseMarkerY() {
+        return this.delayFuseMarkerY;
+    }
+
+    public double getDelayFuseMarkerZ() {
+        return this.delayFuseMarkerZ;
     }
 
     public boolean canBeCollidedEntity(Entity entity) {

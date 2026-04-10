@@ -5,6 +5,8 @@ import mcheli.wrapper.W_Block;
 import mcheli.wrapper.W_MOD;
 import mcheli.wrapper.W_Render;
 import mcheli.wrapper.W_WorldFunc;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
@@ -14,6 +16,7 @@ public abstract class MCH_RenderBulletBase extends W_Render {
 
     public static final ResourceLocation TEX_FLAME = new ResourceLocation(W_MOD.DOMAIN, "textures/exhaust_flame.png");
     public static final ResourceLocation TEX_FLAME_1 = new ResourceLocation(W_MOD.DOMAIN, "textures/exhaust_flame_1.png");
+    public static final ResourceLocation TEX_DELAY_FUSE_MARKER = new ResourceLocation(W_MOD.DOMAIN, "textures/delayfuse_bomb.png");
 
     public void doRender(Entity e, double var2, double var4, double var6, float var8, float var9) {
         int dstBlend;
@@ -66,6 +69,41 @@ public abstract class MCH_RenderBulletBase extends W_Render {
     public abstract void renderBullet(Entity var1, double var2, double var4, double var6, float var8, float var9);
 
     public void postRender(Entity var1, double var2, double var4, double var6, float var8, float var9) {
+        if (!(var1 instanceof MCH_EntityBaseBullet)) {
+            return;
+        }
+        MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet)var1;
+        if (!bullet.hasDelayFuseMarker()) {
+            return;
+        }
+        double x = var2 + bullet.getDelayFuseMarkerX() - bullet.posX;
+        double y = var4 + bullet.getDelayFuseMarkerY() - bullet.posY + 0.3D;
+        double z = var6 + bullet.getDelayFuseMarkerZ() - bullet.posZ;
+        GL11.glPushMatrix();
+        GL11.glTranslated(x, y, z);
+        RenderManager rm = RenderManager.instance;
+        GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
+        GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
+        GL11.glScalef(-3.75F, -3.75F, 3.75F);
+        GL11.glDisable(2896);
+        GL11.glDisable(2884);
+        GL11.glDepthMask(false);
+        GL11.glEnable(3042);
+        GL11.glBlendFunc(770, 771);
+        GL11.glColor4f(1.0F, 0.1F, 0.1F, 0.95F);
+        this.bindTexture("textures/delayfuse_bomb.png");
+        Tessellator tess = Tessellator.instance;
+        tess.startDrawingQuads();
+        tess.addVertexWithUV(-0.5D, 0.5D, 0.0D, 0.0D, 1.0D);
+        tess.addVertexWithUV(0.5D, 0.5D, 0.0D, 1.0D, 1.0D);
+        tess.addVertexWithUV(0.5D, -0.5D, 0.0D, 1.0D, 0.0D);
+        tess.addVertexWithUV(-0.5D, -0.5D, 0.0D, 0.0D, 0.0D);
+        tess.draw();
+        GL11.glEnable(2884);
+        GL11.glEnable(2896);
+        GL11.glDepthMask(true);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        GL11.glPopMatrix();
     }
 
     ;
