@@ -1414,16 +1414,23 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (!inWater) {
             //HBM爆炸效果
             if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
-                Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, null, x, y, z, getInfo().effectYield);
+                Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+                java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+
+                Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, explosionSource, x, y, z, getInfo().effectYield);
+                MCH_HBMUtil.ExplosionNT_instance_setOwnerParty(explosionNTInstance, ownerParty);
+
                 if (explosionNTInstance != null && !this.getInfo().disableDestroyBlock) {
                     MCH_HBMUtil.ExplosionNT_instance_addAttrib(explosionNTInstance, "NOHURT");
                     MCH_HBMUtil.ExplosionNT_instance_overrideResolutionAndExplode(explosionNTInstance, 64);
                 }
+
                 if (this.getInfo().explosionType.equals("hbmNT_Bomb")) {
                     MCH_HBMUtil.ExplosionCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
                 } else if (this.getInfo().explosionType.equals("hbmNT_Shell")) {
                     MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
                 }
+
                 MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                     .exploder(this)
                     .player(creditedPlayer)
@@ -1499,15 +1506,51 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         if (this.getInfo().nukeYield > 0 && MCH_HBMUtil.isHBMLoaded) {
+            Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+            java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+
             if (!this.getInfo().nukeEffectOnly) {
-                worldObj.spawnEntityInWorld((Entity) MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5));
+                Object nukeEntity = MCH_HBMUtil.EntityNukeExplosionMK5_statFac(
+                        super.worldObj,
+                        this.getInfo().nukeYield,
+                        this.posX + 0.5,
+                        this.posY + 0.5,
+                        this.posZ + 0.5,
+                        ownerParty
+                );
+
+                if (nukeEntity instanceof Entity) {
+                    worldObj.spawnEntityInWorld((Entity) nukeEntity);
+                }
             }
-            //EntityNukeTorex.statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, 0);
-            MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, getInfo().effectYield);
+
+            MCH_HBMUtil.EntityNukeTorex_statFac(
+                    super.worldObj,
+                    this.posX + 0.5,
+                    this.posY + 0.5,
+                    this.posZ + 0.5,
+                    (float) this.getInfo().nukeYield,
+                    getInfo().effectYield
+            );
         }
 
         if (this.getInfo().chemYield > 0 && MCH_HBMUtil.isHBMLoaded) {
-            MCH_HBMUtil.ExplosionChaos_spawnClorine(super.worldObj, posX, posY + 0.5, posZ, this.getInfo().chemYield);
+            Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+            java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+
+            int contamRadius = Math.max(16, this.getInfo().chemYield + 16);
+            java.util.Set<net.minecraft.world.ChunkCoordIntPair> protectedChunks =
+                    MCH_HBMUtil.getContamProtectedChunksWGC(
+                            ownerParty,
+                            super.worldObj,
+                            (int)Math.floor(this.posX),
+                            (int)Math.floor(this.posZ),
+                            contamRadius
+                    );
+
+            if (protectedChunks == null || protectedChunks.isEmpty()) {
+                MCH_HBMUtil.ExplosionChaos_spawnClorine(super.worldObj, posX, posY + 0.5, posZ, this.getInfo().chemYield);
+            }
         }
 
 

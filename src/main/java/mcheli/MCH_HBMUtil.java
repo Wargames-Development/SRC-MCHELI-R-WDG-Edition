@@ -1,8 +1,13 @@
 package mcheli;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
@@ -16,7 +21,7 @@ public class MCH_HBMUtil {
     private static Class<?> explosionCreatorClass;
     private static Class<?> explosionSmallCreatorClass;
     private static Class<?> explosionNTClass;
-
+    private static Class<?> integrationsClass;
 
     static {
         try {
@@ -26,6 +31,7 @@ public class MCH_HBMUtil {
             explosionCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionCreator");
             explosionSmallCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionSmallCreator");
             explosionNTClass = Class.forName("com.hbm.explosion.ExplosionNT");
+            integrationsClass = Class.forName("api.hbm.wgc.Integrations");
             isHBMLoaded = true;
         } catch (ClassNotFoundException e) {
             isHBMLoaded = false;
@@ -33,14 +39,14 @@ public class MCH_HBMUtil {
         }
     }
 
-    public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ) {
+    public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ, UUID ownerParty) {
         if (!isHBMLoaded) {
             return null;
         }
         try {
             if (nukeExplosionMK5Class != null) {
-                Method statFacMethod = nukeExplosionMK5Class.getMethod("statFac", World.class, int.class, double.class, double.class, double.class);
-                return statFacMethod.invoke(null, world, r, posX, posY, posZ);
+                Method statFacMethod = nukeExplosionMK5Class.getMethod("statFac", World.class, int.class, double.class, double.class, double.class, UUID.class);
+                return statFacMethod.invoke(null, world, r, posX, posY, posZ, ownerParty);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -76,6 +82,24 @@ public class MCH_HBMUtil {
         }
     }
 
+    public static Set<ChunkCoordIntPair> getContamProtectedChunksWGC(UUID ownerParty, World world, int x, int z, int radius) {
+        if (!isHBMLoaded) {
+            return Collections.emptySet();
+        }
+        try {
+            if (integrationsClass != null) {
+                Method method = integrationsClass.getMethod("getContamProtectedChunksWGC", UUID.class, World.class, int.class, int.class, int.class);
+                Object result = method.invoke(null, ownerParty, world, x, z, radius);
+                if (result instanceof Set) {
+                    return (Set<ChunkCoordIntPair>) result;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Collections.emptySet();
+    }
+
     public static void ExplosionCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
         if (!isHBMLoaded) {
             return;
@@ -103,8 +127,7 @@ public class MCH_HBMUtil {
         }
         try {
             if (explosionSmallCreatorClass != null) {
-                Method composeEffectMethod;
-                composeEffectMethod = explosionSmallCreatorClass.getMethod("composeEffect", World.class, double.class, double.class, double.class, int.class, float.class, float.class);
+                Method composeEffectMethod = explosionSmallCreatorClass.getMethod("composeEffect", World.class, double.class, double.class, double.class, int.class, float.class, float.class);
                 if (explosionBlockSize < 3) {
                     composeEffectMethod.invoke(null, world, posX, posY, posZ, 5, 1F, 0.5F);
                 } else if (explosionBlockSize < 10) {
@@ -160,6 +183,20 @@ public class MCH_HBMUtil {
                 Object Attrib = Enum.valueOf((Class<Enum>) exAttribClass, attrib);
                 Method addAttribMethod = explosionNTClass.getMethod("addAttrib", exAttribClass);
                 addAttribMethod.invoke(explosionNTInstance, Attrib);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void ExplosionNT_instance_setOwnerParty(Object explosionNTInstance, UUID ownerParty) {
+        if (!isHBMLoaded) {
+            return;
+        }
+        try {
+            if (explosionNTInstance != null) {
+                Method setOwnerPartyMethod = explosionNTInstance.getClass().getMethod("setOwnerParty", UUID.class);
+                setOwnerPartyMethod.invoke(explosionNTInstance, ownerParty);
             }
         } catch (Exception e) {
             e.printStackTrace();
