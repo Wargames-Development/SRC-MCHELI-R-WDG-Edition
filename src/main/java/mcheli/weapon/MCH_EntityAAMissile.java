@@ -41,7 +41,7 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
                 }
             } else {
-                if (getInfo().activeRadar && ticksExisted % getInfo().scanInterval == 0) {
+                if ((getInfo().activeRadar || getInfo().passiveRadar) && ticksExisted % getInfo().scanInterval == 0) {
                     scanForTargets();
                 }
             }

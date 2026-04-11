@@ -206,10 +206,14 @@ public abstract class MCH_WeaponBase {
     }
 
     public Vec3 getMuzzleFlashPos(Entity entity) {
+        Vec3 muzzlePos = this.muzzleFlashPosition != null ? this.muzzleFlashPosition : this.position;
+        if (muzzlePos == null) {
+            return Vec3.createVectorHelper(0.0D, 0.0D, 0.0D);
+        }
         if (entity instanceof MCH_EntityAircraft && this.onTurret) {
-            return ((MCH_EntityAircraft) entity).calcOnTurretPos(this.muzzleFlashPosition);
+            return ((MCH_EntityAircraft) entity).calcOnTurretPos(muzzlePos);
         } else {
-            Vec3 v = Vec3.createVectorHelper(this.muzzleFlashPosition.xCoord, this.muzzleFlashPosition.yCoord, this.muzzleFlashPosition.zCoord);
+            Vec3 v = Vec3.createVectorHelper(muzzlePos.xCoord, muzzlePos.yCoord, muzzlePos.zCoord);
             float roll = entity instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft) entity).getRotRoll() : 0.0F;
             return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);
         }

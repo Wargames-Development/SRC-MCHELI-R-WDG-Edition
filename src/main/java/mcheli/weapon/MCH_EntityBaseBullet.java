@@ -808,7 +808,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private void onUpdateAirburst() {
 
         int abDist = this.airburstDist;
-        if (this.airburstTriggered || abDist <= 5 || abDist >= 300) {
+        if (this.airburstTriggered || abDist <= 5 || abDist >= 3000) {
             return;
         }
 
@@ -1697,7 +1697,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         boolean isTargetOnGround = MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().lockMinHeight);
                         if (!isTargetOnGround) continue;
                         if (getInfo().antiRadiationMissile) {
-                            if (ac.isECMJammerUsing() || !ac.getAcInfo().hasRWR) {
+                            boolean ecmType2Using = ac.getAcInfo() != null && ac.getAcInfo().ecmJammerType == 2 && ac.isECMJammerUsing();
+                            if (ecmType2Using || ac.getAcInfo() == null || !ac.getAcInfo().hasRWR) {
                                 continue;
                             }
                         }

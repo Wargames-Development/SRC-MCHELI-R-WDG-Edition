@@ -127,7 +127,7 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             if(hitResult.entityHit != null) {
                 boolean jamming = false;
                 //无法锁定释放烟雾弹的地面载具
-                if(hitResult.entityHit instanceof MCH_EntityTank && ((MCH_EntityTank) hitResult.entityHit).isFlareUsing()) {
+                if(hitResult.entityHit instanceof MCH_EntityTank && ((MCH_EntityTank) hitResult.entityHit).isUsingFlareType(10)) {
                     targetPosX = hitResult.hitVec.xCoord;
                     targetPosY = hitResult.hitVec.yCoord;
                     targetPosZ = hitResult.hitVec.zCoord;

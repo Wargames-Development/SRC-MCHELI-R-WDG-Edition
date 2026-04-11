@@ -364,6 +364,17 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             if (this.isRadarMissile && entity instanceof MCH_EntityChaff) {
                 return true;
             }
+            if (this.isRadarMissile) {
+                MCH_EntityAircraft targetAc = null;
+                if (entity instanceof MCH_EntityAircraft) {
+                    targetAc = (MCH_EntityAircraft)entity;
+                } else if (entity.ridingEntity instanceof MCH_EntityAircraft) {
+                    targetAc = (MCH_EntityAircraft)entity.ridingEntity;
+                }
+                if (targetAc != null && targetAc.getAcInfo() != null && targetAc.getAcInfo().ecmJammerType == 2 && targetAc.isECMJammerUsing()) {
+                    return false;
+                }
+            }
             if (targetEntity instanceof MCH_EntityAircraft) {
                 if (isRadarMissile && ((MCH_EntityAircraft) targetEntity).chaffUseTime > 0) {
                     return false;

@@ -3355,6 +3355,17 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return this.flareDv.isUsing();
     }
 
+    public int getUsingFlareType() {
+        if (this.flareDv == null || !this.flareDv.isUsing()) {
+            return 0;
+        }
+        return this.flareDv.getFlareType();
+    }
+
+    public boolean isUsingFlareType(int type) {
+        return type > 0 && this.flareDv != null && this.flareDv.isUsing() && this.flareDv.getFlareType() == type;
+    }
+
     public int getFlareTick() {
         return this.flareDv.tick;
     }
@@ -5865,7 +5876,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         double posZ = RenderManager.renderPosZ;
         float yaw = player.rotationYaw;
         float pitch = player.rotationPitch;
-        double maxDist = 300.0;
+        double maxDist = 3000.0;
         double targetX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
         double targetZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
         double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);

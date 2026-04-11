@@ -251,7 +251,7 @@ public class MCH_RenderLeadCircle {
                 t = t2;
             }
         }
-        if (t <= 0.0D || t > 200.0D) {
+        if (t <= 0.0D || t > 600.0D) {
             return null;
         }
         LeadSolution result = new LeadSolution();

@@ -394,7 +394,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 t = t2;
             }
         }
-        if (t <= 0.0D || t > 200.0D) {
+        if (t <= 0.0D || t > 600.0D) {
             syncAirburstDistance(ac, wb, 0);
             return;
         }
@@ -403,7 +403,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         double pz = tz + tvz * t;
         double impactDist = Math.sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy) + (pz - sz) * (pz - sz));
         int triggerDist = (int) Math.floor(impactDist - info.proximityFuseDist);
-        if (triggerDist <= 5 || triggerDist >= 300) {
+        if (triggerDist <= 5 || triggerDist >= 3000) {
             triggerDist = 0;
         }
         syncAirburstDistance(ac, wb, triggerDist);

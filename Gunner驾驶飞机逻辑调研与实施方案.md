@@ -283,3 +283,98 @@
 - 已改为“仅水平距离”的圆柱作战半径模型。
 - 已细化机头指向性攻击策略（对空/对地分流）。
 - 本文档为独立文件，可作为后续飞机 gunner 实装蓝图。
+
+## 11. 具体实施步骤（可直接开工）
+
+### Step 1：配置参数接入（先做）
+
+- 在配置层新增飞机 gunner 参数：
+  - `GunnerPlaneSearchRadiusAir`（默认 500）
+  - `GunnerPlaneSearchRadiusGround`（默认 320）
+  - `GunnerPlaneSearchAltitudeWindow`（默认 260，可选）
+  - `GunnerPlaneStateSearchMin/Max`
+  - `GunnerPlaneStateFocusMin/Max`
+  - `GunnerPlaneStateAttackMin/Max`
+  - `GunnerPlaneStateDisengageMin/Max`
+- 参数命名保持与现有 gunner 范围参数风格一致，避免后续维护混乱。
+- 验收：配置文件可生成、可读取、默认值正确。
+
+### Step 2：飞机状态机骨架接入 Gunner
+
+- 在 `MCH_EntityGunner` 新增飞机任务态：
+  - `PLANE_SEARCH`
+  - `PLANE_FOCUS`
+  - `PLANE_ATTACK`
+  - `PLANE_DISENGAGE`
+  - `PLANE_RTB`
+- 增加状态计时字段：
+  - `planeState`
+  - `planeStateTicks`
+  - `planeStateDuration`
+- 在 `onUpdate()` 中为 `MCP_EntityPlane` 增加专用分支，与坦克/直升机并列。
+- 验收：上飞机后状态可切换，不影响坦克和直升机逻辑。
+
+### Step 3：原点记录与圆柱作战半径
+
+- 上飞机时记录作战原点：
+  - `originX`
+  - `originZ`
+- 距离统一使用水平距离：
+  - `dXZ = sqrt((x-originX)^2 + (z-originZ)^2)`
+- 按分段意愿模型输出向内/向外偏置（0~50 强外，50~150 较外，150~450 平，450~600 强内，>600 强制回归）。
+- 验收：飞行轨迹满足“近原点偏外、远原点偏内”。
+
+### Step 4：对空/对地索敌分离
+
+- 索敌先拆两池：
+  - 空中池：`dXZ <= GunnerPlaneSearchRadiusAir` 且可选 `|dy| <= AltWindow`
+  - 地面池：`dXZ <= GunnerPlaneSearchRadiusGround`
+- 目标优先级：
+  1. 近距空中威胁
+  2. 已建立指向窗口的空中目标
+  3. 高价值地面目标（AA/载具）
+  4. 普通地面目标
+- 验收：同场景下优先空战，且空中索敌范围明显大于对地。
+
+### Step 5：机头指向窗口与开火门限
+
+- 抽象统一指向窗口判定：
+  - `|yawErr|`
+  - `|pitchErr|`
+  - `distance`
+  - `canSee`
+  - 武器可用状态
+- `FOCUS` 只做“收敛机头”，窗口稳定若干 tick 再进入 `ATTACK`。
+- 验收：避免“未对准乱开火”，先对准后攻击。
+
+### Step 6：机动动作分阶段落地
+
+- 第一批动作：
+  - `STRAIGHT`（直飞压迫）
+  - `ORBIT`（环绕保持）
+  - `EXTEND`（脱离拉开）
+- 第二批动作（狗斗增强）：
+  - `BREAK_TURN`
+  - `YOYO_HIGH`
+- 验收：动作可复现，且状态切换不抖动。
+
+### Step 7：时间状态机接入随机区间
+
+- 将 `SEARCH/FOCUS/ATTACK/DISENGAGE/RTB` 全部接入随机时长。
+- 在风险或威胁条件下动态收缩/放宽时长区间。
+- 验收：多机行为不同步，节奏不机械。
+
+### Step 8：联机验证与参数调优
+
+- 单机验证：空中目标、地面目标、混合目标三组。
+- 联机验证：多机并发与长时间运行稳定性。
+- 热区参数优先调优：
+  - 对空/对地索敌半径
+  - 高度窗
+  - 状态时长区间
+  - 开火角窗口
+- 通过标准：
+  - 可持续巡航
+  - 可稳定截击
+  - 超半径可回归
+  - 对地可完成切入-攻击-脱离。

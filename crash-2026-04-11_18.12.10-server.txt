@@ -1,0 +1,166 @@
+---- Minecraft Crash Report ----
+// There are four lights!
+
+Time: 26-4-11 下午6:12
+Description: Ticking entity
+
+java.lang.NullPointerException: Ticking entity
+	at mcheli.weapon.MCH_WeaponBase.getMuzzleFlashPos(MCH_WeaponBase.java:212)
+	at mcheli.weapon.MCH_WeaponBase.use(MCH_WeaponBase.java:185)
+	at mcheli.weapon.MCH_WeaponSet.use(MCH_WeaponSet.java:386)
+	at mcheli.aircraft.MCH_EntityAircraft.useCurrentWeapon(MCH_EntityAircraft.java:5233)
+	at mcheli.mob.MCH_EntityGunner.shotTarget(MCH_EntityGunner.java:427)
+	at mcheli.mob.MCH_EntityGunner.func_70071_h_(MCH_EntityGunner.java:315)
+	at net.minecraft.entity.Entity.func_70098_U(Entity.java:1579)
+	at net.minecraft.entity.EntityLivingBase.func_70098_U(EntityLivingBase.java:1853)
+	at net.minecraft.world.World.func_72866_a(World.java:2066)
+	at net.minecraft.world.WorldServer.func_72866_a(WorldServer.java:648)
+	at net.minecraft.world.World.func_72870_g(World.java:2034)
+	at net.minecraft.world.World.func_72866_a(World.java:2129)
+	at net.minecraft.world.WorldServer.func_72866_a(WorldServer.java:648)
+	at net.minecraft.world.World.func_72870_g(World.java:2034)
+	at net.minecraft.world.World.func_72939_s(World.java:1887)
+	at net.minecraft.world.WorldServer.func_72939_s(WorldServer.java:489)
+	at net.minecraft.server.MinecraftServer.func_71190_q(MinecraftServer.java:636)
+	at net.minecraft.server.MinecraftServer.func_71217_p(MinecraftServer.java:547)
+	at net.minecraft.server.integrated.IntegratedServer.func_71217_p(IntegratedServer.java:111)
+	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:427)
+	at net.minecraft.server.MinecraftServer$2.run(MinecraftServer.java:685)
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Stacktrace:
+	at mcheli.weapon.MCH_WeaponBase.getMuzzleFlashPos(MCH_WeaponBase.java:212)
+	at mcheli.weapon.MCH_WeaponBase.use(MCH_WeaponBase.java:185)
+	at mcheli.weapon.MCH_WeaponSet.use(MCH_WeaponSet.java:386)
+	at mcheli.aircraft.MCH_EntityAircraft.useCurrentWeapon(MCH_EntityAircraft.java:5233)
+	at mcheli.mob.MCH_EntityGunner.shotTarget(MCH_EntityGunner.java:427)
+	at mcheli.mob.MCH_EntityGunner.func_70071_h_(MCH_EntityGunner.java:315)
+	at net.minecraft.entity.Entity.func_70098_U(Entity.java:1579)
+	at net.minecraft.entity.EntityLivingBase.func_70098_U(EntityLivingBase.java:1853)
+	at net.minecraft.world.World.func_72866_a(World.java:2066)
+	at net.minecraft.world.WorldServer.func_72866_a(WorldServer.java:648)
+	at net.minecraft.world.World.func_72870_g(World.java:2034)
+	at net.minecraft.world.World.func_72866_a(World.java:2129)
+	at net.minecraft.world.WorldServer.func_72866_a(WorldServer.java:648)
+	at net.minecraft.world.World.func_72870_g(World.java:2034)
+
+-- Entity being ticked --
+Details:
+	Entity Type: mcheli.MCH.E.Tank (mcheli.tank.MCH_EntityTank)
+	Entity ID: 90343
+	Entity Name: entity.mcheli.MCH.E.Tank.name
+	Entity's Exact location: -194.87, 4.35, -15.46
+	Entity's Block location: World: (-195,4,-16), Chunk: (at 13,0,0 in -13,-1; contains blocks -208,0,-16 to -193,255,-1), Region: (-1,-1; contains chunks -32,-32 to -1,-1, blocks -512,0,-512 to -1,255,-1)
+	Entity's Momentum: 0.09, 0.00, -0.04
+Stacktrace:
+	at net.minecraft.world.World.func_72939_s(World.java:1887)
+	at net.minecraft.world.WorldServer.func_72939_s(WorldServer.java:489)
+
+-- Affected level --
+Details:
+	Level name: 新的世界
+	All players: 1 total; [EntityPlayerMP['TV90'/90065, l='新的世界', x=43.50, y=4.95, z=-180.03]]
+	Chunk stats: ServerChunkCache: 4491 Drop: 0
+	Level seed: -5031404254994773625
+	Level generator: ID 01 - flat, ver 0. Features enabled: true
+	Level generator options: 
+	Level spawn location: World: (742,4,661), Chunk: (at 6,0,5 in 46,41; contains blocks 736,0,656 to 751,255,671), Region: (1,1; contains chunks 32,32 to 63,63, blocks 512,0,512 to 1023,255,1023)
+	Level time: 7426 game time, 7426 day time
+	Level dimension: 0
+	Level storage version: 0x04ABD - Anvil
+	Level weather: Rain time: 73254 (now: false), thunder time: 83397 (now: false)
+	Level game mode: Game mode: creative (ID 1). Hardcore: false. Cheats: true
+Stacktrace:
+	at net.minecraft.server.MinecraftServer.func_71190_q(MinecraftServer.java:636)
+	at net.minecraft.server.MinecraftServer.func_71217_p(MinecraftServer.java:547)
+	at net.minecraft.server.integrated.IntegratedServer.func_71217_p(IntegratedServer.java:111)
+	at net.minecraft.server.MinecraftServer.run(MinecraftServer.java:427)
+	at net.minecraft.server.MinecraftServer$2.run(MinecraftServer.java:685)
+
+-- System Details --
+Details:
+	Minecraft Version: 1.7.10
+	Operating System: Windows 10 (amd64) version 10.0
+	Java Version: 1.8.0_301, Oracle Corporation
+	Java VM Version: Java HotSpot(TM) 64-Bit Server VM (mixed mode), Oracle Corporation
+	Memory: 702469320 bytes (669 MB) / 3402104832 bytes (3244 MB) up to 5592580096 bytes (5333 MB)
+	JVM Flags: 2 total; -Xmx6000m -XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump
+	AABB Pool Size: 0 (0 bytes; 0 MB) allocated, 0 (0 bytes; 0 MB) used
+	IntCache: cache: 0, tcache: 0, allocated: 0, tallocated: 0
+	FML: MCP v9.05 FML v7.10.99.99 Minecraft Forge 10.13.4.1614 Angelica 1.0.0-beta54 40 mods loaded, 40 mods active
+	States: 'U' = Unloaded 'L' = Loaded 'C' = Constructed 'H' = Pre-initialized 'I' = Initialized 'J' = Post-initialized 'A' = Available 'D' = Disabled 'E' = Errored
+	UCHIJAAAAAAAAA	mcp{9.05} [Minecraft Coder Pack] (minecraft.jar) 
+	UCHIJAAAAAAAAA	FML{7.10.99.99} [Forge Mod Loader] (forge-1.7.10-10.13.4.1614-1.7.10.jar) 
+	UCHIJAAAAAAAAA	Forge{10.13.4.1614} [Minecraft Forge] (forge-1.7.10-10.13.4.1614-1.7.10.jar) 
+	UCHIJAAAAAAAAA	InputFix{1.7.10-v6} [InputFix] (minecraft.jar) 
+	UCHIJAAAAAAAAA	UnicodeFontExtensionCore{1.7.10-2.6} [Unicode Font Extension Core] (minecraft.jar) 
+	UCHIJAAAAAAAAA	UraniumPlus{1.0} [Added title and actionbar support for client and server] (UraniumPlus.jar) 
+	UCHIJAAAAAAAAA	xaerominimap_core{1.7.10-1.0} [XaeroMinimapCore] (minecraft.jar) 
+	UCHIJAAAAAAAAA	xaeroworldmap_core{1.7.10-1.0} [XaeroWorldMapCore] (minecraft.jar) 
+	UCHIJAAAAAAAAA	GTNHLib Core{0.6.39} [GTNHLib Core] (minecraft.jar) 
+	UCHIJAAAAAAAAA	UnicodeFontExtension{1.7.10-2.7} [Unicode Font Extension] (UnicodeFontExtension.jar) 
+	UCHIJAAAAAAAAA	unimixins{0.1.23} [UniMixins] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	unimixins-mixin{0.1.23} [UniMixins: Mixin (UniMix)] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	unimixins-compat{0.1.23} [UniMixins: Compatibility] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	mixingasm{0.3} [UniMixins: Mixingasm] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	spongemixins{2.0.1} [UniMixins: SpongeMixins] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	mixinbooterlegacy{1.2.1} [UniMixins: MixinBooterLegacy] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	gasstation{0.5.1} [UniMixins: GasStation] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	gtnhmixins{2.2.0} [UniMixins: GTNHMixins] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	mixinextras{0.1.23} [UniMixins: MixinExtras] (!+unimixins-all-1.7.10-0.1.23.jar) 
+	UCHIJAAAAAAAAA	worldedit{6.1.1} [WorldEdit] ([创世神] worldedit-forge-mc1.7.10-6.1.1-dist.jar) 
+	UCHIJAAAAAAAAA	embeddium{1.0.0-beta54} [Embeddium] (Angelica-1.0.0-beta54.jar) 
+	UCHIJAAAAAAAAA	gtnhlib{0.6.39} [GTNH Lib] (GTNH-Lib-0.6.39.jar) 
+	UCHIJAAAAAAAAA	angelica{1.0.0-beta54} [Angelica] (Angelica-1.0.0-beta54.jar) 
+	UCHIJAAAAAAAAA	notfine{1.0.0-beta54} [NotFine] (Angelica-1.0.0-beta54.jar) 
+	UCHIJAAAAAAAAA	mcpatcherforge{1.0.0-alpha} [MCPatcherForge] (Angelica-1.0.0-beta54.jar) 
+	UCHIJAAAAAAAAA	ArchitectureCraft{1.7.2} [ArchitectureCraft] (ArchitectureCraft-1.7.2-mc1.7.10.jar) 
+	UCHIJAAAAAAAAA	coretweaks{0.3.3.2} [CoreTweaks] (CoreTweaks-1.7.10-0.3.3.2.jar) 
+	UCHIJAAAAAAAAA	CustomMainMenu{1.9.2} [Custom Main Menu] (CustomMainMenu.jar) 
+	UCHIJAAAAAAAAA	damagemark{2.3} [DamageMark] (DamageMarkMod-1.7.10-2.3-BFMC.jar) 
+	UCHIJAAAAAAAAA	erde{1.0c} [Entity Render Extender] (EntityRenderDistanceExtender-1.0c.jar) 
+	UCHIJAAAAAAAAA	flansmod{1.58-Reforged} [Flan's Mod Ultimate (Stability Edition)] (Flan's Mod Ultimate-1.58-Reforged.jar) 
+	UCHIJAAAAAAAAA	hbm{1.0.27 BETA (5336)} [Hbm's Nuclear Tech] (HBM-NTM-[1.0.27_X5336].jar) 
+	UCHIJAAAAAAAAA	hidenames{1.1.7} [Hide Names] (Hide+Names-1.7.10-1.1.8.jar) 
+	UCHIJAAAAAAAAA	mcheli{1.0} [MCH-Reforged] (mcheli) 
+	UCHIJAAAAAAAAA	mchrmixin{1.0} [mchrmixin] (mchr-mixin.jar) 
+	UCHIJAAAAAAAAA	signpic{2.8.0} [SignPicture] (SignPicture-1.7.10-2.8.0-universal.jar) 
+	UCHIJAAAAAAAAA	stepup{1.0.1-mc1.7.10} [StepUp] (StepUp-1.0.1-mc1.7.10.jar) 
+	UCHIJAAAAAAAAA	vexview{2.6.10} [VexView] (Vexview.jar) 
+	UCHIJAAAAAAAAA	XaeroMinimap{21.10.23} [Xaero's Minimap] (Xaeros_Minimap_21.10.44_Forge_1.7.10.jar) 
+	UCHIJAAAAAAAAA	XaeroWorldMap{1.14.1.33} [Xaero's World Map] (XaerosWorldMap_1.14.1.33_Forge_1.7.10.jar) 
+	GL info: ~~ERROR~~ RuntimeException: No OpenGL context found in the current thread.
+	Flan's Mod Content Packs: 
+Armor (filepath: F:\载具包临时\test\[Client]BFMC-Client Update 2026-2-16\[Client]BFMC-Client Update 2026-2-16\.minecraft\Flan\Armor)
+BFMC Gun Pack (filepath: F:\载具包临时\test\[Client]BFMC-Client Update 2026-2-16\[Client]BFMC-Client Update 2026-2-16\.minecraft\Flan\BFMC Gun Pack)
+BFMC Gun Pack Exp (filepath: F:\载具包临时\test\[Client]BFMC-Client Update 2026-2-16\[Client]BFMC-Client Update 2026-2-16\.minecraft\Flan\BFMC Gun Pack Exp)
+BFMCpack (filepath: F:\载具包临时\test\[Client]BFMC-Client Update 2026-2-16\[Client]BFMC-Client Update 2026-2-16\.minecraft\Flan\BFMCpack)
+simple parts-content pack-1.7.10-4.10.0.jar (filepath: F:\载具包临时\test\[Client]BFMC-Client Update 2026-2-16\[Client]BFMC-Client Update 2026-2-16\.minecraft\Flan\simple parts-content pack-1.7.10-4.10.0.jar)
+	NTM Modified recipes: 
+	Mixins in Stacktrace: 
+		net.minecraft.entity.Entity:
+			coretweaks.mixin.json:bugfix.forge5160.MixinEntity from mod coretweaks
+			coretweaks.mixin.json:bugfix.smallentityswim.MixinEntity from mod coretweaks
+			mixins.angelica.early.json:sodium.MixinEntity_RenderDist from mod angelica
+			mixins.angelica.early.json:angelica.dynamiclights.MixinEntity from mod angelica
+		net.minecraft.server.MinecraftServer:
+			mixins.angelica.early.json:angelica.MixinMinecraftServer from mod angelica
+			mixins.gtnhlib.early.json:MixinMinecraftServer from mod gtnhlib
+		net.minecraft.entity.EntityLivingBase:
+			mixins.gtnhlib.early.json:MixinEntityLivingBase from mod gtnhlib
+		net.minecraft.world.World:
+			coretweaks.mixin.json:bugfix.forge5160.MixinWorld from mod coretweaks
+			coretweaks.mixin.json:tweak.lightfixstare.MixinWorld from mod coretweaks
+			mixins.angelica.early.json:angelica.dynamiclights.MixinWorld from mod angelica
+			mixins.angelica.early.json:angelica.lighting.MixinWorld_FixLightUpdateLag from mod angelica
+		net.minecraft.world.WorldServer:
+			coretweaks.mixin.json:optimization.getpendingblockupdates.MixinWorldServer from mod coretweaks
+	Profiler Position: N/A (disabled)
+	Vec3 Pool Size: 0 (0 bytes; 0 MB) allocated, 0 (0 bytes; 0 MB) used
+	Player Count: 1 / 8; [EntityPlayerMP['TV90'/90065, l='新的世界', x=43.50, y=4.95, z=-180.03]]
+	Type: Integrated Server (map_client.txt)
+	Is Modded: Definitely; Client brand changed to 'fml,forge'

@@ -126,3 +126,122 @@
    - 路径A：右键锁定生成GPS点并发射命中；  
    - 路径B：K键手输坐标生成GPS点并发射命中；  
    - 路径A/B交替执行时，后写GPS点覆盖先写GPS点，导弹读取最新值。  
+
+## 11. 四类导弹调研补充（AAmissile / ATmissile / TVmissile / ASmissile）
+
+### 11.1 类映射与入口
+
+- 四类导弹的工厂映射位于 `MCH_WeaponCreator`：
+  - `aamissile -> MCH_WeaponAAMissile / MCH_EntityAAMissile`
+  - `atmissile -> MCH_WeaponATMissile / MCH_EntityATMissile`
+  - `tvmissile -> MCH_WeaponTvMissile / MCH_EntityTvMissile`
+  - `asmissile -> MCH_WeaponASMissile / MCH_EntityASMissile`
+- 入口分为两层：
+  1. 武器实例创建（`createWeapon`）
+  2. 弹体实体创建（`createEntity`）
+
+### 11.2 AAmissile（空空导弹）
+
+- 继承 `MCH_WeaponEntitySeeker`，默认 `canLockInAir = true`。
+- 支持两类流程：
+  - 雷达流程（`passiveRadar / activeRadar / semiActiveRadar`）
+  - 常规锁定流程（依赖锁定实体ID）
+- 弹体在 `rigidityTime` 后进入制导，若为主动雷达且失去目标会定期 `scanForTargets`。
+- 基类扫描逻辑中，AA会优先处理箔条诱骗，再选择合法空中目标。
+
+### 11.3 ATmissile（反坦克导弹）
+
+- 继承 `MCH_WeaponEntitySeeker`，默认 `canLockOnGround = true`。
+- 武器模式含 `TA`（Top Attack，攻顶）。
+- 弹体核心特征：
+  - 普通模式：直接追踪目标。
+  - 攻顶模式：先抬升后俯冲，末段会提高威力与爆炸等级。
+- 兼容雷达分支与常规锁定分支，目标锁定与发射流程和AA同体系。
+
+### 11.4 TVmissile（电视/拖线导弹）
+
+- 不走 `WeaponEntitySeeker`，而是 `MCH_WeaponTvMissile` 专用链路。
+- 模式要点：
+  - `TV`：典型拖线/视线导引。
+  - 非TV模式：发射加速提升（更快突防）。
+- 弹体导引有两条：
+  1. 非激光：按射手视角进行拖线制导。
+  2. 激光：跟随激光点，并受干扰设备影响（含光电/ECM判定）。
+
+### 11.5 ASmissile（空地导弹）
+
+- 该类承担“坐标点打击”主功能，核心取决于 `isGPSMissile`。
+- GPS分支：
+  - 发射时读取玩家GPS点写入导弹目标坐标。
+- 非GPS分支：
+  - 按视线做分段射线检测，求落点后导弹按点制导。
+- 若 `lockEntity = true`，会在目标区域附近搜索实体并切换到实体跟踪；否则持续按坐标点制导。
+
+### 11.6 四类导弹共用制导参数（`MCH_WeaponInfo`）
+
+- 距离/角度：`maxLockOnRange`、`maxLockOnAngle`
+- 机动与时序：`turningFactor`、`rigidityTime`
+- 雷达相关：`passiveRadar`、`activeRadar`、`semiActiveRadar`、`scanInterval`
+- 特殊制导：`laserGuidance`、`isGPSMissile`、`lockEntity`
+- 目标过滤：`ridableOnly`、`lockMinHeight`
+- 近炸相关：`proximityFuseDist`、`proximityFuseTick`
+
+结论：
+- AA/AT属于“锁定实体导弹”主线；
+- TV属于“手动/激光导引”主线；
+- AS属于“点位打击/GPS导引”主线，并可扩展到区域实体锁定。
+
+## 12. Gunner武器应用与攻击欲望增强方案评估（新增）
+
+### 12.1 需求摘要
+
+- 提升战斗机 gunner 攻击欲望。
+- 空战时仅允许使用：`machinegun1/2`、`railgun`、`rocket`、`AAmissile`，且 `AAmissile` 使用频率最高、`rocket` 最低。
+- 对地时仅允许使用：`machinegun1/2`、`railgun`、`rocket`、`bomb`、`ATmissile`、`ASmissile`、`TVmissile`，且权重满足：`AT/AS/TV > rocket > bomb > machinegun/railgun`。
+- GPS导弹不依赖玩家建点，直接使用 gunner 当前索敌目标坐标。
+- 激光导弹在 gunner 使用时退化为普通 TV 引导逻辑。
+- 导弹类武器应有更大索敌与攻击扇区。
+- 上述武器应用逻辑应统一到坦克/直升机/飞机。
+- 增加战斗机俯冲频率，降低“飞太高导致难以对地精确索敌”的问题。
+- 将所有 gunner 载具对空索敌距离统一为 `GunnerPlaneSearchRadiusAir`。
+
+### 12.2 与当前实现的匹配度
+
+- 当前 gunner 武器切换是固定轮换周期，不区分空战/对地场景，入口在 `MCH_EntityGunner.updateWeaponRotation`。
+- 当前索敌与可攻击判定与“当前武器”绑定，入口在 `MCH_EntityGunner.updateTargetForWeapon`，因此武器选择策略会直接影响索敌表现。
+- 当前战斗机状态机已具备 `SEARCH/FOCUS/ATTACK/DISENGAGE/RTB`，但攻击阶段占比与俯冲触发阈值仍偏保守。
+- 非飞机 gunner 目前仍大量使用 `RangeOfGunner_*` 配置；飞机单独使用 `GunnerPlaneSearchRadiusAir/Ground`。
+
+结论：
+- 该方案整体可行，且主改动可集中在 `MCH_EntityGunner`，无需重构武器底层框架。
+
+### 12.3 可行性判定（逐项）
+
+- 战斗机攻击欲望增强：可行，通过缩短 `SEARCH/FOCUS` 持续时间、提升 `ATTACK` 占比实现。
+- 空战/对地武器白名单与权重：可行，建议以“加权选武器”替代“固定轮换”。
+- GPS导弹目标来源改为 gunner 目标坐标：可行，且与现有 AS 导弹逻辑兼容。
+- 激光导弹退化为 TV 逻辑：可行，gunner 场景可按 TV 目标链路驱动，不依赖玩家激光点维护。
+- 导弹武器扇区放宽：可行，可在 `checkPitch/isInAttackable` 里按导弹类型给更宽阈值。
+- 普及到坦克/直升机/飞机：可行，三类载具都经过 `updateTargetForWeapon -> shotTarget` 主链路。
+- 统一对空索敌距离为 `GunnerPlaneSearchRadiusAir`：可行，但需注意性能与行为外溢。
+- 增加俯冲频率：可行，建议前移高空压低触发阈值并提升攻击态下对地俯冲权重。
+
+### 12.4 风险评估
+
+- 性能风险：统一大半径对空扫描会增加实体遍历量，联机大规模战斗场景更明显。
+- 行为风险：权重过于刚性可能导致“长期只用少数武器”，需要保留最小探索概率。
+- 兼容风险：部分载具武器位角限制严格，若场景选中武器但角度不满足，可能出现短暂“想打打不出去”。
+
+### 12.5 推荐实施顺序
+
+1. 先改武器选择策略：把固定轮换改为“目标上下文驱动的白名单+权重抽样”，并覆盖坦克/直升机/飞机。  
+2. 再改战斗机攻击欲望：提高 `ATTACK` 进入概率和持续时间，降低 `FOCUS` 门槛。  
+3. 再调俯冲行为：在攻击地面目标时提高俯冲频次，并提前高空压低触发。  
+4. 最后统一对空索敌半径到 `GunnerPlaneSearchRadiusAir`，并加扫描保护（如更新间隔/候选裁剪）。  
+
+### 12.6 参数建议（初始值）
+
+- 空战权重建议：`AAmissile=100`、`railgun=45`、`machinegun1/2=35`、`rocket=15`。
+- 对地权重建议：`AT/AS/TV=90`、`rocket=60`、`bomb=40`、`machinegun1/2/railgun=25`。
+- 战斗机攻击态建议：`ATTACK` 最短时长上调，`FOCUS` 最短时长下调，稳定后优先进入攻击。
+- 俯冲触发建议：高空压低阈值可从当前高阈值下移，并在“对地攻击目标”时附加额外负俯仰偏置。

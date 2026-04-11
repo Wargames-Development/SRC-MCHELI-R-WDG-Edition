@@ -136,10 +136,12 @@ public class MCH_APS {
                     || entity instanceof MCH_EntityTvMissile
                 ) {
                     MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) entity;
-                    if (bullet.shootingEntity instanceof EntityPlayer && !((EntityPlayer) user).isOnSameTeam((EntityLivingBase) bullet.shootingEntity)) {
+                    if (bullet.shootingEntity instanceof EntityLivingBase && user instanceof EntityLivingBase && !((EntityLivingBase) user).isOnSameTeam((EntityLivingBase) bullet.shootingEntity)) {
                         bullet.setDead();
                         W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
-                        MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
+                        if (bullet.shootingEntity instanceof EntityPlayerMP) {
+                            MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
+                        }
                         MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                             .exploder(user)
                             .player(user instanceof EntityPlayer ? (EntityPlayer) user : null)

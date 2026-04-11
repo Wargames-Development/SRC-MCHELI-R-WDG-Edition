@@ -1010,6 +1010,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
             GL11.glPopMatrix();
             MCH_GuiTargetMarker.addMarkEntityPos(1, entity, posX, posY + (double) info.markerHeight, posZ);
+            this.addMountedGunnerMarkers(ac, tickTime);
             MCH_ClientLightWeaponTickHandler.markEntity(entity, posX, posY, posZ);
             renderEntityMarker(ac);
         }
@@ -1094,6 +1095,31 @@ public abstract class MCH_RenderAircraft extends W_Render {
         MCH_ClientEventHook.setCancelRender(true);
     }
 
+    private void addMountedGunnerMarkers(MCH_EntityAircraft ac, float tickTime) {
+        this.addMountedGunnerMarkerEntity(ac.riddenByEntity, tickTime);
+        MCH_EntitySeat[] arr$ = ac.getSeats();
+        for (MCH_EntitySeat s : arr$) {
+            if (s != null) {
+                this.addMountedGunnerMarkerEntity(s.riddenByEntity, tickTime);
+            }
+        }
+    }
+
+    private void addMountedGunnerMarkerEntity(Entity entity, float tickTime) {
+        if (!(entity instanceof mcheli.mob.MCH_EntityGunner) || entity.isDead) {
+            return;
+        }
+        if (entity.ticksExisted == 0) {
+            entity.lastTickPosX = entity.posX;
+            entity.lastTickPosY = entity.posY;
+            entity.lastTickPosZ = entity.posZ;
+        }
+        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double)tickTime;
+        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double)tickTime;
+        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double)tickTime;
+        MCH_GuiTargetMarker.addMarkEntityPos(2, entity, x, y + (double)entity.height + 0.5D, z);
+    }
+
     public void renderEntitySimple(MCH_EntityAircraft ac, Entity entity, float tickTime, float yaw, float pitch, float roll, float width, float height) {
         if (entity != null) {
             boolean isPilot = ac.isPilot(entity);
@@ -1108,9 +1134,6 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) tickTime;
                 double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) tickTime;
                 double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) tickTime;
-                if (entity instanceof mcheli.mob.MCH_EntityGunner) {
-                    MCH_GuiTargetMarker.addMarkEntityPos(2, entity, x, y + (double) entity.height + 0.5D, z);
-                }
                 float f1 = entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * tickTime;
                 int i = entity.getBrightnessForRender(tickTime);
                 if (entity.isBurning()) {

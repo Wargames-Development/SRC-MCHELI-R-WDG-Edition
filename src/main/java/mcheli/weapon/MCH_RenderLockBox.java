@@ -67,7 +67,7 @@ public class MCH_RenderLockBox extends W_Render {
                 List list = player.worldObj.getEntitiesWithinAABB(mcheli.aircraft.MCH_EntityAircraft.class, aabb);
                 for (Object o : list) {
                     MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
-                    if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isECMJammerUsing())) {
+                    if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isUsingFlareType(10))) {
                         jammed = true;
                         break;
                     }

@@ -484,7 +484,7 @@ public abstract class MCH_HudItem extends Gui {
                     railgunPer = ((MCH_WeaponRailgun) ws.getCurrentWeapon()).getRailgunTime() * 100 + "%";
                 }
 
-                if (ws.getCurrentWeapon().airburstDist <= 5 || ws.getCurrentWeapon().airburstDist >= 300) {
+                if (ws.getCurrentWeapon().airburstDist <= 5 || ws.getCurrentWeapon().airburstDist >= 3000) {
                     airburstDist = "---";
                 } else {
                     airburstDist = ws.getCurrentWeapon().airburstDist + "m + 3";

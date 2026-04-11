@@ -124,7 +124,7 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     }
                 }
             } else {
-                if (getInfo().activeRadar && ticksExisted % getInfo().scanInterval == 0) {
+                if ((getInfo().activeRadar || getInfo().passiveRadar) && ticksExisted % getInfo().scanInterval == 0) {
                     scanForTargets();
                 }
             }

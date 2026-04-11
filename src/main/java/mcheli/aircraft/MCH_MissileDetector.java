@@ -40,7 +40,7 @@ public class MCH_MissileDetector {
         byte missileLockType = 0;
         byte missileLockDist = 0;
         byte vehicleLockType = 0;
-        if (this.ac.haveFlare()) {
+        if (this.ac.getAcInfo() != null) {
             if (this.alertCount > 0) {
                 --this.alertCount;
             }
@@ -53,7 +53,7 @@ public class MCH_MissileDetector {
             if (this.ac.getEntityData().getBoolean("LockOn")) {
                 if (this.alertCount == 0) {
                     this.alertCount = 10;
-                    if (this.ac != null && this.ac.haveFlare() && !this.ac.isDestroyed()) {
+                    if (this.ac != null && !this.ac.isDestroyed()) {
                         for (int rider = 0; rider < 2; ++rider) {
                             Entity entity = this.ac.getEntityBySeatId(rider);
                             if (entity instanceof EntityPlayerMP) {
@@ -186,12 +186,6 @@ public class MCH_MissileDetector {
                             msl.setTargetEntity(null);
                         }
                     }
-                    //雷达弹不做处理
-                    else if (msl.getInfo().isRadarMissile) {
-                        if (ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
-                            msl.setTargetEntity(null);
-                        }
-                    }
                 }
             }
         }
@@ -215,6 +209,9 @@ public class MCH_MissileDetector {
 
     public void destroyMissileECM() {
         if (world.isRemote) return;
+        if (this.ac.getAcInfo() == null || this.ac.getAcInfo().ecmJammerType != 2) {
+            return;
+        }
         List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(80.0D, 80.0D, 80.0D));
         if (list == null) {
             return;

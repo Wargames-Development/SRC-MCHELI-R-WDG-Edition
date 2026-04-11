@@ -6,11 +6,13 @@ import mcheli.MCH_Lib;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.MCH_RayTracer;
 import mcheli.aircraft.MCH_AircraftInfo;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
@@ -92,9 +94,20 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 MCH_EntityASMissile missile = new MCH_EntityASMissile(this.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, this.acceleration);
                 missile.setInfoByName(this.name);
                 missile.setParameterFromWeapon(this, prm.entity, prm.user);
-
+                boolean targetAssigned = false;
+                Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
+                if (prm.user instanceof MCH_EntityGunner && tgtEnt != null && !tgtEnt.isDead) {
+                    missile.targetPosX = tgtEnt.posX;
+                    missile.targetPosY = tgtEnt.posY + tgtEnt.height / 2.0D;
+                    missile.targetPosZ = tgtEnt.posZ;
+                    missile.originTargetPosX = missile.targetPosX;
+                    missile.originTargetPosY = missile.targetPosY;
+                    missile.originTargetPosZ = missile.targetPosZ;
+                    missile.targeting = true;
+                    targetAssigned = true;
+                }
                 MCH_GPSPosition gpsPosition;
-                if ((gpsPosition = MCH_GPSPosition.get(prm.user)) != null) {
+                if (!targetAssigned && (gpsPosition = MCH_GPSPosition.get(prm.user)) != null) {
                     if (gpsPosition.isActive) {
                         missile.targetPosX = gpsPosition.x;
                         missile.targetPosY = gpsPosition.y;
@@ -102,6 +115,18 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                         missile.originTargetPosX = gpsPosition.x;
                         missile.originTargetPosY = gpsPosition.y;
                         missile.originTargetPosZ = gpsPosition.z;
+                        missile.targeting = true;
+                        targetAssigned = true;
+                    }
+                }
+                if (!targetAssigned) {
+                    if (tgtEnt != null && !tgtEnt.isDead) {
+                        missile.targetPosX = tgtEnt.posX;
+                        missile.targetPosY = tgtEnt.posY + tgtEnt.height / 2.0D;
+                        missile.targetPosZ = tgtEnt.posZ;
+                        missile.originTargetPosX = missile.targetPosX;
+                        missile.originTargetPosY = missile.targetPosY;
+                        missile.originTargetPosZ = missile.targetPosZ;
                         missile.targeting = true;
                     }
                 }

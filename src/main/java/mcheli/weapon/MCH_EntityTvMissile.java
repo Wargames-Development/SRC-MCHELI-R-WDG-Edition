@@ -1,6 +1,7 @@
 package mcheli.weapon;
 
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.mob.MCH_EntityGunner;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
@@ -62,8 +63,8 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
         if(!targeting) return;
 
-        //拖线制导
-        if (!getInfo().laserGuidance) {
+        boolean treatAsTvGuidance = !getInfo().laserGuidance || e instanceof MCH_EntityGunner;
+        if (treatAsTvGuidance) {
             if (e != null && !e.isDead) {
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
                 if (ac != null) {
@@ -79,10 +80,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 }
 
             }
-        }
-
-        //激光制导
-        else {
+        } else {
             double x, y, z;
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
             if (ac != null && ac.getCurrentWeapon(e).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
@@ -97,7 +95,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     List list = ac.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
                     for (Object o : list) {
                         MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
-                        if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isECMJammerUsing())) {
+                        if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isUsingFlareType(10))) {
                             jammed = true;
                             break;
                         }
