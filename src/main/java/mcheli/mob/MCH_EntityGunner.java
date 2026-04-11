@@ -27,13 +27,16 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
+import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.World;
 
 public class MCH_EntityGunner extends EntityLivingBase {
     public static final int TARGET_MONSTER = 0;
     public static final int TARGET_PLAYER = 1;
     public static final int TARGET_AA_AMMO = 2;
+    public static final int TARGET_ENEMY = 3;
     private static final int HELI_STATE_CRUISE = 0;
+    private static final int HELI_STATE_FOCUS = 3;
     private static final int HELI_STATE_ATTACK = 1;
     private static final int HELI_STATE_DISENGAGE = 2;
     public boolean isCreative = false;
@@ -80,6 +83,9 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private int heliCruiseTurnDir = 0;
     private double heliLastTargetX = 0.0D;
     private double heliLastTargetZ = 0.0D;
+    private int weaponRotateTicks = 0;
+    private int weaponRotateThreshold = 240;
+    private int weaponRotateWeaponId = -1;
 
     public MCH_EntityGunner(World world) {
         super(world);
@@ -93,6 +99,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
     protected void entityInit() {
         super.entityInit();
         getDataWatcher().addObject(17, "");
+        getDataWatcher().addObject(18, Integer.valueOf(0));
     }
 
     public String getTeamName() {
@@ -101,6 +108,16 @@ public class MCH_EntityGunner extends EntityLivingBase {
 
     public void setTeamName(String name) {
         getDataWatcher().updateObject(17, name);
+    }
+
+    public int getTargetType() {
+        return getDataWatcher().getWatchableObjectInt(18);
+    }
+
+    public void setTargetType(int type) {
+        int v = MathHelper.clamp_int(type, TARGET_MONSTER, TARGET_ENEMY);
+        this.targetType = v;
+        getDataWatcher().updateObject(18, Integer.valueOf(v));
     }
 
     public Team getTeam() {
@@ -167,6 +184,9 @@ public class MCH_EntityGunner extends EntityLivingBase {
 
     public void onUpdate() {
         super.onUpdate();
+        if (this.worldObj.isRemote) {
+            this.targetType = getTargetType();
+        }
         if (!this.worldObj.isRemote && !this.isDead) {
             if (this.ridingEntity != null && this.ridingEntity.isDead)
                 this.ridingEntity = null;
@@ -186,7 +206,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 this.obstacleTurnDir = 0;
                 this.largeTurnRemain = 0.0F;
                 this.largeTurnDir = 0;
-                this.heliState = 0;
+                this.heliState = HELI_STATE_CRUISE;
                 this.heliStateTicks = 0;
                 this.heliStateDuration = 0;
                 this.heliCruiseAltitude = 40.0F + this.rand.nextFloat() * 20.0F;
@@ -198,6 +218,13 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 this.heliCruiseTurnDir = 0;
                 this.heliLastTargetX = 0.0D;
                 this.heliLastTargetZ = 0.0D;
+                this.weaponRotateTicks = 0;
+                this.weaponRotateThreshold = 200 + this.rand.nextInt(101);
+                this.weaponRotateWeaponId = -1;
+                if (this.ridingEntity instanceof MCH_EntityHeli || (this.ridingEntity instanceof MCH_EntitySeat && ((MCH_EntitySeat)this.ridingEntity).getParent() instanceof MCH_EntityHeli)) {
+                    this.heliState = HELI_STATE_DISENGAGE;
+                    this.heliStateDuration = 100 + this.rand.nextInt(51);
+                }
                 this.lastTargetUpdateTick = -1;
             }
             MCH_EntityAircraft ac = null;
@@ -233,6 +260,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
                     }
                     updateHeliDrive((MCH_EntityHeli)ac);
                 }
+                updateWeaponRotation(ac);
                 shotTarget(ac);
             } else if (this.despawnCount < 20) {
                 this.despawnCount++;
@@ -259,8 +287,20 @@ public class MCH_EntityGunner extends EntityLivingBase {
         boolean ret = false;
         if (this.targetType == TARGET_MONSTER) {
             ret = (entity != this && !(entity instanceof net.minecraft.entity.monster.EntityEnderman) && !entity.isDead && !isOnSameTeam(entity) && entity.getHealth() > 0.0F && !ac.isMountedEntity((Entity)entity));
-        } else {
+        } else if (this.targetType == TARGET_PLAYER) {
             ret = (entity != this && !((EntityPlayer)entity).capabilities.isCreativeMode && !entity.isDead && !getTeamName().isEmpty() && !isOnSameTeam(entity) && entity.getHealth() > 0.0F && !ac.isMountedEntity((Entity)entity));
+        } else if (this.targetType == TARGET_ENEMY) {
+            if (entity == this || entity.isDead || entity.getHealth() <= 0.0F || ac.isMountedEntity((Entity)entity))
+                ret = false;
+            else if (entity instanceof EntityPlayer) {
+                EntityPlayer player = (EntityPlayer)entity;
+                boolean hardMode = this.worldObj.difficultySetting == EnumDifficulty.HARD;
+                ret = (!player.capabilities.isCreativeMode || hardMode);
+            } else if (isNeutralEntity(entity)) {
+                ret = true;
+            } else if (isFriendlyGunner(entity)) {
+                ret = true;
+            }
         }
         MCH_IGuidanceSystem guidanceSystem = ws.getCurrentWeapon().getGuidanceSystem();
         if (ret && guidanceSystem != null) {
@@ -295,6 +335,9 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 rotSpeed = (ac.getAcInfo()).cameraRotationSpeed / 10.0F;
             if (ac instanceof MCH_EntityHeli && ac.isPilot((Entity)this) && this.heliState == HELI_STATE_ATTACK)
                 rotSpeed = Math.max(rotSpeed, 18.0F);
+            boolean railgun = ws.getInfo() != null && ws.getInfo().type != null && ws.getInfo().type.equalsIgnoreCase("railgun");
+            if (railgun)
+                rotSpeed = Math.max(rotSpeed, 22.0F);
             this.rotationPitch = MathHelper.wrapAngleTo180_float(this.rotationPitch);
             this.rotationYaw = MathHelper.wrapAngleTo180_float(this.rotationYaw);
             double dist = getDistanceToEntity(this.targetEntity);
@@ -312,7 +355,8 @@ public class MCH_EntityGunner extends EntityLivingBase {
             double d3 = MathHelper.sqrt_double(d0 * d0 + d2 * d2);
             float yaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(d2, d0) * 180.0D / Math.PI) - 90.0F);
             float pitch = (float)-(Math.atan2(d1, d3) * 180.0D / Math.PI);
-            if (Math.abs(this.rotationPitch - pitch) < rotSpeed && Math.abs(this.rotationYaw - yaw) < rotSpeed) {
+            float shotWindow = railgun ? (rotSpeed * 1.8F) : rotSpeed;
+            if (Math.abs(this.rotationPitch - pitch) < shotWindow && Math.abs(this.rotationYaw - yaw) < shotWindow) {
                 float r = ac.isPilot((Entity)this) ? 0.1F : 0.5F;
                 this.rotationPitch = pitch + (this.rand.nextFloat() - 0.5F) * r - cw.fixRotationPitch;
                 this.rotationYaw = yaw + (this.rand.nextFloat() - 0.5F) * r;
@@ -409,6 +453,26 @@ public class MCH_EntityGunner extends EntityLivingBase {
         return getHeightAboveGround(entity) > 30.0D;
     }
 
+    private boolean isFriendlyGunner(Entity entity) {
+        return entity instanceof MCH_EntityGunner && ((MCH_EntityGunner)entity).targetType == TARGET_MONSTER;
+    }
+
+    private boolean isEnemyGunner(Entity entity) {
+        return entity instanceof MCH_EntityGunner && ((MCH_EntityGunner)entity).targetType == TARGET_ENEMY;
+    }
+
+    private boolean isNeutralEntity(Entity entity) {
+        return entity instanceof EntityLivingBase && !(entity instanceof IMob) && !(entity instanceof EntityPlayer) && !(entity instanceof MCH_EntityGunner);
+    }
+
+    private boolean isPriorityTarget(EntityLivingBase entity) {
+        if (this.targetType == TARGET_MONSTER)
+            return isEnemyGunner((Entity)entity);
+        if (this.targetType == TARGET_ENEMY)
+            return isFriendlyGunner((Entity)entity);
+        return false;
+    }
+
     private void updateTargetForWeapon(MCH_EntityAircraft ac, MCH_WeaponSet ws, Vec3 pos) {
         if (this.lastTargetUpdateTick == this.ticksExisted)
             return;
@@ -426,9 +490,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
             int rh = MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt;
             int rv = MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt;
             list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
+        } else if (this.targetType == TARGET_ENEMY) {
+            int rh = Math.max(MCH_Config.RangeOfGunner_VsMonster_Horizontal.prmInt, MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt);
+            int rv = Math.max(MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt, MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt);
+            list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
         } else {
             list = this.worldObj.getEntitiesWithinAABBExcludingEntity((Entity)this, this.boundingBox.expand(150.0D, 150.0D, 150.0D));
         }
+        boolean priorityChosen = false;
         for (int i = 0; i < list.size(); i++) {
             Entity candidate = list.get(i);
             if (this.targetType == TARGET_AA_AMMO) {
@@ -451,21 +520,40 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 continue;
             EntityLivingBase entity = (EntityLivingBase)candidate;
             if (this.targetType == TARGET_MONSTER) {
-                if (!(entity instanceof IMob))
+                if (!(entity instanceof IMob) && !isEnemyGunner((Entity)entity))
                     continue;
-            } else if (!(entity instanceof EntityPlayer)) {
-                continue;
+            } else if (this.targetType == TARGET_PLAYER) {
+                if (!(entity instanceof EntityPlayer))
+                    continue;
+            } else if (this.targetType == TARGET_ENEMY) {
+                if (!isFriendlyGunner((Entity)entity) && !(entity instanceof EntityPlayer) && !isNeutralEntity((Entity)entity))
+                    continue;
             }
             boolean heliPilot = (ac instanceof MCH_EntityHeli && ac.isPilot((Entity)this));
             if (canAttackEntity(entity, ac, ws))
                 if ((heliPilot || checkPitch(entity, ac, pos)))
-                    if ((nextTarget == null || getDistanceToEntity((Entity)entity) < getDistanceToEntity((Entity)nextTarget)) && canEntityBeSeen((Entity)entity))
+                    if (canEntityBeSeen((Entity)entity))
                         if (heliPilot) {
-                            nextTarget = entity;
-                            this.switchTargetCount = 30;
+                            boolean priority = isPriorityTarget(entity);
+                            if ((priority && !priorityChosen) || (priority == priorityChosen && (nextTarget == null || getDistanceToEntity((Entity)entity) < getDistanceToEntity((Entity)nextTarget)))) {
+                                nextTarget = entity;
+                                priorityChosen = priority;
+                                this.switchTargetCount = 30;
+                            }
+                        } else if (ws.getInfo() != null && ws.getInfo().type != null && ws.getInfo().type.equalsIgnoreCase("railgun")) {
+                            boolean priority = isPriorityTarget(entity);
+                            if ((priority && !priorityChosen) || (priority == priorityChosen && (nextTarget == null || getDistanceToEntity((Entity)entity) < getDistanceToEntity((Entity)nextTarget)))) {
+                                nextTarget = entity;
+                                priorityChosen = priority;
+                                this.switchTargetCount = 40;
+                            }
                         } else if (isInAttackable(entity, ac, ws, pos)) {
-                            nextTarget = entity;
-                            this.switchTargetCount = 60;
+                            boolean priority = isPriorityTarget(entity);
+                            if ((priority && !priorityChosen) || (priority == priorityChosen && (nextTarget == null || getDistanceToEntity((Entity)entity) < getDistanceToEntity((Entity)nextTarget)))) {
+                                nextTarget = entity;
+                                priorityChosen = priority;
+                                this.switchTargetCount = 60;
+                            }
                         }
         }
         if (nextTarget != null && this.targetEntity != nextTarget) {
@@ -623,6 +711,22 @@ public class MCH_EntityGunner extends EntityLivingBase {
             throttleDown = false;
             brake = false;
         }
+        Entity avoidEntity = findEmergencyAvoidEntity(tank, 10.0D);
+        if (avoidEntity != null) {
+            float avoidYaw = getAvoidYaw((Entity)tank, avoidEntity);
+            float avoidDiff = MathHelper.wrapAngleTo180_float(avoidYaw - tank.getRotYaw());
+            moveLeft = avoidDiff < -2.0F;
+            moveRight = avoidDiff > 2.0F;
+            throttleDown = true;
+            throttleUp = tank.getCurrentThrottle() < 0.10D;
+            brake = this.getDistanceSqToEntity(avoidEntity) < 16.0D;
+            if (Math.abs(avoidDiff) > 8.0F && moveDistSq < 0.0064D) {
+                float avoidStep = Math.max(-4.2F, Math.min(4.2F, avoidDiff * 0.32F));
+                tank.setRotYaw(MathHelper.wrapAngleTo180_float(tank.getRotYaw() + avoidStep));
+            }
+            this.largeTurnRemain = 0.0F;
+            this.largeTurnDir = 0;
+        }
         if (moveLeft && !moveRight) {
             this.leftTurnAccum++;
         } else if (moveRight && !moveLeft) {
@@ -669,7 +773,13 @@ public class MCH_EntityGunner extends EntityLivingBase {
             this.heliCruiseAltitude = 40.0F + this.rand.nextFloat() * 20.0F;
         }
         if (this.heliState == HELI_STATE_CRUISE && this.targetEntity != null) {
-            enterHeliState(HELI_STATE_ATTACK, 100 + this.rand.nextInt(51));
+            enterHeliState(HELI_STATE_FOCUS, 20 + this.rand.nextInt(11));
+        } else if (this.heliState == HELI_STATE_FOCUS && (this.targetEntity == null || this.heliStateTicks >= this.heliStateDuration)) {
+            if (this.targetEntity != null) {
+                enterHeliState(HELI_STATE_ATTACK, 100 + this.rand.nextInt(51));
+            } else {
+                enterHeliState(HELI_STATE_CRUISE, 0);
+            }
         } else if (this.heliState == HELI_STATE_ATTACK && (this.targetEntity == null || this.heliStateTicks >= this.heliStateDuration)) {
             enterHeliState(HELI_STATE_DISENGAGE, 100 + this.rand.nextInt(51));
         } else if (this.heliState == HELI_STATE_DISENGAGE && this.heliStateTicks >= this.heliStateDuration) {
@@ -699,6 +809,22 @@ public class MCH_EntityGunner extends EntityLivingBase {
             } else if (altitude > this.heliCruiseAltitude + 6.0F) {
                 throttleDown = true;
             }
+        } else if (this.heliState == HELI_STATE_FOCUS) {
+            this.heliAllowFire = false;
+            if (this.targetEntity != null) {
+                double dx = this.targetEntity.posX - heli.posX;
+                double dz = this.targetEntity.posZ - heli.posZ;
+                this.heliLastTargetX = this.targetEntity.posX;
+                this.heliLastTargetZ = this.targetEntity.posZ;
+                desiredYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
+            }
+            desiredPitch = 6.5F;
+            if (altitude < this.heliCruiseAltitude - 10.0F) {
+                throttleUp = true;
+            } else if (altitude > this.heliCruiseAltitude + 4.0F) {
+                throttleDown = true;
+            }
+            throttleUp = true;
         } else if (this.heliState == HELI_STATE_DISENGAGE) {
             this.heliAllowFire = false;
             if (this.targetEntity != null) {
@@ -755,6 +881,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 throttleDown = true;
             }
         }
+        Entity avoidEntity = findEmergencyAvoidEntity(heli, 10.0D);
+        if (avoidEntity != null) {
+            desiredYaw = getAvoidYaw((Entity)heli, avoidEntity);
+            desiredPitch = -4.0F;
+            throttleUp = true;
+            throttleDown = false;
+            this.heliAllowFire = false;
+        }
         float yawDiff = MathHelper.wrapAngleTo180_float(desiredYaw - heli.getRotYaw());
         float yawStep = Math.max(-3.6F, Math.min(3.6F, yawDiff * 0.28F));
         heli.setRotYaw(MathHelper.wrapAngleTo180_float(heli.getRotYaw() + yawStep));
@@ -785,6 +919,77 @@ public class MCH_EntityGunner extends EntityLivingBase {
         } else {
             this.heliAllowFire = false;
         }
+    }
+
+    private void updateWeaponRotation(MCH_EntityAircraft ac) {
+        int weaponId = ac.getCurrentWeaponID((Entity)this);
+        if (weaponId < 0) {
+            this.weaponRotateWeaponId = -1;
+            this.weaponRotateTicks = 0;
+            return;
+        }
+        if (this.weaponRotateWeaponId != weaponId) {
+            this.weaponRotateWeaponId = weaponId;
+            this.weaponRotateTicks = 0;
+            this.weaponRotateThreshold = 200 + this.rand.nextInt(101);
+            return;
+        }
+        this.weaponRotateTicks++;
+        if (this.weaponRotateTicks < this.weaponRotateThreshold) {
+            return;
+        }
+        int nextId = ac.getNextWeaponID((Entity)this, 1);
+        if (nextId >= 0 && nextId != weaponId) {
+            ac.switchWeapon((Entity)this, nextId);
+        }
+        this.weaponRotateTicks = 0;
+        this.weaponRotateThreshold = 200 + this.rand.nextInt(101);
+        this.weaponRotateWeaponId = ac.getCurrentWeaponID((Entity)this);
+    }
+
+    private Entity findEmergencyAvoidEntity(MCH_EntityAircraft ac, double range) {
+        double rangeSq = range * range;
+        Entity nearest = null;
+        double nearestSq = rangeSq;
+        List<Entity> list = this.worldObj.getEntitiesWithinAABBExcludingEntity((Entity)ac, ac.boundingBox.expand(range, 4.0D, range));
+        for (int i = 0; i < list.size(); i++) {
+            Entity e = list.get(i);
+            if (e == null || e.isDead || e == this || e == ac || ac.isMountedEntity(e))
+                continue;
+            boolean needAvoid = false;
+            if (e instanceof MCH_EntityAircraft) {
+                needAvoid = true;
+            } else if (this.targetType == TARGET_MONSTER) {
+                if (e instanceof EntityPlayer) {
+                    needAvoid = true;
+                } else if (e instanceof EntityLivingBase && !(e instanceof IMob) && !(e instanceof MCH_EntityGunner)) {
+                    needAvoid = true;
+                }
+            } else if (this.targetType == TARGET_ENEMY) {
+                if (e instanceof IMob) {
+                    needAvoid = true;
+                }
+            }
+            if (!needAvoid)
+                continue;
+            double dx = e.posX - ac.posX;
+            double dz = e.posZ - ac.posZ;
+            double distSq = dx * dx + dz * dz;
+            if (distSq < nearestSq) {
+                nearestSq = distSq;
+                nearest = e;
+            }
+        }
+        return nearest;
+    }
+
+    private float getAvoidYaw(Entity self, Entity threat) {
+        double awayX = self.posX - threat.posX;
+        double awayZ = self.posZ - threat.posZ;
+        if (awayX * awayX + awayZ * awayZ < 0.01D) {
+            return MathHelper.wrapAngleTo180_float(self.rotationYaw + (this.rand.nextBoolean() ? 90.0F : -90.0F));
+        }
+        return MathHelper.wrapAngleTo180_float((float)(Math.atan2(awayZ, awayX) * 180.0D / Math.PI) - 90.0F);
     }
 
     private boolean hasTooHighObstacleAhead(MCH_EntityTank tank) {
@@ -875,7 +1080,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
         nbt.setBoolean("Creative", this.isCreative);
         nbt.setString("OwnerUUID", this.ownerUUID);
         nbt.setString("TeamName", getTeamName());
-        nbt.setInteger("TargetType", this.targetType);
+        nbt.setInteger("TargetType", getTargetType());
     }
 
     public void readEntityFromNBT(NBTTagCompound nbt) {
@@ -883,7 +1088,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
         this.isCreative = nbt.getBoolean("Creative");
         this.ownerUUID = nbt.getString("OwnerUUID");
         setTeamName(nbt.getString("TeamName"));
-        this.targetType = nbt.getInteger("TargetType");
+        setTargetType(nbt.getInteger("TargetType"));
     }
 
     public void travelToDimension(int dim) {}
@@ -894,6 +1099,8 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 dropItem((Item)MCH_MOD.itemSpawnGunnerVsMonster, 1);
             } else if (this.targetType == TARGET_AA_AMMO) {
                 dropItem((Item)MCH_MOD.itemSpawnGunnerAA, 1);
+            } else if (this.targetType == TARGET_ENEMY) {
+                dropItem((Item)MCH_MOD.itemSpawnGunnerEnemy, 1);
             } else {
                 dropItem((Item)MCH_MOD.itemSpawnGunnerVsPlayer, 1);
             }

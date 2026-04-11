@@ -16,6 +16,7 @@ import mcheli.block.MCH_DraftingTableTileEntity;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.chain.MCH_ItemChain;
 import mcheli.command.MCH_Command;
+import mcheli.command.MCH_CommandAddGunner;
 import mcheli.container.MCH_EntityContainer;
 import mcheli.container.MCH_ItemContainer;
 import mcheli.flare.MCH_EntityChaff;
@@ -110,6 +111,7 @@ public class MCH_MOD {
     public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
     public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
     public static MCH_ItemSpawnGunner itemSpawnGunnerAA;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerEnemy;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
@@ -374,9 +376,9 @@ public class MCH_MOD {
         item.secondaryColor = 12582912;
         itemSpawnGunnerVsMonster = item;
         registerItem((W_Item)item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "Gunner (vs Monster)");
+        W_LanguageRegistry.addName(item, "Gunner [Friendly]");
         W_LanguageRegistry.addNameForObject(item, "ja_JP", "対モンスター 射撃手");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手（对怪物）");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[友好]");
         name = "spawn_gunner_vs_player";
         item = new MCH_ItemSpawnGunner();
         item.targetType = 1;
@@ -384,9 +386,9 @@ public class MCH_MOD {
         item.secondaryColor = 49152;
         itemSpawnGunnerVsPlayer = item;
         registerItem((W_Item)item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "Gunner (vs Player of other team)");
+        W_LanguageRegistry.addName(item, "Gunner [Faction]");
         W_LanguageRegistry.addNameForObject(item, "ja_JP", "対他チームプレイヤー 射撃手");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手（对敌方玩家）");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[阵营]");
         name = "gunner_aa";
         item = new MCH_ItemSpawnGunner();
         item.targetType = 2;
@@ -394,9 +396,19 @@ public class MCH_MOD {
         item.secondaryColor = 32768;
         itemSpawnGunnerAA = item;
         registerItem((W_Item)item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "Gunner AA");
+        W_LanguageRegistry.addName(item, "Gunner [Anti-Missile]");
         W_LanguageRegistry.addNameForObject(item, "ja_JP", "対弾薬迎撃 射撃手");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手（防空拦截）");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[反导]");
+        name = "gunner_enemy";
+        item = new MCH_ItemSpawnGunner();
+        item.targetType = 3;
+        item.primaryColor = 12632224;
+        item.secondaryColor = 2228224;
+        itemSpawnGunnerEnemy = item;
+        registerItem((W_Item)item, name, creativeTabs);
+        W_LanguageRegistry.addName(item, "Gunner [Hostile]");
+        W_LanguageRegistry.addNameForObject(item, "ja_JP", "敵対 射撃手");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[敌对]");
     }
 
     public void registerEntity() {
@@ -436,6 +448,7 @@ public class MCH_MOD {
     public void registerCommand(FMLServerStartedEvent e) {
         CommandHandler handler = (CommandHandler) FMLCommonHandler.instance().getSidedDelegate().getServer().getCommandManager();
         handler.registerCommand(new MCH_Command());
+        handler.registerCommand(new MCH_CommandAddGunner());
     }
 
     private void registerItemRangeFinder() {

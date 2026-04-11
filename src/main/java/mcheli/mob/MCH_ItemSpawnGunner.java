@@ -108,7 +108,7 @@ public class MCH_ItemSpawnGunner extends W_Item {
             MCH_EntityGunner gunner = new MCH_EntityGunner(world, mCH_Entity.posX, mCH_Entity.posY, mCH_Entity.posZ);
             gunner.rotationYaw = (((MathHelper.floor_double((player.rotationYaw * 4.0F / 360.0F) + 0.5D) & 0x3) - 1) * 90);
             gunner.isCreative = player.capabilities.isCreativeMode;
-            gunner.targetType = this.targetType;
+            gunner.setTargetType(this.targetType);
             gunner.ownerUUID = player.getUniqueID().toString();
             ScorePlayerTeam team = world.getScoreboard().getPlayersTeam(player.getDisplayName());
             if (team != null)
@@ -126,22 +126,27 @@ public class MCH_ItemSpawnGunner extends W_Item {
 
     @SideOnly(Side.CLIENT)
     public int getColorFromItemStack(ItemStack itemStack, int layer) {
+        if (this.targetType == 2 || this.targetType == 3)
+            return this.primaryColor;
         return (layer == 0) ? this.primaryColor : this.secondaryColor;
     }
 
     @SideOnly(Side.CLIENT)
     public boolean requiresMultipleRenderPasses() {
-        return true;
+        return this.targetType != 2 && this.targetType != 3;
     }
 
     @SideOnly(Side.CLIENT)
     public IIcon getIconFromDamageForRenderPass(int p_77618_1_, int p_77618_2_) {
+        if (this.targetType == 2 || this.targetType == 3)
+            return super.getIconFromDamageForRenderPass(p_77618_1_, p_77618_2_);
         return (p_77618_2_ > 0) ? this.theIcon : super.getIconFromDamageForRenderPass(p_77618_1_, p_77618_2_);
     }
 
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister icon) {
         super.registerIcons(icon);
-        this.theIcon = icon.registerIcon(getIconString() + "_overlay");
+        if (this.targetType != 2 && this.targetType != 3)
+            this.theIcon = icon.registerIcon(getIconString() + "_overlay");
     }
 }

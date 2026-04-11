@@ -1108,6 +1108,9 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) tickTime;
                 double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) tickTime;
                 double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) tickTime;
+                if (entity instanceof mcheli.mob.MCH_EntityGunner) {
+                    MCH_GuiTargetMarker.addMarkEntityPos(2, entity, x, y + (double) entity.height + 0.5D, z);
+                }
                 float f1 = entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * tickTime;
                 int i = entity.getBrightnessForRender(tickTime);
                 if (entity.isBurning()) {
