@@ -73,6 +73,7 @@ public class MCH_RenderCCIP {
         GL11.glTranslated(x, y, z);
         GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
         GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
+        GL11.glRotatef(ac.getRotRoll(), 0.0F, 0.0F, 1.0F);
         GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
@@ -86,7 +87,13 @@ public class MCH_RenderCCIP {
         }
         mc.getTextureManager().bindTexture(ccipTexture);
         Tessellator tess = Tessellator.instance;
-        float half = ICON_SIZE_PX * 0.5F;
+        float ccipFactor = info.ccipFactor;
+        if (ccipFactor < 0.1F) {
+            ccipFactor = 0.1F;
+        } else if (ccipFactor > 10.0F) {
+            ccipFactor = 10.0F;
+        }
+        float half = ICON_SIZE_PX * 0.5F * ccipFactor;
         tess.startDrawingQuads();
         tess.addVertexWithUV(-half, half, 0.0D, 0.0D, 1.0D);
         tess.addVertexWithUV(half, half, 0.0D, 1.0D, 1.0D);

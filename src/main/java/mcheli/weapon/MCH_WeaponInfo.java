@@ -250,6 +250,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      */
     public boolean ccip = false;
     public String ccipTexture = "CCIP";
+    public float ccipFactor = 1.0F;
     /**
      * 是否可以锁定导弹实体
      */
@@ -584,7 +585,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.aheadSolveIntervalTick = 1;
         }
 
-        if (!this.type.equalsIgnoreCase("rocket")) {
+        if (!isCCIPSupportedType(this.type)) {
             this.ccip = false;
         }
 
@@ -741,6 +742,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.ccip = this.toBool(data);
             } else if (item.equalsIgnoreCase("CCIPtexture")) {
                 this.ccipTexture = data.trim();
+            } else if (item.equalsIgnoreCase("CCIPFactor")) {
+                this.ccipFactor = this.toFloat(data, 0.1F, 10.0F);
             } else if (item.equalsIgnoreCase("CanLockMissile")) {
                 this.canLockMissile = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableBVR")) {
@@ -1125,6 +1128,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
 
     public float getRecoilYaw() {
         return this.recoilYaw + ((rand.nextFloat() - 0.5F) * this.recoilYawRange);
+    }
+
+    private boolean isCCIPSupportedType(String type) {
+        if (type == null) {
+            return false;
+        }
+        return type.equalsIgnoreCase("rocket")
+            || type.equalsIgnoreCase("atmissile")
+            || type.equalsIgnoreCase("tvmissile");
     }
 
     public class RoundItem {

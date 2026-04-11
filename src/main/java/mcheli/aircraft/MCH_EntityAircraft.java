@@ -5186,12 +5186,21 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             prm.user = user;
             if (prm.user != null) {
                 MCH_WeaponSet currentWs = this.getCurrentWeapon(prm.user);
-                if (currentWs != null && currentWs.getInfo() != null && currentWs.getInfo().type != null && currentWs.getInfo().type.equalsIgnoreCase("rocket") && currentWs.getInfo().ccip) {
+                if (currentWs != null && currentWs.getInfo() != null && currentWs.getInfo().ccip && isCCIPSupportedType(currentWs.getInfo().type)) {
                     this.lastPredictedImpactPoint = currentWs.getPredictedImpactPoint(prm);
                 }
             }
         }
         return this.lastPredictedImpactPoint;
+    }
+
+    private boolean isCCIPSupportedType(String type) {
+        if (type == null) {
+            return false;
+        }
+        return type.equalsIgnoreCase("rocket")
+            || type.equalsIgnoreCase("atmissile")
+            || type.equalsIgnoreCase("tvmissile");
     }
 
     public boolean useCurrentWeapon(Entity user) {

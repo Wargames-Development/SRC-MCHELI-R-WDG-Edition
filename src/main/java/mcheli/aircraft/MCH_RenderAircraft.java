@@ -29,7 +29,10 @@ import net.minecraft.util.*;
 import net.minecraftforge.client.model.IModelCustom;
 import org.lwjgl.opengl.GL11;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 public abstract class MCH_RenderAircraft extends W_Render {
 
@@ -1096,17 +1099,36 @@ public abstract class MCH_RenderAircraft extends W_Render {
     }
 
     private void addMountedGunnerMarkers(MCH_EntityAircraft ac, float tickTime) {
-        this.addMountedGunnerMarkerEntity(ac.riddenByEntity, tickTime);
+        Set<Integer> marked = new HashSet<Integer>();
+        this.addMountedGunnerMarkerEntity(ac.riddenByEntity, tickTime, marked);
         MCH_EntitySeat[] arr$ = ac.getSeats();
         for (MCH_EntitySeat s : arr$) {
             if (s != null) {
-                this.addMountedGunnerMarkerEntity(s.riddenByEntity, tickTime);
+                this.addMountedGunnerMarkerEntity(s.riddenByEntity, tickTime, marked);
+            }
+        }
+        List<mcheli.mob.MCH_EntityGunner> gunners = ac.worldObj.getEntitiesWithinAABB(mcheli.mob.MCH_EntityGunner.class, ac.boundingBox.expand(2.5D, 2.5D, 2.5D));
+        for (int i = 0; i < gunners.size(); i++) {
+            mcheli.mob.MCH_EntityGunner gunner = gunners.get(i);
+            if (gunner == null || gunner.isDead) {
+                continue;
+            }
+            Entity riding = gunner.ridingEntity;
+            boolean mounted = riding == ac;
+            if (!mounted && riding instanceof MCH_EntitySeat) {
+                mounted = (((MCH_EntitySeat)riding).getParent() == ac);
+            }
+            if (mounted) {
+                this.addMountedGunnerMarkerEntity((Entity)gunner, tickTime, marked);
             }
         }
     }
 
-    private void addMountedGunnerMarkerEntity(Entity entity, float tickTime) {
+    private void addMountedGunnerMarkerEntity(Entity entity, float tickTime, Set<Integer> marked) {
         if (!(entity instanceof mcheli.mob.MCH_EntityGunner) || entity.isDead) {
+            return;
+        }
+        if (marked != null && !marked.add(Integer.valueOf(entity.getEntityId()))) {
             return;
         }
         if (entity.ticksExisted == 0) {
@@ -1117,7 +1139,10 @@ public abstract class MCH_RenderAircraft extends W_Render {
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double)tickTime;
         double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double)tickTime;
         double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double)tickTime;
-        MCH_GuiTargetMarker.addMarkEntityPos(2, entity, x, y + (double)entity.height + 0.5D, z);
+        double rx = x - RenderManager.renderPosX;
+        double ry = y - RenderManager.renderPosY;
+        double rz = z - RenderManager.renderPosZ;
+        MCH_GuiTargetMarker.addMarkEntityPos(2, entity, rx, ry + (double)entity.height + 0.5D, rz);
     }
 
     public void renderEntitySimple(MCH_EntityAircraft ac, Entity entity, float tickTime, float yaw, float pitch, float roll, float width, float height) {
@@ -1179,7 +1204,6 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 }
 
                 W_EntityRenderer.renderEntityWithPosYaw(super.renderManager, entity, dx, dy, dz, f1, tickTime, false);
-
                 if (isPilot && entityLiving != null && ac.getCameraId() > 0) {
                     entityLiving.rotationPitch = bkPitch;
                     entityLiving.prevRotationPitch = bkPrevPitch;
