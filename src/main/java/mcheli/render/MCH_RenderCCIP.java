@@ -20,12 +20,14 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 public class MCH_RenderCCIP {
     private static final ResourceLocation DEFAULT_CCIP = new ResourceLocation(W_MOD.DOMAIN, "textures/ccip.png");
     private static final Map<String, ResourceLocation> CCIP_TEXTURE_CACHE = new HashMap<String, ResourceLocation>();
+    private static final Map<Integer, CcipRenderState> CCIP_RENDER_STATE = new HashMap<Integer, CcipRenderState>();
     private static final int ICON_SIZE_PX = 32;
 
     @SubscribeEvent
@@ -54,6 +56,41 @@ public class MCH_RenderCCIP {
         Vec3 impact = ac.getPredictedImpactPoint(player);
         if (impact == null) {
             return;
+        }
+        int currentWeaponId = ac.getCurrentWeaponID(player);
+        int stateKey = ac.getEntityId();
+        int nowTick = player.ticksExisted;
+        CcipRenderState state = CCIP_RENDER_STATE.get(Integer.valueOf(stateKey));
+        if (state == null) {
+            state = new CcipRenderState();
+            CCIP_RENDER_STATE.put(Integer.valueOf(stateKey), state);
+        }
+        if (!state.initialized || state.weaponId != currentWeaponId || nowTick - state.lastSeenTick > 8) {
+            state.x = impact.xCoord;
+            state.y = impact.yCoord;
+            state.z = impact.zCoord;
+            state.initialized = true;
+            state.weaponId = currentWeaponId;
+        } else {
+            double dx = impact.xCoord - state.x;
+            double dy = impact.yCoord - state.y;
+            double dz = impact.zCoord - state.z;
+            double err = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            double alpha = Math.max(0.16D, Math.min(0.62D, 0.20D + err * 0.08D));
+            state.x += dx * alpha;
+            state.y += dy * alpha;
+            state.z += dz * alpha;
+        }
+        state.lastSeenTick = nowTick;
+        impact = Vec3.createVectorHelper(state.x, state.y, state.z);
+        if (CCIP_RENDER_STATE.size() > 24 && (nowTick & 31) == 0) {
+            Iterator<Map.Entry<Integer, CcipRenderState>> it = CCIP_RENDER_STATE.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<Integer, CcipRenderState> entry = it.next();
+                if (nowTick - entry.getValue().lastSeenTick > 80) {
+                    it.remove();
+                }
+            }
         }
         boolean hasNearbyEntity = hasEntityAroundImpact(ac, player, impact, 3.0D);
         ResourceLocation ccipTexture = getCCIPTexture(info.ccipTexture);
@@ -149,5 +186,14 @@ public class MCH_RenderCCIP {
         return type.equalsIgnoreCase("rocket")
             || type.equalsIgnoreCase("atmissile")
             || type.equalsIgnoreCase("tvmissile");
+    }
+
+    private static class CcipRenderState {
+        double x;
+        double y;
+        double z;
+        int lastSeenTick;
+        int weaponId = -1;
+        boolean initialized;
     }
 }

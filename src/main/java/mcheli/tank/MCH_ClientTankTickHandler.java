@@ -90,7 +90,16 @@ public class MCH_ClientTankTickHandler extends MCH_AircraftClientTickHandler {
             }
 
             boolean hideHand = true;
-            if ((!var9 || !var8.isAlwaysCameraView()) && !var8.getIsGunnerMode(var7) && var8.getCameraId() <= 0) {
+            boolean ridingTankBody = var7.ridingEntity instanceof MCH_EntityTank;
+            boolean ridingTankSeatAsPilot = false;
+            if (var7.ridingEntity instanceof MCH_EntitySeat) {
+                MCH_EntitySeat seat = (MCH_EntitySeat)var7.ridingEntity;
+                ridingTankSeatAsPilot = seat.getParent() == var8 && (seat.seatID == 0 || var8.getSeatIdByEntity(var7) == 0);
+            }
+            boolean useBodyFollowCamera = (ridingTankBody || ridingTankSeatAsPilot) && !var8.getIsGunnerMode(var7);
+            if (useBodyFollowCamera) {
+                MCH_Lib.setRenderViewEntity(var12);
+            } else if ((!var9 || !var8.isAlwaysCameraView()) && !var8.getIsGunnerMode(var7) && var8.getCameraId() <= 0) {
                 MCH_Lib.setRenderViewEntity(var7);
                 if (!var9 && var8.getCurrentWeaponID(var7) < 0) {
                     hideHand = false;

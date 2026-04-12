@@ -237,6 +237,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 载具爆炸倍率，最终的爆炸伤害=爆炸伤害*爆炸倍率
      */
     public float armorExplosionDamageMultiplier = 1.0f;
+    public List<Float> impactAngleThresholds;
+    public List<Float> impactAngleCoefficients;
+    public float impactRicochetStartAngle;
+    public List<SignMarker> signMarkers;
 
     /**
      * 是否有光电干扰机，永远不会被激光弹锁定
@@ -372,6 +376,63 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.partWheel = new ArrayList();
         this.partSteeringWheel = new ArrayList();
         this.lightHatchList = new ArrayList();
+        this.impactAngleThresholds = new ArrayList<Float>();
+        this.impactAngleCoefficients = new ArrayList<Float>();
+        this.impactRicochetStartAngle = 89.0F;
+        this.signMarkers = new ArrayList<SignMarker>();
+        setImpactAngleCoefficientDefault(false);
+    }
+
+    public void setImpactAngleCoefficientDefault(boolean tankType) {
+        if (tankType) {
+            setImpactAngleCoefficient("0,1,60,0.8,67,0.7,72,0.6,78,0.4,81,-1");
+        } else {
+            setImpactAngleCoefficient("0,1,89,-1");
+        }
+    }
+
+    public void setImpactAngleCoefficient(String data) {
+        this.impactAngleThresholds.clear();
+        this.impactAngleCoefficients.clear();
+        this.impactRicochetStartAngle = 181.0F;
+        if (data == null || data.trim().isEmpty()) {
+            return;
+        }
+        String[] s = data.split("\\s*,\\s*");
+        for (int i = 0; i + 1 < s.length; i += 2) {
+            float angle = this.toFloat(s[i], 0.0F, 180.0F);
+            float coeff = this.toFloat(s[i + 1], -1.0F, 1000.0F);
+            if (coeff < 0.0F) {
+                this.impactRicochetStartAngle = angle;
+                break;
+            }
+            this.impactAngleThresholds.add(Float.valueOf(angle));
+            this.impactAngleCoefficients.add(Float.valueOf(coeff));
+        }
+        if (this.impactAngleThresholds.isEmpty()) {
+            this.impactAngleThresholds.add(Float.valueOf(0.0F));
+            this.impactAngleCoefficients.add(Float.valueOf(1.0F));
+        } else if (this.impactAngleThresholds.get(0).floatValue() > 0.0F) {
+            this.impactAngleThresholds.add(0, Float.valueOf(0.0F));
+            this.impactAngleCoefficients.add(0, this.impactAngleCoefficients.get(0));
+        }
+    }
+
+    public float getImpactAngleCoefficientValue(float angleDeg) {
+        float absAngle = Math.abs(angleDeg);
+        float coeff = this.impactAngleCoefficients.isEmpty() ? 1.0F : this.impactAngleCoefficients.get(0).floatValue();
+        for (int i = 1; i < this.impactAngleThresholds.size() && i < this.impactAngleCoefficients.size(); i++) {
+            if (absAngle >= this.impactAngleThresholds.get(i).floatValue()) {
+                coeff = this.impactAngleCoefficients.get(i).floatValue();
+            } else {
+                break;
+            }
+        }
+        return coeff;
+    }
+
+    public boolean isImpactRicochet(float angleDeg) {
+        return Math.abs(angleDeg) >= this.impactRicochetStartAngle;
     }
 
     public static String[] getCannotReloadItem() {
@@ -1125,6 +1186,19 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                                 this.onGroundPitchFactor = this.toFloat(data, 0.0F, 180.0F);
                                                                             } else if (item.equalsIgnoreCase("OnGroundRollFactor")) {
                                                                                 this.onGroundRollFactor = this.toFloat(data, 0.0F, 180.0F);
+                                                                            } else if (item.equalsIgnoreCase("ImpactAngleCoefficient")) {
+                                                                                this.setImpactAngleCoefficient(data);
+                                                                            } else if (item.equalsIgnoreCase("AddSign")) {
+                                                                                s = this.splitParam(data);
+                                                                                if (s.length >= 5) {
+                                                                                    float sx = this.toFloat(s[0]);
+                                                                                    float sy = this.toFloat(s[1]);
+                                                                                    float sz = this.toFloat(s[2]);
+                                                                                    String signName = s[3].trim();
+                                                                                    float signSize = this.toFloat(s[4], 0.1F, 1000.0F);
+                                                                                    boolean perspectiveScale = s.length < 6 || this.toBool(s[5], true);
+                                                                                    this.signMarkers.add(new MCH_AircraftInfo.SignMarker(sx, sy, sz, signName, signSize, perspectiveScale));
+                                                                                }
                                                                             }
                                                                         } else {
                                                                             s = data.split("\\s*,\\s*");
@@ -1464,7 +1538,24 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.lastWeaponPart = null;
         this.wheels.clear();
         this.unmountPosition = null;
+        this.signMarkers.clear();
 
+    }
+
+    public class SignMarker {
+
+        public final Vec3 pos;
+        public final String signName;
+        public final float size;
+        public final boolean perspectiveScale;
+
+
+        public SignMarker(float px, float py, float pz, String signName, float size, boolean perspectiveScale) {
+            this.pos = Vec3.createVectorHelper((double)px, (double)py, (double)pz);
+            this.signName = signName;
+            this.size = size;
+            this.perspectiveScale = perspectiveScale;
+        }
     }
 
     public boolean canReloadItem(String item) {

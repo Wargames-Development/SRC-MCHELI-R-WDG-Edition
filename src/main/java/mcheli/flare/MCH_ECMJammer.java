@@ -4,11 +4,10 @@ import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.PacketBase;
 import mcheli.network.packets.PacketECMJammerUse;
-import mcheli.wrapper.W_McClient;
+import mcheli.particles.MCH_ParticleParam;
+import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 
 public class MCH_ECMJammer {
@@ -38,7 +37,7 @@ public class MCH_ECMJammer {
                 tick = waitTime;
                 useTick = useTime;
                 result = true;
-                W_McClient.MOD_playSoundFX("ECMJammer", 10.0F, 1.0F);
+                W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "iron_curtain", 3.0F, 1.0F);
             }
         } else {
             result = true;
@@ -47,6 +46,7 @@ public class MCH_ECMJammer {
             int jammingTime = 180;
             aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
             int type = aircraft.getAcInfo() != null ? aircraft.getAcInfo().ecmJammerType : 0;
+            W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "iron_curtain", 10.0F, 1.0F);
             MCH_MOD.getPacketHandler().sendToAll(
                 new PacketECMJammerUse(aircraft.getEntityId(), useTick, type, jammingTime));
         }
@@ -71,7 +71,30 @@ public class MCH_ECMJammer {
     }
 
     private void onUsing() {
-
+        if (!worldObj.isRemote || this.aircraft == null) {
+            return;
+        }
+        if (this.aircraft.ticksExisted % 2 != 0) {
+            return;
+        }
+        float radius = (float)Math.max(this.aircraft.width * 0.7D, 1.1D);
+        double baseY = this.aircraft.posY + this.aircraft.height * 0.55D;
+        for (int i = 0; i < 8; ++i) {
+            float angle = (float)((this.aircraft.ticksExisted * 9 + i * 45) * Math.PI / 180.0D);
+            double px = this.aircraft.posX + (double)(Math.cos(angle) * radius);
+            double py = baseY + (double)((i % 2 == 0 ? 0.18F : -0.12F) + (float)Math.sin(angle * 2.0F) * 0.06F);
+            double pz = this.aircraft.posZ + (double)(Math.sin(angle) * radius);
+            double mx = Math.cos(angle) * 0.010D;
+            double mz = Math.sin(angle) * 0.010D;
+            MCH_ParticleParam prm = new MCH_ParticleParam(worldObj, "smoke", px, py, pz, mx, 0.005D, mz, 2.4F);
+            prm.setColor(0.52F, 0.40F, 0.78F, 1.00F);
+            prm.age = 16 + this.worldObj.rand.nextInt(7);
+            prm.diffusible = true;
+            prm.toWhite = true;
+            prm.gravity = -0.01F;
+            prm.motionYUpAge = 1.5F;
+            MCH_ParticlesUtil.spawnParticle(prm);
+        }
     }
 
 

@@ -137,6 +137,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public float lastBBDamageFactor;
     public String lastBBName;
     public int lastBBIndex;
+    public Vec3 lastBBHitNormal;
+    public Vec3 lastBBHitPos;
     public MCH_EntityAircraft.WeaponBay[] weaponBays;
     public float[] rotPartRotation;
     public float[] prevRotPartRotation;
@@ -304,6 +306,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.lastBBDamageFactor = 1.0F;
         this.lastBBName = null;
         this.lastBBIndex = -1;
+        this.lastBBHitNormal = null;
+        this.lastBBHitPos = null;
         this.inventory = new MCH_AircraftInventory(this);
         this.fuelConsumption = 0.0D;
         this.fuelSuppliedCount = 0;
@@ -956,8 +960,23 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     return false;
                 } else {
                     Entity entity = damageSource.getEntity();
+                    float impactAngleForDisplay = -1.0F;
                     if (entity instanceof EntityLivingBase)
                         this.lastAttackedEntity = entity;
+                    MCH_IndicatedDamageSource indicated = (damageSource instanceof MCH_IndicatedDamageSource) ? (MCH_IndicatedDamageSource)damageSource : null;
+                    if (indicated != null && this.getAcInfo() != null) {
+                        Vec3 impactNormal = getImpactNormalForHit(indicated.hitPos, bbIndex);
+                        if (impactNormal != null && indicated.dir != null) {
+                            float impactAngle = getImpactAngleDeg(indicated.dir, impactNormal);
+                            impactAngleForDisplay = impactAngle;
+                            if (this.getAcInfo().isImpactRicochet(impactAngle)) {
+                                applyBulletRicochet(damageSource, impactNormal, indicated.hitPos);
+                                notifyRicochetHit(impactAngle);
+                                return false;
+                            }
+                            damageFactor *= this.getAcInfo().getImpactAngleCoefficientValue(impactAngle);
+                        }
+                    }
                     if (dmt.equalsIgnoreCase("lava")) {
                         if (!damageSource.isProjectile()) {
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
@@ -1114,7 +1133,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     weaponName, bbName, damage * 100 / getMaxHP(), getEntityId()));
                             }
                             if (bbName != null && lastAttackedEntity instanceof EntityPlayer) {
-                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), bbName, damage * 100 / getMaxHP(), (byte) 0), (EntityPlayerMP) lastAttackedEntity);
+                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), bbName, damage * 100 / getMaxHP(), (byte) 0, impactAngleForDisplay), (EntityPlayerMP) lastAttackedEntity);
                             }
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
                         }
@@ -1207,6 +1226,107 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
         return null;
+    }
+
+    private Vec3 getImpactNormalForHit(Vec3 hitPos, int bbIndex) {
+        if (hitPos == null) {
+            return null;
+        }
+        if (bbIndex >= 0 && bbIndex < this.extraBoundingBox.length) {
+            MCH_BoundingBox bb = this.extraBoundingBox[bbIndex];
+            if (bb != null) {
+                return getOBBImpactNormal(bb, hitPos);
+            }
+        }
+        return getAabbImpactNormal(this.boundingBox, hitPos);
+    }
+
+    private Vec3 getOBBImpactNormal(MCH_BoundingBox bb, Vec3 hitPos) {
+        Vec3 rel = hitPos.subtract(bb.center);
+        double lx = rel.dotProduct(bb.axisX);
+        double ly = rel.dotProduct(bb.axisY);
+        double lz = rel.dotProduct(bb.axisZ);
+        double dx = Math.abs(Math.abs(lx) - bb.halfWidth);
+        double dy = Math.abs(Math.abs(ly) - bb.halfHeight);
+        double dz = Math.abs(Math.abs(lz) - bb.halfDepth);
+        if (dx <= dy && dx <= dz) {
+            return lx >= 0.0D ? bb.axisX : Vec3.createVectorHelper(-bb.axisX.xCoord, -bb.axisX.yCoord, -bb.axisX.zCoord);
+        }
+        if (dy <= dz) {
+            return ly >= 0.0D ? bb.axisY : Vec3.createVectorHelper(-bb.axisY.xCoord, -bb.axisY.yCoord, -bb.axisY.zCoord);
+        }
+        return lz >= 0.0D ? bb.axisZ : Vec3.createVectorHelper(-bb.axisZ.xCoord, -bb.axisZ.yCoord, -bb.axisZ.zCoord);
+    }
+
+    private Vec3 getAabbImpactNormal(AxisAlignedBB bb, Vec3 hitPos) {
+        double dMinX = Math.abs(hitPos.xCoord - bb.minX);
+        double dMaxX = Math.abs(bb.maxX - hitPos.xCoord);
+        double dMinY = Math.abs(hitPos.yCoord - bb.minY);
+        double dMaxY = Math.abs(bb.maxY - hitPos.yCoord);
+        double dMinZ = Math.abs(hitPos.zCoord - bb.minZ);
+        double dMaxZ = Math.abs(bb.maxZ - hitPos.zCoord);
+        double minDist = dMinX;
+        Vec3 normal = Vec3.createVectorHelper(-1.0D, 0.0D, 0.0D);
+        if (dMaxX < minDist) {
+            minDist = dMaxX;
+            normal = Vec3.createVectorHelper(1.0D, 0.0D, 0.0D);
+        }
+        if (dMinY < minDist) {
+            minDist = dMinY;
+            normal = Vec3.createVectorHelper(0.0D, -1.0D, 0.0D);
+        }
+        if (dMaxY < minDist) {
+            minDist = dMaxY;
+            normal = Vec3.createVectorHelper(0.0D, 1.0D, 0.0D);
+        }
+        if (dMinZ < minDist) {
+            minDist = dMinZ;
+            normal = Vec3.createVectorHelper(0.0D, 0.0D, -1.0D);
+        }
+        if (dMaxZ < minDist) {
+            normal = Vec3.createVectorHelper(0.0D, 0.0D, 1.0D);
+        }
+        return normal;
+    }
+
+    private float getImpactAngleDeg(Vec3 shotDir, Vec3 normal) {
+        if (shotDir == null || normal == null) {
+            return 0.0F;
+        }
+        double vLenSq = shotDir.xCoord * shotDir.xCoord + shotDir.yCoord * shotDir.yCoord + shotDir.zCoord * shotDir.zCoord;
+        double nLenSq = normal.xCoord * normal.xCoord + normal.yCoord * normal.yCoord + normal.zCoord * normal.zCoord;
+        if (vLenSq < 1.0E-8D || nLenSq < 1.0E-8D) {
+            return 0.0F;
+        }
+        Vec3 v = shotDir.normalize();
+        Vec3 n = normal.normalize();
+        double dot = v.xCoord * n.xCoord + v.yCoord * n.yCoord + v.zCoord * n.zCoord;
+        dot = Math.abs(dot);
+        if (dot > 1.0D) {
+            dot = 1.0D;
+        }
+        return (float)(Math.acos(dot) * 180.0D / Math.PI);
+    }
+
+    private void applyBulletRicochet(DamageSource damageSource, Vec3 normal, Vec3 hitPos) {
+        if (damageSource == null || normal == null || hitPos == null) {
+            return;
+        }
+        Entity src = damageSource.getSourceOfDamage();
+        if (src instanceof MCH_EntityBaseBullet) {
+            ((MCH_EntityBaseBullet)src).applyArmorRicochet(normal, hitPos, 0.7F);
+        }
+    }
+
+    private void notifyRicochetHit(float impactAngle) {
+        if (this.lastAttackedEntity instanceof EntityPlayerMP) {
+            MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "", 0.0F, (byte)2, impactAngle), (EntityPlayerMP)this.lastAttackedEntity);
+        } else if (this.lastAttackedEntity instanceof MCH_DummyEntityPlayer) {
+            EntityPlayer mp = this.worldObj.getPlayerEntityByName(this.lastAttackedEntity.getCommandSenderName());
+            if (mp instanceof EntityPlayerMP) {
+                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "", 0.0F, (byte)2, impactAngle), (EntityPlayerMP)mp);
+            }
+        }
     }
 
     public void destruct() {
@@ -1636,6 +1756,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.lastBBDamageFactor = 1.0F;
         this.lastBBName = null;
         this.lastBBIndex = -1;
+        this.lastBBHitNormal = null;
+        this.lastBBHitPos = null;
         this.updateControl();
         this.checkServerNoMove();
         this.onUpdate_RidingEntity();

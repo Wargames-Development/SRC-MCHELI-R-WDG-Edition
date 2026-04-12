@@ -172,9 +172,13 @@ public class MCH_BoundingBox {
             extraRoll += localRotRoll;
         }
 
-        // 计算旋转后的偏移量
         Vec3 localOffset = Vec3.createVectorHelper(offsetX, offsetY, offsetZ);
-        rotatedOffset = MCH_Lib.RotVec3(localOffset, -extraYaw, -extraPitch, -extraRoll);
+        if (this.boundingBoxType == EnumBoundingBoxType.TURRET) {
+            Vec3 turretLocal = MCH_Lib.RotVec3(localOffset, -localRotYaw, -localRotPitch, -localRotRoll);
+            rotatedOffset = MCH_Lib.RotVec3(turretLocal, -yaw, -pitch, -roll);
+        } else {
+            rotatedOffset = MCH_Lib.RotVec3(localOffset, -extraYaw, -extraPitch, -extraRoll);
+        }
 
         // 更新中心坐标（世界）
         double cx = posX + rotatedOffset.xCoord;
@@ -191,10 +195,15 @@ public class MCH_BoundingBox {
 
         center = Vec3.createVectorHelper(cx, cy, cz);
 
-        // 更新局部轴向量（单位向量）
-        axisX = MCH_Lib.RotVec3(Vec3.createVectorHelper(1.0D, 0.0D, 0.0D), -extraYaw, -extraPitch, -extraRoll);
-        axisY = MCH_Lib.RotVec3(Vec3.createVectorHelper(0.0D, 1.0D, 0.0D), -extraYaw, -extraPitch, -extraRoll);
-        axisZ = MCH_Lib.RotVec3(Vec3.createVectorHelper(0.0D, 0.0D, 1.0D), -extraYaw, -extraPitch, -extraRoll);
+        if (this.boundingBoxType == EnumBoundingBoxType.TURRET) {
+            axisX = MCH_Lib.RotVec3(MCH_Lib.RotVec3(Vec3.createVectorHelper(1.0D, 0.0D, 0.0D), -localRotYaw, -localRotPitch, -localRotRoll), -yaw, -pitch, -roll);
+            axisY = MCH_Lib.RotVec3(MCH_Lib.RotVec3(Vec3.createVectorHelper(0.0D, 1.0D, 0.0D), -localRotYaw, -localRotPitch, -localRotRoll), -yaw, -pitch, -roll);
+            axisZ = MCH_Lib.RotVec3(MCH_Lib.RotVec3(Vec3.createVectorHelper(0.0D, 0.0D, 1.0D), -localRotYaw, -localRotPitch, -localRotRoll), -yaw, -pitch, -roll);
+        } else {
+            axisX = MCH_Lib.RotVec3(Vec3.createVectorHelper(1.0D, 0.0D, 0.0D), -extraYaw, -extraPitch, -extraRoll);
+            axisY = MCH_Lib.RotVec3(Vec3.createVectorHelper(0.0D, 1.0D, 0.0D), -extraYaw, -extraPitch, -extraRoll);
+            axisZ = MCH_Lib.RotVec3(Vec3.createVectorHelper(0.0D, 0.0D, 1.0D), -extraYaw, -extraPitch, -extraRoll);
+        }
 
         // 更新轴对齐外包围盒（用于快速检测）
         double minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY, minZ = Double.POSITIVE_INFINITY;
@@ -207,7 +216,13 @@ public class MCH_BoundingBox {
                         offsetX + xi * halfWidth,
                         offsetY + yi * halfHeight,
                         offsetZ + zi * halfDepth);
-                    Vec3 cornerWorld = MCH_Lib.RotVec3(cornerLocal, -extraYaw, -extraPitch, -extraRoll);
+                    Vec3 cornerWorld;
+                    if (this.boundingBoxType == EnumBoundingBoxType.TURRET) {
+                        Vec3 turretCorner = MCH_Lib.RotVec3(cornerLocal, -localRotYaw, -localRotPitch, -localRotRoll);
+                        cornerWorld = MCH_Lib.RotVec3(turretCorner, -yaw, -pitch, -roll);
+                    } else {
+                        cornerWorld = MCH_Lib.RotVec3(cornerLocal, -extraYaw, -extraPitch, -extraRoll);
+                    }
                     double px = posX + cornerWorld.xCoord;
                     double py = posY + cornerWorld.yCoord;
                     double pz = posZ + cornerWorld.zCoord;

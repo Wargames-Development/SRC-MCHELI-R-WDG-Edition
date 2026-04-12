@@ -17,6 +17,7 @@ import mcheli.wrapper.modelloader.W_ModelCustom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -29,8 +30,10 @@ import net.minecraft.util.*;
 import net.minecraftforge.client.model.IModelCustom;
 import org.lwjgl.opengl.GL11;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -38,6 +41,8 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public static boolean renderingEntity = false;
     public static IModelCustom debugModel = null;
+    private static final Map<String, ResourceLocation> ADD_SIGN_TEXTURES = new HashMap<String, ResourceLocation>();
+    private static final float ADD_SIGN_BASE_SIZE = 0.7F;
 
     public static Random rand = new Random();
 
@@ -1016,8 +1021,96 @@ public abstract class MCH_RenderAircraft extends W_Render {
             this.addMountedGunnerMarkers(ac, tickTime);
             MCH_ClientLightWeaponTickHandler.markEntity(entity, posX, posY, posZ);
             renderEntityMarker(ac);
+            this.renderAddSigns(ac, info, posX, posY, posZ, tickTime);
         }
 
+    }
+
+    private void renderAddSigns(MCH_EntityAircraft ac, MCH_AircraftInfo info, double posX, double posY, double posZ, float tickTime) {
+        if (info.signMarkers == null || info.signMarkers.isEmpty())
+            return;
+        float yaw = this.calcRot(ac.getRotYaw(), ac.prevRotationYaw, tickTime);
+        float pitch = ac.calcRotPitch(tickTime);
+        float roll = this.calcRot(ac.getRotRoll(), ac.prevRotationRoll, tickTime);
+        float hpRatio = ac.getMaxHP() > 0 ? MathHelper.clamp_float((float)ac.getHP() / (float)ac.getMaxHP(), 0.0F, 1.0F) : 1.0F;
+        float lostRatio = 1.0F - hpRatio;
+        Tessellator tessellator = Tessellator.instance;
+        for (Object o : info.signMarkers) {
+            MCH_AircraftInfo.SignMarker sign = (MCH_AircraftInfo.SignMarker)o;
+            Vec3 rotated = MCH_Lib.RotVec3(sign.pos, -yaw, -pitch, -roll);
+            GL11.glPushMatrix();
+            GL11.glTranslated(posX + rotated.xCoord, posY + rotated.yCoord, posZ + rotated.zCoord);
+            GL11.glRotatef(-RenderManager.instance.playerViewY, 0.0F, 1.0F, 0.0F);
+            GL11.glRotatef(RenderManager.instance.playerViewX, 1.0F, 0.0F, 0.0F);
+            float drawSize = ADD_SIGN_BASE_SIZE * sign.size;
+            if (!sign.perspectiveScale) {
+                double dx = posX + rotated.xCoord;
+                double dy = posY + rotated.yCoord;
+                double dz = posZ + rotated.zCoord;
+                double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                ScaledResolution sc = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
+                double fovRad = Math.toRadians(Minecraft.getMinecraft().gameSettings.fovSetting);
+                float unitPerPixel = (float)((2.0D * Math.max(dist, 1.0D) * Math.tan(fovRad * 0.5D)) / sc.getScaledHeight_double());
+                float targetPixels = 64.0F * drawSize;
+                drawSize = unitPerPixel * targetPixels;
+            }
+            GL11.glScalef(-drawSize, -drawSize, drawSize);
+            boolean cullEnabled = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+            if (cullEnabled) {
+                GL11.glDisable(GL11.GL_CULL_FACE);
+            }
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthMask(false);
+            this.bindTexture(getAddSignTexture(sign.signName));
+            double startDeg = -90.0D;
+            double lostSweepDeg = 360.0D * lostRatio;
+            double hpSweepDeg = 360.0D - lostSweepDeg;
+            if (hpSweepDeg > 0.001D) {
+                GL11.glColor4f(1.0F, 0.0F, 0.0F, 1.0F);
+                drawSignSector(tessellator, startDeg + lostSweepDeg, hpSweepDeg, 0.0D);
+            }
+            if (lostSweepDeg > 0.001D) {
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 0.55F);
+                drawSignSector(tessellator, startDeg, lostSweepDeg, 0.01D);
+            }
+            GL11.glDepthMask(true);
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_LIGHTING);
+            if (cullEnabled) {
+                GL11.glEnable(GL11.GL_CULL_FACE);
+            }
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glPopMatrix();
+        }
+    }
+
+    private void drawSignSector(Tessellator tessellator, double startDeg, double sweepDeg, double z) {
+        int segments = Math.max(8, (int)(Math.abs(sweepDeg) / 5.0D));
+        tessellator.startDrawing(6);
+        tessellator.addVertexWithUV(0.0D, 0.0D, z, 0.5D, 0.5D);
+        for (int i = 0; i <= segments; ++i) {
+            double a = Math.toRadians(startDeg + sweepDeg * (double)i / (double)segments);
+            double px = Math.cos(a) * 0.5D;
+            double py = Math.sin(a) * 0.5D;
+            tessellator.addVertexWithUV(px, py, z, px + 0.5D, py + 0.5D);
+        }
+        tessellator.draw();
+    }
+
+    private ResourceLocation getAddSignTexture(String signName) {
+        String key = signName == null ? "" : signName.trim().toLowerCase();
+        if (key.isEmpty())
+            key = "gpsposition";
+        ResourceLocation location = ADD_SIGN_TEXTURES.get(key);
+        if (location == null) {
+            location = new ResourceLocation(W_MOD.DOMAIN, "textures/sign/" + key + ".png");
+            ADD_SIGN_TEXTURES.put(key, location);
+        }
+        return location;
     }
 
     public void doRenderShadowAndFire(Entity entity, double p_76979_2_, double p_76979_4_, double p_76979_6_, float p_76979_8_, float p_76979_9_) {
@@ -1257,13 +1350,17 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 float pAngle = bb.rotationPitch;
                 float rAngle = bb.rotationRoll;
                 if (bb.boundingBoxType == EnumBoundingBoxType.TURRET) {
-                    yAngle += bb.localRotYaw;
-                    pAngle += bb.localRotPitch;
-                    rAngle += bb.localRotRoll;
+                    GL11.glRotatef(-yAngle, 0.0F, 1.0F, 0.0F);
+                    GL11.glRotatef(pAngle, 1.0F, 0.0F, 0.0F);
+                    GL11.glRotatef(rAngle, 0.0F, 0.0F, 1.0F);
+                    GL11.glRotatef(-bb.localRotYaw, 0.0F, 1.0F, 0.0F);
+                    GL11.glRotatef(bb.localRotPitch, 1.0F, 0.0F, 0.0F);
+                    GL11.glRotatef(bb.localRotRoll, 0.0F, 0.0F, 1.0F);
+                } else {
+                    GL11.glRotatef(-yAngle, 0.0F, 1.0F, 0.0F);
+                    GL11.glRotatef(pAngle, 1.0F, 0.0F, 0.0F);
+                    GL11.glRotatef(rAngle, 0.0F, 0.0F, 1.0F);
                 }
-                GL11.glRotatef(-yAngle, 0.0F, 1.0F, 0.0F);
-                GL11.glRotatef(pAngle, 1.0F, 0.0F, 0.0F);
-                GL11.glRotatef(rAngle, 0.0F, 0.0F, 1.0F);
 
                 // 缩放到包围盒的实际大小
                 GL11.glScalef(bb.width, bb.height, bb.widthZ);

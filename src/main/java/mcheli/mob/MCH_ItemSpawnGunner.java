@@ -25,6 +25,8 @@ public class MCH_ItemSpawnGunner extends W_Item {
     public int primaryColor = 16777215;
     public int secondaryColor = 16777215;
     public int targetType = 0;
+    public boolean isStupid = false;
+    public boolean useLayeredIcon = true;
     @SideOnly(Side.CLIENT)
     private IIcon theIcon;
 
@@ -109,6 +111,8 @@ public class MCH_ItemSpawnGunner extends W_Item {
             gunner.rotationYaw = (((MathHelper.floor_double((player.rotationYaw * 4.0F / 360.0F) + 0.5D) & 0x3) - 1) * 90);
             gunner.isCreative = player.capabilities.isCreativeMode;
             gunner.setTargetType(this.targetType);
+            boolean randomStupidFaction = this.targetType == MCH_EntityGunner.TARGET_PLAYER && world.rand.nextInt(10) == 0;
+            gunner.setStupidGunner(this.isStupid || randomStupidFaction);
             gunner.ownerUUID = player.getUniqueID().toString();
             ScorePlayerTeam team = world.getScoreboard().getPlayersTeam(player.getDisplayName());
             if (team != null)
@@ -126,19 +130,19 @@ public class MCH_ItemSpawnGunner extends W_Item {
 
     @SideOnly(Side.CLIENT)
     public int getColorFromItemStack(ItemStack itemStack, int layer) {
-        if (this.targetType == 2 || this.targetType == 3)
+        if (!requiresMultipleRenderPasses())
             return this.primaryColor;
         return (layer == 0) ? this.primaryColor : this.secondaryColor;
     }
 
     @SideOnly(Side.CLIENT)
     public boolean requiresMultipleRenderPasses() {
-        return this.targetType != 2 && this.targetType != 3;
+        return this.useLayeredIcon && this.targetType != 2 && this.targetType != 3;
     }
 
     @SideOnly(Side.CLIENT)
     public IIcon getIconFromDamageForRenderPass(int p_77618_1_, int p_77618_2_) {
-        if (this.targetType == 2 || this.targetType == 3)
+        if (!requiresMultipleRenderPasses())
             return super.getIconFromDamageForRenderPass(p_77618_1_, p_77618_2_);
         return (p_77618_2_ > 0) ? this.theIcon : super.getIconFromDamageForRenderPass(p_77618_1_, p_77618_2_);
     }
@@ -146,7 +150,7 @@ public class MCH_ItemSpawnGunner extends W_Item {
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister icon) {
         super.registerIcons(icon);
-        if (this.targetType != 2 && this.targetType != 3)
+        if (requiresMultipleRenderPasses())
             this.theIcon = icon.registerIcon(getIconString() + "_overlay");
     }
 }

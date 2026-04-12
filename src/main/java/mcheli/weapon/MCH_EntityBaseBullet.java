@@ -92,6 +92,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private double delayFuseMarkerX = 0.0D;
     private double delayFuseMarkerY = 0.0D;
     private double delayFuseMarkerZ = 0.0D;
+    private boolean armorRicochetActive = false;
 
     public MCH_EntityBaseBullet(World par1World) {
         super(par1World);
@@ -1221,6 +1222,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                 }
                 this.onImpactEntity(m.entityHit, damageFactor, hitVec);
+                if (this.armorRicochetActive) {
+                    this.armorRicochetActive = false;
+                    return;
+                }
                 this.piercing--;
                 hitX = m.hitVec.xCoord + dx;
                 hitY = m.hitVec.yCoord + dy;
@@ -1417,6 +1422,49 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         this.notifyHitBullet();
+    }
+
+    public void applyArmorRicochet(Vec3 normal, Vec3 hitPos, float speedFactor) {
+        if (normal == null || hitPos == null) {
+            return;
+        }
+        double nx = normal.xCoord;
+        double ny = normal.yCoord;
+        double nz = normal.zCoord;
+        double nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (nLen < 1.0E-6D) {
+            return;
+        }
+        nx /= nLen;
+        ny /= nLen;
+        nz /= nLen;
+        double vx = super.motionX;
+        double vy = super.motionY;
+        double vz = super.motionZ;
+        double vLen = Math.sqrt(vx * vx + vy * vy + vz * vz);
+        if (vLen < 1.0E-6D) {
+            return;
+        }
+        double dot = vx * nx + vy * ny + vz * nz;
+        double rx = vx - 2.0D * dot * nx;
+        double ry = vy - 2.0D * dot * ny;
+        double rz = vz - 2.0D * dot * nz;
+        double rLen = Math.sqrt(rx * rx + ry * ry + rz * rz);
+        if (rLen < 1.0E-6D) {
+            return;
+        }
+        double newSpeed = vLen * Math.max(0.2D, Math.min(1.0D, speedFactor));
+        super.motionX = rx / rLen * newSpeed;
+        super.motionY = ry / rLen * newSpeed;
+        super.motionZ = rz / rLen * newSpeed;
+        double push = 0.12D;
+        super.posX = hitPos.xCoord + nx * push;
+        super.posY = hitPos.yCoord + ny * push;
+        super.posZ = hitPos.zCoord + nz * push;
+        super.prevPosX = super.posX;
+        super.prevPosY = super.posY;
+        super.prevPosZ = super.posZ;
+        this.armorRicochetActive = true;
     }
 
     public void newFAExplosion(double x, double y, double z, float exp, float expBlock) {

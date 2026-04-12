@@ -742,14 +742,15 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             int baseX = (int) (i * 0.6f);
             for (int idx = hitList.size() - 1, pos = 0; idx >= 0; idx--, pos++) {
                 HitMessage message = hitList.get(idx);
-                if (message.hitDisplay != null && message.hitDamage > 0) {
+                if (message.hitDisplay != null && (message.hitDamage > 0 || message.hitDamageType == 2)) {
                     float yOffset = 0.45f + pos * 0.025f;
                     int y = (int) (j * yOffset);
                     float alpha = Math.max(0.0f, 1.0f - pos * 0.15f);
                     int a = ((int) (alpha * 255)) << 24;
                     int color = a | 0x00FFFFFF;
+                    String display = message.hitDamageType == 2 ? message.hitDisplay : String.format("%.1f %s", -message.hitDamage, message.hitDisplay);
                     mc.fontRenderer.drawString(
-                        String.format("%.1f %s", -message.hitDamage, message.hitDisplay),
+                        display,
                         baseX,
                         y,
                         color,

@@ -340,6 +340,29 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
         return entity;
     }
 
+    private MCH_EntityAircraft getAircraftForEcmCheck(Entity entity) {
+        if (entity == null) {
+            return null;
+        }
+        if (entity instanceof MCH_EntityAircraft) {
+            return (MCH_EntityAircraft)entity;
+        }
+        if (entity instanceof MCH_EntitySeat) {
+            return ((MCH_EntitySeat)entity).getParent();
+        }
+        Entity riding = entity.ridingEntity;
+        if (riding instanceof MCH_EntityAircraft) {
+            return (MCH_EntityAircraft)riding;
+        }
+        if (riding instanceof MCH_EntitySeat) {
+            return ((MCH_EntitySeat)riding).getParent();
+        }
+        if (riding instanceof MCH_EntityUavStation) {
+            return ((MCH_EntityUavStation)riding).getControlAircract();
+        }
+        return null;
+    }
+
     public boolean canLockEntity(Entity entity) {
         // 如果不允许锁定玩家，且实体为玩家，则返回false
         if (this.ridableOnly && entity instanceof EntityPlayer && entity.ridingEntity == null) {
@@ -365,12 +388,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                 return true;
             }
             if (this.isRadarMissile) {
-                MCH_EntityAircraft targetAc = null;
-                if (entity instanceof MCH_EntityAircraft) {
-                    targetAc = (MCH_EntityAircraft)entity;
-                } else if (entity.ridingEntity instanceof MCH_EntityAircraft) {
-                    targetAc = (MCH_EntityAircraft)entity.ridingEntity;
-                }
+                MCH_EntityAircraft targetAc = getAircraftForEcmCheck(entity);
                 if (targetAc != null && targetAc.getAcInfo() != null && targetAc.getAcInfo().ecmJammerType == 2 && targetAc.isECMJammerUsing()) {
                     return false;
                 }

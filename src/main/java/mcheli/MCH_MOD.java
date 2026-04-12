@@ -112,6 +112,8 @@ public class MCH_MOD {
     public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
     public static MCH_ItemSpawnGunner itemSpawnGunnerAA;
     public static MCH_ItemSpawnGunner itemSpawnGunnerEnemy;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonsterStupid;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerEnemyStupid;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
@@ -409,6 +411,30 @@ public class MCH_MOD {
         W_LanguageRegistry.addName(item, "Gunner [Hostile]");
         W_LanguageRegistry.addNameForObject(item, "ja_JP", "敵対 射撃手");
         W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[敌对]");
+        name = "gunner_friendly_stupid";
+        item = new MCH_ItemSpawnGunner();
+        item.targetType = 0;
+        item.isStupid = true;
+        item.useLayeredIcon = false;
+        item.primaryColor = 12632224;
+        item.secondaryColor = 12582912;
+        itemSpawnGunnerVsMonsterStupid = item;
+        registerItem((W_Item)item, name, creativeTabs);
+        W_LanguageRegistry.addName(item, "Gunner [Friendly][Stupid]");
+        W_LanguageRegistry.addNameForObject(item, "ja_JP", "対モンスター 射撃手[愚人]");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[愚人][友好]");
+        name = "gunner_enemy_stupid";
+        item = new MCH_ItemSpawnGunner();
+        item.targetType = 3;
+        item.isStupid = true;
+        item.useLayeredIcon = false;
+        item.primaryColor = 12632224;
+        item.secondaryColor = 2228224;
+        itemSpawnGunnerEnemyStupid = item;
+        registerItem((W_Item)item, name, creativeTabs);
+        W_LanguageRegistry.addName(item, "Gunner [Hostile][Stupid]");
+        W_LanguageRegistry.addNameForObject(item, "ja_JP", "敵対 射撃手[愚人]");
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[愚人][敌对]");
     }
 
     public void registerEntity() {
