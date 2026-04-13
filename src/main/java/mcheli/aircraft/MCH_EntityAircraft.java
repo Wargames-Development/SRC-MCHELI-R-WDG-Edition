@@ -874,11 +874,26 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.setCommandForce(nbt.getString("AcCommand"));
         this.setFuel(nbt.getInteger("AcFuel"));
         setGunnerStatus(nbt.getBoolean("AcGunnerStatus"));
-        int[] wa_list = nbt.getIntArray("AcWeaponsAmmo");
-
-        for (int i = 0; i < wa_list.length; ++i) {
-            this.getWeapon(i).setRestAllAmmoNum(wa_list[i]);
-            this.getWeapon(i).reloadMag();
+        int weaponNum = this.getWeaponNum();
+        int[] ammoInMag = nbt.getIntArray("AcWeaponsAmmoInMag");
+        int[] restAmmo = nbt.getIntArray("AcWeaponsRestAmmo");
+        int[] reloadWait = nbt.getIntArray("AcWeaponsReloadWait");
+        if (ammoInMag.length > 0 && restAmmo.length > 0) {
+            for (int i = 0; i < weaponNum; ++i) {
+                MCH_WeaponSet ws = this.getWeapon(i);
+                int inMag = i < ammoInMag.length ? ammoInMag[i] : 0;
+                int rest = i < restAmmo.length ? restAmmo[i] : 0;
+                ws.setAmmoNum(Math.max(0, inMag));
+                ws.setRestAllAmmoNum(Math.max(0, rest));
+                ws.countReloadWait = i < reloadWait.length ? Math.max(0, reloadWait[i]) : 0;
+            }
+        } else {
+            // Backward compatibility with legacy save format (only total ammo).
+            int[] wa_list = nbt.getIntArray("AcWeaponsAmmo");
+            for (int i = 0; i < wa_list.length && i < weaponNum; ++i) {
+                this.getWeapon(i).setRestAllAmmoNum(wa_list[i]);
+                this.getWeapon(i).reloadMag();
+            }
         }
 
         if (this.getDespawnCount() > 0) {
@@ -917,13 +932,23 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         nbt.setBoolean("AcGunnerStatus", getGunnerStatus());
         super.writeEntityToNBT(nbt);
         this.getGuiInventory().writeEntityToNBT(nbt);
-        int[] wa_list = new int[this.getWeaponNum()];
-
-        for (int i = 0; i < wa_list.length; ++i) {
-            wa_list[i] = this.getWeapon(i).getRestAllAmmoNum() + this.getWeapon(i).getAmmoNum();
+        int weaponNum = this.getWeaponNum();
+        int[] wa_list = new int[weaponNum];
+        int[] ammoInMag = new int[weaponNum];
+        int[] restAmmo = new int[weaponNum];
+        int[] reloadWait = new int[weaponNum];
+        for (int i = 0; i < weaponNum; ++i) {
+            MCH_WeaponSet ws = this.getWeapon(i);
+            ammoInMag[i] = ws.getAmmoNum();
+            restAmmo[i] = ws.getRestAllAmmoNum();
+            reloadWait[i] = ws.countReloadWait;
+            // Keep legacy key for compatibility with old builds/tools.
+            wa_list[i] = restAmmo[i] + ammoInMag[i];
         }
-
         nbt.setTag("AcWeaponsAmmo", W_NBTTag.newTagIntArray("AcWeaponsAmmo", wa_list));
+        nbt.setTag("AcWeaponsAmmoInMag", W_NBTTag.newTagIntArray("AcWeaponsAmmoInMag", ammoInMag));
+        nbt.setTag("AcWeaponsRestAmmo", W_NBTTag.newTagIntArray("AcWeaponsRestAmmo", restAmmo));
+        nbt.setTag("AcWeaponsReloadWait", W_NBTTag.newTagIntArray("AcWeaponsReloadWait", reloadWait));
         nbt.setInteger("AcDamage", this.getDamageTaken());
         nbt.setString("AcERAState", this.buildERAStateString());
         nbt.setBoolean("AcDismounted", this.dismountedUserCtrl);
@@ -5400,6 +5425,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
                         var10 += lastUsedIndex;
                         this.useWeaponStat |= var10 < 32 ? 1 << var10 : 0;
+                        // Sync ammo/reload visuals for nearby clients when AI gunner fires.
+                        if (prm.user instanceof MCH_EntityGunner) {
+                            int wid = this.getCurrentWeaponID(prm.user);
+                            if (wid >= 0) {
+                                MCH_PacketNotifyWeaponID.send(this, sid, wid, currentWs.getAmmoNum(), currentWs.getRestAllAmmoNum());
+                            }
+                        }
                     }
 
                     return true;

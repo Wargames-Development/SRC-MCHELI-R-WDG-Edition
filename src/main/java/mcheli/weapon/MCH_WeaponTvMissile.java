@@ -66,7 +66,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             opt = " [TV]";
         }
 
-        if (this.getCurrentMode() == 2) {
+        if (this.getCurrentMode() == 1) {
             opt = " [TA]";
         }
 
@@ -155,8 +155,12 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
     public boolean lock(MCH_WeaponParam prm) {
         if (super.worldObj.isRemote) {
             if (guidanceSystem != null) {
-                this.guidanceSystem.targeting = true;
+                // mode 0 = TV guide, mode 1 = laser/terminal attack
+                this.guidanceSystem.targeting = this.getCurrentMode() == 1;
                 this.guidanceSystem.update();
+                if (this.guidanceSystem.targeting && prm != null && prm.user != null) {
+                    MCH_GPSPosition.set(this.guidanceSystem.targetPosX, this.guidanceSystem.targetPosY, this.guidanceSystem.targetPosZ, true, prm.user);
+                }
             }
         }
         return false;
@@ -167,6 +171,9 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         if (super.worldObj.isRemote) {
             if (guidanceSystem != null) {
                 this.guidanceSystem.targeting = false;
+                if (prm != null && prm.user != null) {
+                    MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
+                }
                 if (super.tick % 3 == 0) {
                     MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
                 }

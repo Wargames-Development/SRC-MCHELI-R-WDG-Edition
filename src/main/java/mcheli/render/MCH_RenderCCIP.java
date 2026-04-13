@@ -7,6 +7,7 @@ import mcheli.uav.MCH_EntityUavStation;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_MOD;
+import mcheli.wrapper.W_Reflection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
@@ -103,7 +104,10 @@ public class MCH_RenderCCIP {
             return;
         }
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
-        double fovRad = Math.toRadians(mc.gameSettings.fovSetting);
+        // Use current effective FOV directly. Do not divide by cameraZoom again,
+        // otherwise zoom stacks twice and CCIP size drifts while scoping.
+        double effectiveFov = mc.gameSettings.fovSetting;
+        double fovRad = Math.toRadians(effectiveFov);
         float sPerPixel = (float)((2.0D * dist * Math.tan(fovRad * 0.5D)) / sc.getScaledHeight_double());
 
         GL11.glPushMatrix();

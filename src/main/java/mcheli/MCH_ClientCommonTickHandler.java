@@ -15,6 +15,7 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.helicopter.MCH_GuiHeli;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.lweapon.MCH_GuiLightWeapon;
+import mcheli.lweapon.MCH_ItemLightWeaponBase;
 import mcheli.mob.MCH_GuiSpawnGunner;
 import mcheli.multiplay.MCH_GuiScoreboard;
 import mcheli.multiplay.MCH_GuiTargetMarker;
@@ -296,8 +297,14 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             hitTotalDamageScale = Math.max(hitTotalDamageScale, hitTotalDamageScaleOrigin);
         }
 
-        if (var7 != null && var7.ridingEntity == null) {
+        if (var7 != null) {
+            this.ensureCameraShaderState(var7);
+        } else {
+            cameraMode = 0;
             MCH_Camera.currentCameraMode = 0;
+            if (W_EntityRenderer.hasActiveShader()) {
+                W_EntityRenderer.deactivateShader();
+            }
         }
 
         //第三人称摄像机视角
@@ -318,8 +325,15 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             showVehicleCrossHair = false;
         }
 
-        //GPS
-        if (minecraft.thePlayer.ridingEntity == null) {
+        // GPS cleanup: avoid one-tick flicker around shot/reload transitions for handheld laser guidance.
+        boolean holdingLightWeapon = minecraft.thePlayer.getHeldItem() != null
+            && minecraft.thePlayer.getHeldItem().getItem() instanceof MCH_ItemLightWeaponBase;
+        boolean usingLightWeapon = MCH_ItemLightWeaponBase.isHeld(minecraft.thePlayer);
+        boolean ownGpsActive = MCH_GPSPosition.currentClientGPSPosition != null
+            && MCH_GPSPosition.currentClientGPSPosition.isActive
+            && MCH_GPSPosition.currentClientGPSPosition.owner != null
+            && MCH_GPSPosition.currentClientGPSPosition.owner.getEntityId() == minecraft.thePlayer.getEntityId();
+        if (minecraft.thePlayer.ridingEntity == null && !usingLightWeapon && !(holdingLightWeapon && ownGpsActive)) {
             MCH_GPSPosition.currentClientGPSPosition.isActive = false;
         }
 
@@ -331,6 +345,52 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             this.onTick();
         }
 
+    }
+
+    private int getExpectedCameraMode(EntityPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        ridingAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        if (ridingAircraft != null) {
+            return ridingAircraft.getCameraMode(player);
+        }
+        if (player.ridingEntity instanceof MCH_EntityGLTD) {
+            MCH_EntityGLTD gltd = (MCH_EntityGLTD) player.ridingEntity;
+            return gltd.camera.getMode(0);
+        }
+        return 0;
+    }
+
+    private void ensureCameraShaderState(EntityPlayer player) {
+        int expectedMode = this.getExpectedCameraMode(player);
+        cameraMode = expectedMode;
+        MCH_Camera.currentCameraMode = expectedMode;
+
+        if (!W_EntityRenderer.isShaderSupport()) {
+            if (W_EntityRenderer.hasActiveShader()) {
+                W_EntityRenderer.deactivateShader();
+            }
+            return;
+        }
+
+        String expectedShader = "";
+        if (expectedMode == MCH_Camera.MODE_NIGHTVISION) {
+            expectedShader = "nightvision";
+        } else if (expectedMode == MCH_Camera.MODE_THERMALVISION) {
+            expectedShader = "thermal";
+        }
+
+        if (expectedShader.isEmpty()) {
+            if (W_EntityRenderer.hasActiveShader()) {
+                W_EntityRenderer.deactivateShader();
+            }
+            return;
+        }
+
+        if (!W_EntityRenderer.isShaderActive(expectedShader)) {
+            W_EntityRenderer.activateShader(expectedShader);
+        }
     }
 
     public void onTickPost() {
@@ -413,15 +473,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     W_Reflection.setItemRendererProgress(1.0F);
                 }
 
-                ridingAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(var17);
-                if (ridingAircraft != null) {
-                    cameraMode = ridingAircraft.getCameraMode(var17);
-                } else if (var17.ridingEntity instanceof MCH_EntityGLTD) {
-                    MCH_EntityGLTD ac = (MCH_EntityGLTD) var17.ridingEntity;
-                    cameraMode = ac.camera.getMode(0);
-                } else {
-                    cameraMode = 0;
-                }
+                this.ensureCameraShaderState(var17);
 
                 MCH_EntityAircraft var19 = null;
                 if (!(var17.ridingEntity instanceof MCH_EntityHeli) && !(var17.ridingEntity instanceof MCP_EntityPlane) && !(var17.ridingEntity instanceof MCH_EntityTank)) {

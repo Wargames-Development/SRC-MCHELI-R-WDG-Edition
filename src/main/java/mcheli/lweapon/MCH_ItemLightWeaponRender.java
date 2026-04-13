@@ -18,7 +18,10 @@ public class MCH_ItemLightWeaponRender implements IItemRenderer {
     @SideOnly(Side.CLIENT)
     public static void renderItem(ItemStack pitem, Entity entity, boolean isFirstPerson) {
         if (pitem != null && pitem.getItem() != null) {
+            MCH_ItemLightWeaponBase item = pitem.getItem() instanceof MCH_ItemLightWeaponBase ? (MCH_ItemLightWeaponBase) pitem.getItem() : null;
             String name = MCH_ItemLightWeaponBase.getName(pitem);
+            String modelName = item != null ? item.getModelName(pitem) : name;
+            String textureName = item != null ? item.getTextureName(pitem) : name;
             GL11.glEnable('\u803a');
             GL11.glEnable(2903);
             GL11.glPushMatrix();
@@ -28,7 +31,7 @@ public class MCH_ItemLightWeaponRender implements IItemRenderer {
             }
 
             GL11.glEnable(2884);
-            W_McClient.MOD_bindTexture("textures/lweapon/" + name + ".png");
+            W_McClient.MOD_bindTexture("textures/lweapons/" + textureName + ".png");
             if (isFirstPerson) {
                 GL11.glTranslatef(0.0F, 0.005F, -0.165F);
                 GL11.glScalef(2.0F, 2.0F, 2.0F);
@@ -43,7 +46,7 @@ public class MCH_ItemLightWeaponRender implements IItemRenderer {
                 GL11.glRotatef(15.0F, 1.0F, 0.0F, 0.0F);
             }
 
-            MCH_ModelManager.render("lweapons", name);
+            MCH_ModelManager.render("lweapons", modelName);
             GL11.glShadeModel(7424);
             GL11.glPopMatrix();
             GL11.glDisable('\u803a');

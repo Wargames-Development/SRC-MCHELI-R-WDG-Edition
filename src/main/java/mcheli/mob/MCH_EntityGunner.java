@@ -2063,8 +2063,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
             return;
         if (ws.getRestAllAmmoNum() < ammoMax)
             ws.setRestAllAmmoNum(ammoMax);
-        if (ws.getAmmoNum() <= 0 && ws.getRestAllAmmoNum() > 0)
-            ws.reloadMag();
+        // Keep normal reload timing; do not instant-fill magazine.
+        if (ws.getAmmoNum() <= 0 && ws.getRestAllAmmoNum() > 0 && ws.countReloadWait <= 0 && ws.canUse()) {
+            ws.reload();
+        }
     }
 
     private double getHeightAboveGround(Entity entity) {

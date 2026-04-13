@@ -364,7 +364,12 @@ public abstract class MCH_RenderAircraft extends W_Render {
             }
 
             GL11.glTranslated(-w.pos.xCoord, -w.pos.yCoord, -w.pos.zCoord);
-            if (!w.isMissile || !ac.isWeaponNotCooldown(ws, weaponIndex)) {
+            boolean hideByCooldown = w.isMissile && ac.isWeaponNotCooldown(ws, weaponIndex);
+            boolean hideByAmmo = false;
+            if (w.isMissile && ws != null) {
+                hideByAmmo = weaponIndex >= ws.getAmmoNum();
+            }
+            if (!hideByCooldown && !hideByAmmo) {
                 renderPart(w.model, info.model, w.modelName);
                 for (Object object : w.child) {
                     MCH_AircraftInfo.PartWeaponChild var28 = (MCH_AircraftInfo.PartWeaponChild) object;

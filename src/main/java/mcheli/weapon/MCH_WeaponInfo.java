@@ -511,7 +511,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.explosionBlock = this.explosion;
         }
 
-        if (this.fixMode >= this.modeNum) {
+        // Only validate against modeNum when modeNum is explicitly configured (>0).
+        // Some weapons (e.g. TV missile) provide mode count in weapon class and may leave modeNum at 0.
+        if (this.modeNum > 0 && this.fixMode >= this.modeNum) {
             this.fixMode = 0;
         }
 

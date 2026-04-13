@@ -28,6 +28,10 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.helicopter.MCH_ItemHeli;
+import mcheli.lweapon.MCH_LightWeaponAmmoInfo;
+import mcheli.lweapon.MCH_LightWeaponAmmoInfoManager;
+import mcheli.lweapon.MCH_LightWeaponInfo;
+import mcheli.lweapon.MCH_LightWeaponInfoManager;
 import mcheli.lweapon.MCH_ItemLightWeaponBase;
 import mcheli.lweapon.MCH_ItemLightWeaponBullet;
 import mcheli.mob.MCH_EntityGunner;
@@ -64,6 +68,7 @@ import net.minecraftforge.common.MinecraftForge;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.Locale;
 
 @Mod(
     modid = "mcheli",
@@ -284,6 +289,8 @@ public class MCH_MOD {
         MCH_TankInfoManager.getInstance().load(sourcePath + "/assets/" + "mcheli" + "/", "tanks");
         MCH_VehicleInfoManager.getInstance().load(sourcePath + "/assets/" + "mcheli" + "/", "vehicles");
         MCH_ThrowableInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/throwable");
+        MCH_LightWeaponAmmoInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapon_ammo");
+        MCH_LightWeaponInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapons");
         MCH_SoundsJson.update(sourcePath + "/assets/" + "mcheli" + "/");
         MCH_Lib.Log("Register item");
         this.registerItemRangeFinder();
@@ -529,37 +536,93 @@ public class MCH_MOD {
     }
 
     public void registerItemLightWeapon() {
-        String name = "fim92";
-        MCH_ItemLightWeaponBase var10000 = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemStingerBullet);
-        MCH_ItemLightWeaponBase item = var10000;
-        itemStinger = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FIM-92 Stringer");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 刺针飞弹");
-        name = "fgm148";
-        var10000 = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemJavelinBullet);
-        item = var10000;
-        itemJavelin = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FGM-148 Javelin");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 标枪飞弹");
+        if (!MCH_LightWeaponInfoManager.getValues().isEmpty()) {
+            for (MCH_LightWeaponInfo info : MCH_LightWeaponInfoManager.getValues()) {
+                MCH_LightWeaponAmmoInfo ammoInfo = MCH_LightWeaponAmmoInfoManager.get(info.ammoItemName);
+                MCH_ItemLightWeaponBullet ammoItem = ammoInfo != null ? ammoInfo.item : null;
+                if (ammoItem == null) {
+                    MCH_Lib.Log("Skip light weapon %s : ammo %s not found", info.name, info.ammoItemName);
+                    continue;
+                }
+                MCH_ItemLightWeaponBase item = new MCH_ItemLightWeaponBase(info.itemID, ammoItem, info);
+                info.item = item;
+                registerItem(item, info.name, creativeTabs);
+                if (!info.textureName.isEmpty()) {
+                    item.setTexture(info.textureName);
+                }
+                W_LanguageRegistry.addName(item, info.displayName);
+                for (String lang : info.displayNameLang.keySet()) {
+                    W_LanguageRegistry.addNameForObject(item, lang, info.displayNameLang.get(lang));
+                }
+                String lower = info.name.toLowerCase(Locale.ROOT);
+                if (lower.equals("fim92") || lower.equals("fim192")) {
+                    itemStinger = item;
+                } else if (lower.equals("fgm148")) {
+                    itemJavelin = item;
+                } else if (lower.equals("rpg7")) {
+                    itemRpg = item;
+                }
+            }
+        }
+
+        if (itemStinger == null && itemStingerBullet != null) {
+            String name = "fim92";
+            MCH_ItemLightWeaponBase item = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemStingerBullet);
+            itemStinger = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FIM-92 Stringer");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 刺针飞弹");
+        }
+        if (itemJavelin == null && itemJavelinBullet != null) {
+            String name = "fgm148";
+            MCH_ItemLightWeaponBase item = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemJavelinBullet);
+            itemJavelin = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FGM-148 Javelin");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 标枪飞弹");
+        }
     }
 
     public void registerItemLightWeaponBullet() {
-        String name = "fim92_bullet";
-        MCH_ItemLightWeaponBullet var10000 = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
-        MCH_ItemLightWeaponBullet item = var10000;
-        itemStingerBullet = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FIM-92 Stringer Ammo");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 弹药");
-        name = "fgm148_bullet";
-        var10000 = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
-        item = var10000;
-        itemJavelinBullet = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FGM-148 Javelin Ammo");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 弹药");
+        if (!MCH_LightWeaponAmmoInfoManager.getValues().isEmpty()) {
+            for (MCH_LightWeaponAmmoInfo info : MCH_LightWeaponAmmoInfoManager.getValues()) {
+                MCH_ItemLightWeaponBullet item = new MCH_ItemLightWeaponBullet(info.itemID, info.stackSize);
+                info.item = item;
+                registerItem(item, info.name, creativeTabs);
+                if (!info.textureName.isEmpty()) {
+                    item.setTexture(info.textureName);
+                }
+                W_LanguageRegistry.addName(item, info.displayName);
+                for (String lang : info.displayNameLang.keySet()) {
+                    W_LanguageRegistry.addNameForObject(item, lang, info.displayNameLang.get(lang));
+                }
+                String lower = info.name.toLowerCase(Locale.ROOT);
+                if (lower.equals("fim92_bullet") || lower.equals("fim192_bullet")) {
+                    itemStingerBullet = item;
+                } else if (lower.equals("fgm148_bullet")) {
+                    itemJavelinBullet = item;
+                } else if (lower.equals("rpg7_bullet") || lower.equals("rpg_bullet")) {
+                    itemRpgBullet = item;
+                }
+            }
+        }
+
+        if (itemStingerBullet == null) {
+            String name = "fim92_bullet";
+            MCH_ItemLightWeaponBullet item = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
+            itemStingerBullet = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FIM-92 Stringer Ammo");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 弹药");
+        }
+        if (itemJavelinBullet == null) {
+            String name = "fgm148_bullet";
+            MCH_ItemLightWeaponBullet item = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
+            itemJavelinBullet = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FGM-148 Javelin Ammo");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 弹药");
+        }
     }
 
     public void registerItemChain() {

@@ -1,5 +1,6 @@
 package mcheli.lweapon;
 
+import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
@@ -9,6 +10,8 @@ import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.gltd.MCH_EntityGLTD;
 import mcheli.gui.MCH_Gui;
+import mcheli.weapon.MCH_GPSPosition;
+import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponGuidanceSystem;
 import mcheli.wrapper.W_McClient;
 import net.minecraft.client.Minecraft;
@@ -53,7 +56,9 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
             if (this.isDrawGui(player)) {
                 MCH_ItemLightWeaponBase item = (MCH_ItemLightWeaponBase) player.getHeldItem().getItem();
                 MCH_WeaponGuidanceSystem gs = MCH_ClientLightWeaponTickHandler.gs;
-                if (gs != null && MCH_ClientLightWeaponTickHandler.weapon != null && MCH_ClientLightWeaponTickHandler.weapon.getInfo() != null) {
+                MCH_WeaponBase weapon = MCH_ClientLightWeaponTickHandler.weapon;
+                if (weapon != null && weapon.getInfo() != null) {
+                    int currentMode = weapon.getCurrentMode();
                     PotionEffect pe = player.getActivePotionEffect(Potion.nightVision);
                     if (pe != null) {
                         this.drawNightVisionNoise();
@@ -64,20 +69,26 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
                     int srcBlend = GL11.glGetInteger(3041);
                     int dstBlend = GL11.glGetInteger(3040);
                     GL11.glBlendFunc(770, 771);
+                    boolean seeker = gs != null && weapon.getGuidanceSystem() instanceof MCH_WeaponGuidanceSystem;
+                    int lockCount = seeker ? gs.getLockCount() : weapon.getLockCount();
+                    int lockCountMax = seeker ? gs.getLockCountMax() : weapon.getLockCountMax();
                     double dist = 0.0D;
-                    if (gs.getTargetEntity() != null) {
+                    if (seeker && gs.getTargetEntity() != null) {
                         double canFire = gs.getTargetEntity().posX - player.posX;
                         double dz = gs.getTargetEntity().posZ - player.posZ;
                         dist = Math.sqrt(canFire * canFire + dz * dz);
                     }
 
-                    boolean canFire1 = MCH_ClientLightWeaponTickHandler.weaponMode == 0 || dist >= 40.0D || gs.getLockCount() <= 0;
-                    if ("fgm148".equalsIgnoreCase(MCH_ItemLightWeaponBase.getName(player.getHeldItem()))) {
+                    boolean canFire1 = !seeker || currentMode == 0 || dist >= 40.0D || lockCount <= 0;
+                    ItemStack heldItem = player.getHeldItem();
+                    String weaponName = MCH_ItemLightWeaponBase.getName(heldItem);
+                    String hudType = item.getHudType(heldItem);
+                    if ("fgm148".equalsIgnoreCase(hudType)) {
                         this.drawGuiFGM148(player, gs, canFire1, player.getHeldItem());
                         this.drawKeyBind(-805306369, true);
                         //DONE: add another conditional for RPG/T sight
                         //todo: test
-                    } else if ("rpg7".equalsIgnoreCase(MCH_ItemLightWeaponBase.getName(player.getHeldItem()))) {
+                    } else if ("rpg7".equalsIgnoreCase(weaponName)) {
                         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
                         W_McClient.MOD_bindTexture("textures/gui/rpg.png");
                         double size;
@@ -89,11 +100,11 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
                         GL11.glBlendFunc(srcBlend, dstBlend);
                         GL11.glDisable(3042);
 
-
-                    } else if ("fim92".equalsIgnoreCase(MCH_ItemLightWeaponBase.getName(player.getHeldItem()))) {
+                    } else if ("fim92".equalsIgnoreCase(hudType) || "fim192".equalsIgnoreCase(hudType)) {
 
                         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-                        W_McClient.MOD_bindTexture("textures/gui/stinger.png");
+                        String scope = !item.getScopeTexture().isEmpty() ? item.getScopeTexture() : "stinger";
+                        W_McClient.MOD_bindTexture("textures/gui/" + scope + ".png");
 
                         double size;
                         for (size = 512.0D; size < (double) super.width || size < (double) super.height; size *= 2.0D) {
@@ -103,12 +114,20 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
 
                         this.drawTexturedModalRectRotate(-(size - (double) super.width) / 2.0D, -(size - (double) super.height) / 2.0D - 20.0D, size, size, 0.0D, 0.0D, 256.0D, 256.0D, 0.0F);
                         this.drawKeyBind(-805306369, false);
+                    } else if ("asmissile".equalsIgnoreCase(hudType) || "tvmissile".equalsIgnoreCase(hudType)) {
+                        this.drawGenericMissileScope(item);
+                        this.drawKeyBind(-805306369, true);
+                        this.drawMissileModeAndStatus(player, hudType, seeker, lockCount, lockCountMax, currentMode);
                     }
 
                     GL11.glBlendFunc(srcBlend, dstBlend);
                     GL11.glDisable(3042);
-                    this.drawLock(-14101432, -2161656, gs.getLockCount(), gs.getLockCountMax());
-                    this.drawRange(player, gs, canFire1, -14101432, -2161656);
+                    this.drawLock(-14101432, -2161656, lockCount, lockCountMax);
+                    if (seeker) {
+                        this.drawRange(player, gs, canFire1, -14101432, -2161656);
+                    } else {
+                        this.drawCenteredString(lockCountMax > 0 ? this.getTextLock() : this.getTextGuide(), super.centerX, super.centerY + 50, canFire1 ? -14101432 : -2161656);
+                    }
                 }
 
             }
@@ -128,6 +147,9 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
     }
 
     void drawLock(int color, int colorLock, int cntLock, int cntMax) {
+        if (cntMax <= 0) {
+            return;
+        }
         int posX = super.centerX;
         int posY = super.centerY + 20;
         boolean WID = true;
@@ -228,10 +250,22 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
         drawRect(-1, (int) bottom - 1, super.width + 1, super.height + 1, -16777216);
         GL11.glEnable(3042);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        W_McClient.MOD_bindTexture("textures/gui/javelin.png");
+        MCH_ItemLightWeaponBase weaponItem = itemStack.getItem() instanceof MCH_ItemLightWeaponBase ? (MCH_ItemLightWeaponBase) itemStack.getItem() : null;
+        String scopeTexture = weaponItem != null && !weaponItem.getScopeTexture().isEmpty() ? weaponItem.getScopeTexture() : "javelin";
+        String scopeTexture2 = weaponItem != null && !weaponItem.getScopeOverlayTexture2().isEmpty() ? weaponItem.getScopeOverlayTexture2() : "javelin2";
+        W_McClient.MOD_bindTexture("textures/gui/" + scopeTexture + ".png");
         this.drawTexturedModalRectRotate(left, top, (double) size, (double) size, 0.0D, 0.0D, 256.0D, 256.0D, 0.0F);
-        W_McClient.MOD_bindTexture("textures/gui/javelin2.png");
+        W_McClient.MOD_bindTexture("textures/gui/" + scopeTexture2 + ".png");
         PotionEffect pe = player.getActivePotionEffect(Potion.nightVision);
+        int zoomLength = 1;
+        if (weaponItem != null) {
+            float[] zooms = weaponItem.getZoomLevels();
+            if (zooms.length > 0) {
+                zoomLength = zooms.length;
+            } else if (MCH_ClientLightWeaponTickHandler.weapon != null && MCH_ClientLightWeaponTickHandler.weapon.getInfo() != null && MCH_ClientLightWeaponTickHandler.weapon.getInfo().zoom != null) {
+                zoomLength = MCH_ClientLightWeaponTickHandler.weapon.getInfo().zoom.length;
+            }
+        }
         double y;
         double w;
         double h;
@@ -260,7 +294,7 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
             this.drawTexturedRect(left + x1 * fac, top + y * fac, (w - x1) * fac, (h - y) * fac, x1, y, w - x1, h - y, 1024.0D, 1024.0D);
         }
 
-        if (MCH_ClientLightWeaponTickHandler.selectedZoom == MCH_ClientLightWeaponTickHandler.weapon.getInfo().zoom.length - 1) {
+        if (MCH_ClientLightWeaponTickHandler.selectedZoom == zoomLength - 1) {
             x1 = 511.0D;
             y = 211.0D;
             w = 645.0D;
@@ -343,5 +377,100 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
             this.drawString(MCH_KeyName.getDescOrName(MCH_Config.KeySwWeaponMode.prmInt), OffX, OffY + 30, color);
         }
 
+    }
+
+    private void drawGenericMissileScope(MCH_ItemLightWeaponBase item) {
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        String scope = !item.getScopeTexture().isEmpty() ? item.getScopeTexture() : "stinger";
+        W_McClient.MOD_bindTexture("textures/gui/" + scope + ".png");
+        double size;
+        for (size = 512.0D; size < (double) super.width || size < (double) super.height; size *= 2.0D) {
+            ;
+        }
+        this.drawTexturedModalRectRotate(-(size - (double) super.width) / 2.0D, -(size - (double) super.height) / 2.0D - 20.0D, size, size, 0.0D, 0.0D, 256.0D, 256.0D, 0.0F);
+    }
+
+    private void drawMissileModeAndStatus(EntityPlayer player, String hudType, boolean seeker, int lockCount, int lockCountMax, int currentMode) {
+        String modeText = this.getTextMode() + " " + (currentMode + 1);
+        String typeText = this.getTextASMissile();
+        if ("tvmissile".equalsIgnoreCase(hudType)) {
+            typeText = currentMode == 0 ? this.getTextTvMode() : this.getTextTaMode();
+        }
+        String statusText;
+        if (player.getItemInUseDuration() <= 10) {
+            statusText = this.getTextAim();
+        } else if (lockCountMax > 0 && lockCount < lockCountMax) {
+            statusText = this.getTextTracking();
+        } else if (seeker && lockCount <= 0) {
+            statusText = this.getTextSearch();
+        } else {
+            statusText = this.getTextFire();
+        }
+        this.drawCenteredString(typeText, super.centerX, super.centerY - 56, -14101432);
+        this.drawCenteredString(modeText, super.centerX, super.centerY - 44, -14101432);
+        if ("tvmissile".equalsIgnoreCase(hudType) && currentMode == 1) {
+            boolean laserLocked = this.isLaserPointLocked(player);
+            this.drawCenteredString(laserLocked ? this.getTextLaserLocked() : this.getTextLaserNotLocked(), super.centerX, super.centerY + 62, laserLocked ? -14101432 : -2161656);
+        } else {
+            this.drawCenteredString(statusText, super.centerX, super.centerY + 62, -2161656);
+        }
+    }
+
+    private boolean isEnglishLocale() {
+        String lang = FMLClientHandler.instance().getClient().gameSettings.language;
+        return lang != null && lang.toLowerCase().startsWith("en");
+    }
+
+    private String getTextMode() {
+        return this.isEnglishLocale() ? "MODE" : "模式";
+    }
+
+    private String getTextASMissile() {
+        return this.isEnglishLocale() ? "AS MISSILE" : "对地导弹";
+    }
+
+    private String getTextTvMode() {
+        return this.isEnglishLocale() ? "TV MODE" : "电视制导";
+    }
+
+    private String getTextTaMode() {
+        return this.isEnglishLocale() ? "LASER GUIDE" : "激光制导";
+    }
+
+    private String getTextAim() {
+        return this.isEnglishLocale() ? "AIM" : "瞄准";
+    }
+
+    private String getTextTracking() {
+        return this.isEnglishLocale() ? "TRACKING" : "跟踪中";
+    }
+
+    private String getTextSearch() {
+        return this.isEnglishLocale() ? "SEARCH" : "搜索";
+    }
+
+    private String getTextFire() {
+        return "";
+    }
+
+    private String getTextLock() {
+        return this.isEnglishLocale() ? "[LOCK]" : "[锁定]";
+    }
+
+    private String getTextGuide() {
+        return this.isEnglishLocale() ? "[GUIDE]" : "[引导]";
+    }
+
+    private boolean isLaserPointLocked(EntityPlayer player) {
+        MCH_GPSPosition gps = MCH_GPSPosition.currentClientGPSPosition;
+        return gps != null && gps.isActive && gps.owner != null && player != null && gps.owner.getEntityId() == player.getEntityId();
+    }
+
+    private String getTextLaserLocked() {
+        return this.isEnglishLocale() ? "Laser Locked" : "激光点已锁定";
+    }
+
+    private String getTextLaserNotLocked() {
+        return this.isEnglishLocale() ? "Laser Not Locked" : "激光点未锁定";
     }
 }

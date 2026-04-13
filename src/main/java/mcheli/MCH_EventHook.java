@@ -7,19 +7,26 @@ import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.aircraft.MCH_ItemAircraft;
 import mcheli.chain.MCH_ItemChain;
 import mcheli.command.MCH_Command;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_EntityPlayer;
 import mcheli.wrapper.W_EventHook;
 import mcheli.wrapper.W_Lib;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.monster.IMob;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.entity.EntityEvent.CanUpdate;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingSetAttackTargetEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.EntityInteractEvent;
 
@@ -27,6 +34,8 @@ import java.util.List;
 import java.util.UUID;
 
 public class MCH_EventHook extends W_EventHook {
+    private static final double MONSTER_GUNNER_TARGET_RANGE_H = 24.0D;
+    private static final double MONSTER_GUNNER_TARGET_RANGE_V = 8.0D;
 
     public void commandEvent(CommandEvent event) {
         MCH_Command.onCommandEvent(event);
@@ -103,6 +112,27 @@ public class MCH_EventHook extends W_EventHook {
         }
     }
 
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onLivingSetAttackTarget(LivingSetAttackTargetEvent event) {
+        if (event == null || event.entityLiving == null || event.entityLiving.worldObj == null || event.entityLiving.worldObj.isRemote) {
+            return;
+        }
+        if (!(event.entityLiving instanceof IMob) || !(event.entityLiving instanceof EntityLiving)) {
+            return;
+        }
+
+        EntityLiving attacker = (EntityLiving) event.entityLiving;
+        EntityLivingBase target = event.target;
+        if (target != null && !(target instanceof EntityPlayer)) {
+            return;
+        }
+
+        MCH_EntityGunner gunner = this.findNearestFriendlyGunner(attacker);
+        if (gunner != null && attacker.getAttackTarget() != gunner) {
+            attacker.setAttackTarget(gunner);
+        }
+    }
+
 
     public void livingHurtEvent(LivingHurtEvent event) {
         MCH_EntityAircraft ac = getRiddenAircraft(event.entity);
@@ -154,6 +184,31 @@ public class MCH_EventHook extends W_EventHook {
             }
         }
         return ac;
+    }
+
+    private MCH_EntityGunner findNearestFriendlyGunner(EntityLiving attacker) {
+        AxisAlignedBB box = attacker.boundingBox.expand(MONSTER_GUNNER_TARGET_RANGE_H, MONSTER_GUNNER_TARGET_RANGE_V, MONSTER_GUNNER_TARGET_RANGE_H);
+        List list = attacker.worldObj.getEntitiesWithinAABB(MCH_EntityGunner.class, box);
+        MCH_EntityGunner best = null;
+        double bestDist = Double.MAX_VALUE;
+        for (Object obj : list) {
+            if (!(obj instanceof MCH_EntityGunner)) {
+                continue;
+            }
+            MCH_EntityGunner gunner = (MCH_EntityGunner) obj;
+            if (gunner.isDead || gunner.getHealth() <= 0.0F || gunner.isCreative) {
+                continue;
+            }
+            if (gunner.getTargetType() != MCH_EntityGunner.TARGET_MONSTER) {
+                continue;
+            }
+            double dist = attacker.getDistanceSqToEntity(gunner);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = gunner;
+            }
+        }
+        return best;
     }
 
 

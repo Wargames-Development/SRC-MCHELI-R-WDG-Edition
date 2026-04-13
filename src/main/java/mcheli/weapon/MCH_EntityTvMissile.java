@@ -63,7 +63,11 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
         if(!targeting) return;
 
-        boolean treatAsTvGuidance = !getInfo().laserGuidance || e instanceof MCH_EntityGunner;
+        // Mode split by runtime missile mode:
+        // - isTVMissile=true  -> TV guidance (follow launcher view)
+        // - isTVMissile=false -> laser guidance/terminal attack (GPS/laser point)
+        // Do not fall back to TV by weapon info flag here, otherwise fixed laser mode can be misrouted.
+        boolean treatAsTvGuidance = e instanceof MCH_EntityGunner || this.isTVMissile;
         if (treatAsTvGuidance) {
             if (e != null && !e.isDead) {
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
@@ -103,6 +107,11 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     if (!jammed) {
                         onLaserGuide(x, y, z);
                     }
+                }
+            } else if (e != null) {
+                MCH_GPSPosition gps = MCH_GPSPosition.get(e);
+                if (gps != null && gps.isActive) {
+                    onLaserGuide(gps.x, gps.y, gps.z);
                 }
             }
         }
