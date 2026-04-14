@@ -23,7 +23,6 @@ import mcheli.weapon.*;
 import mcheli.wrapper.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
@@ -3734,7 +3733,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public int getClientPositionDelayCorrection() {
-        if(Minecraft.getMinecraft().thePlayer == this.riddenByEntity) {
+        if (MCH_MOD.proxy.getClientPlayer() == this.riddenByEntity) {
             return 7;
         }
         return 0;

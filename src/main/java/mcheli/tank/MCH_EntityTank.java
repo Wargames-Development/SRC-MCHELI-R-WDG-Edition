@@ -914,7 +914,7 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
         if (!super.worldObj.isRemote || this.camera == null) {
             return;
         }
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = (EntityPlayer) MCH_MOD.proxy.getClientPlayer();
         if (player == null || !isTankPilotBodyCameraActive(player)) {
             this.tankCameraSafeInitialized = false;
             return;

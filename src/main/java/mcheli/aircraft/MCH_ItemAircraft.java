@@ -13,9 +13,6 @@ import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockDispenser;
 import net.minecraft.block.BlockSponge;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.settings.GameSettings;
-import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityMinecartEmpty;
 import net.minecraft.entity.player.EntityPlayer;
@@ -58,12 +55,10 @@ public abstract class MCH_ItemAircraft extends W_Item {
         MCH_AircraftInfo info = getAircraftInfo();
         if (info == null) return;
 
-        KeyBinding shift = Minecraft.getMinecraft().gameSettings.keyBindSneak;
-
         lines.add("\u00a7b\u00a7o" + info.displayName);
 
-        if (!GameSettings.isKeyDown(shift)) {
-            lines.add(MCH_I18n.format("aircraft.info.hold_shift", GameSettings.getKeyDisplayString(shift.getKeyCode())));
+        if (!player.isSneaking()) {
+            lines.add(MCH_I18n.format("aircraft.info.hold_shift", "Sneak"));
         } else {
             lines.add("");
 

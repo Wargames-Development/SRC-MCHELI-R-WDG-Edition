@@ -69,6 +69,7 @@ import mcheli.wrapper.*;
 import net.minecraft.command.CommandHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item.ToolMaterial;
 import net.minecraft.item.Item;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -471,7 +472,8 @@ public class MCH_MOD {
             block.setResistance(info.resistance);
             block.setLightLevel(info.lightLevel);
             block.setStepSound(this.resolveStepSound(info.stepSound));
-            block.setCreativeTab(this.resolveCreativeTab(info.creativeTab));
+            CreativeTabs creativeTab = this.resolveCreativeTab(info.creativeTab);
+            block.setCreativeTab(creativeTab);
             GameRegistry.registerBlock(block, info.name);
             info.block = block;
             W_LanguageRegistry.addName(block, info.displayName);
@@ -479,8 +481,8 @@ public class MCH_MOD {
                 W_LanguageRegistry.addNameForObject(block, lang, info.displayNameLang.get(lang));
             }
             Item item = W_Item.getItemFromBlock(block);
-            if (item != null && block.getCreativeTabToDisplayOn() instanceof MCH_CreativeTabs) {
-                ((MCH_CreativeTabs) block.getCreativeTabToDisplayOn()).addIconItem(item);
+            if (item != null && creativeTab instanceof MCH_CreativeTabs) {
+                ((MCH_CreativeTabs) creativeTab).addIconItem(item);
             }
         }
     }

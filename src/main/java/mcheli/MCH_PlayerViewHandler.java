@@ -1,6 +1,5 @@
 package mcheli;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 
@@ -17,8 +16,6 @@ public class MCH_PlayerViewHandler {
     public static float antiRecoilPitch;
     public static float antiRecoilYaw;
 
-    public static Minecraft minecraft = Minecraft.getMinecraft();
-
     public static float recoilControl = 0.8f;
 
     public static void applyRecoil(float pitch, float yaw, float control) {
@@ -31,8 +28,8 @@ public class MCH_PlayerViewHandler {
      * 每帧更新视角抖动效果
      */
     public static void onUpdate() {
-
-        if (minecraft.thePlayer == null) {
+        Entity player = MCH_MOD.proxy.getClientPlayer();
+        if (player == null) {
             return;
         }
 
@@ -40,13 +37,13 @@ public class MCH_PlayerViewHandler {
             playerRecoilPitch *= recoilControl;
         }
 
-        minecraft.thePlayer.rotationPitch -= playerRecoilPitch;
-        minecraft.thePlayer.rotationYaw -= playerRecoilYaw;
+        player.rotationPitch -= playerRecoilPitch;
+        player.rotationYaw -= playerRecoilYaw;
         antiRecoilPitch += playerRecoilPitch;
         antiRecoilYaw += playerRecoilYaw;
 
-        minecraft.thePlayer.rotationPitch += antiRecoilPitch * 0.2F;
-        minecraft.thePlayer.rotationYaw += antiRecoilYaw * 0.2F;
+        player.rotationPitch += antiRecoilPitch * 0.2F;
+        player.rotationYaw += antiRecoilYaw * 0.2F;
 
         antiRecoilPitch *= 0.8F;
         antiRecoilYaw *= 0.8F;
