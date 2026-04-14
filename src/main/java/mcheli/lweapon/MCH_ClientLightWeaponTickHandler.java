@@ -546,7 +546,7 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
     private void unlockWeapon(EntityPlayer player) {
         this.laserAimKeepTicks = 0;
         this.restoreAimingFovZoom();
-        if (this.isLaserGuidedWeapon() && player != null) {
+        if (player != null && this.shouldClearGpsMarkerOnUnlock()) {
             MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, player);
         }
         if (this.isSeekerWeapon()) {
@@ -555,6 +555,18 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
         if (weapon != null && player != null) {
             weapon.onUnlock(this.createWeaponParam(player, this.getEffectiveWeaponMode(), this.getCurrentLockEntityId()));
         }
+    }
+
+    private boolean shouldClearGpsMarkerOnUnlock() {
+        if (weapon == null || weapon.getInfo() == null || weapon.getInfo().type == null) {
+            return false;
+        }
+        String type = weapon.getInfo().type;
+        // B方案: 仅GPS制导武器允许清空GPS点，激光制导/TV子模式不再清空GPS点。
+        if ("asmissile".equalsIgnoreCase(type)) {
+            return weapon.getInfo().isGPSMissile;
+        }
+        return false;
     }
 
     private void applyAimingFovZoom(float zoom) {

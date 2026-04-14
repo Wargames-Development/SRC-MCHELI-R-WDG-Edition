@@ -171,9 +171,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         if (super.worldObj.isRemote) {
             if (guidanceSystem != null) {
                 this.guidanceSystem.targeting = false;
-                if (prm != null && prm.user != null) {
-                    MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
-                }
                 if (super.tick % 3 == 0) {
                     MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
                 }
