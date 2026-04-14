@@ -11,6 +11,11 @@ import cpw.mods.fml.common.event.*;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import mcheli.aircraft.*;
+import mcheli.block.MCH_BlockInfo;
+import mcheli.block.MCH_BlockInfoManager;
+import mcheli.block.MCH_ConfigBlock;
+import mcheli.block.MCH_ConfigSpawnerBlock;
+import mcheli.block.MCH_ConfigSpawnerTileEntity;
 import mcheli.block.MCH_DraftingTableBlock;
 import mcheli.block.MCH_DraftingTableTileEntity;
 import mcheli.chain.MCH_EntityChain;
@@ -62,7 +67,10 @@ import mcheli.vehicle.MCH_VehicleInfoManager;
 import mcheli.weapon.*;
 import mcheli.wrapper.*;
 import net.minecraft.command.CommandHandler;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
 import net.minecraft.item.Item.ToolMaterial;
+import net.minecraft.item.Item;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -124,6 +132,7 @@ public class MCH_MOD {
     public static MCH_CreativeTabs creativeTabsPlane;
     public static MCH_CreativeTabs creativeTabsTank;
     public static MCH_CreativeTabs creativeTabsVehicle;
+    public static MCH_CreativeTabs creativeTabsBlock;
     public static MCH_DraftingTableBlock blockDraftingTable;
     public static MCH_DraftingTableBlock blockDraftingTableLit;
 
@@ -280,6 +289,7 @@ public class MCH_MOD {
         creativeTabsPlane = new MCH_CreativeTabs("MCH-Reforged Planes");
         creativeTabsTank = new MCH_CreativeTabs("MCH-Reforged Tanks");
         creativeTabsVehicle = new MCH_CreativeTabs("MCH-Reforged Vehicles");
+        creativeTabsBlock = new MCH_CreativeTabs("MCH-Reforged Blocks");
         W_ItemList.init();
         config = proxy.loadConfig("config/mcheli.cfg");
         proxy.loadHUD(sourcePath + "/assets/" + "mcheli" + "/hud");
@@ -289,6 +299,7 @@ public class MCH_MOD {
         MCH_TankInfoManager.getInstance().load(sourcePath + "/assets/" + "mcheli" + "/", "tanks");
         MCH_VehicleInfoManager.getInstance().load(sourcePath + "/assets/" + "mcheli" + "/", "vehicles");
         MCH_ThrowableInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/throwable");
+        MCH_BlockInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/blocks");
         MCH_LightWeaponAmmoInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapon_ammo");
         MCH_LightWeaponInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapons");
         MCH_SoundsJson.update(sourcePath + "/assets/" + "mcheli" + "/");
@@ -310,12 +321,13 @@ public class MCH_MOD {
         MCH_DraftingTableBlock var10000 = new MCH_DraftingTableBlock(MCH_Config.BlockID_DraftingTableOFF.prmInt, false);
         blockDraftingTable = var10000;
         blockDraftingTable.setBlockName("drafting_table");
-        blockDraftingTable.setCreativeTab(creativeTabs);
+        blockDraftingTable.setCreativeTab(creativeTabsBlock);
         var10000 = new MCH_DraftingTableBlock(MCH_Config.BlockID_DraftingTableON.prmInt, true);
         blockDraftingTableLit = var10000;
         blockDraftingTableLit.setBlockName("lit_drafting_table");
         GameRegistry.registerBlock(blockDraftingTable, "drafting_table");
         GameRegistry.registerBlock(blockDraftingTableLit, "lit_drafting_table");
+        this.registerConfiguredBlocks();
         W_LanguageRegistry.addName(blockDraftingTable, "Drafting Table");
         W_LanguageRegistry.addNameForObject(blockDraftingTable, "zh_CN", "蓝图制作台");
         MCH_Achievement.PreInit();
@@ -356,6 +368,7 @@ public class MCH_MOD {
     public void init(FMLInitializationEvent evt) {
         getPacketHandler().initialise();
         GameRegistry.registerTileEntity(MCH_DraftingTableTileEntity.class, "drafting_table");
+        GameRegistry.registerTileEntity(MCH_ConfigSpawnerTileEntity.class, "mcheli_config_spawner");
         proxy.registerBlockRenderer();
     }
 
@@ -367,6 +380,7 @@ public class MCH_MOD {
         creativeTabsPlane.setFixedIconItem(MCH_Config.CreativeTabIconPlane.prmString);
         creativeTabsTank.setFixedIconItem(MCH_Config.CreativeTabIconTank.prmString);
         creativeTabsVehicle.setFixedIconItem(MCH_Config.CreativeTabIconVehicle.prmString);
+        creativeTabsBlock.setFixedIconItem("drafting_table");
         MCH_ItemRecipe.registerItemRecipe();
         MCH_WeaponInfoManager.setRoundItems();
         proxy.readClientModList();
@@ -442,6 +456,138 @@ public class MCH_MOD {
         W_LanguageRegistry.addName(item, "Gunner [Hostile][Stupid]");
         W_LanguageRegistry.addNameForObject(item, "ja_JP", "敵対 射撃手[愚人]");
         W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[愚人][敌对]");
+    }
+
+    private void registerConfiguredBlocks() {
+        for (MCH_BlockInfo info : MCH_BlockInfoManager.getValues()) {
+            Block block;
+            if (info.enableSpawner) {
+                block = new MCH_ConfigSpawnerBlock(info, this.resolveMaterial(info.materialName));
+            } else {
+                block = new MCH_ConfigBlock(this.resolveMaterial(info.materialName), info.textureName);
+            }
+            block.setBlockName(info.name);
+            block.setHardness(info.hardness);
+            block.setResistance(info.resistance);
+            block.setLightLevel(info.lightLevel);
+            block.setStepSound(this.resolveStepSound(info.stepSound));
+            block.setCreativeTab(this.resolveCreativeTab(info.creativeTab));
+            GameRegistry.registerBlock(block, info.name);
+            info.block = block;
+            W_LanguageRegistry.addName(block, info.displayName);
+            for (String lang : info.displayNameLang.keySet()) {
+                W_LanguageRegistry.addNameForObject(block, lang, info.displayNameLang.get(lang));
+            }
+            Item item = W_Item.getItemFromBlock(block);
+            if (item != null && block.getCreativeTabToDisplayOn() instanceof MCH_CreativeTabs) {
+                ((MCH_CreativeTabs) block.getCreativeTabToDisplayOn()).addIconItem(item);
+            }
+        }
+    }
+
+    private Material resolveMaterial(String materialName) {
+        if (materialName == null) {
+            return Material.iron;
+        }
+        String key = materialName.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("rock") || key.equals("stone")) {
+            return Material.rock;
+        }
+        if (key.equals("wood")) {
+            return Material.wood;
+        }
+        if (key.equals("ground") || key.equals("dirt")) {
+            return Material.ground;
+        }
+        if (key.equals("grass")) {
+            return Material.grass;
+        }
+        if (key.equals("sand")) {
+            return Material.sand;
+        }
+        if (key.equals("glass")) {
+            return Material.glass;
+        }
+        if (key.equals("cloth")) {
+            return Material.cloth;
+        }
+        if (key.equals("clay")) {
+            return Material.clay;
+        }
+        if (key.equals("anvil")) {
+            return Material.anvil;
+        }
+        if (key.equals("water")) {
+            return Material.water;
+        }
+        if (key.equals("lava")) {
+            return Material.lava;
+        }
+        if (key.equals("ice")) {
+            return Material.ice;
+        }
+        return Material.iron;
+    }
+
+    private Block.SoundType resolveStepSound(String stepSoundName) {
+        if (stepSoundName == null) {
+            return Block.soundTypeMetal;
+        }
+        String key = stepSoundName.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("stone")) {
+            return Block.soundTypeStone;
+        }
+        if (key.equals("wood")) {
+            return Block.soundTypeWood;
+        }
+        if (key.equals("gravel")) {
+            return Block.soundTypeGravel;
+        }
+        if (key.equals("grass")) {
+            return Block.soundTypeGrass;
+        }
+        if (key.equals("cloth")) {
+            return Block.soundTypeCloth;
+        }
+        if (key.equals("sand")) {
+            return Block.soundTypeSand;
+        }
+        if (key.equals("glass")) {
+            return Block.soundTypeGlass;
+        }
+        if (key.equals("ladder")) {
+            return Block.soundTypeLadder;
+        }
+        if (key.equals("anvil")) {
+            return Block.soundTypeAnvil;
+        }
+        return Block.soundTypeMetal;
+    }
+
+    private MCH_CreativeTabs resolveCreativeTab(String tabName) {
+        if (tabName == null) {
+            return creativeTabsBlock != null ? creativeTabsBlock : creativeTabs;
+        }
+        String key = tabName.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("misc") || key.equals("item")) {
+            return creativeTabs;
+        }
+        if (key.equals("heli") || key.equals("helicopter")) {
+            return creativeTabsHeli;
+        }
+        if (key.equals("plane")) {
+            return creativeTabsPlane;
+        }
+        if (key.equals("tank")) {
+            return creativeTabsTank;
+        }
+        if (key.equals("vehicle")) {
+            return creativeTabsVehicle;
+        }
+        if (key.equals("block") || key.equals("blocks")) {
+            return creativeTabsBlock != null ? creativeTabsBlock : creativeTabs;
+        }
+        return creativeTabsBlock != null ? creativeTabsBlock : creativeTabs;
     }
 
     public void registerEntity() {

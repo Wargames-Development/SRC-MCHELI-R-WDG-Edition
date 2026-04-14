@@ -3,6 +3,8 @@ package mcheli;
 import cpw.mods.fml.common.registry.GameRegistry;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_AircraftInfoManager;
+import mcheli.block.MCH_BlockInfo;
+import mcheli.block.MCH_BlockInfoManager;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.lweapon.MCH_LightWeaponAmmoInfo;
@@ -122,6 +124,21 @@ public class MCH_ItemRecipe implements MCH_IRecipeList {
         addRecipeList(addRecipe(var1, var3.append(MCH_Config.ItemRecipe_RpgMissile.prmString).toString()));
         var10001 = MCH_MOD.config;
         addRecipeList(addRecipe(var2, MCH_Config.ItemRecipe_DraftingTable.prmString));
+        for (MCH_BlockInfo info : MCH_BlockInfoManager.getValues()) {
+            if (info.block != null && info.recipeString != null) {
+                Item blockItem = W_Item.getItemFromBlock(info.block);
+                if (blockItem == null) {
+                    continue;
+                }
+                for (String s : info.recipeString) {
+                    if (s.length() >= 3) {
+                        IRecipe recipe = addRecipe(blockItem, s, info.isShapedRecipe);
+                        info.recipe.add(recipe);
+                        addRecipeList(recipe);
+                    }
+                }
+            }
+        }
     }
 
     public static void registerItemRecipe() {
