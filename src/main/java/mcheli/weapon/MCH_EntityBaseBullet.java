@@ -1488,6 +1488,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             .damageVsVehicle(getInfo().explosionDamageVsVehicle)
             .damageVsShip(getInfo().explosionDamageVsShip)
             .explosionThroughWall(getInfo().explosionThroughWall)
+            .explosionThroughWallFactor(getInfo().explosionThroughWallFactor)
+            .isNewExplosionBreak(getInfo().isNewExplosionBreak)
             .build();
         MCH_Explosion.ExplosionResult result = MCH_Explosion.newExplosion(super.worldObj, param);
         if (result != null && result.hitEntity) {
@@ -1518,6 +1520,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 } else if (this.getInfo().explosionType.equals("hbmNT_Shell")) {
                     MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
                 }
+                boolean fallbackToMchBlockBreak = this.getInfo().disableDestroyBlock;
                 MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                     .exploder(this)
                     .player(creditedPlayer)
@@ -1525,9 +1528,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .size(exp)
                     .sizeBlock(expBlock)
                     .isPlaySound(playSound)
-                    .isSmoking(false)
+                    .isSmoking(fallbackToMchBlockBreak)
                     .isFlaming(this.getInfo().flaming)
-                    .isDestroyBlock(false)
+                    .isDestroyBlock(fallbackToMchBlockBreak && getInfo().explosionBlock > 0)
                     .isInWater(false)
                     .directAttackEntity(directAttackEntity)
                     .damageVsPlayer(getInfo().explosionDamageVsPlayer)
@@ -1538,6 +1541,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .damageVsVehicle(getInfo().explosionDamageVsVehicle)
                     .damageVsShip(getInfo().explosionDamageVsShip)
                     .explosionThroughWall(getInfo().explosionThroughWall)
+                    .explosionThroughWallFactor(getInfo().explosionThroughWallFactor)
+                    .isNewExplosionBreak(getInfo().isNewExplosionBreak)
                     .build();
                 result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
@@ -1563,6 +1568,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .damageVsVehicle(getInfo().explosionDamageVsVehicle)
                     .damageVsShip(getInfo().explosionDamageVsShip)
                     .explosionThroughWall(getInfo().explosionThroughWall)
+                    .explosionThroughWallFactor(getInfo().explosionThroughWallFactor)
+                    .isNewExplosionBreak(getInfo().isNewExplosionBreak)
                     .build();
                 result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
@@ -1588,6 +1595,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 .damageVsVehicle(getInfo().explosionDamageVsVehicle)
                 .damageVsShip(getInfo().explosionDamageVsShip)
                 .explosionThroughWall(getInfo().explosionThroughWall)
+                .explosionThroughWallFactor(getInfo().explosionThroughWallFactor)
+                .isNewExplosionBreak(getInfo().isNewExplosionBreak)
                 .build();
             result = MCH_Explosion.newExplosion(super.worldObj, param);
         }

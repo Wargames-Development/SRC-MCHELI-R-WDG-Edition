@@ -4,12 +4,13 @@ import mcheli.*;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.gltd.MCH_EntityGLTD;
+import mcheli.network.packets.PacketLaserStateSync;
 import mcheli.weapon.MCH_IEntityLockChecker;
 import mcheli.weapon.MCH_IGuidanceSystem;
 import mcheli.weapon.MCH_LaserGuidanceSystem;
+import mcheli.weapon.MCH_LaserStateStore;
 import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponCreator;
-import mcheli.weapon.MCH_GPSPosition;
 import mcheli.weapon.MCH_WeaponGuidanceSystem;
 import mcheli.weapon.MCH_WeaponParam;
 import mcheli.wrapper.*;
@@ -58,6 +59,7 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
     private int laserAimKeepTicks = 0;
     private boolean fovZoomActive = false;
     private float baseFov = 70.0F;
+    private long handheldLaserSequence = 0L;
 
 
     public MCH_ClientLightWeaponTickHandler(Minecraft minecraft, MCH_Config config) {
@@ -491,7 +493,7 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
             // Keep updating laser target even when ammo is empty, so mark point follows current sight.
             laser.targeting = true;
             laser.update();
-            MCH_GPSPosition.set(laser.targetPosX, laser.targetPosY, laser.targetPosZ, true, player);
+            this.publishHandheldLaserState(player, true, laser.targetPosX, laser.targetPosY, laser.targetPosZ);
             return;
         }
         Vec3 src = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
@@ -499,7 +501,7 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
         Vec3 end = src.addVector(look.xCoord * 1500.0D, look.yCoord * 1500.0D, look.zCoord * 1500.0D);
         MovingObjectPosition hit = player.worldObj.rayTraceBlocks(src, end);
         Vec3 pos = hit != null && hit.hitVec != null ? hit.hitVec : end;
-        MCH_GPSPosition.set(pos.xCoord, pos.yCoord, pos.zCoord, true, player);
+        this.publishHandheldLaserState(player, true, pos.xCoord, pos.yCoord, pos.zCoord);
     }
 
     private int getEffectiveWeaponMode() {
@@ -550,9 +552,7 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
     private void unlockWeapon(EntityPlayer player) {
         this.laserAimKeepTicks = 0;
         this.restoreAimingFovZoom();
-        if (player != null && this.shouldClearGpsMarkerOnUnlock()) {
-            MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, player);
-        }
+        this.publishHandheldLaserState(player, false, 0.0D, 0.0D, 0.0D);
         if (this.isSeekerWeapon()) {
             gs.clearLock();
         }
@@ -561,16 +561,17 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
         }
     }
 
-    private boolean shouldClearGpsMarkerOnUnlock() {
-        if (weapon == null || weapon.getInfo() == null || weapon.getInfo().type == null) {
-            return false;
+    private void publishHandheldLaserState(EntityPlayer player, boolean active, double x, double y, double z) {
+        if (player == null || player.worldObj == null) {
+            return;
         }
-        String type = weapon.getInfo().type;
-        // B方案: 仅GPS制导武器允许清空GPS点，激光制导/TV子模式不再清空GPS点。
-        if ("asmissile".equalsIgnoreCase(type)) {
-            return weapon.getInfo().isGPSMissile;
-        }
-        return false;
+        ++this.handheldLaserSequence;
+        long now = player.worldObj.getTotalWorldTime();
+        int ownerId = player.getEntityId();
+        MCH_LaserStateStore.upsertClientState(ownerId, MCH_LaserStateStore.SOURCE_HANDHELD, x, y, z, active, this.handheldLaserSequence, now);
+        MCH_MOD.getPacketHandler().sendToServer(
+            new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_HANDHELD, this.handheldLaserSequence, active, x, y, z, ownerId)
+        );
     }
 
     private void applyAimingFovZoom(float zoom) {

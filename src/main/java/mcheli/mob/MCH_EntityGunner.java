@@ -1046,6 +1046,13 @@ public class MCH_EntityGunner extends EntityLivingBase {
             if (this.largeTurnRemain <= 0.0F) {
                 startLargeTurn(120.0F + this.rand.nextFloat() * 60.0F, this.obstacleTurnDir);
             }
+        } else if (isCliffOrWaterAhead(tank)) {
+            if (this.obstacleTurnDir == 0) {
+                this.obstacleTurnDir = this.rand.nextBoolean() ? 1 : -1;
+            }
+            if (this.largeTurnRemain <= 0.0F) {
+                startLargeTurn(120.0F + this.rand.nextFloat() * 60.0F, this.obstacleTurnDir);
+            }
         } else if (this.largeTurnRemain <= 0.0F) {
             this.obstacleTurnDir = 0;
         }
@@ -2024,6 +2031,56 @@ public class MCH_EntityGunner extends EntityLivingBase {
             }
         }
         return false;
+    }
+
+    private boolean isCliffOrWaterAhead(MCH_EntityTank tank) {
+        double yawRad = Math.toRadians(tank.getRotYaw());
+        double dirX = -Math.sin(yawRad);
+        double dirZ = Math.cos(yawRad);
+        double sideX = Math.cos(yawRad);
+        double sideZ = Math.sin(yawRad);
+        int baseY = MathHelper.floor_double(tank.boundingBox.minY + 0.01D);
+        int currentGroundY = findGroundY(MathHelper.floor_double(tank.posX), baseY, MathHelper.floor_double(tank.posZ), 6);
+        if (currentGroundY < 0) {
+            currentGroundY = baseY - 1;
+        }
+        for (double dist = 2.0D; dist <= 6.0D; dist += 1.0D) {
+            for (double side = -0.9D; side <= 0.9D; side += 0.9D) {
+                int x = MathHelper.floor_double(tank.posX + dirX * dist + sideX * side);
+                int z = MathHelper.floor_double(tank.posZ + dirZ * dist + sideZ * side);
+                if (isWaterColumn(x, baseY, z)) {
+                    return true;
+                }
+                int aheadGroundY = findGroundY(x, baseY, z, 8);
+                if (aheadGroundY < 0) {
+                    return true;
+                }
+                if (currentGroundY - aheadGroundY >= 3) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isWaterColumn(int x, int baseY, int z) {
+        for (int dy = 1; dy >= -2; dy--) {
+            if (W_WorldFunc.isBlockWater(this.worldObj, x, baseY + dy, z)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int findGroundY(int x, int baseY, int z, int scanDown) {
+        int minY = Math.max(0, baseY - scanDown);
+        for (int y = baseY; y >= minY; y--) {
+            Block b = W_WorldFunc.getBlock(this.worldObj, x, y, z);
+            if (b != null && b.canCollideCheck(0, true) && !this.worldObj.isAirBlock(x, y, z) && !W_WorldFunc.isBlockWater(this.worldObj, x, y, z)) {
+                return y;
+            }
+        }
+        return -1;
     }
 
     private void startLargeTurn(float angle, int dir) {

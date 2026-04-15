@@ -284,6 +284,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float explosionDamageVsHeli = 1f;
     public float explosionDamageVsShip = 1f;
     public boolean explosionThroughWall;
+    public float explosionThroughWallFactor = 1.0f;
+    public boolean isNewExplosionBreak = true;
     /**
      * HBM特效阻止破坏方块
      */
@@ -425,6 +427,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     private boolean hasSpawnBulletInheritSpeedSet = false;
     private boolean hasDestructAfterSpawnBulletSet = false;
     private boolean hasAheadSolveIntervalTickSet = false;
+    private boolean hasExplosionThroughWallFactorSet = false;
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -537,6 +540,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.explosionInWater = 0;
         }
 
+        if (this.explosionThroughWall && !this.hasExplosionThroughWallFactorSet) {
+            // Requirement: default through-wall damage factor is 0.5 when through-wall mode is enabled.
+            this.explosionThroughWallFactor = 0.5f;
+        }
+
+        if (this.explosionThroughWallFactor < 0.0f) {
+            this.explosionThroughWallFactor = 0.0f;
+        }
+
         if (this.bomblet > 0 && this.bombletSTime < 1) {
             this.bombletSTime = 1;
         }
@@ -620,9 +632,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         } else if (item.equalsIgnoreCase("VelocityInWater")) {
             this.velocityInWater = this.toFloat(data);
         } else if (item.equalsIgnoreCase("explosion")) {
-            this.explosion = this.toInt(data, 0, 50);
+            this.explosion = this.toInt(data, 0, 200);
         } else if (item.equalsIgnoreCase("explosionBlock")) {
-            this.explosionBlock = this.toInt(data, 0, 100);
+            this.explosionBlock = this.toInt(data, 0, 200);
         } else if (item.equalsIgnoreCase("explosioninwater")) {
             this.explosionInWater = this.toInt(data, 0, 50);
         } else if (item.equalsIgnoreCase("ExplosionAltitude")) {
@@ -778,6 +790,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.explosionDamageVsShip = this.toFloat(data);
             } else if (item.equalsIgnoreCase("ExplosionThroughWall")) {
                 this.explosionThroughWall = this.toBool(data);
+            } else if (item.equalsIgnoreCase("ExplosionThroughWallFactor")) {
+                this.explosionThroughWallFactor = this.toFloat(data, 0.0F, 1.0F);
+                this.hasExplosionThroughWallFactorSet = true;
+            } else if (item.equalsIgnoreCase("IsNewExplosionBreak")) {
+                this.isNewExplosionBreak = this.toBool(data);
             } else if (item.equalsIgnoreCase("DisableDestroyBlock")) {
                 this.disableDestroyBlock = this.toBool(data);
             } else if (item.equalsIgnoreCase("RailgunSound")) {

@@ -9,6 +9,7 @@ import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_GPSPosition;
 import mcheli.weapon.MCH_LaserGuidanceSystem;
+import mcheli.weapon.MCH_LaserStateStore;
 import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
@@ -48,11 +49,29 @@ public class MCH_RenderGPSPosition {
         if (!renderGps && !renderLzr) {
             return;
         }
-        MCH_GPSPosition gps = MCH_GPSPosition.currentClientGPSPosition;
-        if (gps == null || !gps.isActive()) return;
+
+        double gx;
+        double gy;
+        double gz;
+        if (renderGps) {
+            MCH_GPSPosition gps = MCH_GPSPosition.currentClientGPSPosition;
+            if (gps == null || !gps.isActive()) {
+                return;
+            }
+            gx = gps.x;
+            gy = gps.y;
+            gz = gps.z;
+        } else {
+            MCH_LaserStateStore.LaserState handheld = MCH_LaserStateStore.getClientState(player.getEntityId(), MCH_LaserStateStore.SOURCE_HANDHELD);
+            if (handheld == null || !handheld.active) {
+                return;
+            }
+            gx = handheld.x;
+            gy = handheld.y;
+            gz = handheld.z;
+        }
 
         // —— 世界/相机坐标 ——
-        final double gx = gps.x, gy = gps.y, gz = gps.z;
         RenderManager rm = RenderManager.instance;
         final double camX = rm.viewerPosX, camY = rm.viewerPosY, camZ = rm.viewerPosZ;
         final double x = gx - camX, y = gy - camY, z = gz - camZ;

@@ -10,7 +10,7 @@ import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.gltd.MCH_EntityGLTD;
 import mcheli.gui.MCH_Gui;
-import mcheli.weapon.MCH_GPSPosition;
+import mcheli.weapon.MCH_LaserStateStore;
 import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponGuidanceSystem;
 import mcheli.wrapper.W_McClient;
@@ -462,8 +462,11 @@ public class MCH_GuiLightWeapon extends MCH_Gui {
     }
 
     private boolean isLaserPointLocked(EntityPlayer player) {
-        MCH_GPSPosition gps = MCH_GPSPosition.currentClientGPSPosition;
-        return gps != null && gps.isActive && gps.owner != null && player != null && gps.owner.getEntityId() == player.getEntityId();
+        if (player == null) {
+            return false;
+        }
+        MCH_LaserStateStore.LaserState handheld = MCH_LaserStateStore.getClientState(player.getEntityId(), MCH_LaserStateStore.SOURCE_HANDHELD);
+        return handheld != null && handheld.active;
     }
 
     private String getTextLaserLocked() {

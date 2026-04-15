@@ -507,6 +507,9 @@ public class MCH_Explosion extends Explosion {
                 }
             }
         }
+        if (param.isNewExplosionBreak) {
+            this.applyNewExplosionBreakRule(affected);
+        }
         this.affectedBlockPositions.addAll(affected);
 
         // === 2) 处理实体伤害与击退 ===
@@ -557,12 +560,16 @@ public class MCH_Explosion extends Explosion {
             vz /= vLen;
 
             // 用于击退/向量登记的遮挡+距离因子（保持原版感觉）
-            double density = param.explosionThroughWall ? 1.0D : this.getBlockDensity(center, e.boundingBox);
+            double blockDensity = this.getBlockDensity(center, e.boundingBox);
+            double density = param.explosionThroughWall ? 1.0D : blockDensity;
             final double attenForKnock = (1.0D - rDist) * density;
             final double attenForDamage = Math.max(0.0D, attenForKnock);
 
             float damage = (float) ((int) (((attenForDamage * attenForDamage + attenForDamage) / 2.0D) * 8.0D
                 * (double) this.explosionSize + 1.0D));
+            if (param.explosionThroughWall && this.isOccluded(blockDensity)) {
+                damage *= this.getThroughWallDamageFactor();
+            }
 
             if (damage > 0.0F && this.result != null && !isIgnorableEntity(e)) {
                 this.result.hitEntity = true;
@@ -618,11 +625,15 @@ public class MCH_Explosion extends Explosion {
             }
 
             // 击退/登记按距离+遮挡（但不影响“固定伤害”）
-            double density = param.explosionThroughWall ? 1.0D : this.getBlockDensity(center, e.boundingBox);
+            double blockDensity = this.getBlockDensity(center, e.boundingBox);
+            double density = param.explosionThroughWall ? 1.0D : blockDensity;
             final double attenForKnock = (1.0D - rDistBox) * density;
 
             // === 固定伤害：点爆伤害，不随距离/遮挡衰减 ===
             float damage = pointBlankBase;
+            if (param.explosionThroughWall && this.isOccluded(blockDensity)) {
+                damage *= this.getThroughWallDamageFactor();
+            }
 
             if (this.result != null) {
                 this.result.hitEntity = true;
@@ -689,6 +700,49 @@ public class MCH_Explosion extends Explosion {
         } else {
             return 0.0D;
         }
+    }
+
+    private boolean isOccluded(double blockDensity) {
+        return blockDensity < 0.999D;
+    }
+
+    private float getThroughWallDamageFactor() {
+        return Math.max(0.0F, Math.min(1.0F, this.param.explosionThroughWallFactor));
+    }
+
+    private void applyNewExplosionBreakRule(Set<ChunkPosition> affected) {
+        if (affected == null || affected.isEmpty()) {
+            return;
+        }
+        int maxDownLayers = getMaxDownBreakLayers(this.param.sizeBlock);
+        int baseY = MathHelper.floor_double(this.explosionY);
+        affected.removeIf(cp -> {
+            int y = W_ChunkPosition.getChunkPosY(cp);
+            if (y >= baseY) {
+                return false;
+            }
+            int downDepth = baseY - y;
+            return downDepth > maxDownLayers;
+        });
+    }
+
+    private int getMaxDownBreakLayers(float breakPower) {
+        if (breakPower < 5.0F) {
+            return 0;
+        }
+        if (breakPower <= 15.0F) {
+            return 1;
+        }
+        if (breakPower <= 35.0F) {
+            return 2;
+        }
+        if (breakPower <= 65.0F) {
+            return 3;
+        }
+        if (breakPower <= 100.0F) {
+            return 4;
+        }
+        return 5;
     }
 
     public void doExplosionB(boolean par1) {

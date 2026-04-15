@@ -9,6 +9,7 @@ import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_PacketNotifyTVMissileEntity;
 import mcheli.network.packets.PacketLaserGuidanceTargeting;
+import mcheli.network.packets.PacketLaserStateSync;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_Entity;
 import net.minecraft.client.Minecraft;
@@ -23,6 +24,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
     protected MCH_EntityTvMissile lastShotTvMissile;
     protected Entity lastShotEntity;
     protected boolean isTVGuided;
+    private long aircraftLaserSequence = 0L;
 
     public MCH_WeaponTvMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
@@ -159,7 +161,9 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
                 this.guidanceSystem.targeting = this.getCurrentMode() == 1;
                 this.guidanceSystem.update();
                 if (this.guidanceSystem.targeting && prm != null && prm.user != null) {
-                    MCH_GPSPosition.set(this.guidanceSystem.targetPosX, this.guidanceSystem.targetPosY, this.guidanceSystem.targetPosZ, true, prm.user);
+                    this.publishAircraftLaserState(prm.user, true, this.guidanceSystem.targetPosX, this.guidanceSystem.targetPosY, this.guidanceSystem.targetPosZ);
+                } else if (prm != null && prm.user != null) {
+                    this.publishAircraftLaserState(prm.user, false, 0.0D, 0.0D, 0.0D);
                 }
             }
         }
@@ -171,10 +175,26 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         if (super.worldObj.isRemote) {
             if (guidanceSystem != null) {
                 this.guidanceSystem.targeting = false;
+                if (prm != null && prm.user != null) {
+                    this.publishAircraftLaserState(prm.user, false, 0.0D, 0.0D, 0.0D);
+                }
                 if (super.tick % 3 == 0) {
                     MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
                 }
             }
         }
+    }
+
+    private void publishAircraftLaserState(Entity user, boolean active, double x, double y, double z) {
+        if (user == null || user.worldObj == null) {
+            return;
+        }
+        ++this.aircraftLaserSequence;
+        long now = user.worldObj.getTotalWorldTime();
+        int ownerId = user.getEntityId();
+        MCH_LaserStateStore.upsertClientState(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT, x, y, z, active, this.aircraftLaserSequence, now);
+        MCH_MOD.getPacketHandler().sendToServer(
+            new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_AIRCRAFT, this.aircraftLaserSequence, active, x, y, z, ownerId)
+        );
     }
 }

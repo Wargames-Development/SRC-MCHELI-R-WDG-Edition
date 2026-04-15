@@ -35,6 +35,7 @@ import mcheli.vehicle.MCH_ClientVehicleTickHandler;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vehicle.MCH_GuiVehicle;
 import mcheli.weapon.MCH_GPSPosition;
+import mcheli.weapon.MCH_LaserStateStore;
 import mcheli.weapon.MCH_RenderLaser;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
@@ -337,6 +338,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             MCH_GPSPosition.currentClientGPSPosition.isActive = false;
         }
 
+        MCH_LaserStateStore.expireClientStates(minecraft.theWorld.getTotalWorldTime(), MCH_LaserStateStore.DEFAULT_TTL_TICKS);
         MCH_RenderLaser.tickBeams();
     }
 

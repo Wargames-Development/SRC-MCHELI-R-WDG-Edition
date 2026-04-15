@@ -85,37 +85,31 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
             }
         } else {
-            double x, y, z;
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
-            if (ac != null && ac.getCurrentWeapon(e).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
-                MCH_WeaponTvMissile weaponTvMissile = (MCH_WeaponTvMissile) ac.getCurrentWeapon(e).getCurrentWeapon();
-                if (weaponTvMissile.guidanceSystem != null && weaponTvMissile.guidanceSystem.targeting) {
-                    x = weaponTvMissile.guidanceSystem.targetPosX;
-                    y = weaponTvMissile.guidanceSystem.targetPosY;
-                    z = weaponTvMissile.guidanceSystem.targetPosZ;
-                    boolean jammed = false;
-                    double r = 5.0D;
-                    AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(x - r, y - r, z - r, x + r, y + r, z + r);
-                    List list = ac.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
-                    for (Object o : list) {
-                        MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
-                        if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isUsingFlareType(10))) {
-                            jammed = true;
-                            break;
-                        }
+            if (e != null) {
+                int sourceType = ac != null ? MCH_LaserStateStore.SOURCE_AIRCRAFT : MCH_LaserStateStore.SOURCE_HANDHELD;
+                MCH_LaserStateStore.LaserState laser = MCH_LaserStateStore.getServerState(e.getEntityId(), sourceType);
+                if (laser != null && laser.active) {
+                    if (!this.isLaserPointJammed(laser.x, laser.y, laser.z)) {
+                        onLaserGuide(laser.x, laser.y, laser.z);
                     }
-                    if (!jammed) {
-                        onLaserGuide(x, y, z);
-                    }
-                }
-            } else if (e != null) {
-                MCH_GPSPosition gps = MCH_GPSPosition.get(e);
-                if (gps != null && gps.isActive) {
-                    onLaserGuide(gps.x, gps.y, gps.z);
                 }
             }
         }
 
+    }
+
+    private boolean isLaserPointJammed(double x, double y, double z) {
+        double r = 5.0D;
+        AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(x - r, y - r, z - r, x + r, y + r, z + r);
+        List list = super.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
+        for (Object o : list) {
+            MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
+            if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isUsingFlareType(10))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void onLaserGuide(double x, double y, double z) {
