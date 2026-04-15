@@ -984,6 +984,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     return false;
                 } else {
                     Entity entity = damageSource.getEntity();
+                    if (this.isFriendlyPlayerAttackingGunnerPilotedVehicle(entity)) {
+                        return false;
+                    }
                     float impactAngleForDisplay = -1.0F;
                     if (entity instanceof EntityLivingBase)
                         this.lastAttackedEntity = entity;
@@ -4863,6 +4866,19 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         return true;
+    }
+
+    private boolean isFriendlyPlayerAttackingGunnerPilotedVehicle(Entity attacker) {
+        if (!(attacker instanceof EntityPlayer)) {
+            return false;
+        }
+        Entity pilot = this.getEntityBySeatId(0);
+        if (!(pilot instanceof MCH_EntityGunner)) {
+            return false;
+        }
+        EntityPlayer player = (EntityPlayer) attacker;
+        EntityLivingBase gunner = (EntityLivingBase) pilot;
+        return player.getTeam() != null && gunner.getTeam() != null && player.isOnSameTeam(gunner);
     }
 
     public boolean interactFirst(EntityPlayer player, boolean ss) {

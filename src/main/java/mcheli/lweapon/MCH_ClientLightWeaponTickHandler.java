@@ -72,6 +72,10 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
         this.initWeaponParam((EntityPlayer) null);
     }
 
+    public static MCH_WeaponBase getCurrentWeapon() {
+        return weapon;
+    }
+
     public static void markEntity(Entity entity, double x, double y, double z) {
         if (gs != null && gs.getLockingEntity() == entity) {
             GL11.glGetFloat(2982, matModel);
