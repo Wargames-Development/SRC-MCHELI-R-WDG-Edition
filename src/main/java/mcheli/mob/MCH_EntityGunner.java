@@ -1663,16 +1663,26 @@ public class MCH_EntityGunner extends EntityLivingBase {
             double dz = nav.targetZ - heli.posZ;
             double d3 = MathHelper.sqrt_double(dx * dx + dz * dz);
             desiredYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
-            desiredPitch = MathHelper.clamp_float((float)-(Math.atan2(dy, Math.max(0.1D, d3)) * 180.0D / Math.PI), -12.0F, 12.0F);
-            // Height hold window for waypoint navigation:
-            // avoid always pushing throttleUp, which causes runaway climb.
-            double upWindow = 6.0D;
-            double downWindow = 4.0D;
-            double cruiseCap = 0.62D;
-            if (dy > upWindow) {
-                throttleUp = heli.getCurrentThrottle() < 0.78D;
+            // Keep NAVIGATE altitude by AGL target instead of waypoint absolute Y.
+            // Waypoints are usually ground markers; following their Y directly causes takeoff oscillation.
+            double navTargetAgl = Math.max(24.0D, (double)this.heliCruiseAltitude);
+            double aglError = navTargetAgl - altitude;
+            double climbAssist = MathHelper.clamp_double(dy * 0.08D, -3.0D, 3.0D);
+            desiredPitch = MathHelper.clamp_float((float)(4.0D - aglError * 0.20D - climbAssist), -12.0F, 12.0F);
+            float navYawErr = Math.abs(MathHelper.wrapAngleTo180_float(desiredYaw - heli.getRotYaw()));
+            float forwardPitch = d3 > 90.0D ? 11.0F : (d3 > 45.0D ? 8.0F : 5.5F);
+            if (navYawErr > 35.0F) {
+                forwardPitch = 4.0F;
+            }
+            desiredPitch = MathHelper.clamp_float(Math.max(desiredPitch, forwardPitch), -12.0F, 12.0F);
+            double cruiseCap = 0.74D;
+            if (altitude < 8.0D) {
+                throttleUp = heli.getCurrentThrottle() < 0.94D;
                 throttleDown = false;
-            } else if (dy < -downWindow) {
+            } else if (aglError > 4.0D) {
+                throttleUp = heli.getCurrentThrottle() < 0.86D;
+                throttleDown = false;
+            } else if (aglError < -4.0D) {
                 throttleUp = false;
                 throttleDown = true;
             } else {
