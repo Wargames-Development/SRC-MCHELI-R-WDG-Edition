@@ -85,6 +85,18 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
             }
         } else {
+            // Command-line fallback:
+            // mode=1 with laserGuidance=false keeps manual line command without TV camera follow.
+            if (e != null && !e.isDead && this.getInfo() != null && !this.getInfo().laserGuidance) {
+                float yaw = e.rotationYaw;
+                float pitch = e.rotationPitch;
+                double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+                double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+                double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
+                this.setMotion(tX, tY, tZ);
+                this.setRotation(yaw, pitch);
+                return;
+            }
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
             if (e != null) {
                 int sourceType = ac != null ? MCH_LaserStateStore.SOURCE_AIRCRAFT : MCH_LaserStateStore.SOURCE_HANDHELD;

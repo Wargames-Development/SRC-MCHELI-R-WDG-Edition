@@ -2,7 +2,9 @@ package mcheli.helicopter;
 
 import com.google.common.io.ByteArrayDataInput;
 import mcheli.MCH_Achievement;
+import mcheli.MCH_FreeLookDebug;
 import mcheli.MCH_Lib;
+import mcheli.MCH_ServerSettings;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.container.MCH_EntityContainer;
@@ -125,6 +127,10 @@ public class MCH_HeliPacketHandler {
                     }
 
                     if (pc.switchFreeLook > 0) {
+                        if (MCH_ServerSettings.enableDebugFreeLook) {
+                            MCH_FreeLookDebug.trace(heli.worldObj, player, "[Packet][Heli] player=%s acId=%d switchFreeLook=%d",
+                                player.getCommandSenderName(), heli.getEntityId(), pc.switchFreeLook);
+                        }
                         heli.switchFreeLookMode(pc.switchFreeLook == 1);
                     }
 

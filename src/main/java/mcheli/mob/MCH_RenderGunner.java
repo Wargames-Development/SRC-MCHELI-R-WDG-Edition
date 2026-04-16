@@ -2,6 +2,7 @@ package mcheli.mob;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.MCH_ServerSettings;
 import mcheli.aircraft.MCH_EntityAircraft;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBiped;
@@ -41,9 +42,18 @@ public class MCH_RenderGunner extends RendererLivingEntity {
         double d3 = p_76986_4_ - p_76986_1_.yOffset;
         if (p_76986_1_.isSneaking() && !(p_76986_1_ instanceof net.minecraft.client.entity.EntityPlayerSP))
             d3 -= 0.125D;
+        MCH_EntityGunner gunner = (MCH_EntityGunner)p_76986_1_;
         MCH_EntityAircraft ac = ((MCH_EntityGunner)p_76986_1_).getAc();
         if (ac != null && ac.getAcInfo() != null && (!(ac.getAcInfo()).hideEntity || !ac.isPilot((Entity)p_76986_1_)))
             super.doRender(p_76986_1_, p_76986_2_, d3, p_76986_6_, p_76986_8_, p_76986_9_);
+        if (MCH_ServerSettings.enableDebugGunnerTeam) {
+            String teamName = gunner.getTeamName();
+            if (teamName == null || teamName.isEmpty()) {
+                teamName = "<NO_TEAM>";
+            }
+            String label = "Team: " + teamName;
+            func_147906_a((Entity)p_76986_1_, label, p_76986_2_, d3 + p_76986_1_.height + 0.6D, p_76986_6_, 64);
+        }
         this.modelBipedMain.aimedBow = false;
         this.modelBipedMain.isSneak = false;
         this.modelBipedMain.heldItemRight = 0;

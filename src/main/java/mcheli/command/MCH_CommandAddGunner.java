@@ -3,12 +3,16 @@ package mcheli.command;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.mob.MCH_EntityGunner;
+import mcheli.mob.MCH_GunnerInfo;
+import mcheli.mob.MCH_GunnerInfoManager;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.ChatComponentText;
@@ -26,7 +30,7 @@ public class MCH_CommandAddGunner extends CommandBase {
     }
 
     public String getCommandUsage(ICommandSender sender) {
-        return "/addgunner <gunner名称> <x> <y> <z> <r> 或 /addgunner pvp <teamname> <x> <y> <z> <r>";
+        return "/addgunner <friendly|player|aa|enemy> <x> <y> <z> <r> | /addgunner pvp <teamname> <x> <y> <z> <r> | /addgunner profile <profileName> <x> <y> <z> <r>";
     }
 
     public boolean canCommandSenderUseCommand(ICommandSender sender) {
@@ -38,33 +42,53 @@ public class MCH_CommandAddGunner extends CommandBase {
             throw new WrongUsageException(getCommandUsage(sender), new Object[0]);
         }
 
-        int targetType = parseTargetType(args[0]);
-        if (targetType < 0) {
-            throw new CommandException("Unknown gunner name: " + args[0] + " (friendly|player|aa|enemy)", new Object[0]);
-        }
-
         World world = sender.getEntityWorld();
+        boolean profileMode = args[0].equalsIgnoreCase("profile");
+        MCH_GunnerInfo profile = null;
+        int targetType;
         Team team = null;
         int argOffset = 1;
-        if (targetType == MCH_EntityGunner.TARGET_PLAYER) {
-            if (args.length == 6) {
-                team = world.getScoreboard().getTeam(args[1]);
-                if (team == null) {
-                    throw new CommandException("Unknown team: " + args[1], new Object[0]);
-                }
-                argOffset = 2;
-            } else {
-                if (!(sender instanceof EntityPlayer)) {
-                    throw new CommandException("For command blocks, use: /addgunner pvp <teamname> <x> <y> <z> <r>", new Object[0]);
-                }
-                EntityPlayer player = (EntityPlayer)sender;
-                team = player.worldObj.getScoreboard().getPlayersTeam(player.getDisplayName());
-                if (team == null) {
-                    throw new CommandException("player gunner requires command sender on a scoreboard team or explicit <teamname>", new Object[0]);
-                }
+
+        if (profileMode) {
+            if (args.length != 6) {
+                throw new WrongUsageException("/addgunner profile <profileName> <x> <y> <z> <r>", new Object[0]);
             }
-        } else if (args.length != 5) {
-            throw new WrongUsageException(getCommandUsage(sender), new Object[0]);
+            String profileName = args[1].trim().toLowerCase(Locale.ROOT);
+            profile = MCH_GunnerInfoManager.get(profileName);
+            if (profile == null) {
+                throw new CommandException("Unknown gunner profile: " + profileName, new Object[0]);
+            }
+            targetType = profile.targetType;
+            argOffset = 2;
+            team = this.resolveTeamByProfile(world, sender, profile, targetType);
+            if (targetType == MCH_EntityGunner.TARGET_PLAYER && this.needTeamByProfile(profile) && team == null) {
+                throw new CommandException("profile gunner requires valid team in TeamMode setting", new Object[0]);
+            }
+        } else {
+            targetType = parseTargetType(args[0]);
+            if (targetType < 0) {
+                throw new CommandException("Unknown gunner name: " + args[0] + " (friendly|player|aa|enemy)", new Object[0]);
+            }
+            if (targetType == MCH_EntityGunner.TARGET_PLAYER) {
+                if (args.length == 6) {
+                    team = world.getScoreboard().getTeam(args[1]);
+                    if (team == null) {
+                        throw new CommandException("Unknown team: " + args[1], new Object[0]);
+                    }
+                    argOffset = 2;
+                } else {
+                    if (!(sender instanceof EntityPlayer)) {
+                        throw new CommandException("For command blocks, use: /addgunner pvp <teamname> <x> <y> <z> <r>", new Object[0]);
+                    }
+                    EntityPlayer player = (EntityPlayer) sender;
+                    team = player.worldObj.getScoreboard().getPlayersTeam(player.getDisplayName());
+                    if (team == null) {
+                        throw new CommandException("player gunner requires command sender on a scoreboard team or explicit <teamname>", new Object[0]);
+                    }
+                }
+            } else if (args.length != 5) {
+                throw new WrongUsageException(getCommandUsage(sender), new Object[0]);
+            }
         }
 
         ChunkCoordinates cc = sender.getPlayerCoordinates();
@@ -107,7 +131,7 @@ public class MCH_CommandAddGunner extends CommandBase {
 
             boolean touched = false;
             if (ac.getRiddenByEntity() == null) {
-                if (spawnGunner(world, sender, team, targetType, ac)) {
+                if (spawnGunner(world, sender, team, targetType, profile, ac)) {
                     gunnerCount++;
                     touched = true;
                 }
@@ -116,7 +140,7 @@ public class MCH_CommandAddGunner extends CommandBase {
             MCH_EntitySeat[] seats = ac.getSeats();
             for (MCH_EntitySeat seat : seats) {
                 if (seat != null && !seat.isDead && seat.riddenByEntity == null) {
-                    if (spawnGunner(world, sender, team, targetType, seat)) {
+                    if (spawnGunner(world, sender, team, targetType, profile, seat)) {
                         gunnerCount++;
                         touched = true;
                     }
@@ -131,7 +155,7 @@ public class MCH_CommandAddGunner extends CommandBase {
         sender.addChatMessage(new ChatComponentText("addgunner: " + gunnerCount + " gunners added to " + aircraftCount + " aircraft(s)."));
     }
 
-    private boolean spawnGunner(World world, ICommandSender sender, Team team, int targetType, Entity mountTarget) {
+    private boolean spawnGunner(World world, ICommandSender sender, Team team, int targetType, MCH_GunnerInfo profile, Entity mountTarget) {
         MCH_EntityGunner gunner = new MCH_EntityGunner(world, mountTarget.posX, mountTarget.posY, mountTarget.posZ);
         gunner.rotationYaw = MathHelper.wrapAngleTo180_float(mountTarget.rotationYaw);
         gunner.setTargetType(targetType);
@@ -146,9 +170,80 @@ public class MCH_CommandAddGunner extends CommandBase {
             gunner.isCreative = true;
             gunner.ownerUUID = "";
         }
+        if (profile != null) {
+            String role = profile.factionRole == null ? "normal" : profile.factionRole;
+            float chance = profile.getStupidChanceForRole(role);
+            boolean stupidByChance = chance >= 0.0F && world.rand.nextFloat() < chance;
+            gunner.setStupidGunner(profile.stupidGunner || stupidByChance);
+            gunner.setFactionRole(role);
+            gunner.setProfileSearchRanges(
+                profile.searchRangeGroundHorizontal,
+                profile.searchRangeGroundVertical,
+                profile.searchRangeAirHorizontal,
+                profile.searchRangeAirVertical,
+                profile.searchRangeFallbackToConfig
+            );
+            gunner.setProfileWeaponPriority(profile.airWeaponPriorityRaw, profile.groundWeaponPriorityRaw);
+            gunner.setProfileCombatBehavior(
+                profile.allowLeadForAirTarget,
+                profile.stupidAttackSectorScaleGround,
+                profile.enableShortBurst,
+                profile.shortBurstFireTick,
+                profile.shortBurstRestTick
+            );
+        }
         world.spawnEntityInWorld(gunner);
         gunner.mountEntity(mountTarget);
         return true;
+    }
+
+    private boolean needTeamByProfile(MCH_GunnerInfo profile) {
+        if (profile == null) {
+            return true;
+        }
+        if ("none".equalsIgnoreCase(profile.teamMode)) {
+            return false;
+        }
+        return !"fixed".equalsIgnoreCase(profile.teamMode) ? profile.requirePlayerTeamWhenPvp : true;
+    }
+
+    private Team resolveTeamByProfile(World world, ICommandSender sender, MCH_GunnerInfo profile, int targetType) {
+        if (targetType != MCH_EntityGunner.TARGET_PLAYER) {
+            if (sender instanceof EntityPlayer) {
+                EntityPlayer p = (EntityPlayer) sender;
+                return world.getScoreboard().getPlayersTeam(p.getDisplayName());
+            }
+            return null;
+        }
+        if (profile == null || "player".equalsIgnoreCase(profile.teamMode)) {
+            if (sender instanceof EntityPlayer) {
+                EntityPlayer p = (EntityPlayer) sender;
+                return world.getScoreboard().getPlayersTeam(p.getDisplayName());
+            }
+            return null;
+        }
+        if ("none".equalsIgnoreCase(profile.teamMode)) {
+            return null;
+        }
+        if ("fixed".equalsIgnoreCase(profile.teamMode)) {
+            String teamId = profile.fixedTeamId == null ? "" : profile.fixedTeamId.trim();
+            if (teamId.isEmpty()) {
+                return null;
+            }
+            Scoreboard scoreboard = world.getScoreboard();
+            Team team = scoreboard.getTeam(teamId);
+            if (team == null && profile.autoCreateTeam) {
+                ScorePlayerTeam created = scoreboard.createTeam(teamId);
+                if (created != null) {
+                    if (profile.fixedTeamDisplayName != null && !profile.fixedTeamDisplayName.trim().isEmpty()) {
+                        created.setTeamName(profile.fixedTeamDisplayName.trim());
+                    }
+                    team = created;
+                }
+            }
+            return team;
+        }
+        return null;
     }
 
     private int parseTargetType(String gunnerName) {

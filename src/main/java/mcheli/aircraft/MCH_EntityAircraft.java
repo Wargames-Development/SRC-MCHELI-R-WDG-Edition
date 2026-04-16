@@ -1442,6 +1442,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         this.keepOnRideRotation = false;
         if (this.getAcInfo() != null) {
+            if (MCH_ServerSettings.enableDebugFreeLook) {
+                String pilotName = pilot instanceof EntityPlayer ? ((EntityPlayer)pilot).getCommandSenderName() : String.valueOf(pilot);
+                mcheli.MCH_FreeLookDebug.trace(super.worldObj, pilot, "[RideInit] acId=%d pilot=%s defaultFreelook=%s current=%s",
+                    this.getEntityId(), pilotName, this.getAcInfo().defaultFreelook, this.getCommonStatus(1));
+            }
             this.switchFreeLookModeClient(this.getAcInfo().defaultFreelook);
         }
 
@@ -5181,6 +5186,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     var7[i].prevRotationYaw = var8;
                     var7[i].rotationYaw = var8;
                     var7[i].defaultRotationYaw = var8;
+                    // Initialize with full ammo state to avoid first-frame missile model hiding before sync.
+                    int mag = var7[i].getAmmoNumMax();
+                    int all = var7[i].getAllAmmoNum();
+                    var7[i].setAmmoNum(Math.max(0, mag));
+                    var7[i].setRestAllAmmoNum(Math.max(0, all - mag));
                 }
             }
 
@@ -6159,10 +6169,22 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void switchFreeLookMode(boolean b) {
+        if (MCH_ServerSettings.enableDebugFreeLook) {
+            Entity rider = this.getRiddenByEntity();
+            String riderName = rider instanceof EntityPlayer ? ((EntityPlayer)rider).getCommandSenderName() : String.valueOf(rider);
+            mcheli.MCH_FreeLookDebug.trace(super.worldObj, rider, "[Switch][Server] acId=%d rider=%s %s->%s",
+                this.getEntityId(), riderName, this.getCommonStatus(1), b);
+        }
         this.setCommonStatus(1, b);
     }
 
     public void switchFreeLookModeClient(boolean b) {
+        if (MCH_ServerSettings.enableDebugFreeLook) {
+            Entity rider = this.getRiddenByEntity();
+            String riderName = rider instanceof EntityPlayer ? ((EntityPlayer)rider).getCommandSenderName() : String.valueOf(rider);
+            mcheli.MCH_FreeLookDebug.trace(super.worldObj, rider, "[Switch][ClientInit] acId=%d rider=%s %s->%s",
+                this.getEntityId(), riderName, this.getCommonStatus(1), b);
+        }
         this.setCommonStatus(1, b, true);
     }
 

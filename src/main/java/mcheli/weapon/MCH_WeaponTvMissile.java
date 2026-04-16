@@ -69,7 +69,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         }
 
         if (this.getCurrentMode() == 1) {
-            opt = " [TA]";
+            opt = (this.getInfo() != null && !this.getInfo().laserGuidance) ? " [TV]" : " [TA]";
         }
 
         return super.getName() + opt;
@@ -130,6 +130,9 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
             double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
             double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
+            // Runtime mode:
+            // mode=0 -> TV guidance
+            // mode=1 -> terminal attack path (laser or command-line fallback handled by missile)
             this.isTVGuided = prm.option1 == 0;
             float acr = super.acceleration;
             if (!this.isTVGuided) {

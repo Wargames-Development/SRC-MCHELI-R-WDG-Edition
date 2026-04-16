@@ -1703,6 +1703,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             for (Entity entity : list) {
                 // AA 导弹的目标判定
                 if (this instanceof MCH_EntityAAMissile) {
+                    boolean canScanMissiles = getInfo().canLockMissile && (getInfo().activeRadar || getInfo().semiActiveRadar);
                     // 发现箔条时先处理
                     if (entity instanceof MCH_EntityChaff) {
                         // 计算与导弹方向的夹角，确保在锁定范围内
@@ -1735,6 +1736,30 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         double angle = Math.abs(Vector3f.angle(missileDirection, targetDir));
                         if (angle > Math.toRadians(getInfo().maxDegreeOfMissile)) continue;
 
+                        if (angle < closestAngle) {
+                            closestAngle = angle;
+                            closestTarget = entity;
+                        }
+                    }
+                    // Active/semi-active radar can optionally include missiles in autonomous scan.
+                    else if (canScanMissiles && entity instanceof MCH_EntityBaseBullet
+                        && (entity instanceof MCH_EntityAAMissile || entity instanceof MCH_EntityATMissile
+                        || entity instanceof MCH_EntityASMissile || entity instanceof MCH_EntityTvMissile)) {
+                        MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) entity;
+                        if (bullet.isDead || W_Entity.isEqual(entity, this)) continue;
+                        if (W_Entity.isEqual(entity, shootingAircraft)) continue;
+                        if (W_Entity.isEqual(entity, shootingEntity)) continue;
+                        if (shootingEntity != null && W_Entity.isEqual(bullet.shootingEntity, shootingEntity)) continue;
+                        if (shootingEntity instanceof EntityLivingBase && bullet.shootingEntity instanceof EntityLivingBase
+                            && ((EntityLivingBase) bullet.shootingEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
+                            continue;
+                        }
+                        double dx = entity.posX - super.posX;
+                        double dy = entity.posY - super.posY;
+                        double dz = entity.posZ - super.posZ;
+                        Vector3f targetDir = new Vector3f((float) dx, (float) dy, (float) dz);
+                        double angle = Math.abs(Vector3f.angle(missileDirection, targetDir));
+                        if (angle > Math.toRadians(getInfo().maxDegreeOfMissile)) continue;
                         if (angle < closestAngle) {
                             closestAngle = angle;
                             closestTarget = entity;

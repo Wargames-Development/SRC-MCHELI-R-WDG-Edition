@@ -1,11 +1,14 @@
 package mcheli.block;
 
+import mcheli.MCH_WaypointNavDebug;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_ItemAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.mob.MCH_EntityGunner;
+import mcheli.mob.MCH_GunnerInfo;
+import mcheli.mob.MCH_GunnerInfoManager;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.plane.MCP_PlaneInfoManager;
 import mcheli.tank.MCH_TankInfo;
@@ -20,10 +23,14 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MCH_ConfigSpawnerTileEntity extends TileEntity {
 
@@ -39,6 +46,7 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
     private int trackedVehicleEntityId = -1;
     private long trackedVehicleUuidMost = 0L;
     private long trackedVehicleUuidLeast = 0L;
+    private static final Map<Integer, Map<String, List<MCH_ConfigSpawnerTileEntity>>> WAYPOINT_REGISTRY = new HashMap<Integer, Map<String, List<MCH_ConfigSpawnerTileEntity>>>();
 
     public MCH_ConfigSpawnerTileEntity() {
     }
@@ -52,7 +60,17 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
             return;
         }
         MCH_BlockInfo info = MCH_BlockInfoManager.get(this.blockInfoName);
-        if (info == null || !info.enableSpawner) {
+        if (info == null) {
+            this.setVisualState(STATE_ERROR, 2);
+            return;
+        }
+        this.updateWaypointRegistry(info);
+        if (this.isWaypointMarker(info)) {
+            this.setVisualState(STATE_ACTIVE, info.stateSyncTick);
+            if (!info.enableSpawner) {
+                return;
+            }
+        } else if (!info.enableSpawner) {
             this.setVisualState(STATE_ERROR, 2);
             return;
         }
@@ -141,6 +159,7 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
         if (!this.worldObj.spawnEntityInWorld(aircraft)) {
             return false;
         }
+        this.attachInitialWaypoint(aircraft, info);
         if (info.spawnGunner && !this.spawnAndMountGunner(info, aircraft)) {
             aircraft.setDead();
             return false;
@@ -153,13 +172,48 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
         if (info.gunnerMode != null && info.gunnerMode.equalsIgnoreCase("none")) {
             return true;
         }
+        MCH_GunnerInfo profile = null;
+        if (info.gunnerProfile != null && !info.gunnerProfile.trim().isEmpty()) {
+            profile = MCH_GunnerInfoManager.get(info.gunnerProfile.trim());
+            if (profile == null) {
+                return false;
+            }
+        }
         MCH_EntityGunner gunner = new MCH_EntityGunner(this.worldObj, aircraft.posX, aircraft.posY, aircraft.posZ);
         gunner.rotationYaw = info.gunnerYaw;
         gunner.rotationPitch = info.gunnerPitch;
         gunner.isCreative = true;
         gunner.ownerUUID = "";
-        int targetType = info.gunnerTargetType;
-        if (info.gunnerMode != null && info.gunnerMode.equalsIgnoreCase("faction")) {
+        int targetType = profile != null ? profile.targetType : info.gunnerTargetType;
+        if (profile != null) {
+            Team team = this.resolveTeamForSpawner(profile, info, targetType);
+            if (targetType == MCH_EntityGunner.TARGET_PLAYER && this.needTeamByProfile(profile) && team == null) {
+                return false;
+            }
+            if (team != null) {
+                gunner.setTeamName(team.getRegisteredName());
+            }
+            String role = profile.factionRole == null ? "normal" : profile.factionRole;
+            float chance = profile.getStupidChanceForRole(role);
+            boolean stupidByChance = chance >= 0.0F && this.worldObj.rand.nextFloat() < chance;
+            gunner.setStupidGunner(profile.stupidGunner || stupidByChance);
+            gunner.setFactionRole(role);
+            gunner.setProfileSearchRanges(
+                profile.searchRangeGroundHorizontal,
+                profile.searchRangeGroundVertical,
+                profile.searchRangeAirHorizontal,
+                profile.searchRangeAirVertical,
+                profile.searchRangeFallbackToConfig
+            );
+            gunner.setProfileWeaponPriority(profile.airWeaponPriorityRaw, profile.groundWeaponPriorityRaw);
+            gunner.setProfileCombatBehavior(
+                profile.allowLeadForAirTarget,
+                profile.stupidAttackSectorScaleGround,
+                profile.enableShortBurst,
+                profile.shortBurstFireTick,
+                profile.shortBurstRestTick
+            );
+        } else if (info.gunnerMode != null && info.gunnerMode.equalsIgnoreCase("faction")) {
             targetType = MCH_EntityGunner.TARGET_PLAYER;
             String teamName = this.ensureFactionTeam(info);
             if (teamName == null || teamName.isEmpty()) {
@@ -206,19 +260,74 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
     }
 
     private String ensureFactionTeam(MCH_BlockInfo info) {
-        if (info.gunnerFactionId == null || info.gunnerFactionId.trim().isEmpty()) {
+        Team team = this.resolveTeamByBlockFaction(info);
+        return team != null ? team.getRegisteredName() : null;
+    }
+
+    private boolean needTeamByProfile(MCH_GunnerInfo profile) {
+        if (profile == null) {
+            return true;
+        }
+        if ("none".equalsIgnoreCase(profile.teamMode)) {
+            return false;
+        }
+        return !"fixed".equalsIgnoreCase(profile.teamMode) ? profile.requirePlayerTeamWhenPvp : true;
+    }
+
+    private Team resolveTeamForSpawner(MCH_GunnerInfo profile, MCH_BlockInfo info, int targetType) {
+        if (profile == null) {
+            return this.resolveTeamByBlockFaction(info);
+        }
+        if ("none".equalsIgnoreCase(profile.teamMode)) {
+            return null;
+        }
+        if ("fixed".equalsIgnoreCase(profile.teamMode)) {
+            String teamId = profile.fixedTeamId == null ? "" : profile.fixedTeamId.trim();
+            if (teamId.isEmpty()) {
+                return null;
+            }
+            Scoreboard scoreboard = this.worldObj.getScoreboard();
+            Team team = scoreboard.getTeam(teamId);
+            if (team == null && profile.autoCreateTeam) {
+                ScorePlayerTeam created = scoreboard.createTeam(teamId);
+                if (created != null) {
+                    if (profile.fixedTeamDisplayName != null && !profile.fixedTeamDisplayName.trim().isEmpty()) {
+                        created.setTeamName(profile.fixedTeamDisplayName.trim());
+                    }
+                    team = created;
+                }
+            }
+            return team;
+        }
+        // TeamMode=player has no player context in block spawner. Fallback to block faction settings.
+        Team team = this.resolveTeamByBlockFaction(info);
+        if (team != null) {
+            return team;
+        }
+        // Non-PVP targets (AA/enemy/monster) can still benefit from team assignment for friendly filtering.
+        if (targetType != MCH_EntityGunner.TARGET_PLAYER) {
+            return this.resolveTeamByBlockFaction(info);
+        }
+        return null;
+    }
+
+    private Team resolveTeamByBlockFaction(MCH_BlockInfo info) {
+        if (info == null || info.gunnerFactionId == null || info.gunnerFactionId.trim().isEmpty()) {
             return null;
         }
         String teamId = info.gunnerFactionId.trim();
         Scoreboard scoreboard = this.worldObj.getScoreboard();
-        ScorePlayerTeam team = (ScorePlayerTeam) scoreboard.getTeam(teamId);
+        Team team = scoreboard.getTeam(teamId);
         if (team == null && info.autoCreateFaction) {
-            team = scoreboard.createTeam(teamId);
-            if (team != null && info.gunnerFactionName != null && !info.gunnerFactionName.trim().isEmpty()) {
-                team.setTeamName(info.gunnerFactionName.trim());
+            ScorePlayerTeam created = scoreboard.createTeam(teamId);
+            if (created != null) {
+                if (info.gunnerFactionName != null && !info.gunnerFactionName.trim().isEmpty()) {
+                    created.setTeamName(info.gunnerFactionName.trim());
+                }
+                team = created;
             }
         }
-        return team != null ? team.getRegisteredName() : null;
+        return team;
     }
 
     private MCH_ItemAircraft resolveAircraftItem(String entry) {
@@ -342,6 +451,53 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
         return info.spawnMode != null && info.spawnMode.equalsIgnoreCase("once");
     }
 
+    private void attachInitialWaypoint(MCH_EntityAircraft aircraft, MCH_BlockInfo info) {
+        if (aircraft == null || info == null || !info.enableWaypointPatrol) {
+            return;
+        }
+        String initialId = info.initialWaypointId == null ? "" : info.initialWaypointId.trim().toLowerCase();
+        if (initialId.isEmpty()) {
+            return;
+        }
+        NBTTagCompound nav = aircraft.getEntityData().getCompoundTag("MCHWaypointNav");
+        nav.setBoolean("HoldAsFreeState", info.holdAsFreeState);
+        nav.setBoolean("NavigateSuppressLargeTurn", info.navigateSuppressLargeTurn);
+        nav.setInteger("NavigateTimeoutTick", Math.max(20, info.navigateTimeoutTick));
+        nav.setString("NavigateDrivePriority", info.navigateDrivePriority == null ? "avoid>navigate>combat" : info.navigateDrivePriority);
+        nav.setString("PendingWaypointId", initialId);
+        nav.setString("State", "PENDING");
+        nav.setBoolean("Enabled", false);
+        MCH_ConfigSpawnerTileEntity nearest = resolveNearestWaypoint(this.worldObj, initialId, aircraft.posX, aircraft.posY, aircraft.posZ);
+        if (nearest == null) {
+            aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+            MCH_WaypointNavDebug.trace(this.worldObj, null, "AttachInitialWaypoint pending: acId=%d initial=%s from=%d,%d,%d",
+                aircraft.getEntityId(), initialId, this.xCoord, this.yCoord, this.zCoord);
+            return;
+        }
+        MCH_BlockInfo wp = nearest.getBlockInfo();
+        if (wp == null) {
+            aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+            return;
+        }
+        nav.setBoolean("Enabled", true);
+        nav.setString("State", "NAVIGATE");
+        nav.setString("PendingWaypointId", "");
+        nav.setString("CurrentWaypointId", wp.waypointId == null ? "" : wp.waypointId);
+        nav.setInteger("CurrentWaypointX", nearest.xCoord);
+        nav.setInteger("CurrentWaypointY", nearest.yCoord);
+        nav.setInteger("CurrentWaypointZ", nearest.zCoord);
+        nav.setString("NextWaypointId", wp.nextWaypointId == null ? "" : wp.nextWaypointId);
+        nav.setInteger("HoldCountdownTick", Math.max(1, wp.patrolTimeTick));
+        nav.setDouble("Radius", Math.max(1.0F, wp.waypointRadius));
+        nav.setDouble("Height", Math.max(1.0F, wp.waypointHeight));
+        nav.setBoolean("IsTerminator", wp.isTerminator);
+        nav.setString("TerminateAction", wp.terminateAction == null ? "free" : wp.terminateAction);
+        nav.setBoolean("TerminatorAfterHold", wp.terminatorAfterHold);
+        aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+        MCH_WaypointNavDebug.trace(this.worldObj, null, "AttachInitialWaypoint success: acId=%d current=%s next=%s at=%d,%d,%d",
+            aircraft.getEntityId(), wp.waypointId, wp.nextWaypointId, nearest.xCoord, nearest.yCoord, nearest.zCoord);
+    }
+
     private void trackVehicle(MCH_EntityAircraft aircraft) {
         if (aircraft == null) {
             this.clearTrackedVehicle();
@@ -423,5 +579,150 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
         this.trackedVehicleEntityId = nbt.getInteger("TrackedVehicleEntityId");
         this.trackedVehicleUuidMost = nbt.getLong("TrackedVehicleUuidMost");
         this.trackedVehicleUuidLeast = nbt.getLong("TrackedVehicleUuidLeast");
+    }
+
+    public void validate() {
+        super.validate();
+        MCH_BlockInfo info = this.getBlockInfo();
+        this.updateWaypointRegistry(info);
+    }
+
+    public void invalidate() {
+        this.removeWaypointRegistry();
+        super.invalidate();
+    }
+
+    public void onChunkUnload() {
+        this.removeWaypointRegistry();
+        super.onChunkUnload();
+    }
+
+    public MCH_BlockInfo getBlockInfo() {
+        return MCH_BlockInfoManager.get(this.blockInfoName);
+    }
+
+    public String getWaypointId() {
+        MCH_BlockInfo info = this.getBlockInfo();
+        return info == null || info.waypointId == null ? "" : info.waypointId.trim().toLowerCase();
+    }
+
+    public String getNextWaypointId() {
+        MCH_BlockInfo info = this.getBlockInfo();
+        return info == null || info.nextWaypointId == null ? "" : info.nextWaypointId.trim().toLowerCase();
+    }
+
+    public boolean isWaypointMarker() {
+        return this.isWaypointMarker(this.getBlockInfo());
+    }
+
+    public String getWaypointLabel() {
+        if (!this.isWaypointMarker()) {
+            return "";
+        }
+        String cur = this.getWaypointId();
+        String next = this.getNextWaypointId();
+        if (cur.isEmpty()) {
+            return "";
+        }
+        if (next.isEmpty()) {
+            next = "<END>";
+        }
+        return cur + "->" + next;
+    }
+
+    private boolean isWaypointMarker(MCH_BlockInfo info) {
+        return info != null && info.enableWaypoint && info.waypointId != null && !info.waypointId.trim().isEmpty();
+    }
+
+    private void updateWaypointRegistry(MCH_BlockInfo info) {
+        if (this.worldObj == null || this.worldObj.isRemote) {
+            return;
+        }
+        this.removeWaypointRegistry();
+        if (!this.isWaypointMarker(info)) {
+            return;
+        }
+        int dim = this.worldObj.provider.dimensionId;
+        String id = info.waypointId.trim().toLowerCase();
+        Map<String, List<MCH_ConfigSpawnerTileEntity>> byId = WAYPOINT_REGISTRY.get(dim);
+        if (byId == null) {
+            byId = new HashMap<String, List<MCH_ConfigSpawnerTileEntity>>();
+            WAYPOINT_REGISTRY.put(dim, byId);
+        }
+        List<MCH_ConfigSpawnerTileEntity> list = byId.get(id);
+        if (list == null) {
+            list = new ArrayList<MCH_ConfigSpawnerTileEntity>();
+            byId.put(id, list);
+        }
+        if (!list.contains(this)) {
+            list.add(this);
+        }
+    }
+
+    private void removeWaypointRegistry() {
+        if (this.worldObj == null || this.worldObj.isRemote) {
+            return;
+        }
+        int dim = this.worldObj.provider.dimensionId;
+        Map<String, List<MCH_ConfigSpawnerTileEntity>> byId = WAYPOINT_REGISTRY.get(dim);
+        if (byId == null || byId.isEmpty()) {
+            return;
+        }
+        List<String> removeKeys = new ArrayList<String>();
+        for (Map.Entry<String, List<MCH_ConfigSpawnerTileEntity>> e : byId.entrySet()) {
+            List<MCH_ConfigSpawnerTileEntity> list = e.getValue();
+            if (list == null) {
+                removeKeys.add(e.getKey());
+                continue;
+            }
+            list.remove(this);
+            if (list.isEmpty()) {
+                removeKeys.add(e.getKey());
+            }
+        }
+        for (String k : removeKeys) {
+            byId.remove(k);
+        }
+        if (byId.isEmpty()) {
+            WAYPOINT_REGISTRY.remove(dim);
+        }
+    }
+
+    public static MCH_ConfigSpawnerTileEntity resolveNearestWaypoint(net.minecraft.world.World world, String waypointId, double x, double y, double z) {
+        if (world == null || waypointId == null || waypointId.trim().isEmpty()) {
+            return null;
+        }
+        Map<String, List<MCH_ConfigSpawnerTileEntity>> byId = WAYPOINT_REGISTRY.get(world.provider.dimensionId);
+        if (byId == null || byId.isEmpty()) {
+            return null;
+        }
+        List<MCH_ConfigSpawnerTileEntity> list = byId.get(waypointId.trim().toLowerCase());
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        MCH_ConfigSpawnerTileEntity nearest = null;
+        double best = Double.MAX_VALUE;
+        for (MCH_ConfigSpawnerTileEntity tile : list) {
+            if (tile == null || tile.isInvalid() || tile.worldObj != world) {
+                continue;
+            }
+            MCH_BlockInfo info = tile.getBlockInfo();
+            if (!tile.isWaypointMarker(info)) {
+                continue;
+            }
+            double dx = tile.xCoord + 0.5D - x;
+            double dy = tile.yCoord + 0.5D - y;
+            double dz = tile.zCoord + 0.5D - z;
+            double distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < best) {
+                best = distSq;
+                nearest = tile;
+            }
+        }
+        if (nearest == null) {
+            MCH_WaypointNavDebug.trace(world, null, "ResolveNearest miss: waypoint=%s candidates=%d pos=%.1f,%.1f,%.1f",
+                waypointId, list.size(), x, y, z);
+        }
+        return nearest;
     }
 }

@@ -41,7 +41,8 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
                 }
             } else {
-                if ((getInfo().activeRadar || getInfo().passiveRadar) && ticksExisted % getInfo().scanInterval == 0) {
+                // Radar missiles can perform periodic autonomous target search.
+                if ((getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar) && ticksExisted % getInfo().scanInterval == 0) {
                     scanForTargets();
                 }
             }

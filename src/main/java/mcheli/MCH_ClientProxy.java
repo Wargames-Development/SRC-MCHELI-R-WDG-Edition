@@ -7,6 +7,8 @@ import mcheli.aircraft.*;
 import mcheli.block.MCH_DraftingTableItemRender;
 import mcheli.block.MCH_DraftingTableRenderer;
 import mcheli.block.MCH_DraftingTableTileEntity;
+import mcheli.block.MCH_ConfigSpawnerTileEntity;
+import mcheli.block.MCH_ConfigSpawnerWaypointRenderer;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.chain.MCH_RenderChain;
 import mcheli.command.MCH_GuiTitle;
@@ -167,6 +169,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
 
     public void registerBlockRenderer() {
         ClientRegistry.bindTileEntitySpecialRenderer(MCH_DraftingTableTileEntity.class, new MCH_DraftingTableRenderer());
+        ClientRegistry.bindTileEntitySpecialRenderer(MCH_ConfigSpawnerTileEntity.class, new MCH_ConfigSpawnerWaypointRenderer());
         W_MinecraftForgeClient.registerItemRenderer(W_Item.getItemFromBlock(MCH_MOD.blockDraftingTable), new MCH_DraftingTableItemRender());
     }
 

@@ -2,8 +2,11 @@ package mcheli.command;
 
 import com.google.gson.JsonParseException;
 import mcheli.MCH_Config;
+import mcheli.MCH_FreeLookDebug;
+import mcheli.MCH_WaypointNavDebug;
 import mcheli.MCH_MOD;
 import mcheli.MCH_PacketNotifyServerSettings;
+import mcheli.MCH_ServerSettings;
 import mcheli.multiplay.MCH_MultiplayPacketHandler;
 import mcheli.multiplay.MCH_PacketIndClient;
 import net.minecraft.block.Block;
@@ -40,8 +43,9 @@ public class MCH_Command extends CommandBase {
     public static final String CMD_REMOVE_ENTITY = "removeentity";
     public static final String CMD_ATTACK_ENTITY = "attackentity";
     public static final String CMD_SHOW_BB = "showboundingbox";
+    public static final String CMD_DEBUG = "debug";
     public static final String CMD_LIST = "list";
-    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "list"};
+    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "list"};
     public static MCH_Command instance = new MCH_Command();
 
 
@@ -208,6 +212,34 @@ public class MCH_Command extends CommandBase {
                             MCH_Config.EnableDebugBoundingBox.prmBool = true;
                             MCH_PacketNotifyServerSettings.sendAll();
                             sender.addChatMessage(new ChatComponentText("Enabled bounding box [F3 + b]"));
+                        }
+                    } else if (prm[0].equalsIgnoreCase("debug")) {
+                        if (prm.length != 3 || (!prm[1].equalsIgnoreCase("gunner") && !prm[1].equalsIgnoreCase("freelook") && !prm[1].equalsIgnoreCase("waypoint") && !prm[1].equalsIgnoreCase("waypointnav"))) {
+                            throw new CommandException("Parameter error! : /mcheli debug <gunner|freelook|waypoint|waypointnav> true or false", new Object[0]);
+                        }
+                        boolean enabled = parseBoolean(sender, prm[2]);
+                        if (prm[1].equalsIgnoreCase("gunner")) {
+                            MCH_ServerSettings.enableDebugGunnerTeam = enabled;
+                            MCH_PacketNotifyServerSettings.sendAll();
+                            sender.addChatMessage(new ChatComponentText("Debug gunner team label: " + (MCH_ServerSettings.enableDebugGunnerTeam ? "ON" : "OFF")));
+                        } else if (prm[1].equalsIgnoreCase("freelook")) {
+                            MCH_ServerSettings.enableDebugFreeLook = enabled;
+                            if (MCH_ServerSettings.enableDebugFreeLook) {
+                                sender.addChatMessage(new ChatComponentText("Debug freelook trace: ON (log: " + MCH_FreeLookDebug.getLogPath() + ")"));
+                            } else {
+                                sender.addChatMessage(new ChatComponentText("Debug freelook trace: OFF"));
+                            }
+                        } else if (prm[1].equalsIgnoreCase("waypointnav")) {
+                            MCH_ServerSettings.enableDebugWaypointNav = enabled;
+                            if (MCH_ServerSettings.enableDebugWaypointNav) {
+                                sender.addChatMessage(new ChatComponentText("Debug waypoint nav trace: ON (log: " + MCH_WaypointNavDebug.getLogPath() + ")"));
+                            } else {
+                                sender.addChatMessage(new ChatComponentText("Debug waypoint nav trace: OFF"));
+                            }
+                        } else {
+                            MCH_ServerSettings.enableDebugWaypointLabel = enabled;
+                            MCH_PacketNotifyServerSettings.sendAll();
+                            sender.addChatMessage(new ChatComponentText("Debug waypoint label: " + (MCH_ServerSettings.enableDebugWaypointLabel ? "ON" : "OFF")));
                         }
                     } else {
                         if (!prm[0].equalsIgnoreCase("list")) {
@@ -544,6 +576,13 @@ public class MCH_Command extends CommandBase {
                     }
                 } else if (prm[0].equalsIgnoreCase("showboundingbox") && prm.length == 2) {
                     return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false"});
+                } else if (prm[0].equalsIgnoreCase("debug")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"gunner", "freelook", "waypoint", "waypointnav"});
+                    }
+                    if (prm.length == 3 && (prm[1].equalsIgnoreCase("gunner") || prm[1].equalsIgnoreCase("freelook") || prm[1].equalsIgnoreCase("waypoint") || prm[1].equalsIgnoreCase("waypointnav"))) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false"});
+                    }
                 }
             }
 

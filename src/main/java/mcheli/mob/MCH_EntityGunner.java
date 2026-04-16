@@ -1,9 +1,16 @@
 package mcheli.mob;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
+import mcheli.MCH_ServerSettings;
+import mcheli.MCH_WaypointNavDebug;
+import mcheli.block.MCH_BlockInfo;
+import mcheli.block.MCH_ConfigSpawnerTileEntity;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -122,6 +129,21 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private boolean stupidDiveActive = false;
     private boolean stupidDiveSoundStarted = false;
     private boolean stupidDiveWarnPlayed = false;
+    private int profileSearchRangeGroundHorizontal = -1;
+    private int profileSearchRangeGroundVertical = -1;
+    private int profileSearchRangeAirHorizontal = -1;
+    private int profileSearchRangeAirVertical = -1;
+    private boolean profileSearchRangeFallbackToConfig = true;
+    private Map<String, Integer> profileAirWeaponPriority = null;
+    private Map<String, Integer> profileGroundWeaponPriority = null;
+    private String factionRole = "normal";
+    private boolean profileAllowLeadForAirTarget = true;
+    private float profileStupidAttackSectorScaleGround = 1.0F;
+    private boolean profileEnableShortBurst = false;
+    private int profileShortBurstFireTick = 14;
+    private int profileShortBurstRestTick = 10;
+    private int shortBurstFireRemainTick = 0;
+    private int shortBurstRestRemainTick = 0;
 
     public MCH_EntityGunner(World world) {
         super(world);
@@ -481,6 +503,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 tick -= MCH_Config.HitBoxDelayTick.prmInt;
             if (this.stupidGunner)
                 tick = 0.0D;
+            boolean airLeadTarget = isAirCombatTarget(this.targetEntity);
+            if (airLeadTarget && !this.profileAllowLeadForAirTarget) {
+                tick = 0.0D;
+            }
             double dx = (this.targetEntity.posX - this.targetPrevPosX) * tick;
             double dy = (this.targetEntity.posY - this.targetPrevPosY) * tick + this.targetEntity.height * this.rand.nextDouble();
             double dz = (this.targetEntity.posZ - this.targetPrevPosZ) * tick;
@@ -513,20 +539,23 @@ public class MCH_EntityGunner extends EntityLivingBase {
                     r = 0.35F;
                 this.rotationPitch = pitch + (this.rand.nextFloat() - 0.5F) * r - cw.fixRotationPitch;
                 this.rotationYaw = yaw + (this.rand.nextFloat() - 0.5F) * r;
+                boolean allowByShortBurst = this.allowFireByShortBurst(ws);
                 if (!this.waitCooldown || ws.currentHeat <= 0 || (ws.getInfo()).maxHeatCount <= 0) {
                     this.waitCooldown = false;
-                    MCH_WeaponParam prm = new MCH_WeaponParam();
-                    prm.setPosition(ac.posX, ac.posY, ac.posZ);
-                    prm.user = (Entity)this;
-                    prm.entity = (Entity)ac;
-                    prm.option1 = (cw instanceof mcheli.weapon.MCH_WeaponEntitySeeker) ? this.targetEntity.getEntityId() : 0;
-                    prm.option2 = (cw instanceof mcheli.weapon.MCH_WeaponATMissile) ? cw.getCurrentMode() : 0;
-                    if (cw instanceof mcheli.weapon.MCH_WeaponASMissile && this.targetEntity != null) {
-                        prm.option1 = this.targetEntity.getEntityId();
+                    if (allowByShortBurst) {
+                        MCH_WeaponParam prm = new MCH_WeaponParam();
+                        prm.setPosition(ac.posX, ac.posY, ac.posZ);
+                        prm.user = (Entity)this;
+                        prm.entity = (Entity)ac;
+                        prm.option1 = (cw instanceof mcheli.weapon.MCH_WeaponEntitySeeker) ? this.targetEntity.getEntityId() : 0;
+                        prm.option2 = (cw instanceof mcheli.weapon.MCH_WeaponATMissile) ? cw.getCurrentMode() : 0;
+                        if (cw instanceof mcheli.weapon.MCH_WeaponASMissile && this.targetEntity != null) {
+                            prm.option1 = this.targetEntity.getEntityId();
+                        }
+                        if (ac.useCurrentWeapon(prm))
+                            if ((ws.getInfo()).maxHeatCount > 0 && ws.currentHeat > (ws.getInfo()).maxHeatCount * 4 / 5)
+                                this.waitCooldown = true;
                     }
-                    if (ac.useCurrentWeapon(prm))
-                        if ((ws.getInfo()).maxHeatCount > 0 && ws.currentHeat > (ws.getInfo()).maxHeatCount * 4 / 5)
-                            this.waitCooldown = true;
                 }
             }
             if (Math.abs(pitch - this.rotationPitch) >= rotSpeed)
@@ -687,6 +716,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
             } else {
                 limit = Math.min(180.0F, limit + 18.0F);
             }
+            if (this.stupidGunner && !isAirCombatTarget(entity)) {
+                float scale = MathHelper.clamp_float(this.profileStupidAttackSectorScaleGround, 1.0F, 2.0F);
+                limit = Math.min(180.0F, limit * scale);
+            }
             return (deg < limit);
         } catch (Exception e) {
             return false;
@@ -695,6 +728,17 @@ public class MCH_EntityGunner extends EntityLivingBase {
 
     private boolean isAATarget(Entity entity) {
         return entity instanceof MCH_EntityRocket || entity instanceof MCH_EntityASMissile || entity instanceof MCH_EntityTvMissile || entity instanceof MCH_EntityATMissile || entity instanceof MCH_EntityBomb || entity instanceof MCH_EntityMarkerRocket;
+    }
+
+    private boolean isFriendlyPlayerAmmo(Entity entity) {
+        if (!(entity instanceof MCH_EntityBaseBullet))
+            return false;
+        if (getTeamName() == null || getTeamName().isEmpty())
+            return false;
+        Entity shooter = ((MCH_EntityBaseBullet)entity).shootingEntity;
+        if (!(shooter instanceof EntityPlayer))
+            return false;
+        return isOnSameTeam((EntityLivingBase)shooter);
     }
 
     private boolean canTrackTargetAltitude(Entity entity) {
@@ -748,30 +792,40 @@ public class MCH_EntityGunner extends EntityLivingBase {
         this.switchTargetCount = 5;
         Entity nextTarget = null;
         boolean planePilot = ac instanceof MCP_EntityPlane && ac.isPilot((Entity)this);
-        int planeAirRadius = Math.max(1, MCH_Config.GunnerPlaneSearchRadiusAir.prmInt);
-        int planeGroundRadius = Math.max(1, MCH_Config.GunnerPlaneSearchRadiusGround.prmInt);
+        int cfgMonsterH = Math.max(1, MCH_Config.RangeOfGunner_VsMonster_Horizontal.prmInt);
+        int cfgMonsterV = Math.max(1, MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt);
+        int cfgPlayerH = Math.max(1, MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt);
+        int cfgPlayerV = Math.max(1, MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt);
+        int planeAirRadius = this.getConfiguredAirHorizontalRange(Math.max(1, MCH_Config.GunnerPlaneSearchRadiusAir.prmInt));
+        int planeGroundRadius = this.getConfiguredGroundHorizontalRange(Math.max(1, MCH_Config.GunnerPlaneSearchRadiusGround.prmInt));
         if (planePilot) {
             planeGroundRadius = Math.max(planeGroundRadius, (int)(planeGroundRadius * 1.85D));
         }
-        int planeAltitudeWindow = Math.max(0, MCH_Config.GunnerPlaneSearchAltitudeWindow.prmInt);
+        int planeAltitudeWindow = this.getConfiguredAirVerticalRange(Math.max(0, MCH_Config.GunnerPlaneSearchAltitudeWindow.prmInt));
         int universalAirRadius = planeAirRadius;
-        int universalAirAltitude = Math.max(planeAltitudeWindow, Math.max(MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt, MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt));
+        int universalAirAltitude = Math.max(planeAltitudeWindow, Math.max(cfgMonsterV, cfgPlayerV));
         int planeSearchRadius = Math.max(planeAirRadius, planeGroundRadius);
         if (this.targetType == TARGET_MONSTER) {
-            int rh = planePilot ? planeSearchRadius : MCH_Config.RangeOfGunner_VsMonster_Horizontal.prmInt;
-            int rv = planePilot ? Math.max(planeAltitudeWindow, MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt) : MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt;
+            int monsterH = this.getConfiguredGroundHorizontalRange(cfgMonsterH);
+            int monsterV = this.getConfiguredGroundVerticalRange(cfgMonsterV);
+            int rh = planePilot ? planeSearchRadius : monsterH;
+            int rv = planePilot ? Math.max(planeAltitudeWindow, monsterV) : monsterV;
             rh = Math.max(rh, universalAirRadius);
             rv = Math.max(rv, universalAirAltitude);
             list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
         } else if (this.targetType == TARGET_PLAYER) {
-            int rh = planePilot ? planeSearchRadius : MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt;
-            int rv = planePilot ? Math.max(planeAltitudeWindow, MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt) : MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt;
+            int playerH = this.getConfiguredGroundHorizontalRange(cfgPlayerH);
+            int playerV = this.getConfiguredGroundVerticalRange(cfgPlayerV);
+            int rh = planePilot ? planeSearchRadius : playerH;
+            int rv = planePilot ? Math.max(planeAltitudeWindow, playerV) : playerV;
             rh = Math.max(rh, universalAirRadius);
             rv = Math.max(rv, universalAirAltitude);
             list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
         } else if (this.targetType == TARGET_ENEMY) {
-            int rh = planePilot ? planeSearchRadius : Math.max(MCH_Config.RangeOfGunner_VsMonster_Horizontal.prmInt, MCH_Config.RangeOfGunner_VsPlayer_Horizontal.prmInt);
-            int rv = planePilot ? Math.max(planeAltitudeWindow, Math.max(MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt, MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt)) : Math.max(MCH_Config.RangeOfGunner_VsMonster_Vertical.prmInt, MCH_Config.RangeOfGunner_VsPlayer_Vertical.prmInt);
+            int enemyH = this.getConfiguredGroundHorizontalRange(Math.max(cfgMonsterH, cfgPlayerH));
+            int enemyV = this.getConfiguredGroundVerticalRange(Math.max(cfgMonsterV, cfgPlayerV));
+            int rh = planePilot ? planeSearchRadius : enemyH;
+            int rv = planePilot ? Math.max(planeAltitudeWindow, enemyV) : enemyV;
             rh = Math.max(rh, universalAirRadius);
             rv = Math.max(rv, universalAirAltitude);
             list = this.worldObj.getEntitiesWithinAABB(EntityLivingBase.class, this.boundingBox.expand(rh, rv, rh));
@@ -786,6 +840,8 @@ public class MCH_EntityGunner extends EntityLivingBase {
             Entity candidate = list.get(i);
             if (this.targetType == TARGET_AA_AMMO) {
                 if (!isAATarget(candidate))
+                    continue;
+                if (isFriendlyPlayerAmmo(candidate))
                     continue;
                 if (this.getDistanceSqToEntity(candidate) > 22500.0D)
                     continue;
@@ -920,6 +976,9 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private void updateTankDrive(MCH_EntityTank tank) {
         if (!tank.isPilot((Entity)this))
             return;
+        final double gunnerThrottleCapNavigate = 0.95D;
+        final double gunnerThrottleCapCombat = 0.60D;
+        final double gunnerThrottleCapNormal = 0.35D;
         boolean throttleUp = false;
         boolean throttleDown = false;
         boolean moveLeft = false;
@@ -936,33 +995,17 @@ public class MCH_EntityGunner extends EntityLivingBase {
         if (tank.isDestroyed() || (!tank.canUseFuel() && !tank.isInfinityFuel((Entity)this, true))) {
             brake = true;
         } else {
-            Entity target = this.targetEntity;
-            if (target != null && (target.isDead || this.getDistanceSqToEntity(target) > 160000.0D))
-                target = null;
-            if (target != null) {
-                double dx = target.posX - tank.posX;
-                double dz = target.posZ - tank.posZ;
+            TankNavContext nav = getTankNavContext(tank);
+            boolean navigateOverCombat = nav.navigateActive && nav.navigateOverCombat;
+            if (MCH_ServerSettings.enableDebugWaypointNav && tank.ticksExisted % 100 == 0 && !nav.navigateActive && !nav.holdActive) {
+                MCH_WaypointNavDebug.trace(tank.worldObj, this, "Drive fallback to combat/wander: acId=%d navEnabled=%s",
+                    tank.getEntityId(), nav.enabled);
+            }
+            if (navigateOverCombat) {
+                double dx = nav.targetX - tank.posX;
+                double dz = nav.targetZ - tank.posZ;
                 double distSq = dx * dx + dz * dz;
                 float targetYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
-                if (this.combatMoveTicks <= 0) {
-                    this.combatMoveTicks = 20 + this.rand.nextInt(60);
-                    this.combatYawBias = (this.rand.nextFloat() - 0.5F) * 44.0F;
-                    this.combatStrafeDir = this.rand.nextBoolean() ? 1 : -1;
-                } else {
-                    this.combatMoveTicks--;
-                }
-                if (this.throttlePulseTicks <= 0) {
-                    this.throttlePulseTicks = 8 + this.rand.nextInt(18);
-                    this.throttlePulseOn = !this.throttlePulseOn;
-                } else {
-                    this.throttlePulseTicks--;
-                }
-                if (distSq < 900.0D) {
-                    float orbit = 26.0F * this.combatStrafeDir;
-                    targetYaw = MathHelper.wrapAngleTo180_float(targetYaw + orbit);
-                } else {
-                    targetYaw = MathHelper.wrapAngleTo180_float(targetYaw + this.combatYawBias);
-                }
                 float yawDiff = MathHelper.wrapAngleTo180_float(targetYaw - tank.getRotYaw());
                 float absYaw = Math.abs(yawDiff);
                 if (yawDiff > 1.0F) {
@@ -970,31 +1013,101 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 } else if (yawDiff < -1.0F) {
                     moveLeft = true;
                 }
-                applyTurnFeedback();
-                if (this.turnFeedbackTicks > 0) {
-                    if (this.turnFeedbackDir > 0 && this.rand.nextInt(100) < 78) {
-                        moveRight = true;
-                        if (Math.abs(yawDiff) < 5.0F || this.rand.nextInt(100) < 40)
-                            moveLeft = false;
-                    } else if (this.turnFeedbackDir < 0 && this.rand.nextInt(100) < 78) {
-                        moveLeft = true;
-                        if (Math.abs(yawDiff) < 5.0F || this.rand.nextInt(100) < 40)
-                            moveRight = false;
+                if (distSq > 16.0D) {
+                    if (absYaw > 35.0F) {
+                        // Slow down first when heading error is large, otherwise tanks tend to keep going straight.
+                        throttleDown = true;
+                        throttleUp = tank.getCurrentThrottle() < gunnerThrottleCapNavigate;
+                    } else {
+                        throttleUp = tank.getCurrentThrottle() < gunnerThrottleCapNavigate;
                     }
-                }
-                if (distSq < 100.0D && absYaw < 28.0F) {
-                    throttleDown = true;
                 } else {
-                    throttleUp = this.throttlePulseOn && tank.getCurrentThrottle() < 0.22D && (distSq > 169.0D || absYaw > 12.0F);
+                    throttleDown = true;
+                    brake = distSq < 6.25D && absYaw < 20.0F;
                 }
-                if (moveDistSq < 0.0025D && absYaw > 6.0F) {
-                    float step = Math.max(-3.2F, Math.min(3.2F, yawDiff * 0.28F));
-                    tank.setRotYaw(tank.getRotYaw() + step);
+                // Keep applying gentle yaw correction during NAVIGATE, not only when stuck.
+                if (absYaw > 2.0F) {
+                    float step = Math.max(-2.8F, Math.min(2.8F, yawDiff * 0.18F));
+                    tank.setRotYaw(MathHelper.wrapAngleTo180_float(tank.getRotYaw() + step));
                 }
-                if (distSq < 64.0D && absYaw < 24.0F && tank.getCurrentThrottle() > 0.28D) {
-                    brake = true;
+                if (MCH_ServerSettings.enableDebugWaypointNav && tank.ticksExisted % 40 == 0) {
+                    MCH_WaypointNavDebug.trace(tank.worldObj, this, "NAV steer: acId=%d yawDiff=%.1f throttle=%.3f L=%s R=%s",
+                        tank.getEntityId(), absYaw, tank.getCurrentThrottle(), moveLeft, moveRight);
                 }
             } else {
+                Entity target = this.targetEntity;
+                if (target != null && (target.isDead || this.getDistanceSqToEntity(target) > 160000.0D))
+                    target = null;
+                if (target != null) {
+                    double dx = target.posX - tank.posX;
+                    double dz = target.posZ - tank.posZ;
+                    double distSq = dx * dx + dz * dz;
+                    float targetYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
+                    boolean combatCycleReset = false;
+                    if (this.combatMoveTicks <= 0) {
+                        this.combatMoveTicks = 20 + this.rand.nextInt(60);
+                        this.combatYawBias = (this.rand.nextFloat() - 0.5F) * 44.0F;
+                        this.combatStrafeDir = this.rand.nextBoolean() ? 1 : -1;
+                        combatCycleReset = true;
+                    } else {
+                        this.combatMoveTicks--;
+                    }
+                    if (this.throttlePulseTicks <= 0) {
+                        this.throttlePulseTicks = 8 + this.rand.nextInt(18);
+                        this.throttlePulseOn = !this.throttlePulseOn;
+                    } else {
+                        this.throttlePulseTicks--;
+                    }
+                    if (distSq < 900.0D) {
+                        float orbit = 26.0F * this.combatStrafeDir;
+                        targetYaw = MathHelper.wrapAngleTo180_float(targetYaw + orbit);
+                    } else {
+                        targetYaw = MathHelper.wrapAngleTo180_float(targetYaw + this.combatYawBias);
+                    }
+                    float yawDiff = MathHelper.wrapAngleTo180_float(targetYaw - tank.getRotYaw());
+                    float absYaw = Math.abs(yawDiff);
+                    if (yawDiff > 1.0F) {
+                        moveRight = true;
+                    } else if (yawDiff < -1.0F) {
+                        moveLeft = true;
+                    }
+                    applyTurnFeedback();
+                    if (this.turnFeedbackTicks > 0) {
+                        if (this.turnFeedbackDir > 0 && this.rand.nextInt(100) < 78) {
+                            moveRight = true;
+                            if (Math.abs(yawDiff) < 5.0F || this.rand.nextInt(100) < 40)
+                                moveLeft = false;
+                        } else if (this.turnFeedbackDir < 0 && this.rand.nextInt(100) < 78) {
+                            moveLeft = true;
+                            if (Math.abs(yawDiff) < 5.0F || this.rand.nextInt(100) < 40)
+                                moveRight = false;
+                        }
+                    }
+                    if (distSq < 100.0D && absYaw < 28.0F) {
+                        throttleDown = true;
+                    } else {
+                        throttleUp = this.throttlePulseOn && tank.getCurrentThrottle() < gunnerThrottleCapCombat && (distSq > 169.0D || absYaw > 12.0F);
+                    }
+                    // Combat steering assist: keep a gentle yaw correction every tick,
+                    // not only when movement is near zero.
+                    if (absYaw > 2.5F) {
+                        float steerStep = Math.max(-2.4F, Math.min(2.4F, yawDiff * 0.15F));
+                        tank.setRotYaw(MathHelper.wrapAngleTo180_float(tank.getRotYaw() + steerStep));
+                    }
+                    if (moveDistSq < 0.0025D && absYaw > 6.0F) {
+                        float step = Math.max(-3.2F, Math.min(3.2F, yawDiff * 0.28F));
+                        tank.setRotYaw(tank.getRotYaw() + step);
+                    }
+                    if (distSq < 64.0D && absYaw < 24.0F && tank.getCurrentThrottle() > 0.28D) {
+                        brake = true;
+                    }
+                    // Ensure periodic large-angle maneuver is active during combat pursuit.
+                    if (combatCycleReset && this.largeTurnRemain <= 0.0F && this.noMoveTurnCooldownTicks <= 0) {
+                        int dir = this.rand.nextBoolean() ? 1 : -1;
+                        startLargeTurn(120.0F + this.rand.nextFloat() * 60.0F, dir);
+                        this.noMoveTurnCooldownTicks = 100;
+                    }
+                } else {
                 applyTurnFeedback();
                 if (this.wanderTurnTicks <= 0) {
                     this.wanderTurnTicks = 8 + this.rand.nextInt(28);
@@ -1003,7 +1116,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 } else {
                     this.wanderTurnTicks--;
                 }
-                throttleUp = tank.getCurrentThrottle() < 0.16D && (this.rand.nextInt(100) < 80);
+                throttleUp = tank.getCurrentThrottle() < gunnerThrottleCapNormal && (this.rand.nextInt(100) < 80);
                 if (this.wanderTurnDir > 0) {
                     moveRight = true;
                 } else if (this.wanderTurnDir < 0) {
@@ -1027,9 +1140,15 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 }
                 if (!throttleUp && tank.getCurrentThrottle() > 0.3D)
                     brake = true;
+                }
+            }
+            if (nav.navigateActive && nav.suppressLargeTurnInNavigate) {
+                this.noMoveTicks = 0;
             }
         }
-        if (this.noMoveTurnCooldownTicks <= 0 && this.noMoveTicks >= this.noMoveTurnThreshold) {
+        TankNavContext nav = getTankNavContext(tank);
+        boolean allowLargeTurnWhenNavigate = !(nav.navigateActive && nav.suppressLargeTurnInNavigate);
+        if (allowLargeTurnWhenNavigate && this.noMoveTurnCooldownTicks <= 0 && this.noMoveTicks >= this.noMoveTurnThreshold) {
             int dir = this.rand.nextBoolean() ? 1 : -1;
             startLargeTurn(120.0F + this.rand.nextFloat() * 60.0F, dir);
             this.noMoveTicks = 0;
@@ -1078,7 +1197,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
             moveLeft = avoidDiff < -2.0F;
             moveRight = avoidDiff > 2.0F;
             throttleDown = true;
-            throttleUp = tank.getCurrentThrottle() < 0.10D;
+            throttleUp = tank.getCurrentThrottle() < gunnerThrottleCapNormal;
             brake = this.getDistanceSqToEntity(avoidEntity) < 16.0D;
             if (Math.abs(avoidDiff) > 8.0F && moveDistSq < 0.0064D) {
                 float avoidStep = Math.max(-4.2F, Math.min(4.2F, avoidDiff * 0.32F));
@@ -1116,6 +1235,283 @@ public class MCH_EntityGunner extends EntityLivingBase {
         tank.moveLeft = moveLeft;
         tank.moveRight = moveRight;
         tank.setBrake(brake);
+    }
+
+    private static class TankNavContext {
+        boolean enabled = false;
+        boolean navigateActive = false;
+        boolean holdActive = false;
+        boolean navigateOverCombat = true;
+        boolean suppressLargeTurnInNavigate = true;
+        double targetX = 0.0D;
+        double targetY = 0.0D;
+        double targetZ = 0.0D;
+    }
+
+    private TankNavContext getTankNavContext(MCH_EntityTank tank) {
+        TankNavContext ctx = new TankNavContext();
+        if (tank == null) {
+            return ctx;
+        }
+        NBTTagCompound nav = tank.getEntityData().getCompoundTag("MCHWaypointNav");
+        if (nav == null) {
+            return ctx;
+        }
+        boolean enabled = nav.getBoolean("Enabled");
+        String pendingId = nav.hasKey("PendingWaypointId") ? nav.getString("PendingWaypointId") : "";
+        if (!enabled) {
+            if (pendingId == null || pendingId.trim().isEmpty()) {
+                return ctx;
+            }
+            if (tank.ticksExisted % 20 != 0) {
+                return ctx;
+            }
+            MCH_ConfigSpawnerTileEntity pending = MCH_ConfigSpawnerTileEntity.resolveNearestWaypoint(tank.worldObj, pendingId, tank.posX, tank.posY, tank.posZ);
+            if (pending == null) {
+                if (MCH_ServerSettings.enableDebugWaypointNav && tank.ticksExisted % 100 == 0) {
+                    MCH_WaypointNavDebug.trace(tank.worldObj, this, "Pending unresolved: acId=%d pending=%s pos=%.1f,%.1f,%.1f",
+                        tank.getEntityId(), pendingId, tank.posX, tank.posY, tank.posZ);
+                }
+                return ctx;
+            }
+            MCH_BlockInfo wp = pending.getBlockInfo();
+            if (wp == null) {
+                return ctx;
+            }
+            nav.setBoolean("Enabled", true);
+            nav.setString("State", "NAVIGATE");
+            nav.setString("PendingWaypointId", "");
+            nav.setString("CurrentWaypointId", wp.waypointId == null ? "" : wp.waypointId);
+            nav.setInteger("CurrentWaypointX", pending.xCoord);
+            nav.setInteger("CurrentWaypointY", pending.yCoord);
+            nav.setInteger("CurrentWaypointZ", pending.zCoord);
+            nav.setString("NextWaypointId", wp.nextWaypointId == null ? "" : wp.nextWaypointId);
+            nav.setInteger("HoldCountdownTick", Math.max(1, wp.patrolTimeTick));
+            nav.setDouble("Radius", Math.max(1.0F, wp.waypointRadius));
+            nav.setDouble("Height", Math.max(1.0F, wp.waypointHeight));
+            nav.setBoolean("IsTerminator", wp.isTerminator);
+            nav.setBoolean("TerminatorAfterHold", wp.terminatorAfterHold);
+            tank.getEntityData().setTag("MCHWaypointNav", nav);
+            MCH_WaypointNavDebug.trace(tank.worldObj, this, "Pending resolved: acId=%d current=%s next=%s",
+                tank.getEntityId(), wp.waypointId, wp.nextWaypointId);
+            enabled = true;
+        }
+        if (!enabled) {
+            return ctx;
+        }
+        ctx.enabled = true;
+        String state = nav.getString("State");
+        if (state == null || state.isEmpty()) {
+            state = "NAVIGATE";
+            nav.setString("State", state);
+            tank.getEntityData().setTag("MCHWaypointNav", nav);
+        }
+        if ("HOLD".equalsIgnoreCase(state)) {
+            int remain = nav.getInteger("HoldRemainingTick");
+            if (remain <= 0) {
+                remain = Math.max(1, nav.getInteger("HoldCountdownTick"));
+            }
+            remain--;
+            if (remain > 0) {
+                nav.setInteger("HoldRemainingTick", remain);
+                tank.getEntityData().setTag("MCHWaypointNav", nav);
+                ctx.holdActive = true;
+                return ctx;
+            }
+            if (nav.getBoolean("IsTerminator") && nav.getBoolean("TerminatorAfterHold")) {
+                nav.setBoolean("Enabled", false);
+                nav.setString("State", "FINISHED");
+                tank.getEntityData().setTag("MCHWaypointNav", nav);
+                return ctx;
+            }
+            if (!advanceToNextWaypoint(tank, nav)) {
+                nav.setString("State", "ERROR");
+                nav.setBoolean("Enabled", false);
+                tank.getEntityData().setTag("MCHWaypointNav", nav);
+                return ctx;
+            }
+            state = "NAVIGATE";
+        }
+        if ("NAVIGATE".equalsIgnoreCase(state)) {
+            double tx = nav.getInteger("CurrentWaypointX") + 0.5D;
+            double ty = nav.getInteger("CurrentWaypointY") + 0.5D;
+            double tz = nav.getInteger("CurrentWaypointZ") + 0.5D;
+            double dx = tx - tank.posX;
+            double dz = tz - tank.posZ;
+            double distSq = dx * dx + dz * dz;
+            double radius = Math.max(1.0D, nav.hasKey("Radius") ? nav.getDouble("Radius") : 6.0D);
+            if (distSq <= radius * radius) {
+                boolean isTerminator = nav.getBoolean("IsTerminator");
+                boolean afterHold = !nav.hasKey("TerminatorAfterHold") || nav.getBoolean("TerminatorAfterHold");
+                if (isTerminator && !afterHold) {
+                    nav.setBoolean("Enabled", false);
+                    nav.setString("State", "FINISHED");
+                    tank.getEntityData().setTag("MCHWaypointNav", nav);
+                    return ctx;
+                }
+                nav.setString("State", "HOLD");
+                nav.setInteger("HoldRemainingTick", Math.max(1, nav.getInteger("HoldCountdownTick")));
+                tank.getEntityData().setTag("MCHWaypointNav", nav);
+                ctx.holdActive = true;
+                return ctx;
+            }
+            String priority = nav.hasKey("NavigateDrivePriority") ? nav.getString("NavigateDrivePriority").toLowerCase(Locale.ROOT) : "avoid>navigate>combat";
+            ctx.navigateOverCombat = priority.contains("navigate>combat");
+            ctx.suppressLargeTurnInNavigate = !nav.hasKey("NavigateSuppressLargeTurn") || nav.getBoolean("NavigateSuppressLargeTurn");
+            ctx.navigateActive = true;
+            ctx.targetX = tx;
+            ctx.targetY = ty;
+            ctx.targetZ = tz;
+            if (MCH_ServerSettings.enableDebugWaypointNav && tank.ticksExisted % 40 == 0) {
+                MCH_WaypointNavDebug.trace(tank.worldObj, this, "NAVIGATE: acId=%d target=%s (%.1f,%.1f,%.1f) dist=%.1f",
+                    tank.getEntityId(), nav.getString("CurrentWaypointId"), tx, ty, tz, Math.sqrt(distSq));
+            }
+            return ctx;
+        }
+        return ctx;
+    }
+
+    private boolean advanceToNextWaypoint(MCH_EntityAircraft tank, NBTTagCompound nav) {
+        String nextId = nav.hasKey("NextWaypointId") ? nav.getString("NextWaypointId") : "";
+        if (nextId == null || nextId.trim().isEmpty()) {
+            return false;
+        }
+        MCH_ConfigSpawnerTileEntity next = MCH_ConfigSpawnerTileEntity.resolveNearestWaypoint(tank.worldObj, nextId, tank.posX, tank.posY, tank.posZ);
+        if (next == null) {
+            return false;
+        }
+        MCH_BlockInfo wp = next.getBlockInfo();
+        if (wp == null) {
+            return false;
+        }
+        nav.setString("CurrentWaypointId", wp.waypointId == null ? "" : wp.waypointId);
+        nav.setInteger("CurrentWaypointX", next.xCoord);
+        nav.setInteger("CurrentWaypointY", next.yCoord);
+        nav.setInteger("CurrentWaypointZ", next.zCoord);
+        nav.setString("NextWaypointId", wp.nextWaypointId == null ? "" : wp.nextWaypointId);
+        nav.setInteger("HoldCountdownTick", Math.max(1, wp.patrolTimeTick));
+        nav.setDouble("Radius", Math.max(1.0F, wp.waypointRadius));
+        nav.setDouble("Height", Math.max(1.0F, wp.waypointHeight));
+        nav.setBoolean("IsTerminator", wp.isTerminator);
+        nav.setString("TerminateAction", wp.terminateAction == null ? "free" : wp.terminateAction);
+        nav.setBoolean("TerminatorAfterHold", wp.terminatorAfterHold);
+        nav.setString("State", "NAVIGATE");
+        tank.getEntityData().setTag("MCHWaypointNav", nav);
+        return true;
+    }
+
+    private TankNavContext getAircraftNavContext(MCH_EntityAircraft aircraft) {
+        TankNavContext ctx = new TankNavContext();
+        if (aircraft == null) {
+            return ctx;
+        }
+        NBTTagCompound nav = aircraft.getEntityData().getCompoundTag("MCHWaypointNav");
+        if (nav == null) {
+            return ctx;
+        }
+        boolean enabled = nav.getBoolean("Enabled");
+        String pendingId = nav.hasKey("PendingWaypointId") ? nav.getString("PendingWaypointId") : "";
+        if (!enabled) {
+            if (pendingId == null || pendingId.trim().isEmpty()) {
+                return ctx;
+            }
+            if (aircraft.ticksExisted % 20 != 0) {
+                return ctx;
+            }
+            MCH_ConfigSpawnerTileEntity pending = MCH_ConfigSpawnerTileEntity.resolveNearestWaypoint(aircraft.worldObj, pendingId, aircraft.posX, aircraft.posY, aircraft.posZ);
+            if (pending == null) {
+                return ctx;
+            }
+            MCH_BlockInfo wp = pending.getBlockInfo();
+            if (wp == null) {
+                return ctx;
+            }
+            nav.setBoolean("Enabled", true);
+            nav.setString("State", "NAVIGATE");
+            nav.setString("PendingWaypointId", "");
+            nav.setString("CurrentWaypointId", wp.waypointId == null ? "" : wp.waypointId);
+            nav.setInteger("CurrentWaypointX", pending.xCoord);
+            nav.setInteger("CurrentWaypointY", pending.yCoord);
+            nav.setInteger("CurrentWaypointZ", pending.zCoord);
+            nav.setString("NextWaypointId", wp.nextWaypointId == null ? "" : wp.nextWaypointId);
+            nav.setInteger("HoldCountdownTick", Math.max(1, wp.patrolTimeTick));
+            nav.setDouble("Radius", Math.max(1.0F, wp.waypointRadius));
+            nav.setDouble("Height", Math.max(1.0F, wp.waypointHeight));
+            nav.setBoolean("IsTerminator", wp.isTerminator);
+            nav.setBoolean("TerminatorAfterHold", wp.terminatorAfterHold);
+            aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+            enabled = true;
+        }
+        if (!enabled) {
+            return ctx;
+        }
+        ctx.enabled = true;
+        String state = nav.getString("State");
+        if (state == null || state.isEmpty()) {
+            state = "NAVIGATE";
+            nav.setString("State", state);
+            aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+        }
+        if ("HOLD".equalsIgnoreCase(state)) {
+            int remain = nav.getInteger("HoldRemainingTick");
+            if (remain <= 0) {
+                remain = Math.max(1, nav.getInteger("HoldCountdownTick"));
+            }
+            remain--;
+            if (remain > 0) {
+                nav.setInteger("HoldRemainingTick", remain);
+                aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+                ctx.holdActive = true;
+                return ctx;
+            }
+            if (nav.getBoolean("IsTerminator") && nav.getBoolean("TerminatorAfterHold")) {
+                nav.setBoolean("Enabled", false);
+                nav.setString("State", "FINISHED");
+                aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+                return ctx;
+            }
+            if (!advanceToNextWaypoint(aircraft, nav)) {
+                nav.setString("State", "ERROR");
+                nav.setBoolean("Enabled", false);
+                aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+                return ctx;
+            }
+            state = "NAVIGATE";
+        }
+        if ("NAVIGATE".equalsIgnoreCase(state)) {
+            double tx = nav.getInteger("CurrentWaypointX") + 0.5D;
+            double ty = nav.getInteger("CurrentWaypointY") + 0.5D;
+            double tz = nav.getInteger("CurrentWaypointZ") + 0.5D;
+            double dx = tx - aircraft.posX;
+            double dy = ty - aircraft.posY;
+            double dz = tz - aircraft.posZ;
+            double radius = Math.max(1.0D, nav.hasKey("Radius") ? nav.getDouble("Radius") : 6.0D);
+            double height = Math.max(1.0D, nav.hasKey("Height") ? nav.getDouble("Height") : 24.0D);
+            if (dx * dx + dz * dz <= radius * radius && Math.abs(dy) <= height * 0.5D) {
+                boolean isTerminator = nav.getBoolean("IsTerminator");
+                boolean afterHold = !nav.hasKey("TerminatorAfterHold") || nav.getBoolean("TerminatorAfterHold");
+                if (isTerminator && !afterHold) {
+                    nav.setBoolean("Enabled", false);
+                    nav.setString("State", "FINISHED");
+                    aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+                    return ctx;
+                }
+                nav.setString("State", "HOLD");
+                nav.setInteger("HoldRemainingTick", Math.max(1, nav.getInteger("HoldCountdownTick")));
+                aircraft.getEntityData().setTag("MCHWaypointNav", nav);
+                ctx.holdActive = true;
+                return ctx;
+            }
+            String priority = nav.hasKey("NavigateDrivePriority") ? nav.getString("NavigateDrivePriority").toLowerCase(Locale.ROOT) : "avoid>navigate>combat";
+            ctx.navigateOverCombat = priority.contains("navigate>combat");
+            ctx.suppressLargeTurnInNavigate = !nav.hasKey("NavigateSuppressLargeTurn") || nav.getBoolean("NavigateSuppressLargeTurn");
+            ctx.navigateActive = true;
+            ctx.targetX = tx;
+            ctx.targetY = ty;
+            ctx.targetZ = tz;
+            return ctx;
+        }
+        return ctx;
     }
 
     private void updateHeliDrive(MCH_EntityHeli heli) {
@@ -1258,6 +1654,48 @@ public class MCH_EntityGunner extends EntityLivingBase {
             desiredPitch = -4.0F;
             throttleUp = true;
             throttleDown = false;
+            this.heliAllowFire = false;
+        }
+        TankNavContext nav = getAircraftNavContext((MCH_EntityAircraft)heli);
+        if (nav.navigateActive && nav.navigateOverCombat) {
+            double dx = nav.targetX - heli.posX;
+            double dy = nav.targetY - heli.posY;
+            double dz = nav.targetZ - heli.posZ;
+            double d3 = MathHelper.sqrt_double(dx * dx + dz * dz);
+            desiredYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
+            desiredPitch = MathHelper.clamp_float((float)-(Math.atan2(dy, Math.max(0.1D, d3)) * 180.0D / Math.PI), -12.0F, 12.0F);
+            // Height hold window for waypoint navigation:
+            // avoid always pushing throttleUp, which causes runaway climb.
+            double upWindow = 6.0D;
+            double downWindow = 4.0D;
+            double cruiseCap = 0.62D;
+            if (dy > upWindow) {
+                throttleUp = heli.getCurrentThrottle() < 0.78D;
+                throttleDown = false;
+            } else if (dy < -downWindow) {
+                throttleUp = false;
+                throttleDown = true;
+            } else {
+                throttleUp = heli.getCurrentThrottle() < cruiseCap;
+                throttleDown = heli.getCurrentThrottle() > cruiseCap + 0.06D;
+            }
+            this.heliAllowFire = false;
+        }
+        Entity avoidEntityFinal = findEmergencyAvoidEntity(heli, 10.0D);
+        if (avoidEntityFinal != null) {
+            desiredYaw = getAvoidYaw((Entity)heli, avoidEntityFinal);
+            desiredPitch = -4.0F;
+            throttleUp = true;
+            throttleDown = false;
+            this.heliAllowFire = false;
+        }
+        // Hard altitude safety: force descent when AGL is too high.
+        // Uses height-above-ground to avoid drifting to sky during long navigation.
+        final double navHardMaxAltitudeAgl = 120.0D;
+        if (altitude > navHardMaxAltitudeAgl) {
+            throttleUp = false;
+            throttleDown = true;
+            desiredPitch = Math.max(desiredPitch, 10.0F);
             this.heliAllowFire = false;
         }
         float yawDiff = MathHelper.wrapAngleTo180_float(desiredYaw - heli.getRotYaw());
@@ -1509,6 +1947,26 @@ public class MCH_EntityGunner extends EntityLivingBase {
             moveLeft = false;
             moveRight = false;
         }
+        TankNavContext nav = getAircraftNavContext((MCH_EntityAircraft)plane);
+        if (nav.navigateActive && nav.navigateOverCombat) {
+            double dx = nav.targetX - plane.posX;
+            double dy = nav.targetY - plane.posY;
+            double dz = nav.targetZ - plane.posZ;
+            double d3 = MathHelper.sqrt_double(dx * dx + dz * dz);
+            desiredYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(dz, dx) * 180.0D / Math.PI) - 90.0F);
+            desiredPitch = MathHelper.clamp_float((float)-(Math.atan2(dy, Math.max(0.1D, d3)) * 180.0D / Math.PI), -16.0F, 16.0F);
+            throttleUp = plane.getCurrentThrottle() < 0.90D;
+            throttleDown = false;
+            this.planeAllowFire = false;
+        }
+        Entity avoidEntityFinal = findEmergencyAvoidEntity(plane, 10.0D);
+        if (avoidEntityFinal != null) {
+            desiredYaw = getAvoidYaw((Entity)plane, avoidEntityFinal);
+            desiredPitch = -8.0F;
+            throttleUp = true;
+            throttleDown = false;
+            this.planeAllowFire = false;
+        }
         float yawDiff = MathHelper.wrapAngleTo180_float(desiredYaw - plane.getRotYaw());
         float yawStep = Math.max(-3.2F, Math.min(3.2F, yawDiff * 0.24F));
         plane.setRotYaw(MathHelper.wrapAngleTo180_float(plane.getRotYaw() + yawStep));
@@ -1541,6 +1999,11 @@ public class MCH_EntityGunner extends EntityLivingBase {
         boolean airTarget = target instanceof EntityLivingBase && isPlaneAirTarget((EntityLivingBase)target);
         float yawLimit = airTarget ? 34.0F : 24.0F;
         float pitchLimit = airTarget ? 24.0F : 18.0F;
+        if (this.stupidGunner && !airTarget) {
+            float scale = MathHelper.clamp_float(this.profileStupidAttackSectorScaleGround, 1.0F, 2.0F);
+            yawLimit *= scale;
+            pitchLimit *= scale;
+        }
         float yawErr = Math.abs(MathHelper.wrapAngleTo180_float(targetYaw - plane.getRotYaw()));
         float pitchErr = Math.abs(targetPitch - plane.getRotPitch());
         if (yawErr > yawLimit || pitchErr > pitchLimit)
@@ -1549,10 +2012,12 @@ public class MCH_EntityGunner extends EntityLivingBase {
             return false;
         if (!canEntityBeSeen(target))
             return false;
-        int range = airTarget ? Math.max(1, MCH_Config.GunnerPlaneSearchRadiusAir.prmInt) : Math.max(1, MCH_Config.GunnerPlaneSearchRadiusGround.prmInt);
+        int range = airTarget
+            ? this.getConfiguredAirHorizontalRange(Math.max(1, MCH_Config.GunnerPlaneSearchRadiusAir.prmInt))
+            : this.getConfiguredGroundHorizontalRange(Math.max(1, MCH_Config.GunnerPlaneSearchRadiusGround.prmInt));
         if (this.getDistanceSqToEntity(target) > (double)(range * range))
             return false;
-        int altitudeWindow = Math.max(0, MCH_Config.GunnerPlaneSearchAltitudeWindow.prmInt);
+        int altitudeWindow = this.getConfiguredAirVerticalRange(Math.max(0, MCH_Config.GunnerPlaneSearchAltitudeWindow.prmInt));
         if (airTarget && altitudeWindow > 0 && Math.abs(target.posY - plane.posY) > (double)altitudeWindow)
             return false;
         return true;
@@ -1564,6 +2029,11 @@ public class MCH_EntityGunner extends EntityLivingBase {
         boolean airTarget = target instanceof EntityLivingBase && isPlaneAirTarget((EntityLivingBase)target);
         float yawLimit = airTarget ? 32.0F : 22.0F;
         float pitchLimit = airTarget ? 24.0F : 18.0F;
+        if (this.stupidGunner && !airTarget) {
+            float scale = MathHelper.clamp_float(this.profileStupidAttackSectorScaleGround, 1.0F, 2.0F);
+            yawLimit *= scale;
+            pitchLimit *= scale;
+        }
         float yawErr = Math.abs(MathHelper.wrapAngleTo180_float(targetYaw - heli.getRotYaw()));
         float pitchErr = Math.abs(targetPitch - heli.getRotPitch());
         if (yawErr > yawLimit || pitchErr > pitchLimit)
@@ -1841,8 +2311,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
     }
 
     private void updateWeaponRotation(MCH_EntityAircraft ac) {
-        boolean hasContextTarget = this.targetEntity instanceof EntityLivingBase && !this.targetEntity.isDead;
-        boolean airContext = hasContextTarget && isPlaneAirTarget((EntityLivingBase)this.targetEntity);
+        boolean hasAATarget = this.targetType == TARGET_AA_AMMO && this.targetEntity != null && !this.targetEntity.isDead;
+        boolean hasLivingTarget = this.targetEntity instanceof EntityLivingBase && !this.targetEntity.isDead;
+        boolean hasContextTarget = hasAATarget || hasLivingTarget;
+        boolean airContext = hasAATarget || (hasLivingTarget && isPlaneAirTarget((EntityLivingBase)this.targetEntity));
         int weaponId = ac.getCurrentWeaponID((Entity)this);
         if (weaponId < 0) {
             this.weaponRotateWeaponId = -1;
@@ -1872,6 +2344,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
         int sid = ac.getSeatIdByEntity((Entity)this);
         if (sid < 0)
             return ac.getCurrentWeaponID((Entity)this);
+        Map<String, Integer> override = airContext ? this.profileAirWeaponPriority : this.profileGroundWeaponPriority;
+        if (override != null && !override.isEmpty()) {
+            return selectHighestPriorityWeaponId(ac, sid, airContext, override);
+        }
         int weaponNum = ac.getWeaponNum();
         int[] candidateIds = new int[weaponNum];
         int[] candidateWeights = new int[weaponNum];
@@ -1907,6 +2383,34 @@ public class MCH_EntityGunner extends EntityLivingBase {
         return candidateIds[candidateCount - 1];
     }
 
+    private int selectHighestPriorityWeaponId(MCH_EntityAircraft ac, int sid, boolean airContext, Map<String, Integer> override) {
+        int weaponNum = ac.getWeaponNum();
+        int currentId = ac.getCurrentWeaponID((Entity)this);
+        int bestId = -1;
+        int bestWeight = -1;
+        for (int id = 0; id < weaponNum; id++) {
+            if (!isWeaponSelectableForSeat(ac, sid, id))
+                continue;
+            MCH_WeaponInfo wi = ac.getWeaponInfoById(id);
+            String type = getWeaponType(wi);
+            if (!isWeaponTypeAllowedForContext(type, airContext))
+                continue;
+            int weight = override.containsKey(type) ? Math.max(0, override.get(type)) : 0;
+            if (weight <= 0)
+                continue;
+            if (weight > bestWeight) {
+                bestWeight = weight;
+                bestId = id;
+            } else if (weight == bestWeight && id == currentId) {
+                // Keep current weapon when priorities tie to avoid unnecessary switching.
+                bestId = id;
+            }
+        }
+        if (bestId >= 0)
+            return bestId;
+        return ac.getNextWeaponID((Entity)this, 1);
+    }
+
     private boolean isWeaponSelectableForSeat(MCH_EntityAircraft ac, int sid, int weaponId) {
         MCH_AircraftInfo acInfo = ac.getAcInfo();
         if (acInfo == null)
@@ -1930,12 +2434,20 @@ public class MCH_EntityGunner extends EntityLivingBase {
     }
 
     private boolean isWeaponTypeAllowedForContext(String type, boolean airContext) {
+        Map<String, Integer> override = airContext ? this.profileAirWeaponPriority : this.profileGroundWeaponPriority;
+        if (override != null && !override.isEmpty()) {
+            return override.containsKey(type) && override.get(type) > 0;
+        }
         if (airContext)
             return type.equals("machinegun1") || type.equals("machinegun2") || type.equals("railgun") || type.equals("rocket") || type.equals("aamissile");
         return type.equals("machinegun1") || type.equals("machinegun2") || type.equals("railgun") || type.equals("rocket") || type.equals("bomb") || type.equals("atmissile") || type.equals("asmissile") || type.equals("tvmissile");
     }
 
     private int getWeaponContextWeight(String type, boolean airContext) {
+        Map<String, Integer> override = airContext ? this.profileAirWeaponPriority : this.profileGroundWeaponPriority;
+        if (override != null && !override.isEmpty()) {
+            return override.containsKey(type) ? Math.max(0, override.get(type)) : 0;
+        }
         if (airContext) {
             if (type.equals("aamissile"))
                 return 100;
@@ -1956,6 +2468,94 @@ public class MCH_EntityGunner extends EntityLivingBase {
         if (type.equals("machinegun1") || type.equals("machinegun2") || type.equals("railgun"))
             return 25;
         return 0;
+    }
+
+    private int getConfiguredGroundHorizontalRange(int fallback) {
+        if (this.profileSearchRangeGroundHorizontal > 0) {
+            return this.profileSearchRangeGroundHorizontal;
+        }
+        if (!this.profileSearchRangeFallbackToConfig) {
+            return 160;
+        }
+        return Math.max(1, fallback);
+    }
+
+    private int getConfiguredGroundVerticalRange(int fallback) {
+        if (this.profileSearchRangeGroundVertical > 0) {
+            return this.profileSearchRangeGroundVertical;
+        }
+        if (!this.profileSearchRangeFallbackToConfig) {
+            return 120;
+        }
+        return Math.max(1, fallback);
+    }
+
+    private int getConfiguredAirHorizontalRange(int fallback) {
+        if (this.profileSearchRangeAirHorizontal > 0) {
+            return this.profileSearchRangeAirHorizontal;
+        }
+        if (!this.profileSearchRangeFallbackToConfig) {
+            return 480;
+        }
+        return Math.max(1, fallback);
+    }
+
+    private int getConfiguredAirVerticalRange(int fallback) {
+        if (this.profileSearchRangeAirVertical > 0) {
+            return this.profileSearchRangeAirVertical;
+        }
+        if (!this.profileSearchRangeFallbackToConfig) {
+            return 320;
+        }
+        return Math.max(0, fallback);
+    }
+
+    private boolean isAirCombatTarget(Entity target) {
+        if (target == null) {
+            return false;
+        }
+        if (target instanceof EntityLivingBase && isPlaneAirTarget((EntityLivingBase) target)) {
+            return true;
+        }
+        if (target instanceof MCH_EntitySeat) {
+            MCH_EntityAircraft parent = ((MCH_EntitySeat) target).getParent();
+            if (parent != null) {
+                return !parent.onGround || parent.posY > this.posY + 8.0D || Math.abs(parent.motionY) > 0.05D;
+            }
+        }
+        if (target instanceof MCH_EntityAircraft) {
+            MCH_EntityAircraft ac = (MCH_EntityAircraft) target;
+            return !ac.onGround || ac.posY > this.posY + 8.0D || Math.abs(ac.motionY) > 0.05D;
+        }
+        if (target.ridingEntity instanceof MCH_EntitySeat) {
+            MCH_EntityAircraft parent = ((MCH_EntitySeat) target.ridingEntity).getParent();
+            return parent != null && (!parent.onGround || parent.posY > this.posY + 8.0D || Math.abs(parent.motionY) > 0.05D);
+        }
+        if (target.ridingEntity instanceof MCH_EntityAircraft) {
+            MCH_EntityAircraft ac = (MCH_EntityAircraft) target.ridingEntity;
+            return !ac.onGround || ac.posY > this.posY + 8.0D || Math.abs(ac.motionY) > 0.05D;
+        }
+        return target.posY > this.posY + 15.0D;
+    }
+
+    private boolean allowFireByShortBurst(MCH_WeaponSet ws) {
+        if (!this.profileEnableShortBurst || ws == null || ws.getInfo() == null || ws.getInfo().delay >= 5) {
+            this.shortBurstFireRemainTick = 0;
+            this.shortBurstRestRemainTick = 0;
+            return true;
+        }
+        if (this.shortBurstRestRemainTick > 0) {
+            this.shortBurstRestRemainTick--;
+            return false;
+        }
+        if (this.shortBurstFireRemainTick <= 0) {
+            this.shortBurstFireRemainTick = Math.max(1, this.profileShortBurstFireTick);
+        }
+        this.shortBurstFireRemainTick--;
+        if (this.shortBurstFireRemainTick <= 0) {
+            this.shortBurstRestRemainTick = Math.max(0, this.profileShortBurstRestTick);
+        }
+        return true;
     }
 
     private boolean isGuidedMissileWeapon(MCH_WeaponBase cw, MCH_WeaponInfo wi) {
@@ -2137,6 +2737,58 @@ public class MCH_EntityGunner extends EntityLivingBase {
             }
         }
         return entity.posY;
+    }
+
+    public void setProfileSearchRanges(int groundH, int groundV, int airH, int airV, boolean fallbackToConfig) {
+        this.profileSearchRangeGroundHorizontal = groundH;
+        this.profileSearchRangeGroundVertical = groundV;
+        this.profileSearchRangeAirHorizontal = airH;
+        this.profileSearchRangeAirVertical = airV;
+        this.profileSearchRangeFallbackToConfig = fallbackToConfig;
+    }
+
+    public void setProfileWeaponPriority(String airRaw, String groundRaw) {
+        this.profileAirWeaponPriority = this.parseWeaponPriority(airRaw);
+        this.profileGroundWeaponPriority = this.parseWeaponPriority(groundRaw);
+    }
+
+    public void setProfileCombatBehavior(boolean allowLeadForAirTarget, float stupidAttackSectorScaleGround, boolean enableShortBurst, int shortBurstFireTick, int shortBurstRestTick) {
+        this.profileAllowLeadForAirTarget = allowLeadForAirTarget;
+        this.profileStupidAttackSectorScaleGround = MathHelper.clamp_float(stupidAttackSectorScaleGround, 1.0F, 2.0F);
+        this.profileEnableShortBurst = enableShortBurst;
+        this.profileShortBurstFireTick = Math.max(1, shortBurstFireTick);
+        this.profileShortBurstRestTick = Math.max(0, shortBurstRestTick);
+        this.shortBurstFireRemainTick = 0;
+        this.shortBurstRestRemainTick = 0;
+    }
+
+    public void setFactionRole(String role) {
+        this.factionRole = role == null ? "normal" : role.toLowerCase(Locale.ROOT);
+    }
+
+    private Map<String, Integer> parseWeaponPriority(String raw) {
+        Map<String, Integer> map = new HashMap<String, Integer>();
+        if (raw == null || raw.trim().isEmpty()) {
+            return map;
+        }
+        String[] entries = raw.toLowerCase(Locale.ROOT).split("\\|");
+        for (String entry : entries) {
+            String v = entry.trim();
+            if (v.isEmpty()) {
+                continue;
+            }
+            int idx = v.indexOf(':');
+            if (idx <= 0 || idx >= v.length() - 1) {
+                continue;
+            }
+            String type = v.substring(0, idx).trim();
+            try {
+                int weight = Integer.parseInt(v.substring(idx + 1).trim());
+                map.put(type, Math.max(0, weight));
+            } catch (Exception ignored) {
+            }
+        }
+        return map;
     }
 
     public MCH_EntityAircraft getAc() {

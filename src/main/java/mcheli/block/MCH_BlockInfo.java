@@ -28,6 +28,7 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
     public boolean isShapedRecipe;
     public Block block;
     public boolean enableSpawner;
+    public boolean enableWaypoint;
     public float checkRadius;
     public int checkIntervalTick;
     public boolean detectPlayers;
@@ -49,6 +50,7 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
     public String vehicleExtraNbt;
     public boolean spawnGunner;
     public String gunnerMode;
+    public String gunnerProfile;
     public int gunnerSeatIndex;
     public int gunnerTargetType;
     public float gunnerYaw;
@@ -58,6 +60,23 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
     public boolean autoCreateFaction;
     public int autoCreateFactionColor;
     public int stateSyncTick;
+    public boolean enableWaypointPatrol;
+    public String initialWaypointId;
+    public String waypointSelectPolicy;
+    public boolean navigateSuppressLargeTurn;
+    public boolean holdAsFreeState;
+    public int holdCountdownTick;
+    public String waypointFailAction;
+    public int navigateTimeoutTick;
+    public String waypointId;
+    public String nextWaypointId;
+    public int patrolTimeTick;
+    public float waypointRadius;
+    public float waypointHeight;
+    public boolean isTerminator;
+    public String terminateAction;
+    public boolean terminatorAfterHold;
+    public String navigateDrivePriority;
 
     public MCH_BlockInfo(String name) {
         this.name = name;
@@ -79,6 +98,7 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
         this.isShapedRecipe = true;
         this.block = null;
         this.enableSpawner = false;
+        this.enableWaypoint = false;
         this.checkRadius = 10.0F;
         this.checkIntervalTick = 20;
         this.detectPlayers = true;
@@ -100,6 +120,7 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
         this.vehicleExtraNbt = "";
         this.spawnGunner = false;
         this.gunnerMode = "none";
+        this.gunnerProfile = "";
         this.gunnerSeatIndex = 0;
         this.gunnerTargetType = 0;
         this.gunnerYaw = 0.0F;
@@ -109,6 +130,23 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
         this.autoCreateFaction = true;
         this.autoCreateFactionColor = 0x3A66FF;
         this.stateSyncTick = 5;
+        this.enableWaypointPatrol = false;
+        this.initialWaypointId = "";
+        this.waypointSelectPolicy = "nearest";
+        this.navigateSuppressLargeTurn = true;
+        this.holdAsFreeState = true;
+        this.holdCountdownTick = 200;
+        this.waypointFailAction = "hold";
+        this.navigateTimeoutTick = 2400;
+        this.waypointId = "";
+        this.nextWaypointId = "";
+        this.patrolTimeTick = 200;
+        this.waypointRadius = 24.0F;
+        this.waypointHeight = 40.0F;
+        this.isTerminator = false;
+        this.terminateAction = "free";
+        this.terminatorAfterHold = true;
+        this.navigateDrivePriority = "avoid>navigate>combat";
     }
 
     public void loadItemData(String item, String data) {
@@ -140,6 +178,8 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
             this.textureError = this.textureName;
         } else if (item.equalsIgnoreCase("EnableSpawner")) {
             this.enableSpawner = this.toBool(data.trim(), this.enableSpawner);
+        } else if (item.equalsIgnoreCase("EnableWaypoint")) {
+            this.enableWaypoint = this.toBool(data.trim(), this.enableWaypoint);
         } else if (item.equalsIgnoreCase("CheckRadius")) {
             this.checkRadius = this.toFloat(data.trim(), 1.0F, 128.0F);
         } else if (item.equalsIgnoreCase("CheckIntervalTick")) {
@@ -196,6 +236,8 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
             this.spawnGunner = this.toBool(data.trim(), this.spawnGunner);
         } else if (item.equalsIgnoreCase("GunnerMode")) {
             this.gunnerMode = data.trim().toLowerCase();
+        } else if (item.equalsIgnoreCase("GunnerProfile")) {
+            this.gunnerProfile = data.trim().toLowerCase();
         } else if (item.equalsIgnoreCase("GunnerSeatIndex")) {
             this.gunnerSeatIndex = this.toInt(data.trim(), 0, 64);
         } else if (item.equalsIgnoreCase("GunnerTargetType")) {
@@ -220,6 +262,40 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
             this.textureError = data.trim().isEmpty() ? this.textureName : data.trim();
         } else if (item.equalsIgnoreCase("StateSyncTick")) {
             this.stateSyncTick = this.toInt(data.trim(), 1, 200);
+        } else if (item.equalsIgnoreCase("EnableWaypointPatrol")) {
+            this.enableWaypointPatrol = this.toBool(data.trim(), this.enableWaypointPatrol);
+        } else if (item.equalsIgnoreCase("InitialWaypointId")) {
+            this.initialWaypointId = data.trim().toLowerCase();
+        } else if (item.equalsIgnoreCase("WaypointSelectPolicy")) {
+            this.waypointSelectPolicy = data.trim().toLowerCase();
+        } else if (item.equalsIgnoreCase("NavigateSuppressLargeTurn")) {
+            this.navigateSuppressLargeTurn = this.toBool(data.trim(), this.navigateSuppressLargeTurn);
+        } else if (item.equalsIgnoreCase("HoldAsFreeState")) {
+            this.holdAsFreeState = this.toBool(data.trim(), this.holdAsFreeState);
+        } else if (item.equalsIgnoreCase("HoldCountdownTick")) {
+            this.holdCountdownTick = this.toInt(data.trim(), 1, 120000);
+        } else if (item.equalsIgnoreCase("WaypointFailAction")) {
+            this.waypointFailAction = data.trim().toLowerCase();
+        } else if (item.equalsIgnoreCase("NavigateTimeoutTick")) {
+            this.navigateTimeoutTick = this.toInt(data.trim(), 20, 1200000);
+        } else if (item.equalsIgnoreCase("WaypointId")) {
+            this.waypointId = data.trim().toLowerCase();
+        } else if (item.equalsIgnoreCase("NextWaypointId")) {
+            this.nextWaypointId = data.trim().toLowerCase();
+        } else if (item.equalsIgnoreCase("PatrolTimeTick")) {
+            this.patrolTimeTick = this.toInt(data.trim(), 1, 120000);
+        } else if (item.equalsIgnoreCase("Radius")) {
+            this.waypointRadius = this.toFloat(data.trim(), 1.0F, 256.0F);
+        } else if (item.equalsIgnoreCase("Height")) {
+            this.waypointHeight = this.toFloat(data.trim(), 1.0F, 256.0F);
+        } else if (item.equalsIgnoreCase("IsTerminator")) {
+            this.isTerminator = this.toBool(data.trim(), this.isTerminator);
+        } else if (item.equalsIgnoreCase("TerminateAction")) {
+            this.terminateAction = data.trim().toLowerCase();
+        } else if (item.equalsIgnoreCase("TerminatorAfterHold")) {
+            this.terminatorAfterHold = this.toBool(data.trim(), this.terminatorAfterHold);
+        } else if (item.equalsIgnoreCase("NavigateDrivePriority")) {
+            this.navigateDrivePriority = data.trim().toLowerCase();
         } else if (item.equalsIgnoreCase("AddRecipe") || item.equalsIgnoreCase("AddShapelessRecipe")) {
             this.isShapedRecipe = item.equalsIgnoreCase("AddRecipe");
             this.recipeString.add(data.toUpperCase());
