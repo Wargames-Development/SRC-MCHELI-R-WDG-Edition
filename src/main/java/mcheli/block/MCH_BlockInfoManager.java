@@ -6,6 +6,7 @@ import mcheli.MCH_Lib;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,7 +28,14 @@ public class MCH_BlockInfoManager {
         if (files == null || files.length <= 0) {
             return false;
         }
+        Arrays.sort(files, (a, b) -> {
+            int c = a.getName().compareToIgnoreCase(b.getName());
+            return c != 0 ? c : a.getAbsolutePath().compareToIgnoreCase(b.getAbsolutePath());
+        });
         map.clear();
+        for (int i = 0; i < files.length; ++i) {
+            MCH_Lib.Log("[mcheli][block-load] order=%03d file=%s", i + 1, files[i].getName());
+        }
         for (File f : files) {
             MCH_InputFile inFile = new MCH_InputFile();
             int line = 0;

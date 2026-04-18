@@ -1,5 +1,6 @@
 package mcheli.block;
 
+import mcheli.MCH_ServerSettings;
 import mcheli.MCH_WaypointNavDebug;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_ItemAircraft;
@@ -46,6 +47,8 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
     private int trackedVehicleEntityId = -1;
     private long trackedVehicleUuidMost = 0L;
     private long trackedVehicleUuidLeast = 0L;
+    private int lastGlobalGunnerVehicleCount = -1;
+    private boolean lastGlobalGunnerVehicleLock = false;
     private static final Map<Integer, Map<String, List<MCH_ConfigSpawnerTileEntity>>> WAYPOINT_REGISTRY = new HashMap<Integer, Map<String, List<MCH_ConfigSpawnerTileEntity>>>();
 
     public MCH_ConfigSpawnerTileEntity() {
@@ -53,6 +56,63 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
 
     public MCH_ConfigSpawnerTileEntity(String blockInfoName) {
         this.blockInfoName = blockInfoName;
+    }
+
+    /**
+     * Force one immediate spawn attempt for structure placement flow.
+     * This bypasses normal check interval/cooldown timing but still uses
+     * configured vehicle pool and spawn collision checks.
+     */
+    public boolean forceSpawnOnceNow() {
+        if (this.worldObj == null || this.worldObj.isRemote) {
+            return false;
+        }
+        MCH_BlockInfo info = MCH_BlockInfoManager.get(this.blockInfoName);
+        if (info == null) {
+            this.setVisualState(STATE_ERROR, 2);
+            return false;
+        }
+        this.updateWaypointRegistry(info);
+        if (this.isWaypointMarker(info) && !info.enableSpawner) {
+            this.setVisualState(STATE_ACTIVE, info.stateSyncTick);
+            return false;
+        }
+        if (!info.enableSpawner || info.vehiclePool == null || info.vehiclePool.isEmpty()) {
+            this.setVisualState(STATE_ERROR, 2);
+            return false;
+        }
+        if (MCH_ServerSettings.freezeConfigSpawner) {
+            this.setVisualState(STATE_ACTIVE, info.stateSyncTick);
+            return false;
+        }
+        if (this.isGlobalGunnerVehicleLockActive(info)) {
+            this.setVisualState(STATE_SLEEP, info.stateSyncTick);
+            return false;
+        }
+
+        // Reset runtime waiting/cooldown state before force attempt.
+        this.nextCheckTick = 0L;
+        this.cooldownEndTick = 0L;
+        this.waitingVehicleDestroyed = false;
+        this.clearTrackedVehicle();
+
+        boolean spawned = this.spawnOne(info);
+        if (spawned) {
+            if (this.isOnceMode(info)) {
+                this.spawnedOnce = true;
+                this.setVisualState(STATE_SLEEP, 2);
+            } else {
+                this.spawnedOnce = false;
+                this.waitingVehicleDestroyed = true;
+                this.setVisualState(STATE_SLEEP, 2);
+            }
+            this.markDirty();
+            return true;
+        }
+
+        this.setVisualState(STATE_ACTIVE, info.stateSyncTick);
+        this.markDirty();
+        return false;
     }
 
     public void updateEntity() {
@@ -76,6 +136,15 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
         }
         if (info.vehiclePool == null || info.vehiclePool.isEmpty()) {
             this.setVisualState(STATE_ERROR, 2);
+            return;
+        }
+        if (MCH_ServerSettings.freezeConfigSpawner) {
+            // Freeze mode keeps block visually active and skips all spawn logic.
+            this.setVisualState(STATE_ACTIVE, info.stateSyncTick);
+            return;
+        }
+        if (this.isGlobalGunnerVehicleLockActive(info)) {
+            this.setVisualState(STATE_SLEEP, info.stateSyncTick);
             return;
         }
         if (this.spawnedOnce && this.isOnceMode(info)) {
@@ -544,6 +613,56 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
         return false;
     }
 
+    private boolean isGlobalGunnerVehicleLockActive(MCH_BlockInfo info) {
+        if (info == null || info.globalGunnerVehicleCountLimit <= 0 || info.globalGunnerVehicleCountRadius <= 0.0F) {
+            this.lastGlobalGunnerVehicleCount = -1;
+            this.lastGlobalGunnerVehicleLock = false;
+            return false;
+        }
+        int count = this.countGunnerDrivenVehiclesInRadius(info.globalGunnerVehicleCountRadius);
+        this.lastGlobalGunnerVehicleCount = count;
+        this.lastGlobalGunnerVehicleLock = count >= info.globalGunnerVehicleCountLimit;
+        return this.lastGlobalGunnerVehicleLock;
+    }
+
+    private int countGunnerDrivenVehiclesInRadius(float radius) {
+        double r = Math.max(1.0D, radius);
+        AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(
+            this.xCoord + 0.5D - r, this.yCoord + 0.5D - r, this.zCoord + 0.5D - r,
+            this.xCoord + 0.5D + r, this.yCoord + 0.5D + r, this.zCoord + 0.5D + r
+        );
+        List<MCH_EntityAircraft> vehicles = this.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
+        int count = 0;
+        for (MCH_EntityAircraft ac : vehicles) {
+            if (ac == null || ac.isDead) {
+                continue;
+            }
+            if (this.hasAliveGunnerDriver(ac)) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    private boolean hasAliveGunnerDriver(MCH_EntityAircraft aircraft) {
+        if (aircraft.riddenByEntity instanceof MCH_EntityGunner && !aircraft.riddenByEntity.isDead) {
+            return true;
+        }
+        MCH_EntitySeat[] seats = aircraft.getSeats();
+        if (seats == null) {
+            return false;
+        }
+        for (MCH_EntitySeat seat : seats) {
+            if (seat == null || seat.isDead || seat.riddenByEntity == null || seat.riddenByEntity.isDead) {
+                continue;
+            }
+            if (seat.riddenByEntity instanceof MCH_EntityGunner) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void setVisualState(int state, int syncTick) {
         if (this.visualState == state) {
             return;
@@ -599,6 +718,48 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
 
     public MCH_BlockInfo getBlockInfo() {
         return MCH_BlockInfoManager.get(this.blockInfoName);
+    }
+
+    public String getDebugStatusLine() {
+        MCH_BlockInfo info = this.getBlockInfo();
+        long now = this.worldObj != null ? this.worldObj.getTotalWorldTime() : 0L;
+        long nextIn = Math.max(0L, this.nextCheckTick - now);
+        long coolIn = Math.max(0L, this.cooldownEndTick - now);
+        String infoName = info != null ? info.name : "<null>";
+        int pool = info != null && info.vehiclePool != null ? info.vehiclePool.size() : 0;
+        boolean enableSpawner = info != null && info.enableSpawner;
+        String state = this.visualState == STATE_ACTIVE ? "ACTIVE" : (this.visualState == STATE_SLEEP ? "SLEEP" : "ERROR");
+        return "state=" + state
+            + " blockInfoName=" + this.blockInfoName
+            + " cfg=" + infoName
+            + " spawner=" + enableSpawner
+            + " pool=" + pool
+            + " spawnedOnce=" + this.spawnedOnce
+            + " waitingVehicleDestroyed=" + this.waitingVehicleDestroyed
+            + " freeze=" + MCH_ServerSettings.freezeConfigSpawner
+            + " nextCheckIn=" + nextIn
+            + " cooldownIn=" + coolIn
+            + " trackedId=" + this.trackedVehicleEntityId
+            + " globalGvLock=" + this.lastGlobalGunnerVehicleLock
+            + " globalGvCount=" + this.lastGlobalGunnerVehicleCount
+            + " globalGvLimit=" + (info != null ? info.globalGunnerVehicleCountLimit : 0)
+            + " globalGvRadius=" + (info != null ? info.globalGunnerVehicleCountRadius : 0.0F);
+    }
+
+    public String getBlockInfoName() {
+        return this.blockInfoName;
+    }
+
+    public void setBlockInfoName(String name) {
+        String next = name == null ? "" : name.trim();
+        if (next.equals(this.blockInfoName)) {
+            return;
+        }
+        this.removeWaypointRegistry();
+        this.blockInfoName = next;
+        MCH_BlockInfo info = this.getBlockInfo();
+        this.updateWaypointRegistry(info);
+        this.markDirty();
     }
 
     public String getWaypointId() {

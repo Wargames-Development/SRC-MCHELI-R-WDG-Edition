@@ -44,6 +44,10 @@ public class MCH_ConfigSpawnerBlock extends W_BlockContainer implements ITileEnt
         return true;
     }
 
+    public String getDefaultBlockInfoName() {
+        return this.info != null ? this.info.name : "";
+    }
+
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float px, float py, float pz) {
         if (world == null || player == null) {
             return false;

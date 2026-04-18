@@ -1,0 +1,43 @@
+﻿; 方块显示名
+DisplayName=Waypoint [USMC_A]
+; 中文显示名
+AddDisplayName=zh_CN,航路点[USMC_A]
+; 方块ID（请确保不冲突）
+BlockID=34716
+; 材质
+Material=iron
+; 硬度
+Hardness=10000.0
+; 抗爆
+Resistance=10000.0
+; 脚步声
+StepSound=metal
+; 创造页
+CreativeTab=block
+EnableWaypoint=true
+EnableSpawner=false
+
+; 航路点ID
+WaypointId=usmc_a
+; 下一航路点
+NextWaypointId=usmc_b
+; 到点驻留时间（tick）
+PatrolTimeTick=900
+; 到点判定范围
+Radius=24.0
+Height=200
+; 终止点设置
+IsTerminator=false
+TerminateAction=free
+TerminatorAfterHold=true
+
+; 贴图
+TextureName=usmc_a
+; TextureActive(可选，航路点默认走TextureName)
+; TextureSleep(可选，航路点默认走TextureName)
+; TextureError(可选，航路点默认走TextureName)
+StateSyncTick=5
+
+
+
+

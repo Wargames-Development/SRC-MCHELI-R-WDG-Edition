@@ -91,6 +91,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private int obstacleTurnDir = 0;
     private float largeTurnRemain = 0.0F;
     private int largeTurnDir = 0;
+    private int navStuckSampleTicks = 0;
+    private double navStuckMoveAccum = 0.0D;
+    private double navStuckStartDistSq = -1.0D;
+    private int navUnstuckCooldownTicks = 0;
     private int heliState = 0;
     private int heliStateTicks = 0;
     private int heliStateDuration = 0;
@@ -264,6 +268,10 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 this.obstacleTurnDir = 0;
                 this.largeTurnRemain = 0.0F;
                 this.largeTurnDir = 0;
+                this.navStuckSampleTicks = 0;
+                this.navStuckMoveAccum = 0.0D;
+                this.navStuckStartDistSq = -1.0D;
+                this.navUnstuckCooldownTicks = 0;
                 this.heliState = HELI_STATE_CRUISE;
                 this.heliStateTicks = 0;
                 this.heliStateDuration = 0;
@@ -976,6 +984,11 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private void updateTankDrive(MCH_EntityTank tank) {
         if (!tank.isPilot((Entity)this))
             return;
+        final int navStuckCheckTick = 80;
+        final double navStuckMinMove = 5.0D;
+        final float navUnstuckTurnMin = 120.0F;
+        final float navUnstuckTurnMax = 180.0F;
+        final int navUnstuckCooldownTick = 60;
         final double gunnerThrottleCapNavigate = 0.95D;
         final double gunnerThrottleCapCombat = 0.60D;
         final double gunnerThrottleCapNormal = 0.35D;
@@ -987,15 +1000,20 @@ public class MCH_EntityGunner extends EntityLivingBase {
         double mdx = tank.posX - tank.prevPosX;
         double mdz = tank.posZ - tank.prevPosZ;
         double moveDistSq = mdx * mdx + mdz * mdz;
+        TankNavContext nav = getTankNavContext(tank);
         if (this.noMoveTurnCooldownTicks > 0)
             this.noMoveTurnCooldownTicks--;
+        if (this.navUnstuckCooldownTicks > 0)
+            this.navUnstuckCooldownTicks--;
         if (moveDistSq > 0.0009D) {
             this.noMoveTicks++;
         }
         if (tank.isDestroyed() || (!tank.canUseFuel() && !tank.isInfinityFuel((Entity)this, true))) {
             brake = true;
+            this.navStuckSampleTicks = 0;
+            this.navStuckMoveAccum = 0.0D;
+            this.navStuckStartDistSq = -1.0D;
         } else {
-            TankNavContext nav = getTankNavContext(tank);
             boolean navigateOverCombat = nav.navigateActive && nav.navigateOverCombat;
             if (MCH_ServerSettings.enableDebugWaypointNav && tank.ticksExisted % 100 == 0 && !nav.navigateActive && !nav.holdActive) {
                 MCH_WaypointNavDebug.trace(tank.worldObj, this, "Drive fallback to combat/wander: acId=%d navEnabled=%s",
@@ -1146,7 +1164,6 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 this.noMoveTicks = 0;
             }
         }
-        TankNavContext nav = getTankNavContext(tank);
         boolean allowLargeTurnWhenNavigate = !(nav.navigateActive && nav.suppressLargeTurnInNavigate);
         if (allowLargeTurnWhenNavigate && this.noMoveTurnCooldownTicks <= 0 && this.noMoveTicks >= this.noMoveTurnThreshold) {
             int dir = this.rand.nextBoolean() ? 1 : -1;
@@ -1156,6 +1173,20 @@ public class MCH_EntityGunner extends EntityLivingBase {
             this.noMoveTurnCooldownTicks = 120;
             this.wanderTurnTicks = 0;
             this.combatMoveTicks = 0;
+        }
+        boolean navStuck = updateNavigateStuckState(tank, nav, moveDistSq, navStuckCheckTick, navStuckMinMove);
+        if (navStuck && this.largeTurnRemain <= 0.0F && this.navUnstuckCooldownTicks <= 0) {
+            int dir = resolveNavUnstuckDir(tank, nav);
+            startLargeTurn(navUnstuckTurnMin + this.rand.nextFloat() * (navUnstuckTurnMax - navUnstuckTurnMin), dir);
+            this.navUnstuckCooldownTicks = navUnstuckCooldownTick;
+            this.noMoveTicks = 0;
+            this.noMoveTurnCooldownTicks = Math.max(this.noMoveTurnCooldownTicks, 40);
+            this.wanderTurnTicks = 0;
+            this.combatMoveTicks = 0;
+            if (MCH_ServerSettings.enableDebugWaypointNav) {
+                MCH_WaypointNavDebug.trace(tank.worldObj, this, "NAV unstuck turn: acId=%d dir=%d dist=%.1f",
+                    tank.getEntityId(), dir, Math.sqrt((nav.targetX - tank.posX) * (nav.targetX - tank.posX) + (nav.targetZ - tank.posZ) * (nav.targetZ - tank.posZ)));
+            }
         }
         boolean blockTooHigh = hasTooHighObstacleAhead(tank);
         if (blockTooHigh) {
@@ -2696,6 +2727,46 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private void startLargeTurn(float angle, int dir) {
         this.largeTurnRemain = Math.max(0.0F, angle);
         this.largeTurnDir = dir >= 0 ? 1 : -1;
+    }
+
+    private boolean updateNavigateStuckState(MCH_EntityTank tank, TankNavContext nav, double moveDistSq, int checkTick, double minMove) {
+        if (tank == null || nav == null || !nav.navigateActive) {
+            this.navStuckSampleTicks = 0;
+            this.navStuckMoveAccum = 0.0D;
+            this.navStuckStartDistSq = -1.0D;
+            return false;
+        }
+        double dx = nav.targetX - tank.posX;
+        double dz = nav.targetZ - tank.posZ;
+        double currentDistSq = dx * dx + dz * dz;
+        if (this.navStuckStartDistSq < 0.0D) {
+            this.navStuckStartDistSq = currentDistSq;
+        }
+        this.navStuckSampleTicks++;
+        this.navStuckMoveAccum += Math.sqrt(moveDistSq);
+        if (this.navStuckSampleTicks < checkTick) {
+            return false;
+        }
+        double progressSq = this.navStuckStartDistSq - currentDistSq;
+        boolean lowMove = this.navStuckMoveAccum < minMove;
+        boolean lowProgress = progressSq < 9.0D;
+        boolean needUnstuck = (lowMove || lowProgress) && currentDistSq > 100.0D;
+        this.navStuckSampleTicks = 0;
+        this.navStuckMoveAccum = 0.0D;
+        this.navStuckStartDistSq = currentDistSq;
+        return needUnstuck;
+    }
+
+    private int resolveNavUnstuckDir(MCH_EntityTank tank, TankNavContext nav) {
+        if (tank == null || nav == null || !nav.navigateActive) {
+            return this.rand.nextBoolean() ? 1 : -1;
+        }
+        float targetYaw = MathHelper.wrapAngleTo180_float((float)(Math.atan2(nav.targetZ - tank.posZ, nav.targetX - tank.posX) * 180.0D / Math.PI) - 90.0F);
+        float yawDiff = MathHelper.wrapAngleTo180_float(targetYaw - tank.getRotYaw());
+        if (Math.abs(yawDiff) < 5.0F) {
+            return this.rand.nextBoolean() ? 1 : -1;
+        }
+        return yawDiff >= 0.0F ? 1 : -1;
     }
 
     private float getLargeTurnStep(MCH_EntityTank tank) {

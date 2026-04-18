@@ -4,6 +4,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 import cpw.mods.fml.common.network.internal.FMLProxyPacket;
+import mcheli.structure.MCH_StructureDebugLogger;
 import mcheli.wrapper.W_Reflection;
 import net.minecraft.network.NetworkManager;
 
@@ -20,8 +21,11 @@ public class MCH_ServerTickHandler {
     @SubscribeEvent
     public void onServerTickEvent(TickEvent.ServerTickEvent event) {
         if (event.phase == Phase.START) {
+            this.onServerTickPre();
         }
         if (event.phase == Phase.END) {
+            MCH_StructureDebugLogger.onServerTick();
+            this.onServerTickPost();
         }
     }
 

@@ -50,6 +50,8 @@ import mcheli.plane.MCP_EntityPlane;
 import mcheli.plane.MCP_ItemPlane;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.plane.MCP_PlaneInfoManager;
+import mcheli.structure.MCH_StructureRuleManager;
+import mcheli.structure.MCH_WorldStructureGenerator;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.tank.MCH_ItemTank;
 import mcheli.tank.MCH_TankInfo;
@@ -309,6 +311,7 @@ public class MCH_MOD {
         MCH_LightWeaponAmmoInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapon_ammo");
         MCH_LightWeaponInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapons");
         MCH_SoundsJson.update(sourcePath + "/assets/" + "mcheli" + "/");
+        MCH_StructureRuleManager.load(new File("config/mcheli/structure_rules"));
         MCH_Lib.Log("Register item");
         this.registerItemRangeFinder();
         this.registerItemSpawnGunner();
@@ -376,6 +379,7 @@ public class MCH_MOD {
         getPacketHandler().initialise();
         GameRegistry.registerTileEntity(MCH_DraftingTableTileEntity.class, "drafting_table");
         GameRegistry.registerTileEntity(MCH_ConfigSpawnerTileEntity.class, "mcheli_config_spawner");
+        GameRegistry.registerWorldGenerator(new MCH_WorldStructureGenerator(), 20);
         proxy.registerBlockRenderer();
     }
 
@@ -499,7 +503,9 @@ public class MCH_MOD {
     }
 
     private void registerConfiguredBlocks() {
+        int regOrder = 0;
         for (MCH_BlockInfo info : MCH_BlockInfoManager.getValues()) {
+            regOrder++;
             Block block;
             if (info.enableSpawner || info.enableWaypoint) {
                 block = new MCH_ConfigSpawnerBlock(info, this.resolveMaterial(info.materialName));
@@ -514,6 +520,14 @@ public class MCH_MOD {
             CreativeTabs creativeTab = this.resolveCreativeTab(info.creativeTab);
             block.setCreativeTab(creativeTab);
             GameRegistry.registerBlock(block, info.name);
+            MCH_Lib.Log(
+                "[mcheli][block-reg] order=%03d key=%s block=%s id=%d src=%s",
+                regOrder,
+                info.name,
+                block.getUnlocalizedName(),
+                Block.getIdFromBlock(block),
+                info.filePath != null ? info.filePath : "<unknown>"
+            );
             info.block = block;
             W_LanguageRegistry.addName(block, info.displayName);
             for (String lang : info.displayNameLang.keySet()) {

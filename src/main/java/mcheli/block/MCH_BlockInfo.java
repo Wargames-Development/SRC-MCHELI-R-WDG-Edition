@@ -36,6 +36,8 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
     public boolean detectAnimals;
     public boolean detectVehicles;
     public boolean detectGunners;
+    public float globalGunnerVehicleCountRadius;
+    public int globalGunnerVehicleCountLimit;
     public boolean ignoreCreativePlayer;
     public boolean ignoreSpectator;
     public String spawnMode;
@@ -106,6 +108,8 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
         this.detectAnimals = true;
         this.detectVehicles = true;
         this.detectGunners = true;
+        this.globalGunnerVehicleCountRadius = 384.0F;
+        this.globalGunnerVehicleCountLimit = 7;
         this.ignoreCreativePlayer = true;
         this.ignoreSpectator = false;
         this.spawnMode = "interval";
@@ -194,6 +198,10 @@ public class MCH_BlockInfo extends MCH_BaseInfo {
             this.detectVehicles = this.toBool(data.trim(), this.detectVehicles);
         } else if (item.equalsIgnoreCase("DetectGunners")) {
             this.detectGunners = this.toBool(data.trim(), this.detectGunners);
+        } else if (item.equalsIgnoreCase("GlobalGunnerVehicleCountRadius")) {
+            this.globalGunnerVehicleCountRadius = this.toFloat(data.trim(), 0.0F, 4096.0F);
+        } else if (item.equalsIgnoreCase("GlobalGunnerVehicleCountLimit")) {
+            this.globalGunnerVehicleCountLimit = this.toInt(data.trim(), 0, 10000);
         } else if (item.equalsIgnoreCase("IgnoreCreativePlayer")) {
             this.ignoreCreativePlayer = this.toBool(data.trim(), this.ignoreCreativePlayer);
         } else if (item.equalsIgnoreCase("IgnoreSpectator")) {
