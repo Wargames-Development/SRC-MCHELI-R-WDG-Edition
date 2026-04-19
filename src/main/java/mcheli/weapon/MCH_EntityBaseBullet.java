@@ -1510,15 +1510,24 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (!inWater) {
             //HBM爆炸效果
             if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
-                Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, null, x, y, z, getInfo().effectYield);
-                if (explosionNTInstance != null && !this.getInfo().disableDestroyBlock) {
-                    MCH_HBMUtil.ExplosionNT_instance_addAttrib(explosionNTInstance, "NOHURT");
-                    MCH_HBMUtil.ExplosionNT_instance_overrideResolutionAndExplode(explosionNTInstance, 64);
+                Object ExplosionVNT = MCH_HBMUtil.ExplosionVNT(super.worldObj, x, y, z, getInfo().effectYield);
+                if (ExplosionVNT != null) {
+                    if (this.getInfo().disableDestroyBlock) {
+                        MCH_HBMUtil.ExplosionVNT_Explode(ExplosionVNT, false);
+                    } else {
+                        MCH_HBMUtil.ExplosionVNT_Explode(ExplosionVNT, true);
+                    }
                 }
-                if (this.getInfo().explosionType.equals("hbmNT_Bomb")) {
+                if (this.getInfo().explosionType.contains("_Bomb")) {
                     MCH_HBMUtil.ExplosionCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
-                } else if (this.getInfo().explosionType.equals("hbmNT_Shell")) {
+                } else if (this.getInfo().explosionType.contains("_Shell")) {
                     MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
+                }
+                if (this.getInfo().explosionType.contains("_frag")) {
+                    MCH_HBMUtil.Frag_Effect(worldObj, x, y, z);
+                }
+                if (this.getInfo().explosionType.contains("_WP")) {
+                    MCH_HBMUtil.WP_Effect(worldObj, x, y, z, this.dimension);
                 }
                 boolean fallbackToMchBlockBreak = this.getInfo().disableDestroyBlock;
                 MCH_ExplosionParam param = MCH_ExplosionParam.builder()

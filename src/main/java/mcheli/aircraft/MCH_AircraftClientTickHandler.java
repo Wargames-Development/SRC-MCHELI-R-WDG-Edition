@@ -5,6 +5,7 @@ import mcheli.gui.MCH_GuiGPSInput;
 import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketUseWeapon;
 import mcheli.render.MCH_RenderLeadCircle;
+import mcheli.render.MCH_RenderRWR;
 import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
@@ -270,7 +271,12 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         }
         if (!ac.isDestroyed() && !ac.isPilotReloading()) {
             if (ac.getSeatIdByEntity(player) <= 1) {
-                int fireControlToggle = MCH_RenderLeadCircle.handleFireControlLockKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                int fireControlToggle;
+                if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar) {
+                    fireControlToggle = MCH_RenderRWR.handleRadarSelectKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                } else {
+                    fireControlToggle = MCH_RenderLeadCircle.handleFireControlLockKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                }
                 if (fireControlToggle == 1 || fireControlToggle == -1) {
                     playSoundOK();
                 } else if (fireControlToggle == 2) {
@@ -281,11 +287,26 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 this.mc.displayGuiScreen(new MCH_GuiGPSInput(player));
             }
 
-            if (this.KeyCurrentWeaponLock.isKeyPress()) {
+            boolean lockKeyPress = this.KeyCurrentWeaponLock.isKeyPress();
+            if (lockKeyPress) {
                 ac.currentWeaponLock(player);
                 send = true;
             } else {
                 ac.currentWeaponUnlock(player);
+            }
+            boolean radarEnabled = ac.getAcInfo() != null && ac.getAcInfo().enableRadar;
+            if (radarEnabled) {
+                boolean weaponNeedsRightLock = shouldKeepWeaponRightLock(ac, player);
+                boolean hasRadarTracking = MCH_RenderRWR.getRadarTrackingTargetId(ac) > 0;
+                boolean allowRadarToggle = !weaponNeedsRightLock || !hasRadarTracking;
+                if (allowRadarToggle) {
+                    int trackToggle = MCH_RenderRWR.handleRadarTrackToggleKey(lockKeyPress, player, ac);
+                    if (trackToggle == 1 || trackToggle == -1) {
+                        playSoundOK();
+                    } else if (trackToggle == 2) {
+                        playSoundNG();
+                    }
+                }
             }
 
             updateAheadPreSolve(player, ac);
@@ -317,6 +338,20 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         return (send || player.ticksExisted % 100 == 0);
     }
 
+    private boolean shouldKeepWeaponRightLock(MCH_EntityAircraft ac, EntityPlayer player) {
+        if (ac == null || player == null) {
+            return false;
+        }
+        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+        if (ws == null || ws.getCurrentWeapon() == null || ws.getCurrentWeapon().getInfo() == null) {
+            return false;
+        }
+        MCH_WeaponInfo info = ws.getCurrentWeapon().getInfo();
+        String type = info.type != null ? info.type.toLowerCase() : "";
+        // These weapon modes rely on right-click guidance/lock and should keep their original behavior.
+        return info.passiveRadar || info.isGPSMissile || info.laserGuidance || "tvmissile".equals(type);
+    }
+
     private void updateAheadPreSolve(EntityPlayer player, MCH_EntityAircraft ac) {
         if (ac.getSeatIdByEntity(player) > 1) {
             return;
@@ -334,7 +369,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             syncAirburstDistance(ac, wb, 0);
             return;
         }
-        int lockTargetId = MCH_RenderLeadCircle.getFireControlLockedTargetId();
+        int lockTargetId = MCH_RenderLeadCircle.getLeadLockedTargetId(ac);
         if (lockTargetId <= 0) {
             syncAirburstDistance(ac, wb, 0);
             return;

@@ -3,6 +3,7 @@ package mcheli.render;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
+import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
@@ -35,6 +36,13 @@ public class MCH_RenderLeadCircle {
         return fireControlLockedTargetId;
     }
 
+    public static int getLeadLockedTargetId(MCH_EntityAircraft ac) {
+        if (ac != null && ac.getAcInfo() != null && ac.getAcInfo().enableRadar) {
+            return MCH_RenderRWR.getRadarTrackingTargetId(ac);
+        }
+        return fireControlLockedTargetId;
+    }
+
     public static int handleFireControlLockKey(boolean keyDown, EntityPlayer player, MCH_EntityAircraft ac) {
         if (!keyDown) {
             fireControlKeyPrevDown = false;
@@ -56,10 +64,11 @@ public class MCH_RenderLeadCircle {
             return 2;
         }
         MCH_WeaponInfo info = currentWs.getInfo();
-        if (!info.enableBVR || !isSupportedWeaponType(info.type)) {
+        MCH_AircraftInfo acInfo = ac.getAcInfo();
+        if (acInfo == null || !acInfo.enableBVR || !isSupportedWeaponType(info.type)) {
             return 2;
         }
-        MCH_EntityInfo target = findFireControlTarget(ac, player);
+        MCH_EntityInfo target = findFireControlTarget(ac, player, acInfo);
         if (target == null) {
             return 2;
         }
@@ -93,14 +102,15 @@ public class MCH_RenderLeadCircle {
             return;
         }
         MCH_WeaponInfo info = currentWs.getInfo();
-        if (!info.enableBVR || !isSupportedWeaponType(info.type)) {
+        MCH_AircraftInfo acInfo = ac.getAcInfo();
+        if (acInfo == null || !acInfo.enableBVR || !isSupportedWeaponType(info.type)) {
             return;
         }
         MCH_WeaponBase weapon = currentWs.getCurrentWeapon();
         if (weapon == null) {
             return;
         }
-        MCH_EntityInfo target = selectTarget();
+        MCH_EntityInfo target = selectTarget(ac);
         if (target == null) {
             return;
         }
@@ -121,23 +131,27 @@ public class MCH_RenderLeadCircle {
             || type.equalsIgnoreCase("railgun");
     }
 
-    private MCH_EntityInfo selectTarget() {
-        if (fireControlLockedTargetId <= 0) {
+    private MCH_EntityInfo selectTarget(MCH_EntityAircraft ac) {
+        int lockId = getLeadLockedTargetId(ac);
+        if (lockId <= 0) {
             return null;
         }
-        MCH_EntityInfo locked = MCH_EntityInfoClientTracker.getEntityInfo(fireControlLockedTargetId);
+        MCH_EntityInfo locked = MCH_EntityInfoClientTracker.getEntityInfo(lockId);
         if (locked == null || !isLockableTarget(locked.entityClassName)) {
-            fireControlLockedTargetId = -1;
+            if (ac == null || ac.getAcInfo() == null || !ac.getAcInfo().enableRadar) {
+                fireControlLockedTargetId = -1;
+            }
             return null;
         }
         return locked;
     }
 
-    private static MCH_EntityInfo findFireControlTarget(MCH_EntityAircraft ac, EntityPlayer player) {
+    private static MCH_EntityInfo findFireControlTarget(MCH_EntityAircraft ac, EntityPlayer player, MCH_AircraftInfo acInfo) {
         List<MCH_EntityInfo> all = new ArrayList<MCH_EntityInfo>(MCH_EntityInfoClientTracker.getAllTrackedEntities());
         MCH_EntityInfo best = null;
         double bestDistSq = Double.MAX_VALUE;
-        double maxRangeSq = FIRE_CONTROL_MAX_RANGE * FIRE_CONTROL_MAX_RANGE;
+        double maxRange = acInfo != null && acInfo.radarMaxTargetRange > 0.0F ? acInfo.radarMaxTargetRange : FIRE_CONTROL_MAX_RANGE;
+        double maxRangeSq = maxRange * maxRange;
         for (MCH_EntityInfo entity : all) {
             if (!isLockableTarget(entity.entityClassName)) {
                 continue;

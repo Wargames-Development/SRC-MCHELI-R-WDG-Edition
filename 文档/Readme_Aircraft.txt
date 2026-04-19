@@ -756,6 +756,74 @@ radarType = ModernAdvancedAARadar
 nameOnAdvancedAARadar = ""
 ;当前载具在现代对空雷达中显示的名字,建议做为隐身战机雷达
 
+EnableRadar = false
+;是否启用新雷达扫描动画面板（true=启用，false=禁用）
+;默认值=false
+RadarScanAzimuthDeg=120
+RadarPanelFillAlpha=0.30
+;雷达面板扇形/圆形内部填充透明度
+;范围=0~1（0=完全透明，1=不透明）
+;默认值=0.30
+RadarScanElevationDeg = 40
+;俯仰扫描扇区总角度
+;范围=0~180（0=不扫描，180=上下全域）
+;默认值=40
+
+RadarFollowTurretYaw = true
+;是否让雷达水平正方向跟随坦克炮塔转向（仅坦克生效）
+;可选值=true|false
+;默认值：坦克=true，其它载具=false
+
+RadarElevationReference = HORIZON
+;俯仰扫描参考系
+;可选值=HORIZON|AIRCRAFT
+;HORIZON=按平飞水平面计算（推荐地面载具）
+;AIRCRAFT=按机体当前姿态计算（推荐战斗机）
+;默认值=HORIZON
+
+RadarElevationCoverage = UP_ONLY
+;俯仰扫描覆盖模式
+;可选值=UP_ONLY|DOWN_ONLY|FULL
+;UP_ONLY=仅上视扫描（不下视）
+;DOWN_ONLY=仅下视扫描（不上视）
+;FULL=全域扫描（上+下）
+;默认值=UP_ONLY
+
+RadarScanTick=12
+;每多少 tick 扫一次
+RadarDetectChanceBase=0.75
+;基础命中概率
+RadarContactHoldTick=40
+;命中后显示保持时长
+RadarSearchType=SRC
+;雷达搜索模式
+;可选值=SRC|TWS|GMTI_SRC|GMTI_TWS
+;GMTI_SRC/GMTI_TWS=仅对地模式（包含低空在内的所有目标）
+;默认值=SRC
+RadarTrackAzimuthDeg=90
+;雷达跟踪最大水平角度
+;建议不超过RadarScanAzimuthDeg
+;默认值=90
+RadarTrackElevationDeg=45
+;雷达跟踪最大俯仰角度
+;建议不超过RadarScanElevationDeg
+;默认值=45
+RadarRetargetCooldownTick=40
+;手动切换放弃目标后，禁止重新选择该目标的冷却tick
+;默认值=40
+RadarMaxTargetRange =
+;最大显示距离
+RadarMinScanAltitude=10
+;雷达最小扫描高度（离地高度，AGL）
+;低于该高度的目标不参与雷达扫描
+;仅对SRC/TWS生效，GMTI模式下不生效
+;默认值=10
+RadarMaxScanAltitude=25
+;雷达最大扫描高度（离地高度，AGL）
+;高于该高度的目标不参与雷达扫描
+;仅对GMTI_SRC/GMTI_TWS生效，SRC/TWS不生效
+;默认值=25
+
 hasEcmJammer=true
 ;是否拥有电子战功能
 

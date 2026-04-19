@@ -7,6 +7,7 @@ import mcheli.MCH_Lib;
 import mcheli.MCH_WaypointNavDebug;
 import mcheli.MCH_MOD;
 import mcheli.MCH_PacketNotifyServerSettings;
+import mcheli.MCH_RadarDebug;
 import mcheli.MCH_ServerSettings;
 import mcheli.block.MCH_BlockInfoManager;
 import mcheli.block.MCH_ConfigSpawnerBlock;
@@ -63,9 +64,10 @@ public class MCH_Command extends CommandBase {
     public static final String CMD_SPAWNER_FREEZE = "spawnerfreeze";
     public static final String CMD_SPAWNER_DEBUG = "spawnerdebug";
     public static final String CMD_STRUCT_DEBUG = "structdebug";
+    public static final String CMD_RADAR_DEBUG = "radardebug";
     public static final String CMD_STRUCT = "struct";
     public static final String CMD_LIST = "list";
-    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "spawnerfreeze", "spawnerdebug", "structdebug", "struct", "list"};
+    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "struct", "list"};
     public static MCH_Command instance = new MCH_Command();
 
 
@@ -277,6 +279,8 @@ public class MCH_Command extends CommandBase {
                         this.executeSpawnerDebug(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("structdebug")) {
                         this.executeStructureDebug(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("radardebug")) {
+                        this.executeRadarDebug(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("struct")) {
                         this.executeStructureCommand(sender, prm);
                     } else {
@@ -653,6 +657,13 @@ public class MCH_Command extends CommandBase {
                         if (prm.length == 3) a.add(String.valueOf(z));
                         return a;
                     }
+                } else if (prm[0].equalsIgnoreCase("radardebug")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status", "verbose"});
+                    }
+                    if (prm.length == 3 && prm[1].equalsIgnoreCase("verbose")) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
+                    }
                 } else if (prm[0].equalsIgnoreCase("struct")) {
                     if (prm.length == 2) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"capture", "place", "list", "validate", "verify", "importschem"});
@@ -818,6 +829,38 @@ public class MCH_Command extends CommandBase {
             sb.append("PASS static checks; chance=").append(r.chance).append(" (random gate)");
             sender.addChatMessage(new ChatComponentText(sb.toString()));
         }
+    }
+
+    private void executeRadarDebug(ICommandSender sender, String[] args) {
+        if (args.length >= 2 && args[1].equalsIgnoreCase("verbose")) {
+            if (args.length == 2 || (args.length >= 3 && args[2].equalsIgnoreCase("toggle"))) {
+                MCH_RadarDebug.setVerbose(!MCH_RadarDebug.isVerbose());
+            } else if (args.length >= 3 && args[2].equalsIgnoreCase("status")) {
+                sender.addChatMessage(new ChatComponentText("Radar debug verbose: " + (MCH_RadarDebug.isVerbose() ? "ON" : "OFF")));
+                return;
+            } else if (args.length == 3 && (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))) {
+                MCH_RadarDebug.setVerbose(parseBoolean(sender, args[2]));
+            } else {
+                throw new WrongUsageException("/mcheli radardebug verbose [true|false|toggle|status]", new Object[0]);
+            }
+            sender.addChatMessage(new ChatComponentText("Radar debug verbose: " + (MCH_RadarDebug.isVerbose() ? "ON" : "OFF")));
+            return;
+        }
+        if (args.length == 1 || (args.length >= 2 && args[1].equalsIgnoreCase("toggle"))) {
+            MCH_RadarDebug.setEnabled(!MCH_RadarDebug.isEnabled());
+        } else if (args.length >= 2 && args[1].equalsIgnoreCase("status")) {
+            sender.addChatMessage(new ChatComponentText("Radar debug monitor: " + (MCH_RadarDebug.isEnabled() ? "ON" : "OFF")));
+            sender.addChatMessage(new ChatComponentText("Radar debug verbose: " + (MCH_RadarDebug.isVerbose() ? "ON" : "OFF")));
+            sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+            return;
+        } else if (args.length == 2 && (args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("false"))) {
+            MCH_RadarDebug.setEnabled(parseBoolean(sender, args[1]));
+        } else {
+            throw new WrongUsageException("/mcheli radardebug [true|false|toggle|status|verbose ...]", new Object[0]);
+        }
+        sender.addChatMessage(new ChatComponentText("Radar debug monitor: " + (MCH_RadarDebug.isEnabled() ? "ON" : "OFF")));
+        sender.addChatMessage(new ChatComponentText("Radar debug verbose: " + (MCH_RadarDebug.isVerbose() ? "ON" : "OFF")));
+        sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
     }
 
     private void executeStructureCommand(ICommandSender sender, String[] args) {

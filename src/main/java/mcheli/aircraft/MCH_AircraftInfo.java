@@ -150,6 +150,78 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public EnumRWRType rwrType = EnumRWRType.DIGITAL;
     /**
+     * 是否启用新雷达扫描动画面板
+     */
+    public boolean enableRadar = false;
+    /**
+     * 水平扫描扇区总角度
+     */
+    public float radarScanAzimuthDeg = 120.0F;
+    /**
+     * 雷达面板填充透明度(0~1)
+     */
+    public float radarPanelFillAlpha = 0.30F;
+    /**
+     * 是否让雷达水平主方向跟随坦克炮塔偏航（仅坦克生效）
+     */
+    public boolean radarFollowTurretYaw = false;
+    /**
+     * 俯仰扫描扇区总角度(0~180)
+     */
+    public float radarScanElevationDeg = 40.0F;
+    /**
+     * 雷达扫描周期(tick)
+     */
+    public int radarScanTick = 12;
+    /**
+     * 扫描命中基础概率(0~1)
+     */
+    public float radarDetectChanceBase = 0.75F;
+    /**
+     * 目标接触显示保持时长(tick)
+     */
+    public int radarContactHoldTick = 40;
+    /**
+     * 俯仰扫描参考系：HORIZON | AIRCRAFT
+     */
+    public String radarElevationReference = "HORIZON";
+    /**
+     * 俯仰扫描覆盖模式：UP_ONLY | FULL
+     */
+    public String radarElevationCoverage = "UP_ONLY";
+    /**
+     * 是否允许该载机启用BVR索敌/火控显示
+     */
+    public boolean enableBVR = false;
+    /**
+     * 该载机雷达最大索敌显示距离(米)，超过该距离不显示目标
+     */
+    public float radarMaxTargetRange = 3000.0F;
+    /**
+     * 雷达最小扫描高度(AGL)，低于该高度不参与扫描（SRC/TWS）
+     */
+    public float radarMinScanAltitude = 10.0F;
+    /**
+     * 雷达最大扫描高度(AGL)，高于该高度不参与扫描（GMTI模式）
+     */
+    public float radarMaxScanAltitude = 25.0F;
+    /**
+     * 雷达搜索模式：SRC | TWS | GMTI_SRC | GMTI_TWS
+     */
+    public String radarSearchType = "SRC";
+    /**
+     * 雷达跟踪最大水平角度
+     */
+    public float radarTrackAzimuthDeg = 90.0F;
+    /**
+     * 雷达跟踪最大俯仰角度
+     */
+    public float radarTrackElevationDeg = 45.0F;
+    /**
+     * 手动切换放弃目标后，禁止重选冷却tick
+     */
+    public int radarRetargetCooldownTick = 40;
+    /**
      * 当前载具在现代对空雷达中显示的名字
      */
     public String nameOnModernAARadar = "";
@@ -266,6 +338,24 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.isEnableConcurrentGunnerMode = false;
         this.isEnableNightVision = false;
         this.isEnableEntityRadar = false;
+        this.enableRadar = false;
+        this.radarScanAzimuthDeg = 120.0F;
+        this.radarPanelFillAlpha = 0.30F;
+        this.radarFollowTurretYaw = false;
+        this.radarScanElevationDeg = 40.0F;
+        this.radarScanTick = 12;
+        this.radarDetectChanceBase = 0.75F;
+        this.radarContactHoldTick = 40;
+        this.radarElevationReference = "HORIZON";
+        this.radarElevationCoverage = "UP_ONLY";
+        this.enableBVR = false;
+        this.radarMaxTargetRange = 3000.0F;
+        this.radarMinScanAltitude = 10.0F;
+        this.radarMaxScanAltitude = 25.0F;
+        this.radarSearchType = "SRC";
+        this.radarTrackAzimuthDeg = 90.0F;
+        this.radarTrackElevationDeg = 45.0F;
+        this.radarRetargetCooldownTick = 40;
         this.isEnableEjectionSeat = false;
         this.isEnableParachuting = false;
         this.flare = new MCH_AircraftInfo.Flare();
@@ -702,6 +792,53 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 }
             } else if (item.equalsIgnoreCase("EnableRWR")) {
                 hasRWR = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableRadar")) {
+                this.enableRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableBVR")) {
+                this.enableBVR = this.toBool(data);
+            } else if (item.equalsIgnoreCase("RadarMaxTargetRange")) {
+                this.radarMaxTargetRange = this.toFloat(data, 50.0F, 20000.0F);
+            } else if (item.equalsIgnoreCase("RadarMinScanAltitude")) {
+                this.radarMinScanAltitude = this.toFloat(data, -256.0F, 4096.0F);
+            } else if (item.equalsIgnoreCase("RadarMaxScanAltitude")) {
+                this.radarMaxScanAltitude = this.toFloat(data, -256.0F, 4096.0F);
+            } else if (item.equalsIgnoreCase("RadarSearchType")) {
+                String mode = data.trim().toUpperCase(Locale.ROOT);
+                if (mode.equals("TWS") || mode.equals("GMTI_SRC") || mode.equals("GMTI_TWS")) {
+                    this.radarSearchType = mode;
+                } else {
+                    this.radarSearchType = "SRC";
+                }
+            } else if (item.equalsIgnoreCase("RadarTrackAzimuthDeg")) {
+                this.radarTrackAzimuthDeg = this.toFloat(data, 0.0F, 360.0F);
+            } else if (item.equalsIgnoreCase("RadarTrackElevationDeg")) {
+                this.radarTrackElevationDeg = this.toFloat(data, 0.0F, 180.0F);
+            } else if (item.equalsIgnoreCase("RadarRetargetCooldownTick")) {
+                this.radarRetargetCooldownTick = this.toInt(data, 0, 12000);
+            } else if (item.equalsIgnoreCase("RadarScanAzimuthDeg")) {
+                this.radarScanAzimuthDeg = this.toFloat(data, 0.0F, 360.0F);
+            } else if (item.equalsIgnoreCase("RadarPanelFillAlpha")) {
+                this.radarPanelFillAlpha = this.toFloat(data, 0.0F, 1.0F);
+            } else if (item.equalsIgnoreCase("RadarFollowTurretYaw")) {
+                this.radarFollowTurretYaw = this.toBool(data);
+            } else if (item.equalsIgnoreCase("RadarScanElevationDeg")) {
+                this.radarScanElevationDeg = this.toFloat(data, 0.0F, 180.0F);
+            } else if (item.equalsIgnoreCase("RadarScanTick")) {
+                this.radarScanTick = this.toInt(data, 1, 1200);
+            } else if (item.equalsIgnoreCase("RadarDetectChanceBase")) {
+                this.radarDetectChanceBase = this.toFloat(data, 0.0F, 1.0F);
+            } else if (item.equalsIgnoreCase("RadarContactHoldTick")) {
+                this.radarContactHoldTick = this.toInt(data, 1, 1200);
+            } else if (item.equalsIgnoreCase("RadarElevationReference")) {
+                String mode = data.trim().toUpperCase(Locale.ROOT);
+                this.radarElevationReference = mode.equals("AIRCRAFT") ? "AIRCRAFT" : "HORIZON";
+            } else if (item.equalsIgnoreCase("RadarElevationCoverage")) {
+                String mode = data.trim().toUpperCase(Locale.ROOT);
+                if (mode.equals("FULL") || mode.equals("DOWN_ONLY")) {
+                    this.radarElevationCoverage = mode;
+                } else {
+                    this.radarElevationCoverage = "UP_ONLY";
+                }
             } else if (item.equalsIgnoreCase("HUDType")) {
                 hudType = this.toInt(data);
             } else if (item.equalsIgnoreCase("WeaponGroupType")) {

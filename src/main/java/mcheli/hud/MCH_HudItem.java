@@ -191,12 +191,13 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("hud_type", ac.getAcInfo().hudType);
         updateVarMapItem("weapon_group_type", ac.getAcInfo().weaponGroupType);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
-        updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
+        boolean haveRwrLikeCapability = ac.getAcInfo().hasRWR || ac.getAcInfo().enableRadar || ac.getAcInfo().enableBVR;
+        updateVarMapItem("have_rwr", haveRwrLikeCapability ? 1.0D : 0.0D);
         updateVarMapItem("missile_lock_type", ac.missileDetector != null ? ac.missileDetector.missileLockType : 0.0D);
         updateVarMapItem("vehicle_lock_type", ac.missileDetector != null ? ac.missileDetector.vehicleLockType : 0.0D);
         updateVarMapItem("missile_lock_dist", ac.missileDetector != null ? ac.missileDetector.missileLockDist : 0.0D);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
-        updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
+        updateVarMapItem("have_rwr", haveRwrLikeCapability ? 1.0D : 0.0D);
         updateVarMapItem("have_dircm", ac.getAcInfo().hasDIRCM ? 1.0D : 0.0D);
         updateVarMapItem("is_jammed", ac.jammingTick > 0 ? 1.0D : 0.0D);
         if (ac instanceof MCP_EntityPlane) {

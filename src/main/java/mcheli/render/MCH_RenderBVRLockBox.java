@@ -3,8 +3,11 @@ package mcheli.render;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
+import mcheli.MCH_RadarDebug;
+import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_WeaponInfo;
@@ -122,7 +125,8 @@ public class MCH_RenderBVRLockBox {
         if (ac == null || ac.getCurrentWeapon(player) == null || ac.getCurrentWeapon(player).getCurrentWeapon() == null)
             return;
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
-        if (wi == null || !wi.enableBVR) return;
+        MCH_AircraftInfo acInfo = ac.getAcInfo();
+        if (wi == null || acInfo == null || !acInfo.enableBVR) return;
         RenderManager rm = RenderManager.instance;
         final double camX = rm.viewerPosX;
         final double camY = rm.viewerPosY;
@@ -134,10 +138,22 @@ public class MCH_RenderBVRLockBox {
         float rollDeg = getViewRollDeg(mc, ac, partialTicks);
         List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
         currentLockedEntities.clear();
-        int fireControlLockedId = MCH_RenderLeadCircle.getFireControlLockedTargetId();
+        int fireControlLockedId = MCH_RenderLeadCircle.getLeadLockedTargetId(ac);
+        int radarTrackingId = MCH_RenderRWR.getRadarTrackingTargetId(ac);
+        int radarSelectedId = MCH_RenderRWR.getRadarSelectedTargetId(ac);
+        int renderedTargetCount = 0;
+        int highlightedTargetCount = 0;
+        int selectedHitCount = 0;
+        int trackingHitCount = 0;
         for (MCH_EntityInfo entity : entities) {
-            if (!canRenderEntity(entity, player, wi)) continue;
+            boolean isRadarTracking = entity.entityId == radarTrackingId;
+            boolean isRadarSelected = entity.entityId == radarSelectedId;
+            boolean isRadarSelectedOrTracking = isRadarTracking || isRadarSelected;
+            if (!isRadarSelectedOrTracking && !canRenderEntity(entity, player, wi, acInfo)) continue;
             if(ac.jammingTick > 0) {
+                continue;
+            }
+            if (ac instanceof MCH_EntityTank && !MCH_RenderRWR.isTankRadarContactVisible(ac, player, entity, partialTicks)) {
                 continue;
             }
             double gx = interpolate(entity.posX, entity.lastTickPosX, partialTicks);
@@ -168,16 +184,24 @@ public class MCH_RenderBVRLockBox {
             float sPerPixel = (float) ((2.0 * vdist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
             String text;
             int color;
-            if("".equals(rwrResult.name)) continue;
             boolean isFireControlLocked = entity.entityId == fireControlLockedId;
+            String targetName = rwrResult.name == null ? "" : rwrResult.name;
+            renderedTargetCount++;
+            if (isRadarSelected) selectedHitCount++;
+            if (isRadarTracking) trackingHitCount++;
+            if (isRadarSelectedOrTracking || isFireControlLocked) highlightedTargetCount++;
+            if (targetName.isEmpty() && !(isRadarSelectedOrTracking || isFireControlLocked)) continue;
+            if (targetName.isEmpty()) {
+                targetName = "UNKNOWN";
+            }
             if (isMSL) {
-                text = String.format("[%s %.1fm]", rwrResult.name, dist);
+                text = String.format("[%s %.1fm]", targetName, dist);
                 color = 0xFF0000;
             } else {
-                text = String.format("[%s %.1fm]", rwrResult.name, dist);
-                color = (lock || isFireControlLocked) ? 0xFF0000 : 0x00FF00;
+                text = String.format("[%s %.1fm]", targetName, dist);
+                color = (isRadarSelectedOrTracking || isFireControlLocked) ? 0xFF0000 : 0x00FF00;
             }
-            boolean drawText = isMSL || (alpha >= 0.6f);
+            boolean drawText = isMSL || isRadarSelectedOrTracking || (alpha >= 0.6f);
             GL11.glPushMatrix();
             {
                 GL11.glTranslated(x, y + 0.2, z);
@@ -190,7 +214,7 @@ public class MCH_RenderBVRLockBox {
                 GL11.glEnable(GL11.GL_BLEND);
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                 GL11.glDisable(GL11.GL_LIGHTING);
-                if (isMSL || lock || isFireControlLocked) GL11.glColor4f(1.0F, 0F, 0F, alpha);
+                if (isMSL || isRadarSelectedOrTracking || isFireControlLocked) GL11.glColor4f(1.0F, 0F, 0F, alpha);
                 else GL11.glColor4f(0F, 1.0F, 0F, alpha);
                 Minecraft.getMinecraft().getTextureManager().bindTexture(isMSL ? MSL : FRAME);
                 Tessellator tess = Tessellator.instance;
@@ -201,6 +225,20 @@ public class MCH_RenderBVRLockBox {
                 tess.addVertexWithUV(half, -half, 0, 1, 0);
                 tess.addVertexWithUV(-half, -half, 0, 0, 0);
                 tess.draw();
+                if (!isMSL) {
+                    String stateText = null;
+                    if (isRadarTracking) {
+                        stateText = "LOCK";
+                    } else if (isRadarSelected) {
+                        stateText = "SELECT";
+                    } else if (isFireControlLocked) {
+                        stateText = "LOCK";
+                    }
+                    if (stateText != null) {
+                        int lw = mc.fontRenderer.getStringWidth(stateText);
+                        mc.fontRenderer.drawString(stateText, -lw / 2, (int)(-half - 9.0F), 0xFF4040, false);
+                    }
+                }
                 if (drawText) {
                     GL11.glTranslatef(0.0F, BOX_SIZE * 0.5f + 8.0f, 0.0F);
                     int fw = mc.fontRenderer.getStringWidth(text);
@@ -214,15 +252,37 @@ public class MCH_RenderBVRLockBox {
             }
             GL11.glPopMatrix();
         }
+        if (MCH_RadarDebug.isEnabled() && MCH_RadarDebug.isVerbose() && ac.worldObj != null && ac.worldObj.getTotalWorldTime() % 10L == 0L) {
+            MCH_RadarDebug.traceVerbose(ac.worldObj, ac,
+                "bvr acId=%d radarOn=%s selectedId=%d trackingId=%d fireLockId=%d rendered=%d hl=%d selHit=%d trkHit=%d",
+                ac.getEntityId(), String.valueOf(acInfo.enableRadar), radarSelectedId, radarTrackingId, fireControlLockedId,
+                renderedTargetCount, highlightedTargetCount, selectedHitCount, trackingHitCount);
+        }
     }
 
     public List<MCH_EntityInfo> getServerLoadedEntity() {
         return new ArrayList<>(MCH_EntityInfoClientTracker.getAllTrackedEntities());
     }
 
-    private boolean canRenderEntity(MCH_EntityInfo entity, EntityPlayer player, MCH_WeaponInfo wi) {
+    private boolean canRenderEntity(MCH_EntityInfo entity, EntityPlayer player, MCH_WeaponInfo wi, MCH_AircraftInfo acInfo) {
         boolean result = false;
+        String searchType = acInfo != null ? acInfo.radarSearchType : "SRC";
+        boolean gmtiMode = "GMTI_SRC".equalsIgnoreCase(searchType) || "GMTI_TWS".equalsIgnoreCase(searchType);
         double distSq = entity.getDistanceSqToEntity(player);
+        if (acInfo != null && acInfo.radarMaxTargetRange > 0.0F) {
+            double maxRangeSq = acInfo.radarMaxTargetRange * acInfo.radarMaxTargetRange;
+            if (distSq > maxRangeSq) {
+                return false;
+            }
+        }
+        if (gmtiMode) {
+            if (!isVehicle(entity.entityClassName)) {
+                return false;
+            }
+            float maxAgl = acInfo != null ? acInfo.radarMaxScanAltitude : 25.0F;
+            double agl = computeAgl(player.worldObj, entity.posX, entity.posY, entity.posZ);
+            return agl <= maxAgl;
+        }
         if (entity.entityClassName.contains("MCP_EntityPlane")) {
             if (entity.getDistanceSqToEntity(player) > wi.minRangeBVR * wi.minRangeBVR) {
                 return true;
@@ -239,6 +299,16 @@ public class MCH_RenderBVRLockBox {
             return true;
         }
         return result;
+    }
+
+    private double computeAgl(net.minecraft.world.World world, double x, double y, double z) {
+        if (world == null) {
+            return y;
+        }
+        int bx = net.minecraft.util.MathHelper.floor_double(x);
+        int bz = net.minecraft.util.MathHelper.floor_double(z);
+        int groundY = world.getHeightValue(bx, bz);
+        return y - (double)groundY;
     }
 
     private double interpolate(double now, double old, float partialTicks) {
