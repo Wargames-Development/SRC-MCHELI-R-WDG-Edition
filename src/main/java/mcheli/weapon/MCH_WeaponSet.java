@@ -40,11 +40,13 @@ public class MCH_WeaponSet {
     private int currentWeaponIndex;
     private int lastUsedOptionParameter1;
     private int lastUsedOptionParameter2;
+    private boolean dataLinkMode;
 
 
     public MCH_WeaponSet(MCH_WeaponBase[] weapon) {
         this.lastUsedOptionParameter1 = 0;
         this.lastUsedOptionParameter2 = 0;
+        this.dataLinkMode = false;
         this.name = weapon[0].name;
         this.weapons = weapon;
         this.currentWeaponIndex = 0;
@@ -465,6 +467,18 @@ public class MCH_WeaponSet {
 
     public int getLastUsedOptionParameter2() {
         return this.lastUsedOptionParameter2;
+    }
+
+    public boolean isDataLinkMode() {
+        return this.dataLinkMode;
+    }
+
+    public void setDataLinkMode(boolean value) {
+        this.dataLinkMode = value;
+    }
+
+    public void toggleDataLinkMode() {
+        this.dataLinkMode = !this.dataLinkMode;
     }
 
     public MCH_WeaponBase getFirstWeapon() {

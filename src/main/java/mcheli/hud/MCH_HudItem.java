@@ -451,6 +451,11 @@ public abstract class MCH_HudItem extends Gui {
             if (ws != null) {
                 CurrentWeapon = ws;
                 WeaponName = ac.isPilotReloading() ? "-- Reloading --" : ws.getName();
+                if (!ac.isPilotReloading() && ws.getInfo() != null && ws.getInfo().enableDataLink && (ws.getInfo().onlyDataLink || ws.isDataLinkMode())) {
+                    String lang = (mc != null && mc.gameSettings != null && mc.gameSettings.language != null)
+                        ? mc.gameSettings.language.toLowerCase(Locale.ROOT) : "en_us";
+                    WeaponName += lang.startsWith("zh") ? " [数据链]" : " [DL]";
+                }
                 if (ws.getAmmoNumMax() > 0) {
                     WeaponAmmo = ac.isPilotReloading() ? "----" : String.format("%4d", ws.getAmmoNum());
                     WeaponAllAmmo = ac.isPilotReloading() ? "----" : String.format("%4d", ws.getRestAllAmmoNum());

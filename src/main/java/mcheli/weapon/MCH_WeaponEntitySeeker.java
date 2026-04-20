@@ -41,7 +41,8 @@ public abstract class MCH_WeaponEntitySeeker extends MCH_WeaponBase {
             for (Object o : list) {
                 if (o != null) {
                     MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
-                    if (!msl.isDead && msl.getInfo() != null && msl.getInfo().passiveRadar) {
+                    if (!msl.isDead && msl.getInfo() != null
+                        && (msl.getInfo().passiveRadar || msl.getInfo().semiActiveRadar || msl.getInfo().activeRadar)) {
                         result.add(msl);
                     }
                 }

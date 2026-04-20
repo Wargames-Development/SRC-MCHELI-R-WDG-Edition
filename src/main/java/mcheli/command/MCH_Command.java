@@ -9,9 +9,11 @@ import mcheli.MCH_MOD;
 import mcheli.MCH_PacketNotifyServerSettings;
 import mcheli.MCH_RadarDebug;
 import mcheli.MCH_ServerSettings;
+import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.block.MCH_BlockInfoManager;
 import mcheli.block.MCH_ConfigSpawnerBlock;
 import mcheli.block.MCH_ConfigSpawnerTileEntity;
+import mcheli.render.MCH_RenderRWR;
 import mcheli.structure.MCH_StructureBlob;
 import mcheli.structure.MCH_StructureDebugLogger;
 import mcheli.structure.MCH_StructureRule;
@@ -21,6 +23,9 @@ import mcheli.structure.MCH_StructureMeta;
 import mcheli.structure.MCH_SchemImporter;
 import mcheli.multiplay.MCH_MultiplayPacketHandler;
 import mcheli.multiplay.MCH_PacketIndClient;
+import mcheli.weapon.MCH_EntityBaseBullet;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponSet;
 import net.minecraft.block.Block;
 import net.minecraft.command.*;
 import net.minecraft.entity.Entity;
@@ -659,9 +664,12 @@ public class MCH_Command extends CommandBase {
                     }
                 } else if (prm[0].equalsIgnoreCase("radardebug")) {
                     if (prm.length == 2) {
-                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status", "verbose"});
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status", "verbose", "dl", "dlwatch"});
                     }
                     if (prm.length == 3 && prm[1].equalsIgnoreCase("verbose")) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
+                    }
+                    if (prm.length == 3 && prm[1].equalsIgnoreCase("dlwatch")) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
                     }
                 } else if (prm[0].equalsIgnoreCase("struct")) {
@@ -832,6 +840,84 @@ public class MCH_Command extends CommandBase {
     }
 
     private void executeRadarDebug(ICommandSender sender, String[] args) {
+        if (args.length >= 2 && args[1].equalsIgnoreCase("dlwatch")) {
+            if (args.length == 2 || (args.length >= 3 && args[2].equalsIgnoreCase("toggle"))) {
+                MCH_RadarDebug.setDataLinkWatchEnabled(!MCH_RadarDebug.isDataLinkWatchEnabled());
+            } else if (args.length >= 3 && args[2].equalsIgnoreCase("status")) {
+                sender.addChatMessage(new ChatComponentText("DL watch: " + (MCH_RadarDebug.isDataLinkWatchEnabled() ? "ON" : "OFF")
+                    + ", intervalTick=" + MCH_RadarDebug.getDataLinkWatchIntervalTick()));
+                sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+                return;
+            } else if (args.length >= 3 && (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))) {
+                MCH_RadarDebug.setDataLinkWatchEnabled(parseBoolean(sender, args[2]));
+            } else {
+                throw new WrongUsageException("/mcheli radardebug dlwatch [true|false|toggle|status] [intervalTick]", new Object[0]);
+            }
+            if (args.length >= 4) {
+                try {
+                    MCH_RadarDebug.setDataLinkWatchIntervalTick(Integer.parseInt(args[3]));
+                } catch (Exception ex) {
+                    sender.addChatMessage(new ChatComponentText("Invalid intervalTick: " + args[3]));
+                }
+            }
+            sender.addChatMessage(new ChatComponentText("DL watch: " + (MCH_RadarDebug.isDataLinkWatchEnabled() ? "ON" : "OFF")
+                + ", intervalTick=" + MCH_RadarDebug.getDataLinkWatchIntervalTick()));
+            sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+            return;
+        }
+        if (args.length >= 2 && args[1].equalsIgnoreCase("dl")) {
+            if (!(sender instanceof EntityPlayer)) {
+                sender.addChatMessage(new ChatComponentText("DataLink debug: player only."));
+                return;
+            }
+            EntityPlayer player = (EntityPlayer)sender;
+            MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+            if (ac == null) {
+                sender.addChatMessage(new ChatComponentText("DataLink debug: not in aircraft."));
+                return;
+            }
+            MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+            MCH_WeaponInfo wi = ws != null ? ws.getInfo() : null;
+            String weaponName = ws != null ? ws.getName() : "(none)";
+            boolean dlEnabled = wi != null && wi.enableDataLink;
+            boolean dlOnly = wi != null && wi.onlyDataLink;
+            boolean dlMode = ws != null && (dlOnly || ws.isDataLinkMode());
+            boolean radarClass = wi != null && (wi.activeRadar || wi.passiveRadar || wi.semiActiveRadar) && !wi.antiRadiationMissile;
+            int selected = MCH_RenderRWR.getRadarSelectedTargetId(ac);
+            int tracking = MCH_RenderRWR.getRadarTrackingTargetId(ac);
+            String search = MCH_RenderRWR.getRadarSearchType(ac);
+            String line1 = String.format(Locale.ROOT,
+                "[DL] weapon=%s radarClass=%s dlEnabled=%s dlOnly=%s dlMode=%s search=%s sel=%d trk=%d",
+                weaponName, radarClass, dlEnabled, dlOnly, dlMode, search, selected, tracking);
+            sender.addChatMessage(new ChatComponentText(line1));
+            int missileCount = 0;
+            int relayCount = 0;
+            int capturedCount = 0;
+            if (ac.worldObj != null) {
+                for (Object o : ac.worldObj.loadedEntityList) {
+                    if (!(o instanceof MCH_EntityBaseBullet)) {
+                        continue;
+                    }
+                    MCH_EntityBaseBullet m = (MCH_EntityBaseBullet)o;
+                    if (m.shootingAircraft == ac || m.shootingEntity == ac || m.shootingEntity == player) {
+                        missileCount++;
+                        if (m.isDataLinkRelayMode()) {
+                            relayCount++;
+                        }
+                        if (m.isActiveRadarCaptured()) {
+                            capturedCount++;
+                        }
+                    }
+                }
+            }
+            String line2 = String.format(Locale.ROOT,
+                "[DL] missiles self=%d relay=%d captured=%d", missileCount, relayCount, capturedCount);
+            sender.addChatMessage(new ChatComponentText(line2));
+            MCH_RadarDebug.appendManual("DLDBG player=%s acId=%d %s", player.getCommandSenderName(), ac.getEntityId(), line1);
+            MCH_RadarDebug.appendManual("DLDBG player=%s acId=%d %s", player.getCommandSenderName(), ac.getEntityId(), line2);
+            sender.addChatMessage(new ChatComponentText("DL debug written: " + MCH_RadarDebug.getLogPath()));
+            return;
+        }
         if (args.length >= 2 && args[1].equalsIgnoreCase("verbose")) {
             if (args.length == 2 || (args.length >= 3 && args[2].equalsIgnoreCase("toggle"))) {
                 MCH_RadarDebug.setVerbose(!MCH_RadarDebug.isVerbose());
@@ -856,7 +942,7 @@ public class MCH_Command extends CommandBase {
         } else if (args.length == 2 && (args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("false"))) {
             MCH_RadarDebug.setEnabled(parseBoolean(sender, args[1]));
         } else {
-            throw new WrongUsageException("/mcheli radardebug [true|false|toggle|status|verbose ...]", new Object[0]);
+            throw new WrongUsageException("/mcheli radardebug [true|false|toggle|status|verbose ...|dl|dlwatch ...]", new Object[0]);
         }
         sender.addChatMessage(new ChatComponentText("Radar debug monitor: " + (MCH_RadarDebug.isEnabled() ? "ON" : "OFF")));
         sender.addChatMessage(new ChatComponentText("Radar debug verbose: " + (MCH_RadarDebug.isVerbose() ? "ON" : "OFF")));

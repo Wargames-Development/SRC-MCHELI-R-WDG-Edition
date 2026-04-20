@@ -156,7 +156,13 @@ public class MCH_AircraftGui extends W_GuiContainer {
         if (this.aircraft.getWeaponNum() > 0) {
             MCH_WeaponSet ws = this.aircraft.getWeapon(this.currentWeaponId);
             if (ws != null && !(ws.getFirstWeapon() instanceof MCH_WeaponDummy)) {
-                this.drawString(ws.getName(), 79, 30, 16777215);
+                String weaponName = ws.getName();
+                if (ws.getInfo() != null && ws.getInfo().enableDataLink && (ws.getInfo().onlyDataLink || ws.isDataLinkMode())) {
+                    String lang = this.mc != null && this.mc.gameSettings != null && this.mc.gameSettings.language != null
+                        ? this.mc.gameSettings.language.toLowerCase(java.util.Locale.ROOT) : "en_us";
+                    weaponName += lang.startsWith("zh") ? " [数据链]" : " [DL]";
+                }
+                this.drawString(weaponName, 79, 30, 16777215);
                 int rest = ws.getRestAllAmmoNum() + ws.getAmmoNum();
                 int color = rest == 0 ? 16711680 : (rest == ws.getAllAmmoNum() ? 2675784 : 16777215);
                 String s = String.format("%4d/%4d", Integer.valueOf(rest), Integer.valueOf(ws.getAllAmmoNum()));

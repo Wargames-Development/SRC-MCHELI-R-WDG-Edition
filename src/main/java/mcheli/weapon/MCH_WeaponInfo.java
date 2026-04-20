@@ -192,6 +192,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 主动雷达弹 BVR 发射后自动追踪目标
      */
     public boolean activeRadar = false;
+    /**
+     * 半主动雷达弹（在数据链模式下可关闭其自身搜跟，仅保留运动学）
+     */
+    public boolean semiActiveRadar = false;
 
     /**
      * 主动雷达弹 扫描间隔
@@ -392,7 +396,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     /**
      * 半主动弹，需要载机引导才能命中
      */
-    public boolean semiActiveRadar = false;
+    /**
+     * 启用数据链模式（雷达导弹默认开启）
+     */
+    public boolean enableDataLink = false;
+    /**
+     * 仅数据链模式
+     */
+    public boolean onlyDataLink = false;
     /**
      * 是否允许头瞄
      */
@@ -428,6 +439,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     private boolean hasDestructAfterSpawnBulletSet = false;
     private boolean hasAheadSolveIntervalTickSet = false;
     private boolean hasExplosionThroughWallFactorSet = false;
+    private boolean hasEnableDataLinkSet = false;
 
     public MCH_WeaponInfo(String name) {
         this.name = name;
@@ -512,6 +524,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public void checkData() {
         if (this.explosionBlock < 0) {
             this.explosionBlock = this.explosion;
+        }
+        if (!this.hasEnableDataLinkSet && (this.activeRadar || this.passiveRadar || this.semiActiveRadar) && !this.antiRadiationMissile) {
+            this.enableDataLink = true;
+        }
+        if (!this.enableDataLink) {
+            this.onlyDataLink = false;
         }
 
         // Only validate against modeNum when modeNum is explicitly configured (>0).
@@ -880,6 +898,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.antiRadiationMissile = this.toBool(data);
             } else if (item.equalsIgnoreCase("SemiActiveRadar")) {
                 this.semiActiveRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableDataLink")) {
+                this.enableDataLink = this.toBool(data);
+                this.hasEnableDataLinkSet = true;
+            } else if (item.equalsIgnoreCase("OnlyDataLink")) {
+                this.onlyDataLink = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableHMS")) {
                 this.enableHMS = this.toBool(data);
             } else if (item.equalsIgnoreCase("NameOnRWR")) {

@@ -321,7 +321,15 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 ac.switchWeapon((Entity) player, pc.switchWeapon);
                 send = true;
             } else if (this.KeySwWeaponMode.isKeyDown()) {
-                ac.switchCurrentWeaponMode(player);
+                MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+                MCH_WeaponInfo info = ws != null ? ws.getInfo() : null;
+                boolean canDataLinkToggle = info != null && info.enableDataLink && !info.onlyDataLink && (info.activeRadar || info.passiveRadar || info.semiActiveRadar) && !info.antiRadiationMissile;
+                if (canDataLinkToggle) {
+                    ws.toggleDataLinkMode();
+                    playSoundOK();
+                } else {
+                    ac.switchCurrentWeaponMode(player);
+                }
             } else if (this.KeyUseWeapon.isKeyPress()) {
                 if (ac.useCurrentWeapon(player)) {
                     MCH_MOD.getPacketHandler().sendToServer(new PacketUseWeapon(
@@ -348,6 +356,9 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         }
         MCH_WeaponInfo info = ws.getCurrentWeapon().getInfo();
         String type = info.type != null ? info.type.toLowerCase() : "";
+        if (info.enableDataLink && info.onlyDataLink) {
+            ws.setDataLinkMode(true);
+        }
         // These weapon modes rely on right-click guidance/lock and should keep their original behavior.
         return info.passiveRadar || info.isGPSMissile || info.laserGuidance || "tvmissile".equals(type);
     }

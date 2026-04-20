@@ -53,6 +53,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public static final int DATAWT_NAME = 29;
     public static final int DATAWT_BULLET_MODEL = 30;
     public static final int DATAWT_BOMBLET_FLAG = 31;
+    public static final int DATAWT_DATALINK_FLAGS = DATAWT_MARKER_STAT;
     public Entity shootingEntity;
     public Entity shootingAircraft;
     public int explosionPower;
@@ -93,6 +94,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private double delayFuseMarkerY = 0.0D;
     private double delayFuseMarkerZ = 0.0D;
     private boolean armorRicochetActive = false;
+    private boolean dataLinkRelayMode = false;
+    private boolean activeRadarCaptured = false;
 
     public MCH_EntityBaseBullet(World par1World) {
         super(par1World);
@@ -224,6 +227,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.getDataWatcher().addObject(29, "");
         this.getDataWatcher().addObject(30, "");
         this.getDataWatcher().addObject(31, (byte) 0);
+        this.getDataWatcher().addObject(DATAWT_DATALINK_FLAGS, (byte) 0);
     }
 
     public void setAirburstDist(int airburstDist) {
@@ -303,6 +307,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public void setTargetEntity(Entity entity) {
         this.targetEntity = entity;
+        if (entity == null) {
+            this.setActiveRadarCaptured(false);
+        }
         if (!super.worldObj.isRemote) {
             if (entity != null) {
                 this.getDataWatcher().updateObject(27, W_Entity.getEntityId(entity));
@@ -327,6 +334,46 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public int getTargetEntityID() {
         return this.targetEntity != null ? W_Entity.getEntityId(this.targetEntity) : this.getDataWatcher().getWatchableObjectInt(27);
+    }
+
+    private void syncDataLinkFlags() {
+        if (!super.worldObj.isRemote) {
+            byte flags = 0;
+            if (this.dataLinkRelayMode) {
+                flags |= 1;
+            }
+            if (this.activeRadarCaptured) {
+                flags |= 2;
+            }
+            this.getDataWatcher().updateObject(DATAWT_DATALINK_FLAGS, flags);
+        }
+    }
+
+    public void setDataLinkRelayMode(boolean v) {
+        this.dataLinkRelayMode = v;
+        if (v) {
+            this.activeRadarCaptured = false;
+        }
+        syncDataLinkFlags();
+    }
+
+    public boolean isDataLinkRelayMode() {
+        if (super.worldObj.isRemote) {
+            return (this.getDataWatcher().getWatchableObjectByte(DATAWT_DATALINK_FLAGS) & 1) != 0;
+        }
+        return this.dataLinkRelayMode;
+    }
+
+    public void setActiveRadarCaptured(boolean v) {
+        this.activeRadarCaptured = v;
+        syncDataLinkFlags();
+    }
+
+    public boolean isActiveRadarCaptured() {
+        if (super.worldObj.isRemote) {
+            return (this.getDataWatcher().getWatchableObjectByte(DATAWT_DATALINK_FLAGS) & 2) != 0;
+        }
+        return this.activeRadarCaptured;
     }
 
     public MCH_BulletModel getBulletModel() {
@@ -1827,8 +1874,14 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             if (nearestChaff != null) {
                 targetEntity = nearestChaff;
                 numLockedChaff++;
+                if (getInfo().activeRadar) {
+                    setActiveRadarCaptured(false);
+                }
             } else if (closestTarget != null) {
                 targetEntity = closestTarget;
+                if (getInfo().activeRadar) {
+                    setActiveRadarCaptured(true);
+                }
             }
         }
     }

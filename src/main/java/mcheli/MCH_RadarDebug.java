@@ -20,6 +20,8 @@ public final class MCH_RadarDebug {
     private static PrintWriter writer = null;
     private static volatile boolean enabled = false;
     private static volatile boolean verbose = false;
+    private static volatile boolean dataLinkWatchEnabled = false;
+    private static volatile int dataLinkWatchIntervalTick = 40;
 
     private MCH_RadarDebug() {
     }
@@ -38,6 +40,22 @@ public final class MCH_RadarDebug {
 
     public static boolean isVerbose() {
         return verbose;
+    }
+
+    public static void setDataLinkWatchEnabled(boolean value) {
+        dataLinkWatchEnabled = value;
+    }
+
+    public static boolean isDataLinkWatchEnabled() {
+        return dataLinkWatchEnabled;
+    }
+
+    public static void setDataLinkWatchIntervalTick(int tick) {
+        dataLinkWatchIntervalTick = Math.max(5, tick);
+    }
+
+    public static int getDataLinkWatchIntervalTick() {
+        return dataLinkWatchIntervalTick;
     }
 
     public static void setVerbose(boolean value) {
@@ -60,6 +78,12 @@ public final class MCH_RadarDebug {
             return;
         }
         trace(world, actor, format, data);
+    }
+
+    public static void appendManual(String format, Object... data) {
+        String msg = String.format(Locale.ROOT, format, data);
+        String line = String.format(Locale.ROOT, "[%s][MANUAL] %s", TS_FORMAT.format(new Date()), msg);
+        appendLine(line);
     }
 
     private static void appendLine(String line) {

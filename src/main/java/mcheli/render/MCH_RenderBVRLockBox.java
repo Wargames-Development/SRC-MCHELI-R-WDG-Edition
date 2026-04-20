@@ -12,6 +12,7 @@ import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponInfoManager;
+import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
@@ -225,6 +226,13 @@ public class MCH_RenderBVRLockBox {
                 tess.addVertexWithUV(half, -half, 0, 1, 0);
                 tess.addVertexWithUV(-half, -half, 0, 0, 0);
                 tess.draw();
+                MCH_WeaponSet currentWs = ac.getCurrentWeapon(player);
+                MCH_WeaponInfo currentWi = currentWs != null ? currentWs.getInfo() : null;
+                boolean dataLinkMode = currentWi != null && currentWi.enableDataLink && (currentWi.onlyDataLink || currentWs.isDataLinkMode()) && !currentWi.antiRadiationMissile;
+                boolean inMissileFov = currentWi != null && angle <= currentWi.maxDegreeOfMissile;
+                if (!isMSL && dataLinkMode && inMissileFov && (isRadarSelectedOrTracking || isFireControlLocked)) {
+                    drawDualRedRings(half * 0.88F, half * 1.03F, alpha);
+                }
                 if (!isMSL) {
                     String stateText = null;
                     if (isRadarTracking) {
@@ -258,6 +266,24 @@ public class MCH_RenderBVRLockBox {
                 ac.getEntityId(), String.valueOf(acInfo.enableRadar), radarSelectedId, radarTrackingId, fireControlLockedId,
                 renderedTargetCount, highlightedTargetCount, selectedHitCount, trackingHitCount);
         }
+    }
+
+    private void drawDualRedRings(float r1, float r2, float alpha) {
+        Tessellator tess = Tessellator.instance;
+        GL11.glLineWidth(1.0F);
+        GL11.glColor4f(1.0F, 0.0F, 0.0F, alpha);
+        drawRingLine(tess, r1);
+        drawRingLine(tess, r2);
+    }
+
+    private void drawRingLine(Tessellator tess, float radius) {
+        int seg = 24;
+        tess.startDrawing(GL11.GL_LINE_LOOP);
+        for (int i = 0; i < seg; i++) {
+            double ang = i * (Math.PI * 2.0D / seg);
+            tess.addVertex(Math.cos(ang) * radius, Math.sin(ang) * radius, 0.0D);
+        }
+        tess.draw();
     }
 
     public List<MCH_EntityInfo> getServerLoadedEntity() {

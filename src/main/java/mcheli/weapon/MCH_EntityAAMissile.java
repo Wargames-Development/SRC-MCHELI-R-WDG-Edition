@@ -29,6 +29,7 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
         }
 
         if (!worldObj.isRemote && this.getInfo() != null) {
+            boolean dlRelay = this.isDataLinkRelayMode();
             if (super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead) {
                 double x = super.posX - super.targetEntity.posX;
                 double y = super.posY - super.targetEntity.posY;
@@ -41,8 +42,18 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
                 }
             } else {
-                // Radar missiles can perform periodic autonomous target search.
-                if ((getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar) && ticksExisted % getInfo().scanInterval == 0) {
+                if (dlRelay) {
+                    // Passive/semi-active datalink missiles lose relay => inertial flight (no autonomous reacquire).
+                    if (getInfo().passiveRadar || getInfo().semiActiveRadar) {
+                        this.setDataLinkRelayMode(false);
+                        this.setActiveRadarCaptured(false);
+                    } else if (getInfo().activeRadar) {
+                        // Active radar missile: autonomous scan starts only after onboard seeker capture phase.
+                        if (this.isActiveRadarCaptured() && ticksExisted % getInfo().scanInterval == 0) {
+                            scanForTargets();
+                        }
+                    }
+                } else if ((getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar) && ticksExisted % getInfo().scanInterval == 0) {
                     scanForTargets();
                 }
             }
