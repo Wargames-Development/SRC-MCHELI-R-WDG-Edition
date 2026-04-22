@@ -154,7 +154,7 @@ public class MCH_RenderBVRLockBox {
             if(ac.jammingTick > 0) {
                 continue;
             }
-            if (ac instanceof MCH_EntityTank && !MCH_RenderRWR.isTankRadarContactVisible(ac, player, entity, partialTicks)) {
+            if (!MCH_RenderRWR.isRadarContactVisible(ac, player, entity, partialTicks)) {
                 continue;
             }
             double gx = interpolate(entity.posX, entity.lastTickPosX, partialTicks);
@@ -226,26 +226,33 @@ public class MCH_RenderBVRLockBox {
                 tess.addVertexWithUV(half, -half, 0, 1, 0);
                 tess.addVertexWithUV(-half, -half, 0, 0, 0);
                 tess.draw();
+                if (isMSL && (isRadarSelectedOrTracking || isFireControlLocked)) {
+                    Minecraft.getMinecraft().getTextureManager().bindTexture(FRAME);
+                    tess.startDrawingQuads();
+                    tess.addVertexWithUV(-half, half, 0, 0, 1);
+                    tess.addVertexWithUV(half, half, 0, 1, 1);
+                    tess.addVertexWithUV(half, -half, 0, 1, 0);
+                    tess.addVertexWithUV(-half, -half, 0, 0, 0);
+                    tess.draw();
+                }
                 MCH_WeaponSet currentWs = ac.getCurrentWeapon(player);
                 MCH_WeaponInfo currentWi = currentWs != null ? currentWs.getInfo() : null;
                 boolean dataLinkMode = currentWi != null && currentWi.enableDataLink && (currentWi.onlyDataLink || currentWs.isDataLinkMode()) && !currentWi.antiRadiationMissile;
                 boolean inMissileFov = currentWi != null && angle <= currentWi.maxDegreeOfMissile;
-                if (!isMSL && dataLinkMode && inMissileFov && (isRadarSelectedOrTracking || isFireControlLocked)) {
+                if (dataLinkMode && inMissileFov && (isRadarSelectedOrTracking || isFireControlLocked)) {
                     drawDualRedRings(half * 0.88F, half * 1.03F, alpha);
                 }
-                if (!isMSL) {
-                    String stateText = null;
-                    if (isRadarTracking) {
-                        stateText = "LOCK";
-                    } else if (isRadarSelected) {
-                        stateText = "SELECT";
-                    } else if (isFireControlLocked) {
-                        stateText = "LOCK";
-                    }
-                    if (stateText != null) {
-                        int lw = mc.fontRenderer.getStringWidth(stateText);
-                        mc.fontRenderer.drawString(stateText, -lw / 2, (int)(-half - 9.0F), 0xFF4040, false);
-                    }
+                String stateText = null;
+                if (isRadarTracking) {
+                    stateText = "LOCK";
+                } else if (isRadarSelected) {
+                    stateText = "SELECT";
+                } else if (isFireControlLocked) {
+                    stateText = "LOCK";
+                }
+                if (stateText != null) {
+                    int lw = mc.fontRenderer.getStringWidth(stateText);
+                    mc.fontRenderer.drawString(stateText, -lw / 2, (int)(-half - 9.0F), 0xFF4040, false);
                 }
                 if (drawText) {
                     GL11.glTranslatef(0.0F, BOX_SIZE * 0.5f + 8.0f, 0.0F);

@@ -7,7 +7,9 @@ import mcheli.network.packets.PacketMissileLockType;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
+import mcheli.weapon.MCH_EntityAAMissile;
 import mcheli.weapon.MCH_EntityASMissile;
+import mcheli.weapon.MCH_EntityATMissile;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.weapon.MCH_EntityTvMissile;
 import mcheli.wrapper.W_Entity;
@@ -23,6 +25,8 @@ import java.util.List;
 public class MCH_MissileDetector {
 
     public static final int SEARCH_RANGE = 60;
+    private static final double MAWS_TRIGGER_RANGE = 50.0D;
+    private static final int RWR_MISSILE_REFRESH_TICK = 8;
     public byte missileLockType; // 0-未锁定 1-半主动 2-红外 3-主动 4-未知
     public byte vehicleLockType; // 0-未锁定 1-扫描 2-锁定-地面载具 3-锁定-空中载具 4-锁定-未知
     public byte missileLockDist; // 0-未锁定 1-50m内 2-150m内 3-600m内
@@ -40,6 +44,8 @@ public class MCH_MissileDetector {
         byte missileLockType = 0;
         byte missileLockDist = 0;
         byte vehicleLockType = 0;
+        byte rwrSignalType = 0;
+        String rwrSourceName = "";
         if (this.ac.getAcInfo() != null) {
             if (this.alertCount > 0) {
                 --this.alertCount;
@@ -63,6 +69,11 @@ public class MCH_MissileDetector {
                     }
                 }
                 vehicleLockType = 1;
+                Entity lockOperator = this.ac.getRiddenByEntity();
+                if (lockOperator == null) {
+                    lockOperator = this.ac.getEntityBySeatId(1);
+                }
+                tryAutoReleaseCountermeasure(lockOperator, true);
                 this.ac.getEntityData().setBoolean("LockOn", false);
             }
 
@@ -81,6 +92,7 @@ public class MCH_MissileDetector {
                         this.destroyMissileECM();
                     } else if (!this.ac.isUAV() && !this.world.isRemote) {
                         LockResult result = isLockedByMissile();
+                        MissileProximityResult mawsResult = getNearestMissileThreat(MAWS_TRIGGER_RANGE);
                         if (this.alertCount == 0 && (isLocked || result.isLock)) {
                             this.alertCount = 20;
                             if(ac.jammingTick <= 0) {
@@ -91,7 +103,20 @@ public class MCH_MissileDetector {
                                 }
                             }
                         }
+                        if (ac.jammingTick <= 0) {
+                            MCH_EntityBaseBullet rwrSource = selectRwrMissileSource(result, mawsResult);
+                            if (rwrSource != null) {
+                                rwrSignalType = 2;
+                                rwrSourceName = getMissileRwrName(rwrSource);
+                                long now = this.world.getTotalWorldTime();
+                                this.ac.getEntityData().setLong("RWRMissileUntil", now + RWR_MISSILE_REFRESH_TICK);
+                                this.ac.getEntityData().setString("RWRMissileSourceName", rwrSourceName);
+                            }
+                        }
                         if (result.isLock && ac.jammingTick <= 0) {
+                            if (result.isRadarMissile) {
+                                tryAutoReleaseCountermeasure(var4, true);
+                            }
 
                             if (result.dist < 50) {
                                 missileLockDist = 1;
@@ -128,7 +153,7 @@ public class MCH_MissileDetector {
                             for (int rider = 0; rider < 2; ++rider) {
                                 Entity entity = this.ac.getEntityBySeatId(rider);
                                 if (entity instanceof EntityPlayerMP) {
-                                    MCH_MOD.getPacketHandler().sendTo(new PacketMissileLockType(missileLockType, vehicleLockType, missileLockDist), (EntityPlayerMP) entity);
+                                    MCH_MOD.getPacketHandler().sendTo(new PacketMissileLockType(missileLockType, vehicleLockType, missileLockDist, rwrSignalType, rwrSourceName), (EntityPlayerMP) entity);
                                 }
                             }
                         }
@@ -259,6 +284,119 @@ public class MCH_MissileDetector {
             return new LockResult(true, hasRadar, hasHeetseeker, (int) minDist, closestMissile);
         } else {
             return new LockResult();
+        }
+    }
+
+    private MCH_EntityBaseBullet selectRwrMissileSource(LockResult lockResult, MissileProximityResult mawsResult) {
+        if (mawsResult != null && mawsResult.entity != null) {
+            return mawsResult.entity;
+        }
+        if (lockResult == null || !lockResult.isLock || lockResult.entity == null || lockResult.entity.getInfo() == null) {
+            return null;
+        }
+        MCH_EntityBaseBullet bullet = lockResult.entity;
+        if (!bullet.getInfo().activeRadar) {
+            return bullet;
+        }
+        if (bullet.isActiveRadarCaptured()) {
+            return bullet;
+        }
+        if (bullet.isDataLinkRelayMode() && bullet.isDataLinkTwsSelectedOnly()) {
+            return null;
+        }
+        return bullet;
+    }
+
+    private MissileProximityResult getNearestMissileThreat(double range) {
+        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(range, range, range));
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        double rangeSq = range * range;
+        double bestDistSq = rangeSq;
+        MCH_EntityBaseBullet nearest = null;
+        for (Object o : list) {
+            MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
+            if (!isRwrRelevantMissile(msl)) {
+                continue;
+            }
+            if (W_Entity.isEqual(msl.shootingAircraft, this.ac) || W_Entity.isEqual(msl.shootingEntity, this.ac)) {
+                continue;
+            }
+            double dx = msl.posX - this.ac.posX;
+            double dy = msl.posY - this.ac.posY;
+            double dz = msl.posZ - this.ac.posZ;
+            double distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq <= bestDistSq) {
+                bestDistSq = distSq;
+                nearest = msl;
+            }
+        }
+        if (nearest == null) {
+            return null;
+        }
+        return new MissileProximityResult(nearest);
+    }
+
+    private boolean isRwrRelevantMissile(MCH_EntityBaseBullet bullet) {
+        return bullet != null && !bullet.isDead && (
+            bullet instanceof MCH_EntityAAMissile
+                || bullet instanceof MCH_EntityATMissile
+                || bullet instanceof MCH_EntityASMissile
+                || bullet instanceof MCH_EntityTvMissile);
+    }
+
+    private void tryAutoReleaseCountermeasure(Entity operator, boolean radarThreat) {
+        if (!radarThreat || operator == null || this.ac == null || this.ac.isDestroyed()) {
+            return;
+        }
+        if (!this.ac.getIsGunnerMode(operator)) {
+            return;
+        }
+        if (this.ac.canUseChaff()) {
+            this.ac.useChaff();
+            return;
+        }
+        if (this.ac.canUseECMJammer()) {
+            this.ac.useECMJammer(operator);
+        }
+    }
+
+    private String getMissileRwrName(MCH_EntityBaseBullet bullet) {
+        if (bullet == null) {
+            return "MSL";
+        }
+        String name = bullet.nameOnRWR;
+        if (name == null || name.trim().isEmpty()) {
+            return "MSL";
+        }
+        return name.trim();
+    }
+
+    public void updateRwrSignalClient(byte rwrSignalType, String rwrSourceName) {
+        if (this.ac == null || this.ac.worldObj == null || !this.ac.worldObj.isRemote) {
+            return;
+        }
+        if (rwrSignalType <= 0) {
+            return;
+        }
+        long now = this.ac.worldObj.getTotalWorldTime();
+        this.ac.getEntityData().setLong("RWRMissileUntil", now + RWR_MISSILE_REFRESH_TICK);
+        this.ac.getEntityData().setString("RWRMissileSourceName", getSafeRwrName(rwrSourceName));
+    }
+
+    private String getSafeRwrName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return "MSL";
+        }
+        return name.trim();
+    }
+
+    private static class MissileProximityResult {
+        private final MCH_EntityBaseBullet entity;
+
+        private MissileProximityResult(MCH_EntityBaseBullet entity) {
+            this.entity = entity;
         }
     }
 

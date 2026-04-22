@@ -296,6 +296,12 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
             boolean radarEnabled = ac.getAcInfo() != null && ac.getAcInfo().enableRadar;
             if (radarEnabled) {
+                int acmToggle = MCH_RenderRWR.handleRadarAcmToggleKey(MCH_Key.isKeyDown(-98), player, ac);
+                if (acmToggle == 1 || acmToggle == -1) {
+                    playSoundOK();
+                } else if (acmToggle == 2) {
+                    playSoundNG();
+                }
                 boolean weaponNeedsRightLock = shouldKeepWeaponRightLock(ac, player);
                 boolean hasRadarTracking = MCH_RenderRWR.getRadarTrackingTargetId(ac) > 0;
                 boolean allowRadarToggle = !weaponNeedsRightLock || !hasRadarTracking;

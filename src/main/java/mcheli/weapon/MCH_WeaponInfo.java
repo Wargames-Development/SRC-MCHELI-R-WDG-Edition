@@ -19,6 +19,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int chemYield = 0;
     public int effectYield = 0;
     public boolean nukeEffectOnly;
+    public boolean enableNuke;
+    public float nukeEffectScale;
+    public boolean enableNukeFlash;
+    public float nukeFlashRadiusFactor;
+    public int nukeFlashDurationMin;
+    public int nukeFlashDurationMax;
     public String displayName;
     public String type;
     public int power;
@@ -519,11 +525,29 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.cameraRotationSpeedPitch = 1.0F;
         this.nukeYield = 0;
         this.explosionType = "";
+        this.enableNuke = false;
+        this.nukeEffectScale = 1.0F;
+        this.enableNukeFlash = true;
+        this.nukeFlashRadiusFactor = 14.0F;
+        this.nukeFlashDurationMin = 20;
+        this.nukeFlashDurationMax = 80;
     }
 
     public void checkData() {
         if (this.explosionBlock < 0) {
             this.explosionBlock = this.explosion;
+        }
+        if (this.nukeEffectScale < 0.1F) {
+            this.nukeEffectScale = 0.1F;
+        }
+        if (this.nukeFlashRadiusFactor < 1.0F) {
+            this.nukeFlashRadiusFactor = 1.0F;
+        }
+        if (this.nukeFlashDurationMin < 1) {
+            this.nukeFlashDurationMin = 1;
+        }
+        if (this.nukeFlashDurationMax < this.nukeFlashDurationMin) {
+            this.nukeFlashDurationMax = this.nukeFlashDurationMin;
         }
         if (!this.hasEnableDataLinkSet && (this.activeRadar || this.passiveRadar || this.semiActiveRadar) && !this.antiRadiationMissile) {
             this.enableDataLink = true;
@@ -704,6 +728,18 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.effectYield = this.toInt(data, 0, 100000);
             } else if (item.equalsIgnoreCase("NukeEffectOnly")) {
                 this.nukeEffectOnly = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableNuke")) {
+                this.enableNuke = this.toBool(data);
+            } else if (item.equalsIgnoreCase("NukeEffectScale")) {
+                this.nukeEffectScale = this.toFloat(data, 0.1F, 10.0F);
+            } else if (item.equalsIgnoreCase("EnableNukeFlash")) {
+                this.enableNukeFlash = this.toBool(data);
+            } else if (item.equalsIgnoreCase("NukeFlashRadiusFactor")) {
+                this.nukeFlashRadiusFactor = this.toFloat(data, 1.0F, 100.0F);
+            } else if (item.equalsIgnoreCase("NukeFlashDurationMin")) {
+                this.nukeFlashDurationMin = this.toInt(data, 1, 400);
+            } else if (item.equalsIgnoreCase("NukeFlashDurationMax")) {
+                this.nukeFlashDurationMax = this.toInt(data, 1, 400);
             } else if (item.equalsIgnoreCase("MaxDegreeOfMissile")) {
                 this.maxDegreeOfMissile = this.toInt(data, 0, 100000);
             } else if (item.equalsIgnoreCase("TickEndHoming")) {

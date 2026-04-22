@@ -31,6 +31,22 @@ public class MCH_CommonPacketHandler {
         }
     }
 
+    public static void onPacketEffectNukeFlash(EntityPlayer player, ByteArrayDataInput data) {
+        if (player.worldObj.isRemote) {
+            MCH_PacketEffectNukeFlash pkt = new MCH_PacketEffectNukeFlash();
+            pkt.readData(data);
+            MCH_ClientCommonTickHandler.startNukeFlashEffect(
+                pkt.posX,
+                pkt.posY,
+                pkt.posZ,
+                pkt.explosionSize,
+                pkt.radiusFactor,
+                pkt.minDurationTick,
+                pkt.maxDurationTick
+            );
+        }
+    }
+
     public static void onPacketIndOpenScreen(EntityPlayer player, ByteArrayDataInput data) {
         if (!player.worldObj.isRemote) {
             MCH_PacketIndOpenScreen pkt = new MCH_PacketIndOpenScreen();

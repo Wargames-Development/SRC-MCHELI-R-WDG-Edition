@@ -78,5 +78,8 @@ public class MCH_ServerTickHandler {
     }
 
     private void onServerTickPost() {
+        if (MCH_MOD.rwrThreatManager != null) {
+            MCH_MOD.rwrThreatManager.serverTick();
+        }
     }
 }

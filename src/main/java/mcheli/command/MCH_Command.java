@@ -23,6 +23,7 @@ import mcheli.structure.MCH_StructureMeta;
 import mcheli.structure.MCH_SchemImporter;
 import mcheli.multiplay.MCH_MultiplayPacketHandler;
 import mcheli.multiplay.MCH_PacketIndClient;
+import mcheli.network.packets.PacketPlaySound;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
@@ -70,9 +71,13 @@ public class MCH_Command extends CommandBase {
     public static final String CMD_SPAWNER_DEBUG = "spawnerdebug";
     public static final String CMD_STRUCT_DEBUG = "structdebug";
     public static final String CMD_RADAR_DEBUG = "radardebug";
+    public static final String CMD_MSL_WATCH = "mslwatch";
+    public static final String CMD_RWR_WATCH = "rwrwatch";
+    public static final String CMD_RWR_DIAG = "rwrdiag";
+    public static final String CMD_RWR_SOUND = "rwrsound";
     public static final String CMD_STRUCT = "struct";
     public static final String CMD_LIST = "list";
-    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "struct", "list"};
+    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "mslwatch", "rwrwatch", "rwrdiag", "rwrsound", "struct", "list"};
     public static MCH_Command instance = new MCH_Command();
 
 
@@ -286,6 +291,14 @@ public class MCH_Command extends CommandBase {
                         this.executeStructureDebug(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("radardebug")) {
                         this.executeRadarDebug(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("mslwatch")) {
+                        this.executeMissileWatch(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("rwrwatch")) {
+                        this.executeRwrWatch(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("rwrdiag")) {
+                        this.executeRwrDiag(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("rwrsound")) {
+                        this.executeRwrSound(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("struct")) {
                         this.executeStructureCommand(sender, prm);
                     } else {
@@ -672,6 +685,22 @@ public class MCH_Command extends CommandBase {
                     if (prm.length == 3 && prm[1].equalsIgnoreCase("dlwatch")) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
                     }
+                } else if (prm[0].equalsIgnoreCase("mslwatch")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"on", "off", "true", "false", "toggle", "status"});
+                    }
+                } else if (prm[0].equalsIgnoreCase("rwrwatch")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"on", "off", "true", "false", "toggle", "status"});
+                    }
+                } else if (prm[0].equalsIgnoreCase("rwrdiag")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"watchon", "watchoff"});
+                    }
+                } else if (prm[0].equalsIgnoreCase("rwrsound")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"scan", "lock", "both", "rwr_scan", "rwr_lock", "RWR_SCAN", "RWR_LOCK", "alert", "locked"});
+                    }
                 } else if (prm[0].equalsIgnoreCase("struct")) {
                     if (prm.length == 2) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"capture", "place", "list", "validate", "verify", "importschem"});
@@ -947,6 +976,149 @@ public class MCH_Command extends CommandBase {
         sender.addChatMessage(new ChatComponentText("Radar debug monitor: " + (MCH_RadarDebug.isEnabled() ? "ON" : "OFF")));
         sender.addChatMessage(new ChatComponentText("Radar debug verbose: " + (MCH_RadarDebug.isVerbose() ? "ON" : "OFF")));
         sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+    }
+
+    private void executeMissileWatch(ICommandSender sender, String[] args) {
+        if (args.length == 1 || (args.length >= 2 && args[1].equalsIgnoreCase("toggle"))) {
+            MCH_RadarDebug.setMissileWatchEnabled(!MCH_RadarDebug.isMissileWatchEnabled());
+        } else if (args.length >= 2 && args[1].equalsIgnoreCase("status")) {
+            sender.addChatMessage(new ChatComponentText("Missile watch: " + (MCH_RadarDebug.isMissileWatchEnabled() ? "ON" : "OFF")
+                + ", intervalTick=" + MCH_RadarDebug.getMissileWatchIntervalTick()));
+            sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+            return;
+        } else if (args.length >= 2 && (args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("false")
+            || args[1].equalsIgnoreCase("on") || args[1].equalsIgnoreCase("off"))) {
+            boolean on = args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("on");
+            MCH_RadarDebug.setMissileWatchEnabled(on);
+        } else {
+            throw new WrongUsageException("/mcheli mslwatch [on|off|true|false|toggle|status] [intervalTick]", new Object[0]);
+        }
+        if (args.length >= 3) {
+            try {
+                MCH_RadarDebug.setMissileWatchIntervalTick(Integer.parseInt(args[2]));
+            } catch (Exception ex) {
+                sender.addChatMessage(new ChatComponentText("Invalid intervalTick: " + args[2]));
+            }
+        }
+        sender.addChatMessage(new ChatComponentText("Missile watch: " + (MCH_RadarDebug.isMissileWatchEnabled() ? "ON" : "OFF")
+            + ", intervalTick=" + MCH_RadarDebug.getMissileWatchIntervalTick()));
+        sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+    }
+
+    private void executeRwrWatch(ICommandSender sender, String[] args) {
+        if (args.length == 1 || (args.length >= 2 && args[1].equalsIgnoreCase("toggle"))) {
+            MCH_RadarDebug.setRwrWatchEnabled(!MCH_RadarDebug.isRwrWatchEnabled());
+        } else if (args.length >= 2 && args[1].equalsIgnoreCase("status")) {
+            sender.addChatMessage(new ChatComponentText("RWR watch: " + (MCH_RadarDebug.isRwrWatchEnabled() ? "ON" : "OFF")
+                + ", intervalTick=" + MCH_RadarDebug.getRwrWatchIntervalTick()));
+            sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+            return;
+        } else if (args.length >= 2 && (args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("false")
+            || args[1].equalsIgnoreCase("on") || args[1].equalsIgnoreCase("off"))) {
+            boolean on = args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("on");
+            MCH_RadarDebug.setRwrWatchEnabled(on);
+        } else {
+            throw new WrongUsageException("/mcheli rwrwatch [on|off|true|false|toggle|status] [intervalTick]", new Object[0]);
+        }
+        if (args.length >= 3) {
+            try {
+                MCH_RadarDebug.setRwrWatchIntervalTick(Integer.parseInt(args[2]));
+            } catch (Exception ex) {
+                sender.addChatMessage(new ChatComponentText("Invalid intervalTick: " + args[2]));
+            }
+        }
+        sender.addChatMessage(new ChatComponentText("RWR watch: " + (MCH_RadarDebug.isRwrWatchEnabled() ? "ON" : "OFF")
+            + ", intervalTick=" + MCH_RadarDebug.getRwrWatchIntervalTick()));
+        sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+    }
+
+    private void executeRwrDiag(ICommandSender sender, String[] args) {
+        if (!(sender instanceof EntityPlayer)) {
+            sender.addChatMessage(new ChatComponentText("RWR diag: player only."));
+            return;
+        }
+        if (args.length >= 2 && args[1].equalsIgnoreCase("watchon")) {
+            MCH_RadarDebug.setRwrWatchEnabled(true);
+        } else if (args.length >= 2 && args[1].equalsIgnoreCase("watchoff")) {
+            MCH_RadarDebug.setRwrWatchEnabled(false);
+        } else if (args.length > 1) {
+            throw new WrongUsageException("/mcheli rwrdiag [watchon|watchoff]", new Object[0]);
+        }
+        EntityPlayer player = (EntityPlayer)sender;
+        MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        sender.addChatMessage(new ChatComponentText("[RWRDIAG] watch=" + (MCH_RadarDebug.isRwrWatchEnabled() ? "ON" : "OFF")
+            + " intervalTick=" + MCH_RadarDebug.getRwrWatchIntervalTick() + " log=" + MCH_RadarDebug.getLogPath()));
+        sender.addChatMessage(new ChatComponentText("[RWRDIAG] expected sounds: rwr_scan / rwr_lock (fallback: alert / locked)"));
+        if (ac == null) {
+            sender.addChatMessage(new ChatComponentText("[RWRDIAG] no aircraft: 需要先坐上可测试机体。"));
+            return;
+        }
+        boolean hasRwr = ac.getAcInfo() != null && ac.getAcInfo().hasRWR;
+        boolean radar = ac.getAcInfo() != null && ac.getAcInfo().enableRadar;
+        String rwrName = (ac.getAcInfo() != null && ac.getAcInfo().nameOnRWR != null && !ac.getAcInfo().nameOnRWR.trim().isEmpty())
+            ? ac.getAcInfo().nameOnRWR.trim() : "?";
+        sender.addChatMessage(new ChatComponentText(String.format(Locale.ROOT,
+            "[RWRDIAG] ac=%d hasRWR=%s enableRadar=%s nameOnRWR=%s gunnerStatus=%s",
+            ac.getEntityId(), String.valueOf(hasRwr), String.valueOf(radar), rwrName, String.valueOf(ac.getGunnerStatus())
+        )));
+        int gunnerCount = 0;
+        int gunnerTargetCount = 0;
+        if (ac.getRiddenByEntity() instanceof mcheli.mob.MCH_EntityGunner) {
+            gunnerCount++;
+            if (((mcheli.mob.MCH_EntityGunner)ac.getRiddenByEntity()).targetEntity != null) {
+                gunnerTargetCount++;
+            }
+        }
+        for (int sid = 1; sid <= ac.getSeatNum(); sid++) {
+            Entity crew = ac.getEntityBySeatId(sid);
+            if (crew instanceof mcheli.mob.MCH_EntityGunner) {
+                gunnerCount++;
+                if (((mcheli.mob.MCH_EntityGunner)crew).targetEntity != null) {
+                    gunnerTargetCount++;
+                }
+            }
+        }
+        sender.addChatMessage(new ChatComponentText(String.format(Locale.ROOT,
+            "[RWRDIAG] crew gunners=%d withTarget=%d", gunnerCount, gunnerTargetCount
+        )));
+        sender.addChatMessage(new ChatComponentText("[RWRDIAG] " + MCH_MOD.rwrThreatManager.getEmitterTrackingDebugLine(ac.getEntityId())));
+        sender.addChatMessage(new ChatComponentText("[RWRDIAG] 若 no sound：先看 hasRWR=true，再看 rwrwatch 日志是否有 lockSound/scanSound=true。"));
+    }
+
+    private void executeRwrSound(ICommandSender sender, String[] args) {
+        if (!(sender instanceof EntityPlayerMP)) {
+            sender.addChatMessage(new ChatComponentText("RWR sound: player only."));
+            return;
+        }
+        if (args.length < 2) {
+            throw new WrongUsageException("/mcheli rwrsound <scan|lock|both|rwr_scan|rwr_lock|RWR_SCAN|RWR_LOCK|alert|locked>", new Object[0]);
+        }
+        EntityPlayerMP player = (EntityPlayerMP)sender;
+        String mode = args[1];
+        String soundA = null;
+        String soundB = null;
+        if (mode.equalsIgnoreCase("scan")) {
+            soundA = "rwr_scan";
+        } else if (mode.equalsIgnoreCase("lock")) {
+            soundA = "rwr_lock";
+        } else if (mode.equalsIgnoreCase("both")) {
+            soundA = "rwr_scan";
+            soundB = "rwr_lock";
+        } else if (mode.equals("RWR_SCAN") || mode.equals("RWR_LOCK")
+            || mode.equals("rwr_scan") || mode.equals("rwr_lock")
+            || mode.equals("alert") || mode.equals("locked")) {
+            soundA = mode;
+        } else {
+            throw new WrongUsageException("/mcheli rwrsound <scan|lock|both|rwr_scan|rwr_lock|RWR_SCAN|RWR_LOCK|alert|locked>", new Object[0]);
+        }
+        int dim = player.worldObj != null && player.worldObj.provider != null ? player.worldObj.provider.dimensionId : 0;
+        if (soundA != null) {
+            PacketPlaySound.sendSoundPacket(player.posX, player.posY, player.posZ, 32.0D, dim, soundA, false, false);
+        }
+        if (soundB != null) {
+            PacketPlaySound.sendSoundPacket(player.posX, player.posY, player.posZ, 32.0D, dim, soundB, false, false);
+        }
+        sender.addChatMessage(new ChatComponentText("[RWRSOUND] played: " + soundA + (soundB != null ? (", " + soundB) : "")));
     }
 
     private void executeStructureCommand(ICommandSender sender, String[] args) {

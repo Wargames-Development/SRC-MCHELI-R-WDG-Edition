@@ -1,7 +1,10 @@
 package mcheli.weapon;
 
+import mcheli.MCH_EntityInfo;
+import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.MCH_Lib;
 import mcheli.MCH_PlayerViewHandler;
+import mcheli.MCH_RadarDebug;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.render.MCH_RenderRWR;
@@ -16,6 +19,8 @@ import net.minecraft.world.World;
 
 public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
     private static final int OPTION_FLAG_DATALINK = 1 << 8;
+    private static final int OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY = 1 << 9;
+    private static final long SNAPSHOT_TARGET_STALE_MS = 1500L;
 
     public MCH_WeaponAAMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
@@ -84,9 +89,29 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 e.setInfoByName(super.name);
                 e.setParameterFromWeapon(this, prm.entity, prm.user);
                 e.setDataLinkRelayMode((prm.option2 & OPTION_FLAG_DATALINK) != 0);
+                e.setDataLinkTwsSelectedOnly((prm.option2 & OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY) != 0);
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
                 if (tgtEnt != null && !tgtEnt.isDead) {
                     e.setTargetEntity(tgtEnt);
+                }
+                if (MCH_RadarDebug.isEnabled()) {
+                    double dist = -1.0D;
+                    if (tgtEnt != null) {
+                        double dx = prm.posX - tgtEnt.posX;
+                        double dy = prm.posY - tgtEnt.posY;
+                        double dz = prm.posZ - tgtEnt.posZ;
+                        dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    }
+                    MCH_RadarDebug.trace(super.worldObj, prm.entity,
+                        "msl_spawn type=AA msl=%d reqTargetId=%d resolved=%s resolvedId=%d dist=%.1f dlRelay=%s twsSelOnly=%s option2=0x%X",
+                        e.getEntityId(),
+                        prm.option1,
+                        String.valueOf(tgtEnt != null && !tgtEnt.isDead),
+                        tgtEnt != null ? tgtEnt.getEntityId() : -1,
+                        dist,
+                        String.valueOf(e.isDataLinkRelayMode()),
+                        String.valueOf(e.isDataLinkTwsSelectedOnly()),
+                        prm.option2);
                 }
                 super.worldObj.spawnEntityInWorld(e);
                 result = true;
@@ -119,6 +144,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                     }
                     e.setInfoByName(super.name);
                     e.setParameterFromWeapon(this, prm.entity, prm.user);
+                    e.setDataLinkTwsSelectedOnly(false);
                     e.setTargetEntity(tgtEnt);
                     super.worldObj.spawnEntityInWorld(e);
                     result = true;
@@ -141,6 +167,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
     }
 
     private boolean shouldBlockShotByDataLink(MCH_WeaponParam prm) {
+        super.optionParameter2 &= ~(OPTION_FLAG_DATALINK | OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY);
         if (!(prm.entity instanceof MCH_EntityAircraft) || prm.user == null || !super.worldObj.isRemote) {
             return false;
         }
@@ -150,18 +177,17 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
         MCH_WeaponSet ws = ac.getCurrentWeapon(prm.user);
         if (ws == null || ws.getInfo() == null || !ws.getInfo().enableDataLink) {
-            super.optionParameter2 &= ~OPTION_FLAG_DATALINK;
             return false;
         }
         boolean dlMode = ws.getInfo().onlyDataLink || ws.isDataLinkMode();
         if (!dlMode) {
-            super.optionParameter2 &= ~OPTION_FLAG_DATALINK;
             return false;
         }
         String searchType = MCH_RenderRWR.getRadarSearchType(ac);
         int trackingId = MCH_RenderRWR.getRadarTrackingTargetId(ac);
         int selectedId = MCH_RenderRWR.getRadarSelectedTargetId(ac);
         int targetId = -1;
+        boolean twsSelectedOnlyLaunch = false;
         if (getInfo().passiveRadar || getInfo().semiActiveRadar) {
             targetId = trackingId;
             if (targetId <= 0) {
@@ -174,6 +200,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 targetId = trackingId;
             } else {
                 targetId = trackingId > 0 ? trackingId : selectedId;
+                twsSelectedOnlyLaunch = trackingId <= 0 && selectedId > 0;
             }
             if (targetId <= 0) {
                 sendDenyMessage(prm.user, "请先选择或锁定目标 / Please select or lock a target first");
@@ -181,12 +208,25 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             }
         }
         Entity target = prm.user.worldObj.getEntityByID(targetId);
-        if (target == null || target.isDead || !isTargetInMissileFov(prm.user, target)) {
-            sendDenyMessage(prm.user, "请先锁定目标 / Please lock a target first");
-            return true;
+        if (target != null && !target.isDead) {
+            if (!isTargetInMissileFov(prm.user, target)) {
+                sendDenyMessage(prm.user, "请先锁定目标 / Please lock a target first");
+                return true;
+            }
+        } else {
+            MCH_EntityInfo snap = MCH_EntityInfoClientTracker.getEntityInfo(targetId);
+            if (!isSnapshotTargetUsable(prm.user, snap)) {
+                sendDenyMessage(prm.user, "请先锁定目标 / Please lock a target first");
+                return true;
+            }
         }
         super.optionParameter1 = targetId;
         super.optionParameter2 |= OPTION_FLAG_DATALINK;
+        if (twsSelectedOnlyLaunch) {
+            super.optionParameter2 |= OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY;
+        } else {
+            super.optionParameter2 &= ~OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY;
+        }
         return false;
     }
 
@@ -196,6 +236,36 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
         Vec3 look = user.getLookVec();
         Vec3 to = Vec3.createVectorHelper(target.posX - user.posX, target.posY + target.height * 0.5D - (user.posY + user.height * 0.5D), target.posZ - user.posZ);
+        double len = to.lengthVector();
+        if (len <= 1.0E-6D) {
+            return false;
+        }
+        to = to.normalize();
+        double dot = look.dotProduct(to);
+        dot = Math.max(-1.0D, Math.min(1.0D, dot));
+        double angle = Math.acos(dot) * 180.0D / Math.PI;
+        return angle <= getInfo().maxDegreeOfMissile;
+    }
+
+    private boolean isSnapshotTargetUsable(Entity user, MCH_EntityInfo snap) {
+        if (user == null || snap == null) {
+            return false;
+        }
+        if (System.currentTimeMillis() - snap.lastUpdateTime > SNAPSHOT_TARGET_STALE_MS) {
+            return false;
+        }
+        return isTargetInMissileFov(user, snap.posX, snap.posY, snap.posZ);
+    }
+
+    private boolean isTargetInMissileFov(Entity user, double targetX, double targetY, double targetZ) {
+        if (user == null) {
+            return false;
+        }
+        Vec3 look = user.getLookVec();
+        if (look == null) {
+            return false;
+        }
+        Vec3 to = Vec3.createVectorHelper(targetX - user.posX, targetY - (user.posY + user.height * 0.5D), targetZ - user.posZ);
         double len = to.lengthVector();
         if (len <= 1.0E-6D) {
             return false;
@@ -313,9 +383,22 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             }
         }
         Entity target = targetId > 0 ? prm.user.worldObj.getEntityByID(targetId) : null;
+        MCH_EntityInfo snapshot = targetId > 0 && target == null ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
+
         for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
             bullet.clientSetTargetEntity(target);
-            super.optionParameter1 = target != null ? W_Entity.getEntityId(target) : 0;
+            if (target != null) {
+                super.optionParameter1 = W_Entity.getEntityId(target);
+            } else if (snapshot != null) {
+                // If the target is not a local entity, use the snapshot from EntityInfoClientTracker.
+                double vx = snapshot.posX - snapshot.lastTickPosX;
+                double vy = snapshot.posY - snapshot.lastTickPosY;
+                double vz = snapshot.posZ - snapshot.lastTickPosZ;
+                bullet.setSnapshotTarget(targetId, snapshot.posX, snapshot.posY, snapshot.posZ, vx, vy, vz);
+                super.optionParameter1 = targetId;
+            } else {
+                super.optionParameter1 = 0;
+            }
         }
         return true;
     }

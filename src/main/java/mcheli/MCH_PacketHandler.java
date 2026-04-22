@@ -29,6 +29,9 @@ public class MCH_PacketHandler extends W_PacketHandler {
             case 268437520:
                 MCH_CommonPacketHandler.onPacketEffectExplosion(entityPlayer, data);
                 break;
+            case 268437521:
+                MCH_CommonPacketHandler.onPacketEffectNukeFlash(entityPlayer, data);
+                break;
             case 268437568:
                 MCH_CommonPacketHandler.onPacketNotifyServerSettings(entityPlayer, data);
                 break;

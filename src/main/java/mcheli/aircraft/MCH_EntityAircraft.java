@@ -141,6 +141,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public MCH_EntityAircraft.WeaponBay[] weaponBays;
     public float[] rotPartRotation;
     public float[] prevRotPartRotation;
+    public float[] turretRotPartRotation;
+    public float[] prevTurretRotPartRotation;
     public float[] rotCrawlerTrack = new float[2];
     public float[] prevRotCrawlerTrack = new float[2];
     public float[] throttleCrawlerTrack = new float[2];
@@ -293,6 +295,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.weaponBays = new MCH_EntityAircraft.WeaponBay[0];
         this.rotPartRotation = new float[0];
         this.prevRotPartRotation = new float[0];
+        this.turretRotPartRotation = new float[0];
+        this.prevTurretRotPartRotation = new float[0];
         this.lastRiderYaw = 0.0F;
         this.prevLastRiderYaw = 0.0F;
         this.lastRiderPitch = 0.0F;
@@ -1923,7 +1927,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.flareDv.update();
         if (this.getAcInfo() != null && this.chaff != null) {
             this.chaff.chaffUseTime = getAcInfo().chaffUseTime;
-            this.chaff.chaffWaitTime = getAcInfo().chaffWaitTime;
+            this.chaff.chaffWaitTime = getAcInfo().chaffWaitTime * this.getCountermeasureCooldownMultiplier();
             this.chaff.onUpdate();
         }
         if (this.getAcInfo() != null && this.maintenance != null) {
@@ -1939,7 +1943,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
         if (this.getAcInfo() != null && this.ecmJammer != null) {
             this.ecmJammer.useTime = getAcInfo().ecmJammerUseTime;
-            this.ecmJammer.waitTime = getAcInfo().ecmJammerWaitTime;
+            this.ecmJammer.waitTime = getAcInfo().ecmJammerWaitTime * this.getCountermeasureCooldownMultiplier();
             this.ecmJammer.onUpdate();
         }
         if (!super.worldObj.isRemote && this.getFlareTick() == 0 && ft != 0) {
@@ -2284,6 +2288,24 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
 
+        if (this.haveTurretRotPart()) {
+            for (int i = 0; i < this.turretRotPartRotation.length; ++i) {
+                this.prevTurretRotPartRotation[i] = this.turretRotPartRotation[i];
+                MCH_AircraftInfo.TurretRotPart trp = (MCH_AircraftInfo.TurretRotPart) this.getAcInfo().partTurretRotPart.get(i);
+                if (!this.isDestroyed() && (trp.rotAlways || this.getCurrentThrottle() > 0.01D || this.getRiddenByEntity() != null)) {
+                    float rotSpeed = 360.0F / (this.getAcInfo().radarScanTick > 0 ? this.getAcInfo().radarScanTick : 40);
+                    this.turretRotPartRotation[i] += rotSpeed;
+                    if (this.turretRotPartRotation[i] >= 360.0F) {
+                        this.turretRotPartRotation[i] -= 360.0F;
+                        this.prevTurretRotPartRotation[i] -= 360.0F;
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean haveTurretRotPart() {
+        return super.worldObj.isRemote && this.getAcInfo() != null && this.turretRotPartRotation.length > 0 && this.turretRotPartRotation.length == this.getAcInfo().partTurretRotPart.size();
     }
 
     public void onRideEntity(Entity ridingEntity) {
@@ -3554,6 +3576,19 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean canUseECMJammer() {
         return this.getAcInfo() != null && this.getAcInfo().haveECMJammer() && this.ecmJammer.tick == 0;
+    }
+
+    public boolean isGunnerDrivingMode() {
+        Entity pilot = this.getRiddenByEntity();
+        if (pilot != null && this.getIsGunnerMode(pilot)) {
+            return true;
+        }
+        Entity seat1 = this.getEntityBySeatId(1);
+        return seat1 != null && this.getIsGunnerMode(seat1);
+    }
+
+    public int getCountermeasureCooldownMultiplier() {
+        return this.isGunnerDrivingMode() ? 2 : 1;
     }
 
     public boolean haveChaff() {
@@ -5956,6 +5991,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.weaponBays = this.createWeaponBays();
             this.rotPartRotation = new float[info.partRotPart.size()];
             this.prevRotPartRotation = new float[info.partRotPart.size()];
+            this.turretRotPartRotation = new float[info.partTurretRotPart.size()];
+            this.prevTurretRotPartRotation = new float[info.partTurretRotPart.size()];
             this.extraBoundingBox = this.createExtraBoundingBox();
             this.partEntities = this.createParts();
             super.stepHeight = info.stepHeight;

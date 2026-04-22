@@ -230,6 +230,30 @@ public abstract class MCH_RenderAircraft extends W_Render {
         }
     }
 
+    public static void renderTurretRotPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        if (ac.haveTurretRotPart()) {
+            for (int i = 0; i < ac.turretRotPartRotation.length; ++i) {
+                float rot = ac.turretRotPartRotation[i];
+                float prevRot = ac.prevTurretRotPartRotation[i];
+                if (prevRot > rot) {
+                    rot += 360.0F;
+                }
+                rot = MCH_Lib.smooth(rot, prevRot, tickTime);
+                MCH_AircraftInfo.TurretRotPart trp = (MCH_AircraftInfo.TurretRotPart) info.partTurretRotPart.get(i);
+                GL11.glPushMatrix();
+                GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
+                float turretYaw = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+                GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
+                GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
+                GL11.glTranslated(trp.pos.xCoord, trp.pos.yCoord, trp.pos.zCoord);
+                GL11.glRotatef(rot, (float) trp.rot.xCoord, (float) trp.rot.yCoord, (float) trp.rot.zCoord);
+                GL11.glTranslated(-trp.pos.xCoord, -trp.pos.yCoord, -trp.pos.zCoord);
+                renderPart(trp.model, info.model, trp.modelName);
+                GL11.glPopMatrix();
+            }
+        }
+    }
+
     public static void renderWeapon(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         MCH_WeaponSet beforeWs = null;
         Entity e = ac.getRiddenByEntity();
@@ -1449,6 +1473,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
         renderERA(ac, info);
         renderWeapon(ac, info, tickTime);
         renderRotPart(ac, info, tickTime);
+        renderTurretRotPart(ac, info, tickTime);
         renderHatch(ac, info, tickTime);
         renderTrackRoller(ac, info, tickTime);
         renderCrawlerTrack(ac, info, tickTime);

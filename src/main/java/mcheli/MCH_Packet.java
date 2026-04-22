@@ -60,6 +60,7 @@ public abstract class MCH_Packet extends W_PacketBase {
     public static final int MSGID_VEHICLE_PLAYER_CONTROL = 537002000;
     public static final int MSGID_UAV_STATUS = 537133072;
     public static final int MSGID_DTABLE_CREATE = 537395216;
+    public static final int MSGID_EFFECT_NUKE_FLASH = 268437521;
 
 
     public MCH_Packet() {

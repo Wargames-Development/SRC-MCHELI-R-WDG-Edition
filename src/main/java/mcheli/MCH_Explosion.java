@@ -468,7 +468,8 @@ public class MCH_Explosion extends Explosion {
                     dy /= len;
                     dz /= len;
 
-                    float blast = param.sizeBlock * (0.7F + this.world.rand.nextFloat() * 0.6F);
+                    float breakBoost = getLargeBlockBreakBoost(param.sizeBlock);
+                    float blast = param.sizeBlock * breakBoost * (0.7F + this.world.rand.nextFloat() * 0.6F);
                     double px = this.explosionX;
                     double py = this.explosionY;
                     double pz = this.explosionZ;
@@ -743,6 +744,19 @@ public class MCH_Explosion extends Explosion {
             return 4;
         }
         return 5;
+    }
+
+    /**
+     * 扩展高当量地形破坏强度：
+     * sizeBlock <= 100 时保持原版（1.0x）；
+     * sizeBlock > 100 时线性提升到 1.5x~2.0x（100->1.5, 200->2.0）。
+     */
+    private float getLargeBlockBreakBoost(float sizeBlock) {
+        if (sizeBlock <= 100.0F) {
+            return 1.0F;
+        }
+        float t = MathHelper.clamp_float((sizeBlock - 100.0F) / 100.0F, 0.0F, 1.0F);
+        return 1.5F + 0.5F * t;
     }
 
     public void doExplosionB(boolean par1) {

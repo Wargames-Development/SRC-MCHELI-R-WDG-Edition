@@ -136,6 +136,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public List landingGear;
     public List partThrottle;
     public List partRotPart;
+    public List partTurretRotPart;
     public List partCrawlerTrack;
     public List partTrackRoller;
     public List partWheel;
@@ -241,6 +242,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 当前载具在早期对地雷达中显示的名字
      */
     public String nameOnEarlyASRadar = "";
+    /**
+     * 载具在RWR上的名称
+     */
+    public String nameOnRWR = "?";
     /**
      * 载具被摧毁时爆炸范围
      */
@@ -356,6 +361,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.radarTrackAzimuthDeg = 90.0F;
         this.radarTrackElevationDeg = 45.0F;
         this.radarRetargetCooldownTick = 40;
+        this.nameOnRWR = "?";
         this.isEnableEjectionSeat = false;
         this.isEnableParachuting = false;
         this.flare = new MCH_AircraftInfo.Flare();
@@ -461,6 +467,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.landingGear = new ArrayList();
         this.partThrottle = new ArrayList();
         this.partRotPart = new ArrayList();
+        this.partTurretRotPart = new ArrayList();
         this.partCrawlerTrack = new ArrayList();
         this.partTrackRoller = new ArrayList();
         this.partWheel = new ArrayList();
@@ -848,11 +855,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
             } else if (item.equalsIgnoreCase("HasPhotoelectricJammer")) {
                 hasPhotoelectricJammer = this.toBool(data);
             } else if (item.equalsIgnoreCase("RWRType")) {
-                try {
-                    this.rwrType = EnumRWRType.valueOf(data);
-                } catch (Exception e) {
-                    this.rwrType = EnumRWRType.DIGITAL;
-                }
+                // Stage policy: force DIGITAL only for current RWR implementation phase.
+                this.rwrType = EnumRWRType.DIGITAL;
+            } else if (item.equalsIgnoreCase("NameOnRWR")) {
+                this.nameOnRWR = data.trim();
             } else if (item.equalsIgnoreCase("NameOnModernAARadar")) {
                 nameOnModernAARadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnAdvancedAARadar")) {
@@ -1202,6 +1208,13 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                                     var28 = s.length >= 8 ? this.toBool(s[7]) : true;
                                                                                     MCH_AircraftInfo.RotPart var46 = new MCH_AircraftInfo.RotPart(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]), var28, "rotpart" + this.partThrottle.size());
                                                                                     this.partRotPart.add(var46);
+                                                                                }
+                                                                            } else if (item.equalsIgnoreCase("AddPartTurretRotation")) {
+                                                                                s = data.split("\\s*,\\s*");
+                                                                                if (s.length >= 6) {
+                                                                                    var28 = s.length >= 7 ? this.toBool(s[6]) : true;
+                                                                                    MCH_AircraftInfo.TurretRotPart var46 = new MCH_AircraftInfo.TurretRotPart(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), var28, "weaponrotpart" + this.partTurretRotPart.size());
+                                                                                    this.partTurretRotPart.add(var46);
                                                                                 }
                                                                             } else if (item.compareTo("addpartcamera") == 0) {
                                                                                 s = data.split("\\s*,\\s*");
@@ -1735,6 +1748,17 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         public RotPart(float px, float py, float pz, float rx, float ry, float rz, float mr, boolean a, String name) {
             super(px, py, pz, rx, ry, rz, name);
             this.rotSpeed = mr;
+            this.rotAlways = a;
+        }
+    }
+
+    public class TurretRotPart extends MCH_AircraftInfo.DrawnPart {
+
+        public final boolean rotAlways;
+
+
+        public TurretRotPart(float px, float py, float pz, float rx, float ry, float rz, boolean a, String name) {
+            super(px, py, pz, rx, ry, rz, name);
             this.rotAlways = a;
         }
     }

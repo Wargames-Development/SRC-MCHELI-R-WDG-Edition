@@ -3,10 +3,15 @@ package mcheli.render;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
+import mcheli.MCH_MOD;
 import mcheli.MCH_RadarDebug;
+import mcheli.MCH_RWRThreatClientTracker;
+import mcheli.MCH_RWRThreatEvent;
+import mcheli.MCH_RWRThreatTable;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.helicopter.MCH_EntityHeli;
+import mcheli.network.packets.PacketRadarLockState;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
@@ -15,6 +20,7 @@ import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponInfoManager;
 import mcheli.weapon.MCH_WeaponSet;
+import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
@@ -27,11 +33,13 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -54,6 +62,16 @@ public class MCH_RenderRWR {
     private static final int _RWR_CENTER_X = 100;
     private static final int _RWR_CENTER_Y = 280;
     private static final double SCREEN_HEIGHT_ADAPT_CONSTANT = 520;
+    private static final int RWR_SCAN_EVENT_TTL = 40;
+    private static final int RWR_LOCK_SOUND_INTERVAL = 10;
+    private static final int RWR_LOCK_HEARTBEAT_INTERVAL = 10;
+    private static final int RWR_EVENT_MAX_ROWS = 4;
+    private static final String RWR_SCAN_SOUND = "rwr_scan";
+    private static final String RWR_LOCK_SOUND = "rwr_lock";
+    private static final String RWR_SCAN_SOUND_FALLBACK = "alert";
+    private static final String RWR_LOCK_SOUND_FALLBACK = "locked";
+    private static final int RWR_LOCK_BLINK_TICK = 5;
+    private static final int RWR_MSL_BLINK_TICK = 3;
 
     private static final double _MIN_DISTANCE = 50.0;  // 最小显示距离（米）
     private static final double _MAX_DISTANCE = 4096.0; // 最大显示距离（米）
@@ -61,9 +79,15 @@ public class MCH_RenderRWR {
     private static final Map<Integer, Map<Integer, RadarContact>> radarContactCache = new HashMap<Integer, Map<Integer, RadarContact>>();
     private static final Map<Integer, Long> radarLastDecayTick = new HashMap<Integer, Long>();
     private static final Map<Integer, Long> radarLastScanSlot = new HashMap<Integer, Long>();
+    private static final Map<Integer, Long> radarLastAcmScanSlot = new HashMap<Integer, Long>();
     private static final Map<Integer, RadarTrackState> radarTrackStateMap = new HashMap<Integer, RadarTrackState>();
+    private static final Map<Integer, Long> radarLockHeartbeatLastSendTick = new HashMap<Integer, Long>();
     private static final Map<Integer, Long> dataLinkWatchLastLogTick = new HashMap<Integer, Long>();
+    private static final Map<Integer, Long> rwrLastScanSoundTickMap = new HashMap<Integer, Long>();
+    private static final Map<Integer, Long> rwrLastLockSoundTickMap = new HashMap<Integer, Long>();
+    private static final Map<Integer, RwrHudState> rwrHudStateMap = new HashMap<Integer, RwrHudState>();
     private static boolean radarSelectKeyPrevDown = false;
+    private static boolean radarAcmKeyPrevDown = false;
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
@@ -146,60 +170,477 @@ public class MCH_RenderRWR {
             if(ac.jammingTick > 0) {
                 drawRWRCircle(sx, sy, sc, RWR_jammed, RWR_SIZE);
             }
-
-            // 新增实体渲染逻辑
-            double circleRadius = sc.getScaledHeight() * (RWR_SIZE / SCREEN_HEIGHT_ADAPT_CONSTANT) / 2.0;
-            for (MCH_EntityInfo entity : getServerLoadedEntity()) {
-                if (!isValidEntity(entity, player, MIN_DISTANCE)) continue;
-
-                if(ac.jammingTick > 0) {
-                    continue;
-                }
-
-                // 计算插值位置
-                double xPos = interpolate(entity.posX, entity.lastTickPosX, event.partialTicks);
-                double yPos = interpolate(entity.posY, entity.lastTickPosY, event.partialTicks);
-                double zPos = interpolate(entity.posZ, entity.lastTickPosZ, event.partialTicks);
-
-                // 计算相对向量
-                Vec3 delta = Vec3.createVectorHelper(
-                    xPos - (player.posX + (player.posX - player.lastTickPosX) * event.partialTicks),
-                    yPos - (player.posY + (player.posY - player.lastTickPosY) * event.partialTicks),
-                    zPos - (player.posZ + (player.posZ - player.lastTickPosZ) * event.partialTicks)
-                );
-
-                Vec3 lookVec = getDirection(ac, event.partialTicks);
-                Vec3 deltaHorizontal = Vec3.createVectorHelper(delta.xCoord, 0, delta.zCoord).normalize();
-                Vec3 lookHorizontal = Vec3.createVectorHelper(lookVec.xCoord, 0, lookVec.zCoord).normalize();
-
-                double dot = lookHorizontal.dotProduct(deltaHorizontal);
-                double angle = Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, dot))));
-                if (lookHorizontal.crossProduct(deltaHorizontal).yCoord < 0) angle = -angle;
-
-                // 计算距离相关参数
-                double distance = Math.sqrt(delta.xCoord * delta.xCoord + delta.yCoord * delta.yCoord + delta.zCoord * delta.zCoord);
-                double radiusRatio = Math.min(Math.max((distance - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0), 1); // 100-1000米映射到0-1
-                double renderRadius = MIN_RADIUS + (circleRadius - MIN_RADIUS) * radiusRatio; // 20像素到最大半径
-
-                // 计算屏幕坐标
-                double radian = Math.toRadians(angle);
-                double markerX = sx + renderRadius * Math.sin(-radian);
-                double markerY = sy - renderRadius * Math.cos(radian);
-
-                // 绘制文字
-                MCH_RWRResult rwrResult = getTargetTypeOnRadar(entity, ac);
-                String text = rwrResult.name;
-                int color = rwrResult.color;
-                int textWidth = Minecraft.getMinecraft().fontRenderer.getStringWidth(text);
-                Minecraft.getMinecraft().fontRenderer.drawString(
-                    text,
-                    (int) (markerX - (double) textWidth / 2),
-                    (int) (markerY - 4),
-                    color, true
-                );
-            }
+            long nowTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
+            RwrHudState hudState = updateRwrHudState(ac, nowTick);
+            renderRwrThreatRing(mc, sc, ac, player, sx, sy, RWR_SIZE, event.partialTicks, hudState, nowTick);
         }
         GL11.glPopMatrix();
+    }
+
+    private void renderRwrThreatRing(Minecraft mc, ScaledResolution sc, MCH_EntityAircraft ac, EntityPlayer player,
+                                     double centerX, double centerY, int rwrSize, float partialTicks, RwrHudState state, long nowTick) {
+        if (mc == null || sc == null || ac == null || player == null || ac.worldObj == null) {
+            return;
+        }
+        double halfSize = sc.getScaledHeight() * (rwrSize / SCREEN_HEIGHT_ADAPT_CONSTANT) * 0.5D;
+        double outerRadius = halfSize * 0.88D;
+        double innerRadius = Math.max(10.0D, outerRadius * 0.22D);
+        double minDistance = _MIN_DISTANCE;
+        double maxDistance = 1024.0;
+        if (ac.getAcInfo() != null && ac.getAcInfo().radarMaxTargetRange > 0.0F) {
+            maxDistance = Math.min(maxDistance, ac.getAcInfo().radarMaxTargetRange);
+        }
+        if (maxDistance <= minDistance) {
+            minDistance = Math.max(0.0D, maxDistance - 50.0D);
+        }
+        List<RwrThreatPlot> plots = new ArrayList<RwrThreatPlot>();
+        List<MCH_RWRThreatEvent> events = MCH_RWRThreatClientTracker.getEvents(ac.getEntityId());
+        for (MCH_RWRThreatEvent evt : events) {
+            if (evt == null || evt.emitterId == ac.getEntityId()) {
+                continue;
+            }
+            String name = normalizeRwrSourceName(evt.sourceName);
+            if (name.isEmpty() || "?".equals(name)) {
+                continue;
+            }
+            double distance = evt.distanceMeters > 0.0F ? evt.distanceMeters
+                : (maxDistance - MCH_RWRThreatEvent.clamp01(evt.strength) * (maxDistance - minDistance));
+            if (distance <= 1.0E-4D) {
+                continue;
+            }
+            distance = Math.max(minDistance, Math.min(maxDistance, distance));
+            double rangeNorm = (distance - minDistance) / Math.max(1.0D, maxDistance - minDistance);
+            rangeNorm = Math.max(0.0D, Math.min(1.0D, rangeNorm));
+            double ringRadius = innerRadius + (outerRadius - innerRadius) * rangeNorm;
+            double ang = Math.toRadians(evt.bearingDeg - 90.0D);
+            double px = centerX + Math.cos(ang) * ringRadius;
+            double py = centerY + Math.sin(ang) * ringRadius;
+            boolean isMsl = evt.threatMode == MCH_RWRThreatEvent.MODE_MSL_ACTIVE || evt.threatMode == MCH_RWRThreatEvent.MODE_MSL_DATALINK;
+            int color = resolveThreatColor(evt, nowTick);
+            if (isMsl && state != null && state.missileUntilTick >= nowTick) {
+                boolean strong = ((nowTick / RWR_MSL_BLINK_TICK) & 1L) == 0L;
+                color = strong ? 0xFF2D2D : 0xCC3030;
+            }
+            plots.add(new RwrThreatPlot(px, py, color, name, isMsl, distance));
+        }
+        if (plots.isEmpty()) {
+            return;
+        }
+        Collections.sort(plots, new Comparator<RwrThreatPlot>() {
+            @Override
+            public int compare(RwrThreatPlot a, RwrThreatPlot b) {
+                return Double.compare(b.distance, a.distance);
+            }
+        });
+        int maxPlots = Math.min(12, plots.size());
+        for (int i = 0; i < maxPlots; i++) {
+            RwrThreatPlot p = plots.get(i);
+            drawRadarText(mc, sc, p.label, p.x, p.y, p.color, true, 0.90F);
+        }
+    }
+
+    private int resolveThreatColor(MCH_RWRThreatEvent evt, long nowTick) {
+        byte threatMode = evt.threatMode;
+        if (threatMode == MCH_RWRThreatEvent.MODE_MSL_ACTIVE || threatMode == MCH_RWRThreatEvent.MODE_MSL_DATALINK) {
+            boolean strong = ((nowTick / RWR_MSL_BLINK_TICK) & 1L) == 0L;
+            return strong ? 0xFF2D2D : 0xCC3030;
+        }
+        if (threatMode == MCH_RWRThreatEvent.MODE_STT) {
+            return 0xFF4A4A;
+        }
+        if (threatMode == MCH_RWRThreatEvent.MODE_TRACK) {
+            return 0xFF8A3A;
+        }
+        if (evt.emitterKind == MCH_RWRThreatEvent.EMITTER_AIRCRAFT) {
+            return RADAR_UI_COLOR_GREEN;
+        }
+        return RADAR_UI_COLOR_AMBER;
+    }
+
+    private boolean isRwrEmitterThreat(MCH_EntityAircraft emitter, MCH_EntityAircraft target) {
+        if (emitter == null || target == null || emitter == target || emitter.getAcInfo() == null || target.getAcInfo() == null) {
+            return false;
+        }
+        if (!emitter.getAcInfo().enableRadar || emitter.isDestroyed() || !isAircraftMannedForEmissionAnySeat(emitter)) {
+            return false;
+        }
+        double maxRange = emitter.getAcInfo().radarMaxTargetRange > 0.0F ? emitter.getAcInfo().radarMaxTargetRange : _MAX_DISTANCE;
+        float scanAz = Math.max(0.0F, Math.min(360.0F, emitter.getAcInfo().radarScanAzimuthDeg));
+        float scanEl = Math.max(0.0F, Math.min(180.0F, emitter.getAcInfo().radarScanElevationDeg));
+        if (scanAz <= 0.0F || scanEl <= 0.0F) {
+            return false;
+        }
+        double dx = target.posX - emitter.posX;
+        double dy = target.posY - emitter.posY;
+        double dz = target.posZ - emitter.posZ;
+        double distSq = dx * dx + dy * dy + dz * dz;
+        if (distSq < _MIN_DISTANCE * _MIN_DISTANCE || distSq > maxRange * maxRange) {
+            return false;
+        }
+        double yaw = Math.toRadians(interpolate(emitter.rotationYaw, emitter.prevRotationYaw, 1.0F));
+        double pitch = Math.toRadians(interpolate(emitter.rotationPitch, emitter.prevRotationPitch, 1.0F));
+        double fx = -Math.sin(yaw) * Math.cos(pitch);
+        double fy = -Math.sin(pitch);
+        double fz = Math.cos(yaw) * Math.cos(pitch);
+        double forwardPitch = Math.toDegrees(Math.atan2(fy, Math.sqrt(fx * fx + fz * fz)));
+        double horiz = Math.sqrt(dx * dx + dz * dz);
+        if (horiz <= 1.0E-6D) {
+            horiz = 1.0E-6D;
+        }
+        double targetPitch = Math.toDegrees(Math.atan2(dy, horiz));
+        double relElev = targetPitch - forwardPitch;
+        double fhl = Math.sqrt(fx * fx + fz * fz);
+        if (fhl <= 1.0E-6D) {
+            return false;
+        }
+        double fhx = fx / fhl;
+        double fhz = fz / fhl;
+        double thx = dx / horiz;
+        double thz = dz / horiz;
+        double dot = fhx * thx + fhz * thz;
+        dot = Math.max(-1.0D, Math.min(1.0D, dot));
+        double relAz = Math.toDegrees(Math.acos(dot));
+        double crossY = fhx * thz - fhz * thx;
+        if (crossY < 0.0D) {
+            relAz = -relAz;
+        }
+        return Math.abs(relAz) <= scanAz * 0.5D && Math.abs(relElev) <= scanEl * 0.5D;
+    }
+
+    private boolean isAircraftMannedForEmissionAnySeat(MCH_EntityAircraft ac) {
+        if (ac == null) {
+            return false;
+        }
+        if (ac.getRiddenByEntity() != null) {
+            return true;
+        }
+        for (int sid = 1; sid <= ac.getSeatNum(); sid++) {
+            if (ac.getEntityBySeatId(sid) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static class RwrThreatPlot {
+        final double x;
+        final double y;
+        final int color;
+        final String label;
+        final boolean isMissile;
+        final double distance;
+
+        RwrThreatPlot(double x, double y, int color, String label, boolean isMissile, double distance) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.label = label;
+            this.isMissile = isMissile;
+            this.distance = distance;
+        }
+    }
+
+    private static RwrHudState updateRwrHudState(MCH_EntityAircraft ac, long nowTick) {
+        int aircraftId = ac.getEntityId();
+        boolean shouldWatchLog = MCH_RadarDebug.isRwrWatchEnabled()
+            && nowTick % Math.max(1, MCH_RadarDebug.getRwrWatchIntervalTick()) == 0L;
+        RwrHudState state = rwrHudStateMap.get(aircraftId);
+        if (state == null) {
+            state = new RwrHudState();
+            rwrHudStateMap.put(aircraftId, state);
+        }
+        MCH_RWRThreatTable table = MCH_RWRThreatClientTracker.getTable(aircraftId);
+        if (table == null || table.events == null) {
+            state.scanEvents.clear();
+            state.lockSourceName = "";
+            state.lockUntilTick = -1L;
+            state.missileSourceName = "";
+            state.missileUntilTick = -1L;
+            if (shouldWatchLog) {
+                MCH_RadarDebug.appendManual(
+                    "RWRWATCH acId=%d tick=%d table=empty scanPulse=false scanSound=false lockSound=false lock=false msl=false",
+                    aircraftId, nowTick
+                );
+            }
+            return state;
+        }
+        state.scanEvents.clear();
+        state.lockSourceName = "";
+        state.lockUntilTick = -1L;
+        state.missileSourceName = "";
+        state.missileUntilTick = -1L;
+        Map<Integer, Integer> newSearchTtlByEmitter = new HashMap<Integer, Integer>();
+        boolean scanPulseTriggered = false;
+
+        for (MCH_RWRThreatEvent evt : table.events) {
+            if (evt == null || evt.ttlTick <= 0) {
+                continue;
+            }
+            long until = nowTick + evt.ttlTick;
+            String source = normalizeRwrSourceName(evt.sourceName);
+            if (evt.threatMode == MCH_RWRThreatEvent.MODE_SEARCH) {
+                Long old = state.scanEvents.get(source);
+                if (old == null || until > old.longValue()) {
+                    state.scanEvents.put(source, until);
+                }
+                Integer prevTtl = state.searchTtlByEmitter.get(evt.emitterId);
+                if (prevTtl == null || evt.ttlTick > prevTtl.intValue() + 1) {
+                    scanPulseTriggered = true;
+                }
+                newSearchTtlByEmitter.put(evt.emitterId, evt.ttlTick);
+            } else if (evt.threatMode == MCH_RWRThreatEvent.MODE_TRACK || evt.threatMode == MCH_RWRThreatEvent.MODE_STT) {
+                if (until > state.lockUntilTick) {
+                    state.lockUntilTick = until;
+                    state.lockSourceName = source;
+                }
+            } else if (evt.threatMode == MCH_RWRThreatEvent.MODE_MSL_ACTIVE || evt.threatMode == MCH_RWRThreatEvent.MODE_MSL_DATALINK) {
+                if (until > state.missileUntilTick) {
+                    state.missileUntilTick = until;
+                    state.missileSourceName = source;
+                }
+            }
+        }
+
+        while (state.scanEvents.size() > RWR_EVENT_MAX_ROWS) {
+            String oldest = state.scanEvents.keySet().iterator().next();
+            state.scanEvents.remove(oldest);
+        }
+        state.searchTtlByEmitter.clear();
+        state.searchTtlByEmitter.putAll(newSearchTtlByEmitter);
+        boolean playedScanSound = false;
+        boolean playedLockSound = false;
+        if (scanPulseTriggered) {
+            long lastScanSound = rwrLastScanSoundTickMap.containsKey(aircraftId) ? rwrLastScanSoundTickMap.get(aircraftId) : -RWR_SCAN_EVENT_TTL;
+            if (nowTick - lastScanSound >= 2L) {
+                playedScanSound = playRwrSoundWithFallback(ac, RWR_SCAN_SOUND, RWR_SCAN_SOUND_FALLBACK);
+                if (playedScanSound) {
+                    rwrLastScanSoundTickMap.put(aircraftId, nowTick);
+                }
+            }
+        }
+        if (state.lockUntilTick >= nowTick && !state.lockSourceName.isEmpty()) {
+            long lastLockSound = rwrLastLockSoundTickMap.containsKey(aircraftId) ? rwrLastLockSoundTickMap.get(aircraftId) : -RWR_LOCK_SOUND_INTERVAL;
+            if (nowTick - lastLockSound >= RWR_LOCK_SOUND_INTERVAL) {
+                playedLockSound = playRwrSoundWithFallback(ac, RWR_LOCK_SOUND, RWR_LOCK_SOUND_FALLBACK);
+                if (playedLockSound) {
+                    rwrLastLockSoundTickMap.put(aircraftId, nowTick);
+                }
+            }
+        } else {
+            rwrLastLockSoundTickMap.remove(aircraftId);
+        }
+        if (shouldWatchLog) {
+            MCH_RadarDebug.appendManual(
+                "RWRWATCH acId=%d tick=%d events=%d scanRows=%d scanPulse=%s scanSound=%s lockSound=%s lock=%s lockSrc=%s lockTtl=%d msl=%s mslSrc=%s mslTtl=%d scanSrc=%s",
+                aircraftId,
+                nowTick,
+                table.events.size(),
+                state.scanEvents.size(),
+                String.valueOf(scanPulseTriggered),
+                String.valueOf(playedScanSound),
+                String.valueOf(playedLockSound),
+                String.valueOf(state.lockUntilTick >= nowTick && !state.lockSourceName.isEmpty()),
+                state.lockSourceName.isEmpty() ? "-" : state.lockSourceName,
+                state.lockUntilTick >= nowTick ? (state.lockUntilTick - nowTick) : -1L,
+                String.valueOf(state.missileUntilTick >= nowTick && !state.missileSourceName.isEmpty()),
+                state.missileSourceName.isEmpty() ? "-" : state.missileSourceName,
+                state.missileUntilTick >= nowTick ? (state.missileUntilTick - nowTick) : -1L,
+                state.scanEvents.keySet().toString()
+            );
+        }
+        return state;
+    }
+
+    private static boolean playRwrSoundWithFallback(MCH_EntityAircraft ac, String primary, String fallback) {
+        try {
+            W_McClient.MOD_playSoundFX(primary, 1.0F, 1.0F);
+            return true;
+        } catch (Throwable primaryEx) {
+            MCH_RadarDebug.traceVerbose(ac != null ? ac.worldObj : null, ac, "RWR sound missing primary=%s", primary);
+        }
+        if (fallback != null && !fallback.isEmpty()) {
+            try {
+                W_McClient.MOD_playSoundFX(fallback, 1.0F, 1.0F);
+                MCH_RadarDebug.traceVerbose(ac != null ? ac.worldObj : null, ac, "RWR sound fallback=%s", fallback);
+                return true;
+            } catch (Throwable fallbackEx) {
+                MCH_RadarDebug.traceVerbose(ac != null ? ac.worldObj : null, ac, "RWR sound missing fallback=%s", fallback);
+            }
+        }
+        return false;
+    }
+
+    private static String normalizeRwrSourceName(String sourceName) {
+        if (sourceName == null) {
+            return "?";
+        }
+        String n = sourceName.trim();
+        return n.isEmpty() ? "?" : n;
+    }
+
+    private void drawRwrHudAlerts(Minecraft mc, ScaledResolution sc, MCH_EntityAircraft ac, double centerX, double centerY, int rwrSize, RwrHudState state, long nowTick) {
+        if (mc == null || sc == null || state == null) {
+            return;
+        }
+        if (!hasVisibleRwrAlerts(state, nowTick)) {
+            return;
+        }
+        RwrHudLayout layout = resolveRwrHudLayout(ac, rwrSize, sc);
+        double clipX = centerX + layout.offsetX;
+        double clipY = centerY + layout.offsetY;
+        double clipW = layout.width;
+        double clipH = layout.height;
+        drawRwrAlertMask(clipX, clipY, clipW, clipH, layout.frameColor, nowTick);
+        ScissorState ss = beginScissor(mc, sc, clipX, clipY, clipW, clipH);
+        try {
+            double lineY = clipY + 2.0D;
+            if (state.missileUntilTick >= nowTick && !state.missileSourceName.isEmpty()) {
+                boolean blinkStrong = ((nowTick / RWR_MSL_BLINK_TICK) & 1L) == 0L;
+                int mslColor = blinkStrong ? withAlpha(0xFF2D2D, 0xFF) : withAlpha(0xFF2D2D, 0x8C);
+                drawRadarText(mc, sc, state.missileSourceName, clipX + 3.0D, lineY, mslColor, false, layout.fontScale);
+                lineY += layout.lineStep + 1.0D;
+            }
+            if (state.lockUntilTick >= nowTick && !state.lockSourceName.isEmpty()) {
+                boolean blinkStrong = ((nowTick / RWR_LOCK_BLINK_TICK) & 1L) == 0L;
+                int lockColor = blinkStrong ? withAlpha(0xFF4A4A, 0xFF) : withAlpha(0xFF4A4A, 0x90);
+                drawRadarText(mc, sc, state.lockSourceName, clipX + 3.0D, lineY, lockColor, false, layout.fontScale);
+                lineY += layout.lineStep + 1.0D;
+            }
+            for (Map.Entry<String, Long> e : state.scanEvents.entrySet()) {
+                if (e.getValue() < nowTick || lineY + layout.lineStep > clipY + clipH) {
+                    continue;
+                }
+                long remain = e.getValue() - nowTick;
+                float t = Math.max(0.0F, Math.min(1.0F, remain / (float) RWR_SCAN_EVENT_TTL));
+                int alpha = (int) (100.0F + 155.0F * t);
+                int color = withAlpha(layout.scanColor, alpha);
+                drawRadarText(mc, sc, e.getKey(), clipX + 3.0D, lineY, color, false, layout.fontScale);
+                lineY += layout.lineStep;
+            }
+        } finally {
+            endScissor(ss);
+        }
+    }
+
+    private boolean hasVisibleRwrAlerts(RwrHudState state, long nowTick) {
+        if (state == null) {
+            return false;
+        }
+        if (state.missileUntilTick >= nowTick && !state.missileSourceName.isEmpty()) {
+            return true;
+        }
+        if (state.lockUntilTick >= nowTick && !state.lockSourceName.isEmpty()) {
+            return true;
+        }
+        for (Map.Entry<String, Long> e : state.scanEvents.entrySet()) {
+            if (e.getValue() >= nowTick) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static RwrHudLayout resolveRwrHudLayout(MCH_EntityAircraft ac, int rwrSize, ScaledResolution sc) {
+        double halfSize = sc.getScaledHeight() * (rwrSize / SCREEN_HEIGHT_ADAPT_CONSTANT) * 0.5D;
+        RwrHudLayout layout = new RwrHudLayout();
+        if (ac instanceof MCP_EntityPlane && ac.getAcInfo().isFloat) {
+            layout.offsetX = -halfSize * 0.75D;
+            layout.offsetY = halfSize * 0.25D;
+            layout.width = halfSize * 1.20D;
+            layout.height = halfSize * 0.55D;
+            layout.fontScale = 0.86F;
+            layout.lineStep = 9.0D;
+            layout.scanColor = 0xFFCF45;
+            layout.frameColor = 0x66FFCC00;
+            return layout;
+        }
+        if (ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle) {
+            layout.offsetX = -halfSize * 0.72D;
+            layout.offsetY = halfSize * 0.22D;
+            layout.width = halfSize * 1.16D;
+            layout.height = halfSize * 0.56D;
+            layout.fontScale = 0.85F;
+            layout.lineStep = 9.0D;
+            layout.scanColor = 0xFFDD55;
+            layout.frameColor = 0x66FFE400;
+            return layout;
+        }
+        if (ac instanceof MCH_EntityHeli) {
+            layout.offsetX = -halfSize * 0.70D;
+            layout.offsetY = halfSize * 0.26D;
+            layout.width = halfSize * 1.12D;
+            layout.height = halfSize * 0.52D;
+            layout.fontScale = 0.87F;
+            layout.lineStep = 9.0D;
+            layout.scanColor = 0x66FF66;
+            layout.frameColor = 0x6600FF66;
+            return layout;
+        }
+        layout.offsetX = -halfSize * 0.70D;
+        layout.offsetY = halfSize * 0.24D;
+        layout.width = halfSize * 1.12D;
+        layout.height = halfSize * 0.52D;
+        layout.fontScale = 0.87F;
+        layout.lineStep = 9.0D;
+        layout.scanColor = 0x66FF66;
+        layout.frameColor = 0x6600FF66;
+        return layout;
+    }
+
+    private void drawRwrAlertMask(double x, double y, double w, double h, int frameArgb, long nowTick) {
+        float baseAlpha = ((frameArgb >>> 24) & 0xFF) / 255.0F;
+        prepareShapeRenderState(frameArgb & 0x00FFFFFF, baseAlpha);
+        Tessellator tess = Tessellator.instance;
+        // Subtle background plate to make text integrated with custom RWR artwork.
+        tess.startDrawingQuads();
+        tess.addVertex(x, y + h, 0.0D);
+        tess.addVertex(x + w, y + h, 0.0D);
+        tess.addVertex(x + w, y, 0.0D);
+        tess.addVertex(x, y, 0.0D);
+        tess.draw();
+        restoreShapeRenderState();
+        // Top sweep line with tick-based opacity alternation.
+        int sweepAlpha = ((nowTick / 5L) & 1L) == 0L ? 0xAA : 0x55;
+        prepareShapeRenderState(frameArgb & 0x00FFFFFF, sweepAlpha / 255.0F);
+        GL11.glLineWidth(1.0F);
+        tess.startDrawing(GL11.GL_LINES);
+        tess.addVertex(x + 1.0D, y + 1.0D, 0.0D);
+        tess.addVertex(x + w - 1.0D, y + 1.0D, 0.0D);
+        tess.draw();
+        restoreShapeRenderState();
+        // Border frame.
+        prepareShapeRenderState(frameArgb & 0x00FFFFFF, 0xCC / 255.0F);
+        GL11.glLineWidth(1.0F);
+        tess.startDrawing(GL11.GL_LINE_LOOP);
+        tess.addVertex(x, y + h, 0.0D);
+        tess.addVertex(x + w, y + h, 0.0D);
+        tess.addVertex(x + w, y, 0.0D);
+        tess.addVertex(x, y, 0.0D);
+        tess.draw();
+        restoreShapeRenderState();
+    }
+
+    private static int withAlpha(int rgb, int alpha) {
+        return ((alpha & 0xFF) << 24) | (rgb & 0x00FFFFFF);
+    }
+
+    private ScissorState beginScissor(Minecraft mc, ScaledResolution sc, double x, double y, double w, double h) {
+        ScissorState state = new ScissorState();
+        state.wasEnabled = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+        int scale = sc.getScaleFactor();
+        int sx = (int) Math.floor(x * scale);
+        int sy = (int) Math.floor((sc.getScaledHeight_double() - (y + h)) * scale);
+        int sw = Math.max(1, (int) Math.ceil(w * scale));
+        int sh = Math.max(1, (int) Math.ceil(h * scale));
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(sx, sy, sw, sh);
+        return state;
+    }
+
+    private void endScissor(ScissorState state) {
+        if (state == null || !state.wasEnabled) {
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        }
     }
 
     public static Vec3 getDirection(Entity e, float factor) {
@@ -400,24 +841,51 @@ public class MCH_RenderRWR {
         double axisDeg = -90.0D;
         int scanTick = Math.max(1, ac.getAcInfo().radarScanTick);
         long t = ac.worldObj.getTotalWorldTime();
-        double phase = ((double)(t % scanTick) + partialTicks) / (double)scanTick;
-        if (phase > 1.0D) {
-            phase = phase - Math.floor(phase);
-        }
         int aircraftId = ac.getEntityId();
         RadarTrackState trackState = getOrCreateRadarTrackState(aircraftId);
         tickRadarTrackState(trackState, t);
+        boolean acmMode = trackState.acmMode;
+        float acmFovDeg = 5.0F;
+        double acmMaxDistance;
+        if (ac.getAcInfo().radarMaxTargetRange > 0.0F) {
+            acmMaxDistance = Math.max(minDistance + 1.0D, ac.getAcInfo().radarMaxTargetRange * 0.5D);
+        } else {
+            acmMaxDistance = Math.max(minDistance + 1.0D, maxDistance * 0.5D);
+        }
+        double renderMaxDistance = acmMode ? acmMaxDistance : maxDistance;
+        int acmScanTick = Math.max(1, scanTick / 4);
+        int usedScanTick = acmMode ? acmScanTick : scanTick;
+        double phase = ((double)(t % usedScanTick) + partialTicks) / (double)usedScanTick;
+        if (phase > 1.0D) {
+            phase = phase - Math.floor(phase);
+        }
         boolean srcLikeMode = "SRC".equals(searchType) || "GMTI_SRC".equals(searchType);
-        boolean hideSweepOnLock = srcLikeMode && trackState.trackingTargetId > 0;
+        boolean hideSweepOnLock = !acmMode && srcLikeMode && trackState.trackingTargetId > 0;
         decayRadarContactsStatic(aircraftId, t);
         if (ac.jammingTick <= 0) {
-            refreshRadarContacts(aircraftId, ac, player, t, partialTicks, scanTick, scanAngleDeg, elevationDeg, elevationRef, elevationCoverage, followTurretYaw, minDistance, maxDistance);
+            if (acmMode) {
+                refreshRadarContactsAcm(aircraftId, ac, player, t, partialTicks, usedScanTick, acmFovDeg, elevationDeg, elevationRef, elevationCoverage, followTurretYaw, minDistance, renderMaxDistance);
+                if (trackState.trackingTargetId > 0) {
+                    trackState.acmMode = false;
+                    acmMode = false;
+                }
+            } else {
+                refreshRadarContacts(aircraftId, ac, player, t, partialTicks, usedScanTick, scanAngleDeg, elevationDeg, elevationRef, elevationCoverage, followTurretYaw, minDistance, maxDistance);
+            }
         }
-        drawRadarScanSkeleton(sx, adjustedCy, radius, scanAngleDeg, phase, axisDeg, panelFillAlpha, radarUiColor, !hideSweepOnLock);
+        boolean showMainSweep = !hideSweepOnLock && !acmMode;
+        // Keep normal radar panel elements visible in ACM; only replace the sweep animation.
+        drawRadarScanSkeleton(sx, adjustedCy, radius, scanAngleDeg, phase, axisDeg, panelFillAlpha, radarUiColor, showMainSweep);
         drawTrackingSectorOverlay(sx, adjustedCy, radius, axisDeg, scanAngleDeg, trackAzDeg, panelFillAlpha, radarUiColor);
+        if (acmMode) {
+            drawAcmRadarSectorOverlay(ac, player, sx, adjustedCy, radius, axisDeg, phase, acmFovDeg, elevationRef, followTurretYaw, partialTicks, radarUiColor);
+            drawAcmScanOverlay(sc, acmFovDeg, radarUiColor, ac.ticksExisted, followTurretYaw);
+        }
         drawDataLinkFovRing(ac, player, trackState, sc);
         String modeLabel = searchType;
-        if (trackState.trackingTargetId > 0) {
+        if (acmMode) {
+            modeLabel = "ACM";
+        } else if (trackState.trackingTargetId > 0) {
             if ("SRC".equals(searchType)) {
                 modeLabel = "STT";
             } else if ("TWS".equals(searchType)) {
@@ -432,13 +900,14 @@ public class MCH_RenderRWR {
         } else if ("GMTI_TWS".equals(searchType)) {
             modeLabel = "GMTI TWS";
         }
-        renderRadarPanelScaleText(mc, sc, sx, adjustedCy, radius, scanAngleDeg, elevationDeg, elevationCoverage, maxDistance, modeLabel, radarUiColor);
+        renderRadarPanelScaleText(mc, sc, sx, adjustedCy, radius, scanAngleDeg, elevationDeg, elevationCoverage, renderMaxDistance, modeLabel, radarUiColor);
         if (ac.jammingTick <= 0) {
-            renderRadarContacts(mc, sc, ac, player, aircraftId, sx, adjustedCy, radius, minRadius, axisDeg, partialTicks, elevationRef, followTurretYaw, minDistance, maxDistance, radarUiColor);
+            renderRadarContacts(mc, sc, ac, player, aircraftId, sx, adjustedCy, radius, minRadius, axisDeg, partialTicks, elevationRef, followTurretYaw, minDistance, renderMaxDistance, radarUiColor);
         }
         if (ac.jammingTick > 0) {
             drawRWRCircle(sx, adjustedCy, sc, RWR_jammed, panelSize);
         }
+        sendRadarLockHeartbeat(ac, aircraftId, trackState, t);
         maybeLogDataLinkWatch(ac, player, trackState, searchType, t);
     }
 
@@ -597,6 +1066,75 @@ public class MCH_RenderRWR {
         }
         tess.draw();
         restoreShapeRenderState();
+    }
+
+    private void drawAcmScanOverlay(ScaledResolution sc, float acmFovDeg, int radarUiColor, int ticks, boolean followTurretYaw) {
+        if (sc == null) {
+            return;
+        }
+        // Keep ACM box centered on current view direction (crosshair).
+        double cx = sc.getScaledWidth_double() * 0.5D;
+        double cy = sc.getScaledHeight_double() * 0.5D;
+        Minecraft mc = Minecraft.getMinecraft();
+        float cameraFovDeg = mc != null && mc.gameSettings != null ? mc.gameSettings.fovSetting : 70.0F;
+        cameraFovDeg = Math.max(20.0F, Math.min(170.0F, cameraFovDeg));
+        double baseRadius = Math.min(sc.getScaledWidth_double(), sc.getScaledHeight_double()) * 0.5D;
+        double acmRadius = baseRadius
+            * Math.tan(Math.toRadians(acmFovDeg * 0.5D))
+            / Math.tan(Math.toRadians(cameraFovDeg * 0.5D));
+        acmRadius = Math.max(8.0D, Math.min(baseRadius * 0.35D, acmRadius));
+        float alpha = (ticks / 3) % 2 == 0 ? 1.0F : 0.45F;
+        prepareShapeRenderState(radarUiColor, alpha);
+        GL11.glLineWidth(1.0F);
+        Tessellator tess = Tessellator.instance;
+        tess.startDrawing(GL11.GL_LINE_LOOP);
+        tess.addVertex(cx - acmRadius, cy - acmRadius, 0.0D);
+        tess.addVertex(cx + acmRadius, cy - acmRadius, 0.0D);
+        tess.addVertex(cx + acmRadius, cy + acmRadius, 0.0D);
+        tess.addVertex(cx - acmRadius, cy + acmRadius, 0.0D);
+        tess.draw();
+        double sweepPhase = ((ticks % 6) + 0.5D) / 6.0D;
+        double sx = cx - acmRadius + acmRadius * 2.0D * sweepPhase;
+        tess.startDrawing(GL11.GL_LINES);
+        tess.addVertex(sx, cy - acmRadius, 0.0D);
+        tess.addVertex(sx, cy + acmRadius, 0.0D);
+        tess.draw();
+        restoreShapeRenderState();
+    }
+
+    private static double[] getMouseScreenPosStatic(ScaledResolution sc) {
+        double sw = sc.getScaledWidth_double();
+        double sh = sc.getScaledHeight_double();
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.displayWidth <= 0 || mc.displayHeight <= 0) {
+            return new double[]{sw * 0.5D, sh * 0.5D};
+        }
+        double mx = (double)Mouse.getX() * sw / (double)mc.displayWidth;
+        // LWJGL mouse Y origin is bottom-left; GUI uses top-left.
+        double my = sh - (double)Mouse.getY() * sh / (double)mc.displayHeight - 1.0D;
+        mx = Math.max(0.0D, Math.min(sw, mx));
+        my = Math.max(0.0D, Math.min(sh, my));
+        return new double[]{mx, my};
+    }
+
+    private void drawAcmRadarSectorOverlay(MCH_EntityAircraft ac, EntityPlayer player, double cx, double cy, double radius,
+                                           double axisDeg, double phase, float acmFovDeg, String elevationRef,
+                                           boolean followTurretYaw, float partialTicks, int radarUiColor) {
+        if (ac == null || player == null || radius <= 1.0D) {
+            return;
+        }
+        double centerBearing = 0.0D;
+        if (followTurretYaw) {
+            double[] center = computeAcmCenterAnglesFromMouse(ac, player, partialTicks, elevationRef, followTurretYaw);
+            if (center != null) {
+                centerBearing = center[0];
+            }
+        }
+        double localAxisDeg = axisDeg + centerBearing;
+        float fillAlpha = 0.10F;
+        drawSectorFilled(cx, cy, radius, acmFovDeg, localAxisDeg, radarUiColor, fillAlpha);
+        drawSectorOutline(cx, cy, radius, acmFovDeg, localAxisDeg, radarUiColor, 1.0F);
+        drawSectorSweepLine(cx, cy, radius, acmFovDeg, phase, localAxisDeg, radarUiColor, 1.0F);
     }
 
     private void drawSectorFilled(double cx, double cy, double radius, float scanAngleDeg, double axisDeg, int rgb, float alpha) {
@@ -1054,8 +1592,8 @@ public class MCH_RenderRWR {
         refreshRadarContactsStatic(aircraftId, ac, player, worldTick, partialTicks, scanTick, scanAngleDeg, elevationDeg, elevationRef, elevationCoverage, followTurretYaw, minDistance, maxDistance);
     }
 
-    public static boolean isTankRadarContactVisible(MCH_EntityAircraft ac, EntityPlayer player, MCH_EntityInfo entity, float partialTicks) {
-        if (ac == null || player == null || entity == null || !(ac instanceof MCH_EntityTank)) {
+    public static boolean isRadarContactVisible(MCH_EntityAircraft ac, EntityPlayer player, MCH_EntityInfo entity, float partialTicks) {
+        if (ac == null || player == null || entity == null) {
             return false;
         }
         if (ac.getAcInfo() == null || !ac.getAcInfo().enableRadar) {
@@ -1086,6 +1624,10 @@ public class MCH_RenderRWR {
         return state != null && state.trackingTargetId == entity.entityId;
     }
 
+    public static boolean isTankRadarContactVisible(MCH_EntityAircraft ac, EntityPlayer player, MCH_EntityInfo entity, float partialTicks) {
+        return isRadarContactVisible(ac, player, entity, partialTicks);
+    }
+
     private static void refreshRadarContactsStatic(int aircraftId, MCH_EntityAircraft ac, EntityPlayer player, long worldTick, float partialTicks, int scanTick,
                                                    float scanAngleDeg, float elevationDeg, String elevationRef, String elevationCoverage, boolean followTurretYaw,
                                                    double minDistance, double maxDistance) {
@@ -1095,6 +1637,17 @@ public class MCH_RenderRWR {
             return;
         }
         radarLastScanSlot.put(aircraftId, slot);
+        if (!isAircraftMannedForRadarEmission(ac)) {
+            Map<Integer, RadarContact> cache = radarContactCache.get(aircraftId);
+            if (cache != null) {
+                cache.clear();
+            }
+            RadarTrackState state = radarTrackStateMap.get(aircraftId);
+            if (state != null && state.trackingTargetId > 0) {
+                setTrackingTarget(ac, aircraftId, state, -1);
+            }
+            return;
+        }
         float pBase = Math.max(0.0F, Math.min(1.0F, ac.getAcInfo().radarDetectChanceBase));
         int holdTick = Math.max(1, ac.getAcInfo().radarContactHoldTick);
         String searchType = normalizeRadarSearchType(ac.getAcInfo() != null ? ac.getAcInfo().radarSearchType : "SRC");
@@ -1176,7 +1729,7 @@ public class MCH_RenderRWR {
                 if (MCH_RadarDebug.isEnabled()) {
                     MCH_RadarDebug.trace(ac.worldObj, ac, "track drop acId=%d target=%d reason=%s", aircraftId, trackState.trackingTargetId, invalidReason);
                 }
-                trackState.trackingTargetId = -1;
+                setTrackingTarget(ac, aircraftId, trackState, -1);
             }
         }
         if (trackState.selectedTargetId > 0) {
@@ -1187,7 +1740,7 @@ public class MCH_RenderRWR {
                     MCH_RadarDebug.trace(ac.worldObj, ac, "select drop acId=%d target=%d reason=%s", aircraftId, trackState.selectedTargetId, reason);
                 }
                 if (trackState.trackingTargetId == trackState.selectedTargetId) {
-                    trackState.trackingTargetId = -1;
+                    setTrackingTarget(ac, aircraftId, trackState, -1);
                 }
                 trackState.selectedTargetId = -1;
             }
@@ -1202,6 +1755,142 @@ public class MCH_RenderRWR {
         }
     }
 
+    private static void refreshRadarContactsAcm(int aircraftId, MCH_EntityAircraft ac, EntityPlayer player, long worldTick, float partialTicks, int scanTick,
+                                                float acmFovDeg, float elevationDeg, String elevationRef, String elevationCoverage, boolean followTurretYaw,
+                                                double minDistance, double maxDistance) {
+        long slot = worldTick / Math.max(1, scanTick);
+        Long lastSlot = radarLastAcmScanSlot.get(aircraftId);
+        if (lastSlot != null && lastSlot.longValue() == slot) {
+            return;
+        }
+        radarLastAcmScanSlot.put(aircraftId, slot);
+        RadarTrackState trackState = getOrCreateRadarTrackState(aircraftId);
+        Map<Integer, RadarContact> cache = radarContactCache.get(aircraftId);
+        if (cache == null) {
+            cache = new HashMap<Integer, RadarContact>();
+            radarContactCache.put(aircraftId, cache);
+        }
+        String searchType = normalizeRadarSearchType(ac.getAcInfo() != null ? ac.getAcInfo().radarSearchType : "SRC");
+        boolean gmtiMode = isGmtiMode(searchType);
+        float minAltitude = ac.getAcInfo() != null ? ac.getAcInfo().radarMinScanAltitude : 10.0F;
+        float maxAltitude = ac.getAcInfo() != null ? ac.getAcInfo().radarMaxScanAltitude : 25.0F;
+        float scanAzLimit = Math.max(0.0F, Math.min(360.0F, ac.getAcInfo().radarScanAzimuthDeg));
+        float scanElLimit = Math.max(0.0F, Math.min(180.0F, ac.getAcInfo().radarScanElevationDeg));
+        float acmHalf = acmFovDeg * 0.5F;
+        double acmCenterBearing = 0.0D;
+        double acmCenterElevation = 0.0D;
+        if (followTurretYaw) {
+            double[] center = computeAcmCenterAnglesFromMouse(ac, player, partialTicks, elevationRef, followTurretYaw);
+            if (center != null) {
+                acmCenterBearing = center[0];
+                acmCenterElevation = center[1];
+            }
+        }
+        int holdTick = Math.max(2, ac.getAcInfo().radarContactHoldTick / 2);
+        int bestId = -1;
+        double bestScore = Double.MAX_VALUE;
+        for (MCH_EntityInfo info : getServerLoadedEntityStatic()) {
+            boolean trackable = gmtiMode ? isGmtiTrackableEntity(info) : isRadarTrackableEntity(info);
+            if (!trackable || !isValidEntity(info, player, minDistance)) {
+                continue;
+            }
+            if (isOwnLaunchedMissile(ac, player, info) || isSameTeamTarget(player, ac, info) || isTargetCountermeasureActive(ac, info)) {
+                continue;
+            }
+            RadarProjection proj = projectContactStatic(ac, player, info, partialTicks, elevationRef, followTurretYaw);
+            if (proj == null || proj.distance <= 1.0E-4D || proj.distance > maxDistance) {
+                continue;
+            }
+            if (scanAzLimit < 359.9F && Math.abs(proj.bearingDeg) > scanAzLimit * 0.5D) {
+                continue;
+            }
+            if (!isElevationInCoverageStatic(proj.elevationDeg, scanElLimit, elevationCoverage)) {
+                continue;
+            }
+            double targetAgl = computeAgl(ac.worldObj, info.posX, info.posY, info.posZ);
+            if (gmtiMode) {
+                if (targetAgl > maxAltitude) {
+                    continue;
+                }
+            } else if (targetAgl < minAltitude) {
+                continue;
+            }
+            double relBearing = wrapDeg180(proj.bearingDeg - acmCenterBearing);
+            double relElevation = proj.elevationDeg - acmCenterElevation;
+            if (Math.abs(relBearing) > acmHalf || Math.abs(relElevation) > acmHalf) {
+                continue;
+            }
+            RadarContact c = cache.get(info.entityId);
+            if (c == null) {
+                c = new RadarContact();
+                cache.put(info.entityId, c);
+            }
+            c.ttl = holdTick;
+            double score = Math.abs(relBearing) + Math.abs(relElevation) + proj.distance * 0.001D;
+            if (score < bestScore) {
+                bestScore = score;
+                bestId = info.entityId;
+            }
+        }
+        if (bestId > 0) {
+            trackState.selectedTargetId = bestId;
+            trackState.trackingTargetId = bestId;
+            trackState.acmMode = false;
+            trackState.lastTrackToggleTick = worldTick;
+            if (MCH_RadarDebug.isEnabled()) {
+                MCH_RadarDebug.trace(ac.worldObj, ac,
+                    "acm auto-lock acId=%d target=%d fov=%.1f range=%.1f modeExit=AUTO_CAPTURE",
+                    aircraftId, bestId, acmFovDeg, maxDistance);
+            }
+        }
+    }
+
+    private static double[] computeAcmCenterAnglesFromMouse(MCH_EntityAircraft ac, EntityPlayer player, float partialTicks, String elevationRef, boolean followTurretYaw) {
+        if (ac == null || player == null) {
+            return null;
+        }
+        Vec3 lookVec = player.getLook(partialTicks);
+        if (lookVec == null) {
+            lookVec = getDirection(player, partialTicks);
+        }
+        if (lookVec == null) {
+            return null;
+        }
+        double fx = lookVec.xCoord;
+        double fy = lookVec.yCoord;
+        double fz = lookVec.zCoord;
+        double fl = Math.sqrt(fx * fx + fy * fy + fz * fz);
+        if (fl <= 1.0E-6D) {
+            return null;
+        }
+        fx /= fl;
+        fy /= fl;
+        fz /= fl;
+        double rayDist = 4096.0D;
+        double pX = interpolate(player.posX, player.lastTickPosX, partialTicks);
+        double pY = interpolate(player.posY, player.lastTickPosY, partialTicks);
+        double pZ = interpolate(player.posZ, player.lastTickPosZ, partialTicks);
+        double xPos = pX + fx * rayDist;
+        double yPos = pY + fy * rayDist;
+        double zPos = pZ + fz * rayDist;
+        RadarProjection mouseProj = projectPointStatic(ac, player, xPos, yPos, zPos, partialTicks, elevationRef, followTurretYaw);
+        if (mouseProj == null) {
+            return null;
+        }
+        return new double[]{mouseProj.bearingDeg, mouseProj.elevationDeg};
+    }
+
+    private static double wrapDeg180(double deg) {
+        double d = deg;
+        while (d > 180.0D) {
+            d -= 360.0D;
+        }
+        while (d < -180.0D) {
+            d += 360.0D;
+        }
+        return d;
+    }
+
     private static RadarProjection projectContact(MCH_EntityAircraft ac, EntityPlayer player, MCH_EntityInfo info, float partialTicks, String elevationRef, boolean followTurretYaw) {
         return projectContactStatic(ac, player, info, partialTicks, elevationRef, followTurretYaw);
     }
@@ -1213,9 +1902,9 @@ public class MCH_RenderRWR {
         double xPos = interpolate(info.posX, info.lastTickPosX, partialTicks);
         double yPos = interpolate(info.posY, info.lastTickPosY, partialTicks);
         double zPos = interpolate(info.posZ, info.lastTickPosZ, partialTicks);
-        double pX = player.posX + (player.posX - player.lastTickPosX) * partialTicks;
-        double pY = player.posY + (player.posY - player.lastTickPosY) * partialTicks;
-        double pZ = player.posZ + (player.posZ - player.lastTickPosZ) * partialTicks;
+        double pX = interpolate(player.posX, player.lastTickPosX, partialTicks);
+        double pY = interpolate(player.posY, player.lastTickPosY, partialTicks);
+        double pZ = interpolate(player.posZ, player.lastTickPosZ, partialTicks);
         double dx = xPos - pX;
         double dy = yPos - pY;
         double dz = zPos - pZ;
@@ -1235,9 +1924,9 @@ public class MCH_RenderRWR {
         if (ac == null || player == null) {
             return null;
         }
-        double pX = player.posX + (player.posX - player.lastTickPosX) * partialTicks;
-        double pY = player.posY + (player.posY - player.lastTickPosY) * partialTicks;
-        double pZ = player.posZ + (player.posZ - player.lastTickPosZ) * partialTicks;
+        double pX = interpolate(player.posX, player.lastTickPosX, partialTicks);
+        double pY = interpolate(player.posY, player.lastTickPosY, partialTicks);
+        double pZ = interpolate(player.posZ, player.lastTickPosZ, partialTicks);
         double dx = xPos - pX;
         double dy = yPos - pY;
         double dz = zPos - pZ;
@@ -1279,9 +1968,11 @@ public class MCH_RenderRWR {
             fy = 0.0D;
             fz = Math.cos(yaw);
         }
-        double rx = fz;
+        // Right vector in MC coordinates should be forward x up = (-fz, 0, fx).
+        // Previous sign mirrored left/right on radar projection.
+        double rx = -fz;
         double ry = 0.0D;
-        double rz = -fx;
+        double rz = fx;
         double rLen = Math.sqrt(rx * rx + ry * ry + rz * rz);
         if (rLen < 1.0E-6D) {
             rx = 1.0D;
@@ -1292,10 +1983,10 @@ public class MCH_RenderRWR {
         rx /= rLen;
         ry /= rLen;
         rz /= rLen;
-        // Up vector must be forward x right (not right x forward), otherwise elevation sign is inverted.
-        double ux = fy * rz - fz * ry;
-        double uy = fz * rx - fx * rz;
-        double uz = fx * ry - fy * rx;
+        // With corrected right vector, use up = right x forward to keep elevation sign consistent.
+        double ux = ry * fz - rz * fy;
+        double uy = rz * fx - rx * fz;
+        double uz = rx * fy - ry * fx;
         double fComp = tx * fx + ty * fy + tz * fz;
         double rComp = tx * rx + ty * ry + tz * rz;
         double uComp = tx * ux + ty * uy + tz * uz;
@@ -1539,6 +2230,37 @@ public class MCH_RenderRWR {
         return "GMTI_SRC".equals(searchType) || "GMTI_TWS".equals(searchType);
     }
 
+    private static boolean isAircraftMannedForRadarEmission(MCH_EntityAircraft ac) {
+        return ac != null && (ac.getRiddenByEntity() != null || ac.getEntityBySeatId(1) != null);
+    }
+
+    private static void setTrackingTarget(MCH_EntityAircraft ac, int aircraftId, RadarTrackState state, int newTargetId) {
+        if (state == null) {
+            return;
+        }
+        int oldTargetId = state.trackingTargetId;
+        state.trackingTargetId = newTargetId;
+        if (oldTargetId != newTargetId && ac != null && ac.worldObj != null && ac.worldObj.isRemote) {
+            MCH_MOD.getPacketHandler().sendToServer(new PacketRadarLockState(aircraftId, newTargetId));
+        }
+    }
+
+    private static void sendRadarLockHeartbeat(MCH_EntityAircraft ac, int aircraftId, RadarTrackState state, long nowTick) {
+        if (ac == null || state == null || ac.worldObj == null || !ac.worldObj.isRemote) {
+            return;
+        }
+        if (state.trackingTargetId <= 0) {
+            radarLockHeartbeatLastSendTick.remove(aircraftId);
+            return;
+        }
+        Long last = radarLockHeartbeatLastSendTick.get(aircraftId);
+        if (last != null && nowTick - last.longValue() < RWR_LOCK_HEARTBEAT_INTERVAL) {
+            return;
+        }
+        MCH_MOD.getPacketHandler().sendToServer(new PacketRadarLockState(aircraftId, state.trackingTargetId));
+        radarLockHeartbeatLastSendTick.put(aircraftId, nowTick);
+    }
+
     private static RadarTrackState getOrCreateRadarTrackState(int aircraftId) {
         RadarTrackState state = radarTrackStateMap.get(aircraftId);
         if (state == null) {
@@ -1569,7 +2291,7 @@ public class MCH_RenderRWR {
             if (MCH_RadarDebug.isEnabled()) {
                 MCH_RadarDebug.trace(ac.worldObj, ac, "select acId=%d target=%d reason=MANUAL_UNLOCK_BY_CAP", aircraftId, state.trackingTargetId);
             }
-            state.trackingTargetId = -1;
+            setTrackingTarget(ac, aircraftId, state, -1);
             state.lastTrackToggleTick = t;
             return -1;
         }
@@ -1629,7 +2351,7 @@ public class MCH_RenderRWR {
             if (MCH_RadarDebug.isEnabled()) {
                 MCH_RadarDebug.trace(ac.worldObj, ac, "track toggle acId=%d target=%d reason=MANUAL_CANCEL", aircraftId, state.trackingTargetId);
             }
-            state.trackingTargetId = -1;
+            setTrackingTarget(ac, aircraftId, state, -1);
             state.lastTrackToggleTick = nowTick;
             return -1;
         }
@@ -1686,10 +2408,44 @@ public class MCH_RenderRWR {
             }
             return 2;
         }
-        state.trackingTargetId = state.selectedTargetId;
+        setTrackingTarget(ac, aircraftId, state, state.selectedTargetId);
         state.lastTrackToggleTick = nowTick;
         if (MCH_RadarDebug.isEnabled()) {
             MCH_RadarDebug.trace(ac.worldObj, ac, "track toggle acId=%d target=%d reason=LOCK_ON", aircraftId, state.trackingTargetId);
+        }
+        return 1;
+    }
+
+    public static int handleRadarAcmToggleKey(boolean keyDown, EntityPlayer player, MCH_EntityAircraft ac) {
+        if (!keyDown) {
+            radarAcmKeyPrevDown = false;
+            return 0;
+        }
+        if (radarAcmKeyPrevDown) {
+            return 0;
+        }
+        radarAcmKeyPrevDown = true;
+        if (player == null || ac == null || ac.getAcInfo() == null || !ac.getAcInfo().enableRadar) {
+            return 2;
+        }
+        RadarTrackState state = getOrCreateRadarTrackState(ac.getEntityId());
+        if (state.acmMode) {
+            if (MCH_RadarDebug.isEnabled()) {
+                String reason = state.trackingTargetId > 0 ? "MANUAL_EXIT_WITH_TRACK" : "MANUAL_EXIT_NO_CAPTURE";
+                MCH_RadarDebug.trace(ac.worldObj, ac, "acm toggle acId=%d mode=OFF reason=%s sel=%d trk=%d",
+                    ac.getEntityId(), reason, state.selectedTargetId, state.trackingTargetId);
+            }
+            state.acmMode = false;
+            return -1;
+        }
+        state.acmMode = true;
+        state.selectedTargetId = -1;
+        setTrackingTarget(ac, ac.getEntityId(), state, -1);
+        if (MCH_RadarDebug.isEnabled()) {
+            float cfgRange = ac.getAcInfo().radarMaxTargetRange;
+            float acmRange = cfgRange > 0.0F ? cfgRange * 0.5F : 0.0F;
+            MCH_RadarDebug.trace(ac.worldObj, ac, "acm toggle acId=%d mode=ON fov=%.1f range=%.1f",
+                ac.getEntityId(), 5.0D, (double)acmRange);
         }
         return 1;
     }
@@ -1814,6 +2570,7 @@ public class MCH_RenderRWR {
         public int manualDropCooldownTick = 0;
         public long lastUpdateTick = -1L;
         public long lastTrackToggleTick = -1L;
+        public boolean acmMode = false;
     }
 
     private static class ContactCandidate {
@@ -1824,5 +2581,29 @@ public class MCH_RenderRWR {
     private static class RadarRenderPoint {
         public double x;
         public double y;
+    }
+
+    private static class RwrHudState {
+        public final Map<String, Long> scanEvents = new LinkedHashMap<String, Long>();
+        public final Map<Integer, Integer> searchTtlByEmitter = new HashMap<Integer, Integer>();
+        public String missileSourceName = "";
+        public long missileUntilTick = -1L;
+        public String lockSourceName = "";
+        public long lockUntilTick = -1L;
+    }
+
+    private static class RwrHudLayout {
+        public double offsetX;
+        public double offsetY;
+        public double width;
+        public double height;
+        public float fontScale;
+        public double lineStep;
+        public int scanColor;
+        public int frameColor;
+    }
+
+    private static class ScissorState {
+        public boolean wasEnabled;
     }
 }

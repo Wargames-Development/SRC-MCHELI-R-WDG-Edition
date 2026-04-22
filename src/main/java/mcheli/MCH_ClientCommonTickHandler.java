@@ -78,6 +78,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public static int hitTotalDamageClearCountdown;
     public static float hitTotalDamageScale = 2.0f;
     public static List<HitMessage> hitList = new ArrayList<>();
+    public static int nukeFlashElapsedTick = -1;
+    public static int nukeFlashDurationTick = 0;
+    public static float nukeFlashPeakAlpha = 0.0F;
+    public static float nukeFlashPow01 = 0.0F;
     public static boolean enableNew3rdCamera = true;
     public static boolean showVehicleCrossHair = false;
     @SideOnly(Side.CLIENT)
@@ -297,6 +301,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             hitTotalDamageScale *= 0.95f;
             hitTotalDamageScale = Math.max(hitTotalDamageScale, hitTotalDamageScaleOrigin);
         }
+        tickNukeFlashEffect();
 
         if (var7 != null) {
             this.ensureCameraShaderState(var7);
@@ -709,6 +714,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HELMET) {
             Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
+            renderNukeFlashOverlay(i, j, partialTicks);
 
             //渲染失明效果
             if (player != null && player.isPotionActive(Potion.blindness)
@@ -853,5 +859,92 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         public String hitDisplay;
         public float hitDamage;
         public byte hitDamageType;
+    }
+
+    public static void startNukeFlashEffect(double x, double y, double z, float explosion, float radiusFactor, int minDurationTick, int maxDurationTick) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) {
+            return;
+        }
+        float flashRadius = Math.max(1.0F, explosion * radiusFactor);
+        double dist = mc.thePlayer.getDistance(x, y, z);
+        if ((float) dist > flashRadius) {
+            return;
+        }
+
+        float dist01 = MathHelper.clamp_float((float) dist / flashRadius, 0.0F, 1.0F);
+        float pow01 = MathHelper.clamp_float(explosion / 40.0F, 0.0F, 1.0F);
+        int minTick = Math.max(1, minDurationTick);
+        int maxTick = Math.max(minTick, maxDurationTick);
+        int duration = Math.round(minTick + (maxTick - minTick) * (0.65F * pow01 + 0.35F * (1.0F - dist01) * (1.0F - dist01)));
+        duration = MathHelper.clamp_int(duration, minTick, maxTick);
+
+        float peakAlpha = MathHelper.clamp_float(0.55F + 0.40F * (0.70F * pow01 + 0.30F * (1.0F - dist01)), 0.55F, 0.95F);
+        int currentRemain = nukeFlashDurationTick - nukeFlashElapsedTick;
+        if (nukeFlashDurationTick <= 0 || duration > currentRemain || peakAlpha > nukeFlashPeakAlpha) {
+            nukeFlashDurationTick = duration;
+            nukeFlashElapsedTick = 0;
+            nukeFlashPeakAlpha = peakAlpha;
+            nukeFlashPow01 = pow01;
+        }
+    }
+
+    private static void tickNukeFlashEffect() {
+        if (nukeFlashDurationTick <= 0) {
+            return;
+        }
+        ++nukeFlashElapsedTick;
+        if (nukeFlashElapsedTick >= nukeFlashDurationTick) {
+            nukeFlashElapsedTick = -1;
+            nukeFlashDurationTick = 0;
+            nukeFlashPeakAlpha = 0.0F;
+            nukeFlashPow01 = 0.0F;
+        }
+    }
+
+    private static void renderNukeFlashOverlay(int screenW, int screenH, float partialTicks) {
+        if (nukeFlashDurationTick <= 0 || nukeFlashElapsedTick < 0) {
+            return;
+        }
+        float t = ((float) nukeFlashElapsedTick + partialTicks) / (float) nukeFlashDurationTick;
+        t = MathHelper.clamp_float(t, 0.0F, 1.0F);
+        float pulse = MathHelper.clamp_float((float) Math.sin(Math.PI * t), 0.0F, 1.0F);
+
+        float baseAlpha = 0.22F;
+        float alpha = baseAlpha + (nukeFlashPeakAlpha - baseAlpha) * pulse;
+
+        float startR = 1.00F;
+        float startG = 0.98F;
+        float startB = 0.86F;
+        float peakR = 1.00F;
+        float peakG = 1.00F;
+        float peakB = 0.94F;
+        float colorBoost = 0.08F * nukeFlashPow01;
+
+        float r = MathHelper.clamp_float(startR + (peakR - startR) * pulse + colorBoost, 0.0F, 1.0F);
+        float g = MathHelper.clamp_float(startG + (peakG - startG) * pulse + colorBoost, 0.0F, 1.0F);
+        float b = MathHelper.clamp_float(startB + (peakB - startB) * pulse, 0.0F, 1.0F);
+
+        GL11.glPushMatrix();
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthMask(false);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+
+        Tessellator tess = Tessellator.instance;
+        tess.startDrawingQuads();
+        tess.setColorRGBA((int) (r * 255.0F), (int) (g * 255.0F), (int) (b * 255.0F), (int) (MathHelper.clamp_float(alpha, 0.0F, 1.0F) * 255.0F));
+        tess.addVertex(0, screenH, 0);
+        tess.addVertex(screenW, screenH, 0);
+        tess.addVertex(screenW, 0, 0);
+        tess.addVertex(0, 0, 0);
+        tess.draw();
+
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glDepthMask(true);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glPopMatrix();
     }
 }

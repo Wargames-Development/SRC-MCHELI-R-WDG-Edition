@@ -527,6 +527,32 @@ NukeEffectOnly=true
 ;启用HBM核爆炸特效时不破坏方块（需搭配nukeyield使用）
 ;默认值 = false
 
+EnableNuke=true
+;启用 MCHR 原生纯粒子蘑菇云特效（不依赖HBM）
+;开启后优先使用原生蘑菇云，不再走HBM核爆视觉实体
+;默认值=false
+
+NukeEffectScale=1.0
+;原生蘑菇云特效缩放倍率，最终尺寸与 Explosion 共同决定
+;推荐范围=0.25~4.0
+;默认值=1.0
+
+EnableNukeFlash=true
+;是否启用核闪屏幕特效（黄白色：半透明->不透明->半透明）
+;默认值=true
+
+NukeFlashRadiusFactor=14.0
+;核闪作用半径系数，实际半径 = Explosion * NukeFlashRadiusFactor
+;默认值=14.0
+
+NukeFlashDurationMin=20
+;核闪最短持续tick
+;默认值=20
+
+NukeFlashDurationMax=80
+;核闪最长持续tick（近距离/大威力会更接近该值）
+;默认值=80
+
 DisableDestroyBlock=true
 ;启用HBM爆炸特效时不破坏方块（需搭配ExplosionType=hbmNT_Shell/ExplosionType=hbmNT_Bomb使用）
 ;默认值 = true

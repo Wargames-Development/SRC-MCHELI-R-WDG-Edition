@@ -96,6 +96,20 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private boolean armorRicochetActive = false;
     private boolean dataLinkRelayMode = false;
     private boolean activeRadarCaptured = false;
+    private boolean dataLinkTwsSelectedOnly = false;
+    private boolean missileWatchDeathLogged = false;
+    private String missileDeathReasonHint = "";
+    protected double lastTargetPosX;
+    protected double lastTargetPosY;
+    protected double lastTargetPosZ;
+    protected double lastTargetVelX;
+    protected double lastTargetVelY;
+    protected double lastTargetVelZ;
+    protected boolean hasLastKnownTarget = false;
+    protected int snapshotTargetId = 0;
+    protected double snapshotPosX, snapshotPosY, snapshotPosZ;
+    protected double snapshotVelX, snapshotVelY, snapshotVelZ;
+    protected long snapshotLastUpdate = 0L;
 
     public MCH_EntityBaseBullet(World par1World) {
         super(par1World);
@@ -292,6 +306,23 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void setDead() {
+        if (!this.missileWatchDeathLogged
+            && this.worldObj != null
+            && !this.worldObj.isRemote
+            && this instanceof MCH_IMissile
+            && MCH_RadarDebug.isMissileWatchEnabled()) {
+            String reason = this.missileDeathReasonHint != null && this.missileDeathReasonHint.length() > 0
+                ? this.missileDeathReasonHint
+                : "SET_DEAD_UNSPECIFIED";
+            this.appendMissileWatch("death", reason);
+            if ("SET_DEAD_UNSPECIFIED".equals(reason) && MCH_RadarDebug.isEnabled()) {
+                StackTraceElement[] st = Thread.currentThread().getStackTrace();
+                String caller = st.length > 2 ? st[2].toString() : "unknown";
+                MCH_RadarDebug.trace(this.worldObj, this,
+                    "msl_death_unspecified type=%s msl=%d caller=%s",
+                    this.getClass().getSimpleName(), this.getEntityId(), caller);
+            }
+        }
         super.setDead();
     }
 
@@ -305,8 +336,36 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         return super.dataWatcher.getWatchableObjectByte(31);
     }
 
+    public void setSnapshotTarget(int targetId, double px, double py, double pz, double vx, double vy, double vz) {
+        this.snapshotTargetId = targetId;
+        this.snapshotPosX = px;
+        this.snapshotPosY = py;
+        this.snapshotPosZ = pz;
+        this.snapshotVelX = vx;
+        this.snapshotVelY = vy;
+        this.snapshotVelZ = vz;
+        this.snapshotLastUpdate = System.currentTimeMillis();
+    }
+
+    public int getSnapshotTargetId() {
+        return this.snapshotTargetId;
+    }
+
+    public boolean isSnapshotTargetUsable(long staleMs) {
+        return this.snapshotTargetId > 0 && (System.currentTimeMillis() - this.snapshotLastUpdate < staleMs);
+    }
+
     public void setTargetEntity(Entity entity) {
         this.targetEntity = entity;
+        if (entity != null) {
+            this.lastTargetPosX = entity.posX;
+            this.lastTargetPosY = entity.posY;
+            this.lastTargetPosZ = entity.posZ;
+            this.lastTargetVelX = entity.motionX;
+            this.lastTargetVelY = entity.motionY;
+            this.lastTargetVelZ = entity.motionZ;
+            this.hasLastKnownTarget = true;
+        }
         if (entity == null) {
             this.setActiveRadarCaptured(false);
         }
@@ -345,6 +404,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             if (this.activeRadarCaptured) {
                 flags |= 2;
             }
+            if (this.dataLinkTwsSelectedOnly) {
+                flags |= 4;
+            }
             this.getDataWatcher().updateObject(DATAWT_DATALINK_FLAGS, flags);
         }
     }
@@ -374,6 +436,18 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             return (this.getDataWatcher().getWatchableObjectByte(DATAWT_DATALINK_FLAGS) & 2) != 0;
         }
         return this.activeRadarCaptured;
+    }
+
+    public void setDataLinkTwsSelectedOnly(boolean v) {
+        this.dataLinkTwsSelectedOnly = v;
+        syncDataLinkFlags();
+    }
+
+    public boolean isDataLinkTwsSelectedOnly() {
+        if (super.worldObj.isRemote) {
+            return (this.getDataWatcher().getWatchableObjectByte(DATAWT_DATALINK_FLAGS) & 4) != 0;
+        }
+        return this.dataLinkTwsSelectedOnly;
     }
 
     public MCH_BulletModel getBulletModel() {
@@ -631,7 +705,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             return;
         }
 
-        if (getInfo().semiActiveRadar) {
+        if (getInfo().semiActiveRadar && !this.isDataLinkRelayMode()) {
             Entity viewer = null;
             if (getInfo().enableHMS) {
                 if (this.shootingEntity != null) {
@@ -680,6 +754,72 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
     }
 
+    private boolean shouldLogMissileWatchTick() {
+        if (!MCH_RadarDebug.isMissileWatchEnabled()) {
+            return false;
+        }
+        if (this.worldObj == null || this.worldObj.isRemote || !(this instanceof MCH_IMissile)) {
+            return false;
+        }
+        int interval = Math.max(1, MCH_RadarDebug.getMissileWatchIntervalTick());
+        return this.ticksExisted % interval == 0;
+    }
+
+    private void appendMissileWatch(String phase, String reason) {
+        if (this.worldObj == null || this.worldObj.isRemote || !(this instanceof MCH_IMissile)) {
+            return;
+        }
+        if ("death".equalsIgnoreCase(phase)) {
+            this.missileWatchDeathLogged = true;
+            this.missileDeathReasonHint = reason != null ? reason : "";
+        }
+        if (!MCH_RadarDebug.isMissileWatchEnabled() && !MCH_RadarDebug.isEnabled()) {
+            return;
+        }
+        Entity shooter = this.shootingEntity != null ? this.shootingEntity : this.shootingAircraft;
+        int shooterEntityId = this.shootingEntity != null ? this.shootingEntity.getEntityId() : -1;
+        int shooterAircraftId = this.shootingAircraft != null ? this.shootingAircraft.getEntityId() : -1;
+        int targetId = this.targetEntity != null ? this.targetEntity.getEntityId() : -1;
+        boolean targetDead = this.targetEntity != null && this.targetEntity.isDead;
+        double targetDist = -1.0D;
+        if (this.targetEntity != null) {
+            double tx = this.posX - this.targetEntity.posX;
+            double ty = this.posY - this.targetEntity.posY;
+            double tz = this.posZ - this.targetEntity.posZ;
+            targetDist = Math.sqrt(tx * tx + ty * ty + tz * tz);
+        }
+        double shooterDist = -1.0D;
+        if (shooter != null) {
+            double sx = this.posX - shooter.posX;
+            double sy = this.posY - shooter.posY;
+            double sz = this.posZ - shooter.posZ;
+            shooterDist = Math.sqrt(sx * sx + sy * sy + sz * sz);
+        }
+        boolean chunkLoaded = this.worldObj.blockExists((int)this.posX, (int)this.posY, (int)this.posZ);
+        MCH_RadarDebug.appendManual(
+            "MSLWATCH phase=%s reason=%s type=%s msl=%d tick=%d age=%d pos=(%.1f,%.1f,%.1f) motion=(%.2f,%.2f,%.2f) target=%d(dead=%s,dist=%.1f) shooterE=%d(dead=%s) shooterA=%d(dead=%s) dShooter=%.1f valid=%s dlRelay=%s captured=%s chunk=%s snapshot=%d(usable=%s) lastKnown=%s",
+            phase,
+            reason,
+            this.getClass().getSimpleName(),
+            this.getEntityId(),
+            this.worldObj.getTotalWorldTime(),
+            this.getCountOnUpdate(),
+            this.posX, this.posY, this.posZ,
+            this.motionX, this.motionY, this.motionZ,
+            targetId, String.valueOf(targetDead), targetDist,
+            shooterEntityId, String.valueOf(this.shootingEntity != null && this.shootingEntity.isDead),
+            shooterAircraftId, String.valueOf(this.shootingAircraft != null && this.shootingAircraft.isDead),
+            shooterDist,
+            String.valueOf(this.checkValid()),
+            String.valueOf(this.isDataLinkRelayMode()),
+            String.valueOf(this.isActiveRadarCaptured()),
+            String.valueOf(chunkLoaded),
+            this.snapshotTargetId,
+            String.valueOf(this.isSnapshotTargetUsable(3000L)),
+            String.valueOf(this.hasLastKnownTarget)
+        );
+    }
+
     public float getGravity() {
         return this.getInfo() != null ? this.getInfo().gravity : 0.0F;
     }
@@ -691,6 +831,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public void onUpdate() {
 
         if (!worldObj.isRemote) {
+            if (this.shouldLogMissileWatchTick()) {
+                this.appendMissileWatch("tick", "-");
+            }
             if (shootingAircraft instanceof MCH_EntityAircraft && !speedAddedFromAircraft && getInfo().speedDependsAircraft) {
                 MCH_EntityAircraft ac = (MCH_EntityAircraft) shootingAircraft;
                 double s = Math.sqrt(ac.motionX * ac.motionX + ac.motionY * ac.motionY + ac.motionZ * ac.motionZ);
@@ -748,6 +891,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (this.getInfo() == null) {
             if (this.countOnUpdate >= 2) {
                 MCH_Lib.Log((Entity) this, "##### MCH_EntityBaseBullet onUpdate() Weapon info null %d, %s, Name=%s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), this.getEntityName(), this.getName()});
+                this.appendMissileWatch("death", "WEAPON_INFO_NULL");
                 this.setDead();
                 return;
             }
@@ -765,6 +909,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (!super.worldObj.isRemote) {
             if ((int) super.posY <= 255 && !super.worldObj.blockExists((int) super.posX, (int) super.posY, (int) super.posZ)) {
                 if (this.getInfo().delayFuse <= 0) {
+                    this.appendMissileWatch("death", "OUT_OF_LOADED_CHUNK");
                     this.setDead();
                     return;
                 }
@@ -783,18 +928,37 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 --this.delayFuse;
                 if (this.delayFuse == 0) {
                     this.onUpdateTimeout();
+                    this.appendMissileWatch("death", "DELAY_FUSE_TIMEOUT");
                     this.setDead();
                     return;
                 }
             }
 
             if (!this.checkValid()) {
+                this.appendMissileWatch("death", "CHECK_VALID_FAIL");
+                if (MCH_RadarDebug.isEnabled()) {
+                    int shooterEntityId = this.shootingEntity != null ? this.shootingEntity.getEntityId() : -1;
+                    int shooterAircraftId = this.shootingAircraft != null ? this.shootingAircraft.getEntityId() : -1;
+                    boolean shooterEntityDead = this.shootingEntity != null && this.shootingEntity.isDead;
+                    boolean shooterAircraftDead = this.shootingAircraft != null && this.shootingAircraft.isDead;
+                    Entity shooter = this.shootingEntity != null ? this.shootingEntity : this.shootingAircraft;
+                    double hDistSq = shooter != null ? (this.posX - shooter.posX) * (this.posX - shooter.posX) + (this.posZ - shooter.posZ) * (this.posZ - shooter.posZ) : -1.0D;
+                    MCH_RadarDebug.trace(this.worldObj, this,
+                        "msl_death type=%s reason=CHECK_VALID_FAIL msl=%d shooterEntity=%d(death=%s) shooterAircraft=%d(death=%s) hDistSq=%.1f limitSq=33872400.0 pos=(%.1f,%.1f,%.1f)",
+                        this.getClass().getSimpleName(),
+                        this.getEntityId(),
+                        shooterEntityId, String.valueOf(shooterEntityDead),
+                        shooterAircraftId, String.valueOf(shooterAircraftDead),
+                        hDistSq,
+                        this.posX, this.posY, this.posZ);
+                }
                 this.setDead();
                 return;
             }
 
             if (this.getInfo().timeFuse > 0 && this.getCountOnUpdate() > this.getInfo().timeFuse) {
                 this.onUpdateTimeout();
+                this.appendMissileWatch("death", "TIME_FUSE_TIMEOUT");
                 this.setDead();
                 return;
             }
@@ -1657,12 +1821,39 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             result = MCH_Explosion.newExplosion(super.worldObj, param);
         }
 
-        if (this.getInfo().nukeYield > 0 && MCH_HBMUtil.isHBMLoaded) {
-            if (!this.getInfo().nukeEffectOnly) {
-                worldObj.spawnEntityInWorld((Entity) MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5));
+        if (!super.worldObj.isRemote) {
+            if (this.getInfo().enableNuke) {
+                float nukeScale = MathHelper.clamp_float(
+                    (float) (Math.sqrt(Math.max(1.0F, exp)) * 0.22D * this.getInfo().nukeEffectScale),
+                    0.6F,
+                    6.0F
+                );
+                EntityNukeTorex torex = new EntityNukeTorex(super.worldObj)
+                    .setScale(nukeScale)
+                    .setType(getInfo().effectYield);
+                torex.setPosition(this.posX + 0.5D, this.posY + 0.5D, this.posZ + 0.5D);
+                torex.ignoreFrustumCheck = true;
+                super.worldObj.spawnEntityInWorld(torex);
+                EntityNukeTorex.setTrackingRange(super.worldObj, torex, 1000);
+
+                if (this.getInfo().enableNukeFlash) {
+                    MCH_PacketEffectNukeFlash.send(
+                        this,
+                        this.posX + 0.5D,
+                        this.posY + 0.5D,
+                        this.posZ + 0.5D,
+                        exp,
+                        this.getInfo().nukeFlashRadiusFactor,
+                        this.getInfo().nukeFlashDurationMin,
+                        this.getInfo().nukeFlashDurationMax
+                    );
+                }
+            } else if (this.getInfo().nukeYield > 0 && MCH_HBMUtil.isHBMLoaded) {
+                if (!this.getInfo().nukeEffectOnly) {
+                    worldObj.spawnEntityInWorld((Entity) MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5));
+                }
+                MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, getInfo().effectYield);
             }
-            //EntityNukeTorex.statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, 0);
-            MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, getInfo().effectYield);
         }
 
         if (this.getInfo().chemYield > 0 && MCH_HBMUtil.isHBMLoaded) {

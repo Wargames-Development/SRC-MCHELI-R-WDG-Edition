@@ -22,6 +22,10 @@ public final class MCH_RadarDebug {
     private static volatile boolean verbose = false;
     private static volatile boolean dataLinkWatchEnabled = false;
     private static volatile int dataLinkWatchIntervalTick = 40;
+    private static volatile boolean missileWatchEnabled = false;
+    private static volatile int missileWatchIntervalTick = 5;
+    private static volatile boolean rwrWatchEnabled = false;
+    private static volatile int rwrWatchIntervalTick = 10;
 
     private MCH_RadarDebug() {
     }
@@ -56,6 +60,38 @@ public final class MCH_RadarDebug {
 
     public static int getDataLinkWatchIntervalTick() {
         return dataLinkWatchIntervalTick;
+    }
+
+    public static void setMissileWatchEnabled(boolean value) {
+        missileWatchEnabled = value;
+    }
+
+    public static boolean isMissileWatchEnabled() {
+        return missileWatchEnabled;
+    }
+
+    public static void setMissileWatchIntervalTick(int tick) {
+        missileWatchIntervalTick = Math.max(1, tick);
+    }
+
+    public static int getMissileWatchIntervalTick() {
+        return missileWatchIntervalTick;
+    }
+
+    public static void setRwrWatchEnabled(boolean value) {
+        rwrWatchEnabled = value;
+    }
+
+    public static boolean isRwrWatchEnabled() {
+        return rwrWatchEnabled;
+    }
+
+    public static void setRwrWatchIntervalTick(int tick) {
+        rwrWatchIntervalTick = Math.max(1, tick);
+    }
+
+    public static int getRwrWatchIntervalTick() {
+        return rwrWatchIntervalTick;
     }
 
     public static void setVerbose(boolean value) {

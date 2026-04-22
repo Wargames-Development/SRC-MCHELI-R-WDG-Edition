@@ -361,6 +361,7 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 autoUseCountermeasures(ac);
                 updateWeaponRotation(ac);
                 shotTarget(ac);
+                reportGunnerRadarLock(ac);
             } else if (this.despawnCount < 20) {
                 this.despawnCount++;
             } else if (this.ridingEntity == null || this.ticksExisted > 100) {
@@ -434,6 +435,16 @@ public class MCH_EntityGunner extends EntityLivingBase {
                 return true;
         }
         return false;
+    }
+
+    private void reportGunnerRadarLock(MCH_EntityAircraft ac) {
+        if (this.worldObj == null || this.worldObj.isRemote || ac == null) {
+            return;
+        }
+        if (MCH_MOD.rwrThreatManager == null) {
+            return;
+        }
+        MCH_MOD.rwrThreatManager.reportGunnerTracking(ac, (Entity)this, this.targetEntity);
     }
 
     public boolean canAttackEntity(EntityLivingBase entity, MCH_EntityAircraft ac, MCH_WeaponSet ws) {
