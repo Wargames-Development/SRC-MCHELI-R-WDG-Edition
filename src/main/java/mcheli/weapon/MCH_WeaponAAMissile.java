@@ -244,7 +244,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         double dot = look.dotProduct(to);
         dot = Math.max(-1.0D, Math.min(1.0D, dot));
         double angle = Math.acos(dot) * 180.0D / Math.PI;
-        return angle <= getInfo().maxDegreeOfMissile;
+        return angle <= getInfo().getEffectiveMaxDegreeOfMissile(0);
     }
 
     private boolean isSnapshotTargetUsable(Entity user, MCH_EntityInfo snap) {
@@ -274,7 +274,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         double dot = look.dotProduct(to);
         dot = Math.max(-1.0D, Math.min(1.0D, dot));
         double angle = Math.acos(dot) * 180.0D / Math.PI;
-        return angle <= getInfo().maxDegreeOfMissile;
+        return angle <= getInfo().getEffectiveMaxDegreeOfMissile(0);
     }
 
     private void sendDenyMessage(Entity user, String message) {

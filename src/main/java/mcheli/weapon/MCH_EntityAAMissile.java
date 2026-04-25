@@ -27,7 +27,7 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
     public void onUpdate() {
         super.onUpdate();
 
-        if (this.getCountOnUpdate() > 4 && this.getInfo() != null && !this.getInfo().disableSmoke) {
+        if (this.getCountOnUpdate() > 4 && this.getInfo() != null && !this.getInfo().disableSmoke && this.isWithinTrajectoryParticleEndTick()) {
             this.spawnExplosionParticle(this.getInfo().trajectoryParticleName, 3, 7.0F * this.getInfo().smokeSize * 0.5F);
         }
 
@@ -94,8 +94,10 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
                         }
                     } else if (getInfo().activeRadar) {
                         this.dlRelayLostTick = 0;
-                        // Active radar missile: autonomous scan starts only after onboard seeker capture phase.
-                        if (this.isActiveRadarCaptured() && ticksExisted % getInfo().scanInterval == 0) {
+                        if (this.isDataLinkActiveRadarDelayPhase()) {
+                            this.setActiveRadarCaptured(false);
+                        } else if (this.isActiveRadarCaptured() && ticksExisted % getInfo().scanInterval == 0) {
+                            // Active radar missile: autonomous scan starts only after onboard seeker capture phase.
                             scanForTargets();
                         }
                     }

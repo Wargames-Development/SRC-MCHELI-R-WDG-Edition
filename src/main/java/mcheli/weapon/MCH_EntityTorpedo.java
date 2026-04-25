@@ -30,7 +30,7 @@ public class MCH_EntityTorpedo extends MCH_EntityBaseBullet {
             this.onUpdateNoGuided();
         }
 
-        if (this.isInWater() && this.getInfo() != null && !this.getInfo().disableSmoke) {
+        if (this.isInWater() && this.getInfo() != null && !this.getInfo().disableSmoke && this.isWithinTrajectoryParticleEndTick()) {
             this.spawnExplosionParticle(this.getInfo().trajectoryParticleName, 3, 5.0F * this.getInfo().smokeSize * 0.5F);
         }
 

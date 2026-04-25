@@ -35,6 +35,8 @@ public class MCH_RenderBVRLockBox {
     private static final ResourceLocation FRAME = new ResourceLocation(W_MOD.DOMAIN, "textures/BVRLockBox.png");
     private static final ResourceLocation MSL = new ResourceLocation(W_MOD.DOMAIN, "textures/MSL.png");
     private static final int BOX_SIZE = 24;
+    private static final double HUD_BLEND_START_RANGE = 900.0D;
+    private static final double HUD_BLEND_END_RANGE = 1100.0D;
     public static Map<Integer, MCH_EntityInfo> currentLockedEntities = new HashMap<>();
 
     public static double[] worldToScreen(Vector3f pos, float partialTicks) {
@@ -146,15 +148,53 @@ public class MCH_RenderBVRLockBox {
         int highlightedTargetCount = 0;
         int selectedHitCount = 0;
         int trackingHitCount = 0;
+        int skippedByCanRender = 0;
+        int skippedByJamming = 0;
+        int skippedByRadarVisible = 0;
+        int skippedByMissileRange = 0;
+        int skippedByNameMask = 0;
+        int skippedByTooNear = 0;
+        double missileDisplayMaxRange = 4096.0D;
+        if (acInfo != null && acInfo.radarMaxTargetRange > 0.0F) {
+            missileDisplayMaxRange = Math.min(4096.0D, acInfo.radarMaxTargetRange);
+        }
+        boolean bvrDebugEnabled = MCH_RadarDebug.isBvrDebugEnabled();
+        boolean bvrDebugVerbose = MCH_RadarDebug.isBvrDebugVerbose();
+        boolean bvrDebugTick = bvrDebugEnabled && ac.worldObj != null && ac.worldObj.getTotalWorldTime() % 10L == 0L;
         for (MCH_EntityInfo entity : entities) {
             boolean isRadarTracking = entity.entityId == radarTrackingId;
             boolean isRadarSelected = entity.entityId == radarSelectedId;
             boolean isRadarSelectedOrTracking = isRadarTracking || isRadarSelected;
-            if (!isRadarSelectedOrTracking && !canRenderEntity(entity, player, wi, acInfo)) continue;
+            boolean isFireControlLocked = entity.entityId == fireControlLockedId;
+            if (!isRadarSelectedOrTracking && !canRenderEntity(entity, player, wi, acInfo)) {
+                skippedByCanRender++;
+                if (bvrDebugTick && (bvrDebugVerbose || isFireControlLocked)) {
+                    double distDbg = Math.sqrt(entity.getDistanceSqToEntity(ac));
+                    MCH_RadarDebug.traceBvr(ac.worldObj, ac,
+                        "bvr-filter id=%d reason=canRenderEntity_false dist=%.1f class=%s",
+                        entity.entityId, distDbg, entity.entityClassName);
+                }
+                continue;
+            }
             if(ac.jammingTick > 0) {
+                skippedByJamming++;
+                if (bvrDebugTick && (bvrDebugVerbose || isRadarSelectedOrTracking || isFireControlLocked)) {
+                    MCH_RadarDebug.traceBvr(ac.worldObj, ac,
+                        "bvr-filter id=%d reason=jamming jammingTick=%d sel=%s trk=%s fire=%s",
+                        entity.entityId, ac.jammingTick,
+                        String.valueOf(isRadarSelected), String.valueOf(isRadarTracking), String.valueOf(isFireControlLocked));
+                }
                 continue;
             }
             if (!MCH_RenderRWR.isRadarContactVisible(ac, player, entity, partialTicks)) {
+                skippedByRadarVisible++;
+                if (bvrDebugTick && (bvrDebugVerbose || isRadarSelectedOrTracking || isFireControlLocked)) {
+                    double distDbg = Math.sqrt(entity.getDistanceSqToEntity(ac));
+                    MCH_RadarDebug.traceBvr(ac.worldObj, ac,
+                        "bvr-filter id=%d reason=radarContactInvisible dist=%.1f sel=%s trk=%s fire=%s",
+                        entity.entityId, distDbg,
+                        String.valueOf(isRadarSelected), String.valueOf(isRadarTracking), String.valueOf(isFireControlLocked));
+                }
                 continue;
             }
             double gx = interpolate(entity.posX, entity.lastTickPosX, partialTicks);
@@ -179,19 +219,38 @@ public class MCH_RenderBVRLockBox {
             } else if (angle <= 100.0) alpha = 1.0f;
             else if (angle <= 110.0) alpha = 0.8f;
             else if (angle <= 120.0) alpha = 0.6f;
-            if (isMSL && dist >= 1000) continue;
+            if (isMSL && dist >= missileDisplayMaxRange) {
+                skippedByMissileRange++;
+                if (bvrDebugTick && (bvrDebugVerbose || isRadarSelectedOrTracking || isFireControlLocked)) {
+                    MCH_RadarDebug.traceBvr(ac.worldObj, ac,
+                        "bvr-filter id=%d reason=missileRange dist=%.1f max=%.1f sel=%s trk=%s fire=%s",
+                        entity.entityId, dist, missileDisplayMaxRange,
+                        String.valueOf(isRadarSelected), String.valueOf(isRadarTracking), String.valueOf(isFireControlLocked));
+                }
+                continue;
+            }
             double vdist = Math.sqrt(x * x + y * y + z * z);
-            if (vdist < 1e-4) continue;
+            if (vdist < 1e-4) {
+                skippedByTooNear++;
+                continue;
+            }
             float sPerPixel = (float) ((2.0 * vdist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
             String text;
             int color;
-            boolean isFireControlLocked = entity.entityId == fireControlLockedId;
             String targetName = rwrResult.name == null ? "" : rwrResult.name;
             renderedTargetCount++;
             if (isRadarSelected) selectedHitCount++;
             if (isRadarTracking) trackingHitCount++;
             if (isRadarSelectedOrTracking || isFireControlLocked) highlightedTargetCount++;
-            if (targetName.isEmpty() && !(isRadarSelectedOrTracking || isFireControlLocked)) continue;
+            if (targetName.isEmpty() && !(isRadarSelectedOrTracking || isFireControlLocked)) {
+                skippedByNameMask++;
+                if (bvrDebugTick && bvrDebugVerbose) {
+                    MCH_RadarDebug.traceBvr(ac.worldObj, ac,
+                        "bvr-filter id=%d reason=targetNameEmpty class=%s dist=%.1f",
+                        entity.entityId, entity.entityClassName, dist);
+                }
+                continue;
+            }
             if (targetName.isEmpty()) {
                 targetName = "UNKNOWN";
             }
@@ -203,75 +262,161 @@ public class MCH_RenderBVRLockBox {
                 color = (isRadarSelectedOrTracking || isFireControlLocked) ? 0xFF0000 : 0x00FF00;
             }
             boolean drawText = isMSL || isRadarSelectedOrTracking || (alpha >= 0.6f);
-            GL11.glPushMatrix();
-            {
-                GL11.glTranslated(x, y + 0.2, z);
-                GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
-                GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
-                GL11.glRotatef(-rollDeg, 0.0F, 0.0F, 1.0F);
-                GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
-                GL11.glDisable(GL11.GL_DEPTH_TEST);
-                GL11.glDepthMask(false);
-                GL11.glEnable(GL11.GL_BLEND);
-                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                GL11.glDisable(GL11.GL_LIGHTING);
-                if (isMSL || isRadarSelectedOrTracking || isFireControlLocked) GL11.glColor4f(1.0F, 0F, 0F, alpha);
-                else GL11.glColor4f(0F, 1.0F, 0F, alpha);
-                Minecraft.getMinecraft().getTextureManager().bindTexture(isMSL ? MSL : FRAME);
-                Tessellator tess = Tessellator.instance;
-                float half = BOX_SIZE * 0.5f;
-                tess.startDrawingQuads();
-                tess.addVertexWithUV(-half, half, 0, 0, 1);
-                tess.addVertexWithUV(half, half, 0, 1, 1);
-                tess.addVertexWithUV(half, -half, 0, 1, 0);
-                tess.addVertexWithUV(-half, -half, 0, 0, 0);
-                tess.draw();
-                if (isMSL && (isRadarSelectedOrTracking || isFireControlLocked)) {
-                    Minecraft.getMinecraft().getTextureManager().bindTexture(FRAME);
-                    tess.startDrawingQuads();
-                    tess.addVertexWithUV(-half, half, 0, 0, 1);
-                    tess.addVertexWithUV(half, half, 0, 1, 1);
-                    tess.addVertexWithUV(half, -half, 0, 1, 0);
-                    tess.addVertexWithUV(-half, -half, 0, 0, 0);
-                    tess.draw();
-                }
-                MCH_WeaponSet currentWs = ac.getCurrentWeapon(player);
-                MCH_WeaponInfo currentWi = currentWs != null ? currentWs.getInfo() : null;
-                boolean dataLinkMode = currentWi != null && currentWi.enableDataLink && (currentWi.onlyDataLink || currentWs.isDataLinkMode()) && !currentWi.antiRadiationMissile;
-                boolean inMissileFov = currentWi != null && angle <= currentWi.maxDegreeOfMissile;
-                if (dataLinkMode && inMissileFov && (isRadarSelectedOrTracking || isFireControlLocked)) {
-                    drawDualRedRings(half * 0.88F, half * 1.03F, alpha);
-                }
-                String stateText = null;
-                if (isRadarTracking) {
-                    stateText = "LOCK";
-                } else if (isRadarSelected) {
-                    stateText = "SELECT";
-                } else if (isFireControlLocked) {
-                    stateText = "LOCK";
-                }
-                if (stateText != null) {
-                    int lw = mc.fontRenderer.getStringWidth(stateText);
-                    mc.fontRenderer.drawString(stateText, -lw / 2, (int)(-half - 9.0F), 0xFF4040, false);
-                }
-                if (drawText) {
-                    GL11.glTranslatef(0.0F, BOX_SIZE * 0.5f + 8.0f, 0.0F);
-                    int fw = mc.fontRenderer.getStringWidth(text);
-                    mc.fontRenderer.drawString(text, -fw / 2, 0, color, false);
-                }
-                GL11.glEnable(GL11.GL_LIGHTING);
-                GL11.glDisable(GL11.GL_BLEND);
-                GL11.glDepthMask(true);
-                GL11.glEnable(GL11.GL_DEPTH_TEST);
-                GL11.glColor4f(1F, 1F, 1F, 1F);
+            MCH_WeaponSet currentWs = ac.getCurrentWeapon(player);
+            MCH_WeaponInfo currentWi = currentWs != null ? currentWs.getInfo() : null;
+            boolean dataLinkMode = currentWi != null && currentWi.enableDataLink && (currentWi.onlyDataLink || currentWs.isDataLinkMode()) && !currentWi.antiRadiationMissile;
+            boolean inMissileFov = currentWi != null && angle <= currentWi.getHudPreferredMissileFovDeg();
+            boolean highlight = isMSL || isRadarSelectedOrTracking || isFireControlLocked;
+            boolean showDataLinkRings = dataLinkMode && inMissileFov && (isRadarSelectedOrTracking || isFireControlLocked);
+            String stateText = null;
+            if (isRadarTracking) {
+                stateText = "LOCK";
+            } else if (isRadarSelected) {
+                stateText = "SELECT";
+            } else if (isFireControlLocked) {
+                stateText = "LOCK";
             }
-            GL11.glPopMatrix();
+            double hudBlend = getHudBlendFactor(dist);
+            float worldAlpha = (float)(alpha * (1.0D - hudBlend));
+            float hudAlpha = (float)(alpha * hudBlend);
+            if (worldAlpha > 0.01F) {
+                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, isMSL, highlight, showDataLinkRings, stateText, text, color, drawText, worldAlpha);
+            }
+            if (hudAlpha > 0.01F) {
+                HudProjection projection = projectRelativeToHud((float)gx, (float)(gy + 0.2D), (float)gz, sc, mc, partialTicks);
+                if (projection != null) {
+                    drawHudMarker(mc, projection, isMSL, highlight, showDataLinkRings, stateText, text, color, drawText, hudAlpha);
+                }
+            }
         }
         if (MCH_RadarDebug.isEnabled() && MCH_RadarDebug.isVerbose() && ac.worldObj != null && ac.worldObj.getTotalWorldTime() % 10L == 0L) {
             MCH_RadarDebug.traceVerbose(ac.worldObj, ac,
                 "bvr acId=%d radarOn=%s selectedId=%d trackingId=%d fireLockId=%d rendered=%d hl=%d selHit=%d trkHit=%d",
                 ac.getEntityId(), String.valueOf(acInfo.enableRadar), radarSelectedId, radarTrackingId, fireControlLockedId,
                 renderedTargetCount, highlightedTargetCount, selectedHitCount, trackingHitCount);
+        }
+        if (bvrDebugTick) {
+            MCH_RadarDebug.traceBvr(ac.worldObj, ac,
+                "bvr-scan acId=%d total=%d rendered=%d skipCan=%d skipJam=%d skipVisible=%d skipMslRange=%d skipName=%d skipNear=%d selectedId=%d trackingId=%d fireLockId=%d mslMax=%.1f",
+                ac.getEntityId(), entities.size(), renderedTargetCount,
+                skippedByCanRender, skippedByJamming, skippedByRadarVisible, skippedByMissileRange, skippedByNameMask, skippedByTooNear,
+                radarSelectedId, radarTrackingId, fireControlLockedId, missileDisplayMaxRange);
+        }
+    }
+
+    private void drawBillboardMarker(Minecraft mc, RenderManager rm, float rollDeg, double x, double y, double z, float sPerPixel,
+                                     boolean isMSL, boolean highlight, boolean showDataLinkRings, String stateText,
+                                     String text, int textColor, boolean drawText, float alpha) {
+        GL11.glPushMatrix();
+        GL11.glTranslated(x, y, z);
+        GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
+        GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
+        GL11.glRotatef(-rollDeg, 0.0F, 0.0F, 1.0F);
+        GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
+        drawMarkerCore(mc, isMSL, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
+        GL11.glPopMatrix();
+    }
+
+    private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, boolean highlight, boolean showDataLinkRings,
+                               String stateText, String text, int textColor, boolean drawText, float alpha) {
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GL11.glOrtho(0.0D, projection.screenW, projection.screenH, 0.0D, -1.0D, 1.0D);
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GL11.glTranslated(projection.x, projection.y, 0.0D);
+        drawMarkerCore(mc, isMSL, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
+        GL11.glPopMatrix();
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPopMatrix();
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+    }
+
+    private void drawMarkerCore(Minecraft mc, boolean isMSL, boolean highlight, boolean showDataLinkRings, String stateText,
+                                String text, int textColor, boolean drawText, float alpha) {
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthMask(false);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDisable(GL11.GL_LIGHTING);
+        if (highlight) {
+            GL11.glColor4f(1.0F, 0F, 0F, alpha);
+        } else {
+            GL11.glColor4f(0F, 1.0F, 0F, alpha);
+        }
+        mc.getTextureManager().bindTexture(isMSL ? MSL : FRAME);
+        Tessellator tess = Tessellator.instance;
+        float half = BOX_SIZE * 0.5f;
+        tess.startDrawingQuads();
+        tess.addVertexWithUV(-half, half, 0, 0, 1);
+        tess.addVertexWithUV(half, half, 0, 1, 1);
+        tess.addVertexWithUV(half, -half, 0, 1, 0);
+        tess.addVertexWithUV(-half, -half, 0, 0, 0);
+        tess.draw();
+        if (isMSL && highlight) {
+            mc.getTextureManager().bindTexture(FRAME);
+            tess.startDrawingQuads();
+            tess.addVertexWithUV(-half, half, 0, 0, 1);
+            tess.addVertexWithUV(half, half, 0, 1, 1);
+            tess.addVertexWithUV(half, -half, 0, 1, 0);
+            tess.addVertexWithUV(-half, -half, 0, 0, 0);
+            tess.draw();
+        }
+        if (showDataLinkRings) {
+            drawDualRedRings(half * 0.88F, half * 1.03F, alpha);
+        }
+        if (stateText != null) {
+            int lw = mc.fontRenderer.getStringWidth(stateText);
+            mc.fontRenderer.drawString(stateText, -lw / 2, (int)(-half - 9.0F), 0xFF4040, false);
+        }
+        if (drawText) {
+            GL11.glTranslatef(0.0F, BOX_SIZE * 0.5f + 8.0f, 0.0F);
+            int fw = mc.fontRenderer.getStringWidth(text);
+            mc.fontRenderer.drawString(text, -fw / 2, 0, textColor, false);
+        }
+        GL11.glEnable(GL11.GL_LIGHTING);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glDepthMask(true);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glColor4f(1F, 1F, 1F, 1F);
+    }
+
+    private double getHudBlendFactor(double dist) {
+        if (dist <= HUD_BLEND_START_RANGE) {
+            return 0.0D;
+        }
+        if (dist >= HUD_BLEND_END_RANGE) {
+            return 1.0D;
+        }
+        return (dist - HUD_BLEND_START_RANGE) / (HUD_BLEND_END_RANGE - HUD_BLEND_START_RANGE);
+    }
+
+    private HudProjection projectRelativeToHud(float worldX, float worldY, float worldZ, ScaledResolution sc, Minecraft mc, float partialTicks) {
+        double[] projected = worldToScreen(new Vector3f(worldX, worldY, worldZ), partialTicks);
+        double sx = projected[0];
+        double sy = projected[1];
+        if (sx < 0.0D || sy < 0.0D) {
+            return null;
+        }
+        if (sx < -BOX_SIZE || sx > sc.getScaledWidth_double() + BOX_SIZE || sy < -BOX_SIZE || sy > sc.getScaledHeight_double() + BOX_SIZE) {
+            return null;
+        }
+        return new HudProjection(sx, sy, sc.getScaledWidth_double(), sc.getScaledHeight_double());
+    }
+
+    private static class HudProjection {
+        final double x;
+        final double y;
+        final double screenW;
+        final double screenH;
+
+        HudProjection(double x, double y, double screenW, double screenH) {
+            this.x = x;
+            this.y = y;
+            this.screenW = screenW;
+            this.screenH = screenH;
         }
     }
 
@@ -328,8 +473,14 @@ public class MCH_RenderBVRLockBox {
             if (entity.getDistanceSqToEntity(player) > wi.minRangeBVR * wi.minRangeBVR) {
                 return true;
             }
-        } else if (isMissile(entity.entityClassName) && distSq > 20 * 20 && distSq < 300 * 300) {
-            return true;
+        } else if (isMissile(entity.entityClassName)) {
+            double missileRange = 4096.0D;
+            if (acInfo != null && acInfo.radarMaxTargetRange > 0.0F) {
+                missileRange = Math.min(4096.0D, acInfo.radarMaxTargetRange);
+            }
+            if (distSq > 20 * 20 && distSq < missileRange * missileRange) {
+                return true;
+            }
         }
         return result;
     }

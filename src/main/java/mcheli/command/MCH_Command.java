@@ -6,6 +6,7 @@ import mcheli.MCH_FreeLookDebug;
 import mcheli.MCH_Lib;
 import mcheli.MCH_WaypointNavDebug;
 import mcheli.MCH_MOD;
+import mcheli.MCH_ExplosionDebug;
 import mcheli.MCH_PacketNotifyServerSettings;
 import mcheli.MCH_RadarDebug;
 import mcheli.MCH_ServerSettings;
@@ -67,17 +68,19 @@ public class MCH_Command extends CommandBase {
     public static final String CMD_ATTACK_ENTITY = "attackentity";
     public static final String CMD_SHOW_BB = "showboundingbox";
     public static final String CMD_DEBUG = "debug";
+    public static final String CMD_EXP_DEBUG = "expdebug";
     public static final String CMD_SPAWNER_FREEZE = "spawnerfreeze";
     public static final String CMD_SPAWNER_DEBUG = "spawnerdebug";
     public static final String CMD_STRUCT_DEBUG = "structdebug";
     public static final String CMD_RADAR_DEBUG = "radardebug";
+    public static final String CMD_BVR_DEBUG = "bvrdebug";
     public static final String CMD_MSL_WATCH = "mslwatch";
     public static final String CMD_RWR_WATCH = "rwrwatch";
     public static final String CMD_RWR_DIAG = "rwrdiag";
     public static final String CMD_RWR_SOUND = "rwrsound";
     public static final String CMD_STRUCT = "struct";
     public static final String CMD_LIST = "list";
-    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "mslwatch", "rwrwatch", "rwrdiag", "rwrsound", "struct", "list"};
+    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "expdebug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "bvrdebug", "mslwatch", "rwrwatch", "rwrdiag", "rwrsound", "struct", "list"};
     public static MCH_Command instance = new MCH_Command();
 
 
@@ -273,6 +276,22 @@ public class MCH_Command extends CommandBase {
                             MCH_PacketNotifyServerSettings.sendAll();
                             sender.addChatMessage(new ChatComponentText("Debug waypoint label: " + (MCH_ServerSettings.enableDebugWaypointLabel ? "ON" : "OFF")));
                         }
+                    } else if (prm[0].equalsIgnoreCase("expdebug")) {
+                        if (prm.length == 1 || (prm.length >= 2 && prm[1].equalsIgnoreCase("toggle"))) {
+                            MCH_EntityBaseBullet.setExplosionDebugEnabled(!MCH_EntityBaseBullet.isExplosionDebugEnabled());
+                        } else if (prm.length >= 2 && prm[1].equalsIgnoreCase("status")) {
+                            sender.addChatMessage(new ChatComponentText("Explosion debug: " + (MCH_EntityBaseBullet.isExplosionDebugEnabled() ? "ON" : "OFF")));
+                            sender.addChatMessage(new ChatComponentText("Log file: " + MCH_ExplosionDebug.getLogPath()));
+                            return;
+                        } else if (prm.length >= 2 && (prm[1].equalsIgnoreCase("true") || prm[1].equalsIgnoreCase("false")
+                            || prm[1].equalsIgnoreCase("on") || prm[1].equalsIgnoreCase("off"))) {
+                            boolean on = prm[1].equalsIgnoreCase("true") || prm[1].equalsIgnoreCase("on");
+                            MCH_EntityBaseBullet.setExplosionDebugEnabled(on);
+                        } else {
+                            throw new WrongUsageException("/mcheli expdebug [on|off|true|false|toggle|status]", new Object[0]);
+                        }
+                        sender.addChatMessage(new ChatComponentText("Explosion debug: " + (MCH_EntityBaseBullet.isExplosionDebugEnabled() ? "ON" : "OFF")));
+                        sender.addChatMessage(new ChatComponentText("Log file: " + MCH_ExplosionDebug.getLogPath()));
                     } else if (prm[0].equalsIgnoreCase("spawnerfreeze")) {
                         if (prm.length == 1 || (prm.length >= 2 && prm[1].equalsIgnoreCase("toggle"))) {
                             MCH_ServerSettings.freezeConfigSpawner = !MCH_ServerSettings.freezeConfigSpawner;
@@ -291,6 +310,8 @@ public class MCH_Command extends CommandBase {
                         this.executeStructureDebug(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("radardebug")) {
                         this.executeRadarDebug(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("bvrdebug")) {
+                        this.executeBvrDebug(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("mslwatch")) {
                         this.executeMissileWatch(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("rwrwatch")) {
@@ -643,6 +664,10 @@ public class MCH_Command extends CommandBase {
                     if (prm.length == 3 && (prm[1].equalsIgnoreCase("gunner") || prm[1].equalsIgnoreCase("freelook") || prm[1].equalsIgnoreCase("waypoint") || prm[1].equalsIgnoreCase("waypointnav"))) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false"});
                     }
+                } else if (prm[0].equalsIgnoreCase("expdebug")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"on", "off", "true", "false", "toggle", "status"});
+                    }
                 } else if (prm[0].equalsIgnoreCase("spawnerfreeze")) {
                     if (prm.length == 2) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
@@ -683,6 +708,13 @@ public class MCH_Command extends CommandBase {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
                     }
                     if (prm.length == 3 && prm[1].equalsIgnoreCase("dlwatch")) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
+                    }
+                } else if (prm[0].equalsIgnoreCase("bvrdebug")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status", "verbose"});
+                    }
+                    if (prm.length == 3 && prm[1].equalsIgnoreCase("verbose")) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false", "toggle", "status"});
                     }
                 } else if (prm[0].equalsIgnoreCase("mslwatch")) {
@@ -866,6 +898,38 @@ public class MCH_Command extends CommandBase {
             sb.append("PASS static checks; chance=").append(r.chance).append(" (random gate)");
             sender.addChatMessage(new ChatComponentText(sb.toString()));
         }
+    }
+
+    private void executeBvrDebug(ICommandSender sender, String[] args) {
+        if (args.length >= 2 && args[1].equalsIgnoreCase("verbose")) {
+            if (args.length == 2 || (args.length >= 3 && args[2].equalsIgnoreCase("toggle"))) {
+                MCH_RadarDebug.setBvrDebugVerbose(!MCH_RadarDebug.isBvrDebugVerbose());
+            } else if (args.length >= 3 && args[2].equalsIgnoreCase("status")) {
+                sender.addChatMessage(new ChatComponentText("BVR debug verbose: " + (MCH_RadarDebug.isBvrDebugVerbose() ? "ON" : "OFF")));
+                return;
+            } else if (args.length == 3 && (args[2].equalsIgnoreCase("true") || args[2].equalsIgnoreCase("false"))) {
+                MCH_RadarDebug.setBvrDebugVerbose(parseBoolean(sender, args[2]));
+            } else {
+                throw new WrongUsageException("/mcheli bvrdebug verbose [true|false|toggle|status]", new Object[0]);
+            }
+            sender.addChatMessage(new ChatComponentText("BVR debug verbose: " + (MCH_RadarDebug.isBvrDebugVerbose() ? "ON" : "OFF")));
+            return;
+        }
+        if (args.length == 1 || (args.length >= 2 && args[1].equalsIgnoreCase("toggle"))) {
+            MCH_RadarDebug.setBvrDebugEnabled(!MCH_RadarDebug.isBvrDebugEnabled());
+        } else if (args.length >= 2 && args[1].equalsIgnoreCase("status")) {
+            sender.addChatMessage(new ChatComponentText("BVR debug monitor: " + (MCH_RadarDebug.isBvrDebugEnabled() ? "ON" : "OFF")));
+            sender.addChatMessage(new ChatComponentText("BVR debug verbose: " + (MCH_RadarDebug.isBvrDebugVerbose() ? "ON" : "OFF")));
+            sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getBvrLogPath()));
+            return;
+        } else if (args.length == 2 && (args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("false"))) {
+            MCH_RadarDebug.setBvrDebugEnabled(parseBoolean(sender, args[1]));
+        } else {
+            throw new WrongUsageException("/mcheli bvrdebug [true|false|toggle|status|verbose ...]", new Object[0]);
+        }
+        sender.addChatMessage(new ChatComponentText("BVR debug monitor: " + (MCH_RadarDebug.isBvrDebugEnabled() ? "ON" : "OFF")));
+        sender.addChatMessage(new ChatComponentText("BVR debug verbose: " + (MCH_RadarDebug.isBvrDebugVerbose() ? "ON" : "OFF")));
+        sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getBvrLogPath()));
     }
 
     private void executeRadarDebug(ICommandSender sender, String[] args) {

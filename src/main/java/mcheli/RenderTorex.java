@@ -91,6 +91,7 @@ public class RenderTorex extends Render {
 
         boolean cullEnabled = GL11.glIsEnabled(GL11.GL_CULL_FACE);
         boolean lightingEnabled = GL11.glIsEnabled(GL11.GL_LIGHTING);
+        boolean depthTestEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         if (cullEnabled) {
             GL11.glDisable(GL11.GL_CULL_FACE);
         }
@@ -106,6 +107,9 @@ public class RenderTorex extends Render {
         GL11.glDisable(GL11.GL_ALPHA_TEST);
         GL11.glDepthMask(false);
         GL11.glDisable(GL11.GL_LIGHTING);
+        if (depthTestEnabled) {
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+        }
 
         this.bindTexture(CLOUDLET_TEXTURE);
 
@@ -146,6 +150,9 @@ public class RenderTorex extends Render {
 
         GL11.glDepthMask(true);
         GL11.glEnable(GL11.GL_ALPHA_TEST);
+        if (depthTestEnabled) {
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+        }
         if (lightingEnabled) {
             GL11.glEnable(GL11.GL_LIGHTING);
         }
@@ -164,6 +171,7 @@ public class RenderTorex extends Render {
 
         boolean cullEnabled = GL11.glIsEnabled(GL11.GL_CULL_FACE);
         boolean lightingEnabled = GL11.glIsEnabled(GL11.GL_LIGHTING);
+        boolean depthTestEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         if (cullEnabled) {
             GL11.glDisable(GL11.GL_CULL_FACE);
         }
@@ -178,6 +186,9 @@ public class RenderTorex extends Render {
         GL11.glDisable(GL11.GL_ALPHA_TEST);
         GL11.glDepthMask(false);
         GL11.glDisable(GL11.GL_LIGHTING);
+        if (depthTestEnabled) {
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+        }
 
         this.bindTexture(FLASH_TEXTURE);
 
@@ -212,6 +223,9 @@ public class RenderTorex extends Render {
 
         GL11.glDepthMask(true);
         GL11.glEnable(GL11.GL_ALPHA_TEST);
+        if (depthTestEnabled) {
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+        }
         if (lightingEnabled) {
             GL11.glEnable(GL11.GL_LIGHTING);
         }
@@ -331,7 +345,7 @@ public class RenderTorex extends Render {
 
     private int getCloudletDrawLimit(double distSq) {
         int particleSetting = Minecraft.getMinecraft().gameSettings.particleSetting;
-        int baseLimit = particleSetting == 0 ? 4500 : (particleSetting == 1 ? 2600 : 1400);
+        int baseLimit = particleSetting == 0 ? 6200 : (particleSetting == 1 ? 3600 : 2000);
         double distScale = distSq > 40000.0D ? 0.35D
             : (distSq > 14400.0D ? 0.55D : (distSq > 6400.0D ? 0.75D : 1.0D));
         return Math.max(300, (int) (baseLimit * distScale));

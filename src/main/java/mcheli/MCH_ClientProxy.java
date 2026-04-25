@@ -100,6 +100,12 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
                     wi.bulletModel = new MCH_BulletModel(wi.bulletModelName, m);
                 }
             }
+            if (!wi.bulletModelNameEnd.isEmpty()) {
+                m = MCH_ModelManager.load("bullets", wi.bulletModelNameEnd);
+                if (m != null) {
+                    wi.bulletModelEnd = new MCH_BulletModel(wi.bulletModelNameEnd, m);
+                }
+            }
 
             if (!wi.bombletModelName.isEmpty()) {
                 m = MCH_ModelManager.load("bullets", wi.bombletModelName);

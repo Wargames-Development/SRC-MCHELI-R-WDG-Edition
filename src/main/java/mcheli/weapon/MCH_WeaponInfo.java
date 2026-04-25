@@ -72,6 +72,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public boolean destruct;
     public String trajectoryParticleName;
     public int trajectoryParticleStartTick;
+    public int trajectoryParticleEndTick;
     public boolean disableSmoke;
     public MCH_Cartridge cartridge;
     public MCH_Color color;
@@ -96,6 +97,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float recoil;
     public String bulletModelName;
     public MCH_BulletModel bulletModel;
+    public int bulletModelEndTick;
+    public String bulletModelNameEnd;
+    public MCH_BulletModel bulletModelEnd;
     public String bombletModelName;
     public MCH_BulletModel bombletModel;
     public MCH_DamageFactor damageFactor;
@@ -131,6 +135,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 弹药导引头最大导引角度
      */
     public int maxDegreeOfMissile = 60;
+    /**
+     * 初始导引头角度阶段持续时长（tick），0=禁用
+     */
+    public int initMaxDegreeTick = 0;
+    /**
+     * 初始导引头角度阶段使用的导引角度
+     */
+    public int initMaxDegreeOfMissile = 60;
     /**
      * 脱锁延时，-1为永远锁定
      */
@@ -188,6 +200,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 导弹机动参数，越小越平滑，值设为1时为原版导弹机动，推荐值为0.1
      */
     public double turningFactor = 0.5;
+    /**
+     * 初始机动增强阶段持续时长（tick），0=禁用
+     */
+    public int initTurningFactorTick = 0;
+    /**
+     * 初始机动增强阶段使用的机动参数
+     */
+    public double initTurningFactor = 0.5;
 
     /**
      * 启用区块加载器(试验功能)
@@ -365,6 +385,25 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 是否为GPS导弹
      */
     public boolean isGPSMissile = false;
+    /**
+     * GPS导弹弹道模式
+     */
+    public boolean ballisticMissile = false;
+    public double ballisticArcFactor = 0.20D;
+    public double ballisticArcMinHeight = 20.0D;
+    public double ballisticArcMaxHeight = 400.0D;
+    public double ballisticMinDistance = 80.0D;
+    /**
+     * 中段横向正弦机动
+     */
+    public boolean ballisticLateralSine = false;
+    public double ballisticLateralAmplitude = 12.0D;
+    public double ballisticLateralWaves = 1.5D;
+    public double ballisticLateralPhaseDeg = 0.0D;
+    public double ballisticLateralStartRatio = 0.20D;
+    public double ballisticLateralEndRatio = 0.85D;
+    public double ballisticTerminalNoWeaveDist = 80.0D;
+    public double ballisticTerminalCylinderRadius = 40.0D;
 
     /**
      * 霰弹数量
@@ -488,9 +527,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.heatCount = 0;
         this.maxHeatCount = 0;
         this.bulletModelName = "";
+        this.bulletModelNameEnd = "";
         this.bombletModelName = "";
         this.bulletModel = null;
+        this.bulletModelEnd = null;
         this.bombletModel = null;
+        this.bulletModelEndTick = -1;
         this.isFAE = false;
         this.isGuidedTorpedo = false;
         this.gravity = 0.0F;
@@ -499,6 +541,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.destruct = false;
         this.trajectoryParticleName = "explode";
         this.trajectoryParticleStartTick = 0;
+        this.trajectoryParticleEndTick = -1;
         this.cartridge = null;
         this.disableSmoke = false;
         this.color = new MCH_Color();
@@ -640,6 +683,41 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         if (this.aheadSolveIntervalTick < 1) {
             this.aheadSolveIntervalTick = 1;
         }
+        if (this.trajectoryParticleEndTick >= 0 && this.trajectoryParticleEndTick < this.trajectoryParticleStartTick) {
+            this.trajectoryParticleEndTick = this.trajectoryParticleStartTick;
+        }
+        if (this.bulletModelEndTick < -1) {
+            this.bulletModelEndTick = -1;
+        }
+        if (this.ballisticArcFactor < 0.0D) {
+            this.ballisticArcFactor = 0.0D;
+        }
+        if (this.ballisticArcMinHeight < 0.0D) {
+            this.ballisticArcMinHeight = 0.0D;
+        }
+        if (this.ballisticArcMaxHeight < this.ballisticArcMinHeight) {
+            this.ballisticArcMaxHeight = this.ballisticArcMinHeight;
+        }
+        if (this.ballisticMinDistance < 0.0D) {
+            this.ballisticMinDistance = 0.0D;
+        }
+        if (this.ballisticLateralAmplitude < 0.0D) {
+            this.ballisticLateralAmplitude = 0.0D;
+        }
+        if (this.ballisticLateralWaves < 0.0D) {
+            this.ballisticLateralWaves = 0.0D;
+        }
+        this.ballisticLateralStartRatio = Math.max(0.0D, Math.min(1.0D, this.ballisticLateralStartRatio));
+        this.ballisticLateralEndRatio = Math.max(0.0D, Math.min(1.0D, this.ballisticLateralEndRatio));
+        if (this.ballisticLateralEndRatio < this.ballisticLateralStartRatio) {
+            this.ballisticLateralEndRatio = this.ballisticLateralStartRatio;
+        }
+        if (this.ballisticTerminalNoWeaveDist < 0.0D) {
+            this.ballisticTerminalNoWeaveDist = 0.0D;
+        }
+        if (this.ballisticTerminalCylinderRadius < 0.0D) {
+            this.ballisticTerminalCylinderRadius = 0.0D;
+        }
 
         if (!isCCIPSupportedType(this.type)) {
             this.ccip = false;
@@ -742,6 +820,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.nukeFlashDurationMax = this.toInt(data, 1, 400);
             } else if (item.equalsIgnoreCase("MaxDegreeOfMissile")) {
                 this.maxDegreeOfMissile = this.toInt(data, 0, 100000);
+            } else if (item.equalsIgnoreCase("InitMaxDegreeOfMissile")) {
+                s = this.splitParam(data);
+                if (s.length >= 2) {
+                    this.initMaxDegreeTick = this.toInt(s[0], 0, 100000);
+                    this.initMaxDegreeOfMissile = this.toInt(s[1], 0, 100000);
+                } else {
+                    this.initMaxDegreeTick = 0;
+                    this.initMaxDegreeOfMissile = this.maxDegreeOfMissile;
+                }
             } else if (item.equalsIgnoreCase("TickEndHoming")) {
                 this.tickEndHoming = this.toInt(data, -1, 100000);
             } else if (item.equalsIgnoreCase("FlakParticlesCrack")) {
@@ -780,6 +867,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.enableOffAxis = this.toBool(data);
             } else if (item.equalsIgnoreCase("TurningFactor") || item.equalsIgnoreCase("LaserStartDistance")) {
                 this.turningFactor = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("InitTurningFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 2) {
+                    this.initTurningFactorTick = this.toInt(s[0], 0, 100000);
+                    this.initTurningFactor = this.toDouble(s[1]);
+                } else {
+                    this.initTurningFactorTick = 0;
+                    this.initTurningFactor = this.turningFactor;
+                }
             } else if (item.equalsIgnoreCase("EnableChunkLoader")) {
                 this.enableChunkLoader = this.toBool(data);
             } else if (item.equalsIgnoreCase("ScanInterval")) {
@@ -918,6 +1014,32 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.enableBulletDecay = true;
             } else if (item.equalsIgnoreCase("IsGPSMissile")) {
                 this.isGPSMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticMissile")) {
+                this.ballisticMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticArcFactor")) {
+                this.ballisticArcFactor = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticArcMinHeight")) {
+                this.ballisticArcMinHeight = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticArcMaxHeight")) {
+                this.ballisticArcMaxHeight = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticMinDistance")) {
+                this.ballisticMinDistance = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralSine")) {
+                this.ballisticLateralSine = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralAmplitude")) {
+                this.ballisticLateralAmplitude = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralWaves")) {
+                this.ballisticLateralWaves = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralPhaseDeg")) {
+                this.ballisticLateralPhaseDeg = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralStartRatio")) {
+                this.ballisticLateralStartRatio = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralEndRatio")) {
+                this.ballisticLateralEndRatio = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticTerminalNoWeaveDist")) {
+                this.ballisticTerminalNoWeaveDist = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticTerminalCylinderRadius")) {
+                this.ballisticTerminalCylinderRadius = this.toDouble(data);
             } else if (item.equalsIgnoreCase("Canister")) {
                 this.canister = this.toInt(data);
             } else if (item.equalsIgnoreCase("CanisterType")) {
@@ -1086,6 +1208,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     }
                 } else if (item.equalsIgnoreCase("TrajectoryParticleStartTick")) {
                     this.trajectoryParticleStartTick = this.toInt(data, 0, 10000);
+                } else if (item.equalsIgnoreCase("TrajectoryParticleEndTick")) {
+                    this.trajectoryParticleEndTick = this.toInt(data, -1, 10000);
                 } else if (item.equalsIgnoreCase("DisableSmoke")) {
                     this.disableSmoke = this.toBool(data);
                 } else {
@@ -1100,6 +1224,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                             float gr = s.length >= 6 ? this.toFloat(s[5]) : -0.04F;
                             float bo = s.length >= 7 ? this.toFloat(s[6]) : 0.5F;
                             this.cartridge = new MCH_Cartridge(s[0].toLowerCase(), var10, var11, pt, bo, gr, sc);
+                        }
+                    } else if (item.equalsIgnoreCase("ModelBulletEndTick")) {
+                        s = this.splitParam(data);
+                        if (s.length >= 2) {
+                            this.bulletModelEndTick = this.toInt(s[0], -1, 1000000);
+                            this.bulletModelNameEnd = s[1].toLowerCase().trim();
                         }
                     } else if (!item.equalsIgnoreCase("BulletColorInWater") && !item.equalsIgnoreCase("BulletColor") && !item.equalsIgnoreCase("SmokeColor")) {
                         if (item.equalsIgnoreCase("SmokeSize")) {
@@ -1159,6 +1289,27 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
 
     public float getDamageFactor(Entity e) {
         return this.damageFactor != null ? this.damageFactor.getDamageFactor(e) : 1.0F;
+    }
+
+    public double getEffectiveMaxDegreeOfMissile(int missileTick) {
+        if (this.initMaxDegreeTick > 0 && missileTick >= 0 && missileTick <= this.initMaxDegreeTick) {
+            return this.initMaxDegreeOfMissile;
+        }
+        return this.maxDegreeOfMissile;
+    }
+
+    public double getEffectiveTurningFactor(int missileTick) {
+        if (this.initTurningFactorTick > 0 && missileTick >= 0 && missileTick <= this.initTurningFactorTick) {
+            return this.initTurningFactor;
+        }
+        return this.turningFactor;
+    }
+
+    public double getHudPreferredMissileFovDeg() {
+        if (this.initMaxDegreeTick > 0) {
+            return this.initMaxDegreeOfMissile;
+        }
+        return this.maxDegreeOfMissile;
     }
 
     public String getWeaponTypeName() {

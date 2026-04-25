@@ -242,7 +242,7 @@ public class MCH_Config {
         KeyAttack = new MCH_ConfigPrm("KeyAttack", -100);
         KeyUseWeapon = new MCH_ConfigPrm("KeyUseWeapon", -100);
         KeyCurrentWeaponLock = new MCH_ConfigPrm("KeyCurrentWeaponLock", -99);
-        KeySwitchWeapon1 = new MCH_ConfigPrm("KeySwitchWeapon1", -98);
+        KeySwitchWeapon1 = new MCH_ConfigPrm("KeySwitchWeapon1", 55);
         KeySwitchWeapon2 = new MCH_ConfigPrm("KeySwitchWeapon2", 34);
         KeySwWeaponMode = new MCH_ConfigPrm("KeySwitchWeaponMode", 45);
         KeyZoom = new MCH_ConfigPrm("KeyZoom", 44);

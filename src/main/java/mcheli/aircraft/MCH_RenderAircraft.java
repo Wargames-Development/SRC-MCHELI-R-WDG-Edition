@@ -4,9 +4,14 @@ import mcheli.*;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.flare.MCH_EntityFlare;
 import mcheli.gui.MCH_Gui;
+import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.multiplay.MCH_GuiTargetMarker;
+import mcheli.plane.MCP_EntityPlane;
+import mcheli.render.MCH_RadarDisplayTextureManager;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
+import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_EntityGuidanceSystem;
 import mcheli.weapon.MCH_IGuidanceSystem;
@@ -25,6 +30,7 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.*;
 import net.minecraftforge.client.model.IModelCustom;
@@ -785,11 +791,14 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                 // 计算目标实体与玩家之间的平方距离
                                 double dist = entity.getDistanceSqToEntity(rm.livingPlayer);
                                 double distance = Math.sqrt(dist);
-                                if (wi != null && ac.getAcInfo() != null && ac.getAcInfo().enableBVR && distance > wi.minRangeBVR) {
+                                if (wi != null && ac.getAcInfo() != null && ac.getAcInfo().enableBVR && distance < wi.minRangeBVR) {
                                     return;
                                 }
-                                if (ac.getAcInfo() != null && ac.getAcInfo().radarMaxTargetRange > 0.0F
-                                    && distance > ac.getAcInfo().radarMaxTargetRange) {
+                                double bvrDisplayMaxRange = 4096.0D;
+                                if (ac.getAcInfo() != null && ac.getAcInfo().radarMaxTargetRange > 0.0F) {
+                                    bvrDisplayMaxRange = Math.min(4096.0D, ac.getAcInfo().radarMaxTargetRange);
+                                }
+                                if (distance > bvrDisplayMaxRange) {
                                     return;
                                 }
 //                     if(entity instanceof MCH_EntityFlare) {
@@ -813,8 +822,8 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                 double y = entity.posY - RenderManager.renderPosY;
                                 double z = entity.posZ - RenderManager.renderPosZ;
 
-                                // 如果目标实体与玩家的距离小于1000，则进行渲染
-                                if (dist < 1000000.0D) {
+                                // 与BVR框保持同一显示距离上限（min(4096, radarMaxTargetRange)）
+                                if (dist < bvrDisplayMaxRange * bvrDisplayMaxRange) {
                                     float scl = 0.02666667F; // 缩放因子
                                     GL11.glPushMatrix();
                                     // 进行位置变换，将目标实体渲染到玩家视角中
@@ -1470,6 +1479,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public void renderCommonPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, double x, double y, double z, float tickTime) {
         renderRope(ac, info, x, y, z, tickTime);
+        this.renderRadarDisplayPart(ac, info, tickTime);
         renderERA(ac, info);
         renderWeapon(ac, info, tickTime);
         renderRotPart(ac, info, tickTime);
@@ -1485,6 +1495,66 @@ public abstract class MCH_RenderAircraft extends W_Render {
         renderLandingGear(ac, info, tickTime);
         renderWeaponBay(ac, info, tickTime);
         renderCanopy(ac, info, tickTime);
+    }
+
+    private void renderRadarDisplayPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        if (ac == null || info == null || info.model == null || !(info.model instanceof W_ModelCustom)) {
+            return;
+        }
+        W_ModelCustom bodyModel = (W_ModelCustom)info.model;
+        String partName = "$radardisplay";
+        if (!bodyModel.containsPart(partName)) {
+            return;
+        }
+        GL11.glPushMatrix();
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_POLYGON_BIT | GL11.GL_TEXTURE_BIT);
+        try {
+            GL11.glDisable(GL11.GL_LIGHTING);
+
+            // Pass 1: true opaque black base (ignore source texture alpha completely).
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+            GL11.glPolygonOffset(-2.0F, -2.0F);
+            GL11.glColor4f(0.0F, 0.0F, 0.0F, 1.0F);
+            bodyModel.renderPart(partName);
+            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+
+            // Pass 2: overlay radar dynamic sweep/contacts from enableRadar data source.
+            EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+            ResourceLocation radarDynamicTex = MCH_RadarDisplayTextureManager.getTexture(ac, player, tickTime);
+            if (radarDynamicTex != null) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glEnable(GL11.GL_BLEND);
+                GL11.glDisable(GL11.GL_ALPHA_TEST);
+                GL11.glDisable(GL11.GL_DEPTH_TEST);
+                GL11.glDepthMask(false);
+                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                this.bindTexture(radarDynamicTex);
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+                bodyModel.renderPart(partName);
+            }
+        } finally {
+            GL11.glPopAttrib();
+            this.bindAircraftTexture(ac);
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glPopMatrix();
+        }
+    }
+
+    private void bindAircraftTexture(MCH_EntityAircraft ac) {
+        if (ac == null) {
+            return;
+        }
+        if (ac instanceof MCP_EntityPlane) {
+            this.bindTexture("textures/planes/" + ac.getTextureName() + ".png", ac);
+        } else if (ac instanceof MCH_EntityHeli) {
+            this.bindTexture("textures/helicopters/" + ac.getTextureName() + ".png", ac);
+        } else if (ac instanceof MCH_EntityTank) {
+            this.bindTexture("textures/tanks/" + ac.getTextureName() + ".png", ac);
+        } else if (ac instanceof MCH_EntityVehicle) {
+            this.bindTexture("textures/vehicles/" + ac.getTextureName() + ".png", ac);
+        }
     }
 
 }

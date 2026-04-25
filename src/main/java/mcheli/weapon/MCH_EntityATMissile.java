@@ -84,7 +84,7 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
     public void onUpdate() {
         super.onUpdate();
-        if (this.getCountOnUpdate() > 4 && this.getInfo() != null && !this.getInfo().disableSmoke) {
+        if (this.getCountOnUpdate() > 4 && this.getInfo() != null && !this.getInfo().disableSmoke && this.isWithinTrajectoryParticleEndTick()) {
             this.spawnExplosionParticle(this.getInfo().trajectoryParticleName, 3, 7.0F * this.getInfo().smokeSize * 0.5F);
         }
 
@@ -140,7 +140,9 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
                         this.setDataLinkRelayMode(false);
                         this.setActiveRadarCaptured(false);
                     } else if (getInfo().activeRadar) {
-                        if (this.isActiveRadarCaptured() && ticksExisted % getInfo().scanInterval == 0) {
+                        if (this.isDataLinkActiveRadarDelayPhase()) {
+                            this.setActiveRadarCaptured(false);
+                        } else if (this.isActiveRadarCaptured() && ticksExisted % getInfo().scanInterval == 0) {
                             scanForTargets();
                         }
                     }

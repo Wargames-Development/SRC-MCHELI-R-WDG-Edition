@@ -447,65 +447,57 @@ public class MCH_Explosion extends Explosion {
     @Override
     public void doExplosionA() {
         // === 1) 采样射线，收集会受影响的方块（供 doExplosionB 真正处理） ===
-        final int RAYS = 16;
-        final double STEP = 0.30000001192092896D;
+        final int RAYS = getDynamicRayCount(this.param.sizeBlock);
+        final double STEP = getDynamicRayStep(this.param.sizeBlock);
+        final int SAMPLE_COUNT = getSphericalSampleCount(RAYS);
+        final double GOLDEN_ANGLE = Math.PI * (3.0D - Math.sqrt(5.0D));
+        final float breakBoost = getLargeBlockBreakBoost(param.sizeBlock);
         final Set<ChunkPosition> affected = new HashSet<>();
 
-        for (int xi = 0; xi < RAYS; xi++) {
-            for (int yi = 0; yi < RAYS; yi++) {
-                for (int zi = 0; zi < RAYS; zi++) {
-                    // 只在“立方体表面”发射射线（减少重复）
-                    if (xi != 0 && xi != RAYS - 1 && yi != 0 && yi != RAYS - 1 && zi != 0 && zi != RAYS - 1) {
-                        continue;
+        for (int si = 0; si < SAMPLE_COUNT; si++) {
+            // Fibonacci sphere：球面均匀方向采样，减少立方体取样造成的“方形外轮廓”
+            double t = (si + 0.5D) / (double) SAMPLE_COUNT;
+            double dy = 1.0D - 2.0D * t;
+            double radiusXZ = Math.sqrt(Math.max(0.0D, 1.0D - dy * dy));
+            double phi = si * GOLDEN_ANGLE;
+            double dx = Math.cos(phi) * radiusXZ;
+            double dz = Math.sin(phi) * radiusXZ;
+
+            float blast = param.sizeBlock * breakBoost * (0.7F + this.world.rand.nextFloat() * 0.6F);
+            double px = this.explosionX;
+            double py = this.explosionY;
+            double pz = this.explosionZ;
+
+            // 沿射线行进，衰减爆轰强度并记录方块
+            for (; blast > 0.0F; blast -= 0.22500001F) {
+                final int bx = MathHelper.floor_double(px);
+                final int by = MathHelper.floor_double(py);
+                final int bz = MathHelper.floor_double(pz);
+
+                final int blockId = W_WorldFunc.getBlockId(this.world, bx, by, bz);
+                if (blockId > 0) {
+                    final Block block = W_WorldFunc.getBlock(this.world, bx, by, bz);
+                    float resistance;
+                    if (this.exploder != null) {
+                        resistance = W_Entity.getBlockExplosionResistance(this.exploder, this, this.world, bx, by, bz, block);
+                    } else {
+                        resistance = block.getExplosionResistance(this.exploder, this.world, bx, by, bz,
+                            this.explosionX, this.explosionY, this.explosionZ);
                     }
-
-                    // 将 [0,RAYS-1] 映射到 [-1,1]，得到方向向量
-                    double dx = xi / (RAYS - 1.0D) * 2.0D - 1.0D;
-                    double dy = yi / (RAYS - 1.0D) * 2.0D - 1.0D;
-                    double dz = zi / (RAYS - 1.0D) * 2.0D - 1.0D;
-                    double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                    dx /= len;
-                    dy /= len;
-                    dz /= len;
-
-                    float breakBoost = getLargeBlockBreakBoost(param.sizeBlock);
-                    float blast = param.sizeBlock * breakBoost * (0.7F + this.world.rand.nextFloat() * 0.6F);
-                    double px = this.explosionX;
-                    double py = this.explosionY;
-                    double pz = this.explosionZ;
-
-                    // 沿射线行进，衰减爆轰强度并记录方块
-                    for (float step = 0.3F; blast > 0.0F; blast -= 0.22500001F) {
-                        final int bx = MathHelper.floor_double(px);
-                        final int by = MathHelper.floor_double(py);
-                        final int bz = MathHelper.floor_double(pz);
-
-                        final int blockId = W_WorldFunc.getBlockId(this.world, bx, by, bz);
-                        if (blockId > 0) {
-                            final Block block = W_WorldFunc.getBlock(this.world, bx, by, bz);
-                            float resistance;
-                            if (this.exploder != null) {
-                                resistance = W_Entity.getBlockExplosionResistance(this.exploder, this, this.world, bx, by, bz, block);
-                            } else {
-                                resistance = block.getExplosionResistance(this.exploder, this.world, bx, by, bz,
-                                    this.explosionX, this.explosionY, this.explosionZ);
-                            }
-                            if (param.isInWater) {
-                                resistance *= this.world.rand.nextFloat() * 0.2F + 0.2F;
-                            }
-                            blast -= (resistance + 0.3F) * 0.3F;
-                        }
-
-                        if (blast > 0.0F && (this.exploder == null ||
-                            W_Entity.shouldExplodeBlock(this.exploder, this, this.world, bx, by, bz, blockId, blast))) {
-                            affected.add(new ChunkPosition(bx, by, bz));
-                        }
-
-                        px += dx * STEP;
-                        py += dy * STEP;
-                        pz += dz * STEP;
+                    if (param.isInWater) {
+                        resistance *= this.world.rand.nextFloat() * 0.2F + 0.2F;
                     }
+                    blast -= (resistance + 0.3F) * 0.3F;
                 }
+
+                if (blast > 0.0F && (this.exploder == null ||
+                    W_Entity.shouldExplodeBlock(this.exploder, this, this.world, bx, by, bz, blockId, blast))) {
+                    affected.add(new ChunkPosition(bx, by, bz));
+                }
+
+                px += dx * STEP;
+                py += dy * STEP;
+                pz += dz * STEP;
             }
         }
         if (param.isNewExplosionBreak) {
@@ -749,14 +741,54 @@ public class MCH_Explosion extends Explosion {
     /**
      * 扩展高当量地形破坏强度：
      * sizeBlock <= 100 时保持原版（1.0x）；
-     * sizeBlock > 100 时线性提升到 1.5x~2.0x（100->1.5, 200->2.0）。
+     * sizeBlock > 100 时线性提升到 3.0x~4.0x（100->3.0, 200->4.0）。
      */
     private float getLargeBlockBreakBoost(float sizeBlock) {
         if (sizeBlock <= 100.0F) {
             return 1.0F;
         }
         float t = MathHelper.clamp_float((sizeBlock - 100.0F) / 100.0F, 0.0F, 1.0F);
-        return 1.5F + 0.5F * t;
+        return 3.0F + 1.0F * t;
+    }
+
+    /**
+     * 提升大当量爆炸的角向采样密度，避免 sizeBlock>30 后“只拉长不扩圈”的体感。
+     */
+    private int getDynamicRayCount(float sizeBlock) {
+        if (sizeBlock <= 30.0F) {
+            return 20;
+        }
+        if (sizeBlock <= 60.0F) {
+            return 28;
+        }
+        if (sizeBlock <= 100.0F) {
+            return 36;
+        }
+        if (sizeBlock <= 150.0F) {
+            return 44;
+        }
+        return 52;
+    }
+
+    /**
+     * 大当量下使用更小步长，提高射线穿越体积时的命中连续性。
+     */
+    private double getDynamicRayStep(float sizeBlock) {
+        if (sizeBlock <= 30.0F) {
+            return 0.28D;
+        }
+        if (sizeBlock <= 60.0F) {
+            return 0.24D;
+        }
+        if (sizeBlock <= 100.0F) {
+            return 0.21D;
+        }
+        return 0.18D;
+    }
+
+    private int getSphericalSampleCount(int rays) {
+        int axis = Math.max(8, rays);
+        return axis * axis * 6;
     }
 
     public void doExplosionB(boolean par1) {

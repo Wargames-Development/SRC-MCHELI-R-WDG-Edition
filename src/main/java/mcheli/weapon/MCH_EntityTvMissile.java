@@ -37,7 +37,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
     public void onUpdate() {
         super.onUpdate();
         this.onUpdateBomblet();
-        if (this.isSpawnParticle && this.getInfo() != null && !this.getInfo().disableSmoke) {
+        if (this.isSpawnParticle && this.getInfo() != null && !this.getInfo().disableSmoke && this.isWithinTrajectoryParticleEndTick()) {
             this.spawnExplosionParticle(this.getInfo().trajectoryParticleName, 3, 5.0F * this.getInfo().smokeSize * 0.5F);
         }
 

@@ -17,7 +17,9 @@ public final class MCH_RadarDebug {
     private static final Object LOCK = new Object();
     private static final SimpleDateFormat TS_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     private static final String LOG_PATH = "logs/mcheli_radar_debug.log";
+    private static final String BVR_LOG_PATH = "logs/mcheli_bvr_debug.log";
     private static PrintWriter writer = null;
+    private static PrintWriter bvrWriter = null;
     private static volatile boolean enabled = false;
     private static volatile boolean verbose = false;
     private static volatile boolean dataLinkWatchEnabled = false;
@@ -26,12 +28,18 @@ public final class MCH_RadarDebug {
     private static volatile int missileWatchIntervalTick = 5;
     private static volatile boolean rwrWatchEnabled = false;
     private static volatile int rwrWatchIntervalTick = 10;
+    private static volatile boolean bvrDebugEnabled = false;
+    private static volatile boolean bvrDebugVerbose = false;
 
     private MCH_RadarDebug() {
     }
 
     public static String getLogPath() {
         return LOG_PATH;
+    }
+
+    public static String getBvrLogPath() {
+        return BVR_LOG_PATH;
     }
 
     public static boolean isEnabled() {
@@ -98,6 +106,22 @@ public final class MCH_RadarDebug {
         verbose = value;
     }
 
+    public static boolean isBvrDebugEnabled() {
+        return bvrDebugEnabled;
+    }
+
+    public static void setBvrDebugEnabled(boolean value) {
+        bvrDebugEnabled = value;
+    }
+
+    public static boolean isBvrDebugVerbose() {
+        return bvrDebugVerbose;
+    }
+
+    public static void setBvrDebugVerbose(boolean value) {
+        bvrDebugVerbose = value;
+    }
+
     public static void trace(World world, Entity actor, String format, Object... data) {
         if (!enabled) {
             return;
@@ -122,6 +146,23 @@ public final class MCH_RadarDebug {
         appendLine(line);
     }
 
+    public static void traceBvr(World world, Entity actor, String format, Object... data) {
+        if (!bvrDebugEnabled) {
+            return;
+        }
+        String msg = String.format(Locale.ROOT, format, data);
+        String side = world != null ? (world.isRemote ? "CLIENT" : "SERVER") : "UNKNOWN";
+        String line = String.format(Locale.ROOT, "[%s][%s] %s", TS_FORMAT.format(new Date()), side, msg);
+        appendBvrLine(line);
+    }
+
+    public static void traceBvrVerbose(World world, Entity actor, String format, Object... data) {
+        if (!bvrDebugEnabled || !bvrDebugVerbose) {
+            return;
+        }
+        traceBvr(world, actor, format, data);
+    }
+
     private static void appendLine(String line) {
         synchronized (LOCK) {
             try {
@@ -135,6 +176,25 @@ public final class MCH_RadarDebug {
                 }
                 writer.println(line);
                 writer.flush();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void appendBvrLine(String line) {
+        synchronized (LOCK) {
+            try {
+                if (bvrWriter == null) {
+                    File file = new File(BVR_LOG_PATH);
+                    File parent = file.getParentFile();
+                    if (parent != null && !parent.exists()) {
+                        parent.mkdirs();
+                    }
+                    bvrWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8"));
+                }
+                bvrWriter.println(line);
+                bvrWriter.flush();
             } catch (Exception e) {
                 e.printStackTrace();
             }

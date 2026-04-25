@@ -171,6 +171,13 @@ ModelBomblet = cbc
 ; 示例：加载 models/bullets/bullet.obj + textures/bullets/bullet.png
 ; 子弹模型：models/bullets/cbc.obj + textures/bullets/cbc.png
 
+ModelBulletEndTick = 40, warhead
+;弹体模型延迟切换参数：格式为 {timeTick},{modelname}
+;当弹药飞行Tick >= timeTick 后，ModelBullet切换为modelname对应模型
+;用于模拟导弹战斗部与弹体分离（例如主弹体切换为战斗部模型）
+;默认值=-1,空（不切换）
+;示例资源：models/bullets/warhead.obj + textures/bullets/warhead.png
+
 Destruct = true
 ;使用后载具自毁（仅限Type=Bomb且为无人机直升机时生效）
 
@@ -197,6 +204,11 @@ TrajectoryParticle = flame
 
 TrajectoryParticleStartTick = 10
 ;弹道粒子开始生成的延迟Tick数
+
+TrajectoryParticleEndTick = -1
+;弹道粒子停止生成Tick，超过该Tick后尾迹不再生成
+;-1表示不限制（一直生成到弹药销毁）
+;注意：不会影响已生成粒子的自然消散，仅停止后续新粒子生成
 
 DisableSmoke = true
 ;禁用武器移动扬尘特效（非开火特效）
@@ -325,6 +337,12 @@ isRadarMissile = false
 maxDegreeOfMissile = 60
 ;弹药导引头最大导引角度，超过该角度导弹不制导。
 ;默认值=60
+
+initMaxDegreeOfMissile = 30,75
+;导弹发射初始阶段导引头角度增强参数，格式=持续tick,角度值。
+;例：30,75 表示导弹前30tick内使用75度作为导引门限，结束后回到maxDegreeOfMissile。
+;机载雷达绘制导弹FOV圈时，若配置该参数则优先使用该角度值。
+;默认值=0,60(关闭)
  
 tickEndHoming = -1
 ;导弹脱离锁定后在多少时间（tick）会脱锁，-1为永远锁定
@@ -378,6 +396,11 @@ enableOffAxis = true
 turningFactor = 0.1
 ;导弹机动参数，数值越小机动越平滑，值设为1时为原版MCH导弹机动性，推荐值为0.25(注意，该数值不宜过小，否则可能会使得导弹打不中人)
 ;默认值=0.5
+
+initTurningFactor = 30,0.25
+;导弹发射初始阶段机动增强参数，格式=持续tick,机动值。
+;例：30,0.25 表示导弹前30tick内使用0.25作为turningFactor，结束后回到turningFactor。
+;默认值=0,0.5(关闭)
  
 enableChunkLoader = false
 ;是否启用区块加载器，弹药可自主加载区块(试验功能，疑似Uranium核心服务端不生效)
@@ -633,6 +656,77 @@ dragInAir = 0
 
 lockEntity = false
 ;激光/GPS导弹可以锁定实体
+
+BallisticMissile = false
+;是否启用弹道导弹子模式（建议用于isGPSMissile=true的ASmissile）
+;true时导弹不再走近似平直导引，而是按“高抛弹道 + 可选中段横向机动”飞向目标
+;默认值=false
+
+BallisticArcFactor = 0.20
+;弹道弧度系数，弧顶高度会随发射点到目标点的水平距离按比例增长
+;推荐范围=0.02~1.50（值越大抛物线越高）
+;默认值=0.20
+
+BallisticArcMinHeight = 20
+;最小弧顶增高（方块）
+;用于避免近距离时抛物线不明显
+;默认值=20
+
+BallisticArcMaxHeight = 400
+;最大弧顶增高（方块）
+;用于限制超远距离时抛物线过高导致飞行不稳定
+;默认值=400
+
+BallisticMinDistance = 80
+;最小启用弹道距离（方块）
+;小于该距离时退回普通直线导引，防止近距离过度抬头
+;默认值=80
+
+BallisticLateralSine = false
+;是否启用中段横向正弦机动（蛇形机动）
+;建议在BallisticMissile=true时使用
+;默认值=false
+
+BallisticLateralAmplitude = 12
+;横向机动振幅（方块），值越大左右摆动越明显
+;推荐范围=0~40
+;默认值=12
+
+BallisticLateralWaves = 1.5
+;横向机动波数（全程累计波形周期数）
+;推荐范围=0.25~8
+;默认值=1.5
+
+BallisticLateralPhaseDeg = 0
+;横向机动初相位（角度）
+;可用于同型导弹做轨迹分散
+;默认值=0
+
+BallisticLateralStartRatio = 0.20
+;横向机动开始进度（0~1）
+;0表示刚发射就开始，1表示到目标点才开始（通常无意义）
+;默认值=0.20
+
+BallisticLateralEndRatio = 0.85
+;横向机动结束进度（0~1，需大于等于StartRatio）
+;默认值=0.85
+
+BallisticTerminalNoWeaveDist = 80
+;末段禁机动距离（方块）
+;导弹距离目标小于该值后关闭横向机动，以提高命中率
+;默认值=80
+
+BallisticTerminalCylinderRadius = 40
+;末段禁机动圆柱半径（方块，按水平距离判定）
+;导弹进入目标周围该半径圆柱后关闭横向机动，以提高命中率
+;默认值=40
+
+;说明：
+;1) 以上参数在 isGPSMissile=true 时生效（lockEntity=false/true 两种GPS链路均可用）
+;2) 若弹道机动过激导致末段拉不回目标，可适当：
+;   - 降低 BallisticLateralAmplitude / BallisticLateralWaves
+;   - 增大 BallisticTerminalNoWeaveDist / BallisticTerminalCylinderRadius
+;   - 提高 TurningFactor / MaxDegreeOfMissile
 
 cameraFollowLockEntity = false
 ;让视角跟随锁定实体，可以理解为战争雷霆的激光瞄准稳定器。但是目前效果不好用，除了激光制导防空导弹不推荐使用
