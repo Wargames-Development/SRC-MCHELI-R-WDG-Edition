@@ -20,6 +20,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
@@ -41,7 +42,9 @@ public class MCH_RenderBVRLockBox {
 
     public static double[] worldToScreen(Vector3f pos, float partialTicks) {
         Minecraft mc = Minecraft.getMinecraft();
-        EntityClientPlayerMP viewer = mc.thePlayer;
+        EntityLivingBase viewer = mc.renderViewEntity instanceof EntityLivingBase
+            ? (EntityLivingBase) mc.renderViewEntity
+            : mc.thePlayer;
         if (viewer == null) return new double[]{-1, -1, -1, -1};
         Vector3f camPos = new Vector3f(
             (float) RenderManager.renderPosX,
@@ -52,6 +55,10 @@ public class MCH_RenderBVRLockBox {
         Vector3f.sub(pos, camPos, rPos);
         Vec3 fwdV3 = viewer.getLook(partialTicks);
         Vector3f F = new Vector3f((float) fwdV3.xCoord, (float) fwdV3.yCoord, (float) fwdV3.zCoord);
+        if (mc.gameSettings.thirdPersonView == 2) {
+            // Front third-person camera looks opposite to the player's facing direction.
+            F.negate();
+        }
         F.normalise();
         Vector3f worldUp = new Vector3f(0, 1, 0);
         Vector3f R = new Vector3f();
@@ -116,7 +123,6 @@ public class MCH_RenderBVRLockBox {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
         if (player == null || mc.theWorld == null) return;
-        if (mc.gameSettings.thirdPersonView != 0) return;
         MCH_EntityAircraft ac = null;
         if (player.ridingEntity instanceof MCH_EntityAircraft) {
             ac = (MCH_EntityAircraft) player.ridingEntity;

@@ -69,10 +69,7 @@ public class MCH_MissileDetector {
                     }
                 }
                 vehicleLockType = 1;
-                Entity lockOperator = this.ac.getRiddenByEntity();
-                if (lockOperator == null) {
-                    lockOperator = this.ac.getEntityBySeatId(1);
-                }
+                Entity lockOperator = getAutoCountermeasureOperator();
                 tryAutoReleaseCountermeasure(lockOperator, true);
                 this.ac.getEntityData().setBoolean("LockOn", false);
             }
@@ -115,7 +112,7 @@ public class MCH_MissileDetector {
                         }
                         if (result.isLock && ac.jammingTick <= 0) {
                             if (result.isRadarMissile) {
-                                tryAutoReleaseCountermeasure(var4, true);
+                                tryAutoReleaseCountermeasure(getAutoCountermeasureOperator(), true);
                             }
 
                             if (result.dist < 50) {
@@ -350,7 +347,7 @@ public class MCH_MissileDetector {
         if (!radarThreat || operator == null || this.ac == null || this.ac.isDestroyed()) {
             return;
         }
-        if (!this.ac.getIsGunnerMode(operator)) {
+        if (!isOperatorOnGunnerSeat(operator)) {
             return;
         }
         if (this.ac.canUseChaff()) {
@@ -360,6 +357,35 @@ public class MCH_MissileDetector {
         if (this.ac.canUseECMJammer()) {
             this.ac.useECMJammer(operator);
         }
+    }
+
+    private Entity getAutoCountermeasureOperator() {
+        if (this.ac == null) {
+            return null;
+        }
+        for (int sid = 1; sid <= this.ac.getSeatNum(); sid++) {
+            Entity crew = this.ac.getEntityBySeatId(sid);
+            if (crew == null) {
+                continue;
+            }
+            MCH_SeatInfo seat = this.ac.getSeatInfo(sid);
+            if (seat != null && seat.gunner) {
+                return crew;
+            }
+        }
+        return null;
+    }
+
+    private boolean isOperatorOnGunnerSeat(Entity operator) {
+        if (this.ac == null || operator == null) {
+            return false;
+        }
+        int sid = this.ac.getSeatIdByEntity(operator);
+        if (sid <= 0) {
+            return false;
+        }
+        MCH_SeatInfo seat = this.ac.getSeatInfo(sid);
+        return seat != null && seat.gunner;
     }
 
     private String getMissileRwrName(MCH_EntityBaseBullet bullet) {

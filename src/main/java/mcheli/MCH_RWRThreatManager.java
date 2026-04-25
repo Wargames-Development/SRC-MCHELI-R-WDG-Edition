@@ -105,6 +105,17 @@ public class MCH_RWRThreatManager {
             emitterAircraftId, packetTarget, packetTtl, gunnerTarget, gunnerTtl);
     }
 
+    public boolean isEmitterTrackingTarget(int emitterAircraftId, int targetEntityId, long now) {
+        if (emitterAircraftId <= 0 || targetEntityId <= 0) {
+            return false;
+        }
+        TrackingSource tracking = selectTrackingSource(emitterAircraftId, now);
+        return tracking != null
+            && tracking.report != null
+            && tracking.report.targetEntityId == targetEntityId
+            && tracking.report.expireTick >= now;
+    }
+
     public void serverTick() {
         WorldServer[] worlds = MinecraftServer.getServer().worldServers;
         if (worlds == null) {
@@ -216,6 +227,9 @@ public class MCH_RWRThreatManager {
         }
         MCH_EntityAircraft target = (MCH_EntityAircraft) targetEntity;
         if (!isTargetRwrReceivable(target) || isSameTeam(emitter, target)) {
+            return;
+        }
+        if (isTargetCountermeasureActive(target)) {
             return;
         }
         String sourceName = getEmitterRwrName(emitter);
@@ -480,11 +494,34 @@ public class MCH_RWRThreatManager {
         if (ac == null || reporter == null) {
             return false;
         }
+        if (ac.getRiddenByEntity() == reporter) {
+            return true;
+        }
+        MCH_EntityAircraft controlled = MCH_EntityAircraft.getAircraft_RiddenOrControl(reporter);
+        if (controlled != null && controlled.getEntityId() == ac.getEntityId()) {
+            return true;
+        }
+        if (reporter.ridingEntity instanceof MCH_EntitySeat) {
+            MCH_EntitySeat seat = (MCH_EntitySeat) reporter.ridingEntity;
+            if (seat.getParent() != null && seat.getParent().getEntityId() == ac.getEntityId()) {
+                return true;
+            }
+        }
         return ac.getSeatIdByEntity(reporter) >= 0;
     }
 
     private boolean isTargetRwrReceivable(MCH_EntityAircraft target) {
         return target != null && target.getAcInfo() != null && target.getAcInfo().hasRWR;
+    }
+
+    private boolean isTargetCountermeasureActive(MCH_EntityAircraft target) {
+        if (target == null || target.getAcInfo() == null) {
+            return false;
+        }
+        return target.isChaffUsing()
+            || target.isECMJammerUsing()
+            || target.jammingTick > 0
+            ;
     }
 
     private boolean isTargetInsideScanCone(MCH_EntityAircraft emitter, MCH_EntityAircraft target, double maxRange, float scanAzDeg, float scanElDeg) {

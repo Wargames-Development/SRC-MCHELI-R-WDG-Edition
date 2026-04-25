@@ -43,6 +43,8 @@ public class PacketEntityInfoSync extends PacketBase {
             buf.writeDouble(info.lastTickPosX);
             buf.writeDouble(info.lastTickPosY);
             buf.writeDouble(info.lastTickPosZ);
+            buf.writeByte(info.countermeasureFlags);
+            buf.writeLong(info.countermeasureUntilTick);
         }
     }
 
@@ -62,7 +64,9 @@ public class PacketEntityInfoSync extends PacketBase {
                 buf.readDouble(),
                 buf.readDouble(),
                 buf.readDouble(),
-                buf.readDouble()
+                buf.readDouble(),
+                buf.readByte(),
+                buf.readLong()
             ));
         }
     }

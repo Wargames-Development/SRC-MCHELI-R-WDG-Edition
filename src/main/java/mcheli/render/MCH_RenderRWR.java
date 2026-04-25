@@ -1386,7 +1386,7 @@ public class MCH_RenderRWR {
                     boolean seekerJammed = false;
                     if (target instanceof MCH_EntityAircraft) {
                         MCH_EntityAircraft tac = (MCH_EntityAircraft)target;
-                        seekerJammed = tac.isECMJammerUsing() || tac.jammingTick > 0 || tac.ecmJammerUseTime > 0 || tac.chaffUseTime > 0;
+                        seekerJammed = tac.isChaffUsing() || tac.isECMJammerUsing() || tac.jammingTick > 0;
                     }
                     if (!seekerJammed) {
                         drawTrackingLink(mp.x, mp.y, tp.x, tp.y, 0xFF4040);
@@ -2184,9 +2184,13 @@ public class MCH_RenderRWR {
         Entity e = ac.worldObj.getEntityByID(info.entityId);
         if (e instanceof MCH_EntityAircraft) {
             MCH_EntityAircraft tgt = (MCH_EntityAircraft)e;
-            return tgt.isECMJammerUsing() || tgt.jammingTick > 0 || tgt.ecmJammerUseTime > 0 || tgt.chaffUseTime > 0;
+            return tgt.isChaffUsing()
+                || tgt.isECMJammerUsing()
+                || tgt.jammingTick > 0
+                ;
         }
-        return false;
+        long nowTick = ac.worldObj.getTotalWorldTime();
+        return info.isCountermeasureActive(nowTick);
     }
 
     private static boolean isOwnLaunchedMissile(MCH_EntityAircraft ac, EntityPlayer player, MCH_EntityInfo info) {

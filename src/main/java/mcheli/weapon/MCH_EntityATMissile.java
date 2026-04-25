@@ -91,6 +91,11 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
         if (!worldObj.isRemote && this.getInfo() != null) {
             boolean dlRelay = this.isDataLinkRelayMode();
             if (super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead) {
+                if (dlRelay && (getInfo().passiveRadar || getInfo().semiActiveRadar) && !this.isDataLinkRelaySourceMaintained()) {
+                    this.setTargetEntity(null);
+                }
+            }
+            if (super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead) {
                 double x = super.posX - super.targetEntity.posX;
                 double y = super.posY - super.targetEntity.posY;
                 double z = super.posZ - super.targetEntity.posZ;
@@ -146,7 +151,11 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
                             scanForTargets();
                         }
                     }
-                } else if ((getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar) && ticksExisted % getInfo().scanInterval == 0) {
+                } else if ((getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar)
+                    && ticksExisted % getInfo().scanInterval == 0) {
+                    if ((getInfo().passiveRadar || getInfo().semiActiveRadar) && this.wasDataLinkRelayEverEnabled()) {
+                        return;
+                    }
                     scanForTargets();
                 }
             }

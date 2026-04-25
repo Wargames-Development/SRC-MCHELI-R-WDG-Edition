@@ -5,6 +5,10 @@ import mcheli.weapon.MCH_EntityBaseBullet;
 import net.minecraft.entity.Entity;
 
 public class MCH_EntityInfo {
+    public static final byte CM_FLAG_CHAFF = 1;
+    public static final byte CM_FLAG_ECM = 1 << 1;
+    public static final byte CM_FLAG_JAMMING = 1 << 2;
+
     public int entityId;
     public String worldName;
     public String entityName;
@@ -15,9 +19,15 @@ public class MCH_EntityInfo {
     public double lastTickPosX;
     public double lastTickPosY;
     public double lastTickPosZ;
+    public byte countermeasureFlags;
+    public long countermeasureUntilTick;
     public long lastUpdateTime;
 
     public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ) {
+        this(entityId, worldName, entityName, entityClassName, posX, posY, posZ, lastTickPosX, lastTickPosY, lastTickPosZ, (byte)0, -1L);
+    }
+
+    public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ, byte countermeasureFlags, long countermeasureUntilTick) {
         this.entityId = entityId;
         this.worldName = worldName;
         this.entityName = entityName;
@@ -28,15 +38,36 @@ public class MCH_EntityInfo {
         this.lastTickPosX = lastTickPosX;
         this.lastTickPosY = lastTickPosY;
         this.lastTickPosZ = lastTickPosZ;
+        this.countermeasureFlags = countermeasureFlags;
+        this.countermeasureUntilTick = countermeasureUntilTick;
         this.lastUpdateTime = System.currentTimeMillis();
     }
 
     public static MCH_EntityInfo createInfo(Entity e) {
+        long worldTick = (e != null && e.worldObj != null) ? e.worldObj.getTotalWorldTime() : 0L;
+        return createInfo(e, worldTick);
+    }
+
+    public static MCH_EntityInfo createInfo(Entity e, long worldTick) {
         String name = e.getCommandSenderName();
+        byte countermeasureFlags = 0;
+        long countermeasureUntilTick = -1L;
         if (e instanceof MCH_EntityAircraft) {
             MCH_EntityAircraft ac = (MCH_EntityAircraft) e;
             if (ac.getAcInfo() != null) {
                 name = ac.getAcInfo().name;
+            }
+            if (ac.isChaffUsing()) {
+                countermeasureFlags |= CM_FLAG_CHAFF;
+            }
+            if (ac.isECMJammerUsing()) {
+                countermeasureFlags |= CM_FLAG_ECM;
+            }
+            if (ac.jammingTick > 0) {
+                countermeasureFlags |= CM_FLAG_JAMMING;
+            }
+            if (countermeasureFlags != 0) {
+                countermeasureUntilTick = worldTick + 8L;
             }
         }
         if (e instanceof MCH_EntityBaseBullet) {
@@ -50,8 +81,13 @@ public class MCH_EntityInfo {
             name,
             e.getClass().getName(),
             e.posX, e.posY, e.posZ,
-            e.lastTickPosX, e.lastTickPosY, e.lastTickPosZ
+            e.lastTickPosX, e.lastTickPosY, e.lastTickPosZ,
+            countermeasureFlags, countermeasureUntilTick
         );
+    }
+
+    public boolean isCountermeasureActive(long worldTick) {
+        return this.countermeasureFlags != 0 && this.countermeasureUntilTick >= worldTick;
     }
 
     public double getDistanceToEntity(Entity e) {

@@ -49,7 +49,7 @@ public class MCH_EntityInfoManager {
             List<Entity> loaded = world.loadedEntityList;
             for (Entity entity : loaded) {
                 if (shouldTrack(world, entity)) {
-                    serverEntities.put(entity.getEntityId(), MCH_EntityInfo.createInfo(entity));
+                    serverEntities.put(entity.getEntityId(), MCH_EntityInfo.createInfo(entity, world.getTotalWorldTime()));
                 }
             }
         }

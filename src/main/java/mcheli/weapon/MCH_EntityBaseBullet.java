@@ -96,6 +96,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private double delayFuseMarkerZ = 0.0D;
     private boolean armorRicochetActive = false;
     private boolean dataLinkRelayMode = false;
+    private boolean dataLinkRelayEverEnabled = false;
     private boolean activeRadarCaptured = false;
     private boolean dataLinkTwsSelectedOnly = false;
     protected static final int DATALINK_ACTIVE_RADAR_DELAY_TICK = 40;
@@ -416,6 +417,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public void setDataLinkRelayMode(boolean v) {
         this.dataLinkRelayMode = v;
         if (v) {
+            this.dataLinkRelayEverEnabled = true;
             this.activeRadarCaptured = false;
         }
         syncDataLinkFlags();
@@ -426,6 +428,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             return (this.getDataWatcher().getWatchableObjectByte(DATAWT_DATALINK_FLAGS) & 1) != 0;
         }
         return this.dataLinkRelayMode;
+    }
+
+    public boolean wasDataLinkRelayEverEnabled() {
+        return this.dataLinkRelayEverEnabled;
     }
 
     public void setActiveRadarCaptured(boolean v) {
@@ -445,6 +451,25 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             && this.getInfo().activeRadar
             && this.isDataLinkRelayMode()
             && this.ticksExisted < DATALINK_ACTIVE_RADAR_DELAY_TICK;
+    }
+
+    protected boolean isDataLinkRelaySourceMaintained() {
+        if (this.getInfo() == null || !this.isDataLinkRelayMode()) {
+            return true;
+        }
+        if (!(this.getInfo().passiveRadar || this.getInfo().semiActiveRadar)) {
+            return true;
+        }
+        if (this.shootingAircraft == null || this.targetEntity == null || this.targetEntity.isDead) {
+            return false;
+        }
+        if (this.worldObj == null || MCH_MOD.rwrThreatManager == null) {
+            return true;
+        }
+        return MCH_MOD.rwrThreatManager.isEmitterTrackingTarget(
+            this.shootingAircraft.getEntityId(),
+            this.targetEntity.getEntityId(),
+            this.worldObj.getTotalWorldTime());
     }
 
     public void setDataLinkTwsSelectedOnly(boolean v) {
