@@ -4,6 +4,7 @@ import com.google.common.io.ByteArrayDataInput;
 import mcheli.aircraft.MCH_AircraftPacketHandler;
 import mcheli.block.MCH_DraftingTablePacketHandler;
 import mcheli.command.MCH_CommandPacketHandler;
+import mcheli.economy.MCH_EconomyPacketHandler;
 import mcheli.gltd.MCH_GLTDPacketHandler;
 import mcheli.helicopter.MCH_HeliPacketHandler;
 import mcheli.lweapon.MCH_LightWeaponPacketHandler;
@@ -34,6 +35,15 @@ public class MCH_PacketHandler extends W_PacketHandler {
                 break;
             case 268437568:
                 MCH_CommonPacketHandler.onPacketNotifyServerSettings(entityPlayer, data);
+                break;
+            case 268437569:
+                MCH_EconomyPacketHandler.onPacketNotifyEconomySync(entityPlayer, data);
+                break;
+            case 268437570:
+                MCH_EconomyPacketHandler.onPacketNotifyEconomyTechResult(entityPlayer, data);
+                break;
+            case 268437571:
+                MCH_EconomyPacketHandler.onPacketNotifyEconomyGainToast(entityPlayer, data);
                 break;
             case 268437761:
                 MCH_MultiplayPacketHandler.onPacket_NotifySpotedEntity(entityPlayer, data);
@@ -88,6 +98,9 @@ public class MCH_PacketHandler extends W_PacketHandler {
                 break;
             case 536873984:
                 MCH_CommonPacketHandler.onPacketNotifyLock(entityPlayer, data);
+                break;
+            case 536873985:
+                MCH_EconomyPacketHandler.onPacketIndEconomyTechAction(entityPlayer, data);
                 break;
             case 536875024:
                 MCH_AircraftPacketHandler.onPacketSeatListRequest(entityPlayer, data);

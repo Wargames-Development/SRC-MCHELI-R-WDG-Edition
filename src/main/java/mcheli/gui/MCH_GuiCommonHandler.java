@@ -9,6 +9,8 @@ import mcheli.aircraft.MCH_AircraftGuiContainer;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.block.MCH_DraftingTableGui;
 import mcheli.block.MCH_DraftingTableGuiContainer;
+import mcheli.economy.MCH_ContainerEconomyTechTree;
+import mcheli.economy.MCH_GuiEconomyTechTree;
 import mcheli.multiplay.MCH_ContainerScoreboard;
 import mcheli.multiplay.MCH_GuiScoreboard;
 import mcheli.uav.MCH_ContainerUavStation;
@@ -26,10 +28,11 @@ public class MCH_GuiCommonHandler implements IGuiHandler {
     public static final int GUIID_INVENTORY = 3;
     public static final int GUIID_DRAFTING = 4;
     public static final int GUIID_MULTI_MNG = 5;
+    public static final int GUIID_ECONOMY_TECH_TREE = 6;
 
 
     public Object getServerGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
-        MCH_Lib.DbgLog(world, "MCH_GuiCommonHandler.getServerGuiElement ID=%d (%d, %d, %d)", new Object[]{Integer.valueOf(id), Integer.valueOf(x), Integer.valueOf(y), Integer.valueOf(z)});
+        MCH_Lib.DbgTrace(world, "event=gui_resolve server=true guiId=%d player=%s pos=%d,%d,%d", id, player.getCommandSenderName(), x, y, z);
         switch (id) {
             case 0:
                 if (player.ridingEntity instanceof MCH_EntityUavStation) {
@@ -64,13 +67,15 @@ public class MCH_GuiCommonHandler implements IGuiHandler {
                 }
 
                 return new MCH_ContainerScoreboard(player);
+            case 6:
+                return new MCH_ContainerEconomyTechTree();
         }
 
         return null;
     }
 
     public Object getClientGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
-        MCH_Lib.DbgLog(world, "MCH_GuiCommonHandler.getClientGuiElement ID=%d (%d, %d, %d)", new Object[]{Integer.valueOf(id), Integer.valueOf(x), Integer.valueOf(y), Integer.valueOf(z)});
+        MCH_Lib.DbgTrace(world, "event=gui_resolve server=false guiId=%d player=%s pos=%d,%d,%d", id, player.getCommandSenderName(), x, y, z);
         switch (id) {
             case 0:
                 if (player.ridingEntity instanceof MCH_EntityUavStation) {
@@ -98,6 +103,8 @@ public class MCH_GuiCommonHandler implements IGuiHandler {
                 return new MCH_DraftingTableGui(player, x, y, z);
             case 5:
                 return new MCH_GuiScoreboard(player);
+            case 6:
+                return new MCH_GuiEconomyTechTree(player);
         }
 
         return null;

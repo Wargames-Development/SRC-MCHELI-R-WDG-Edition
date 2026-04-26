@@ -6,6 +6,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.aircraft.*;
 import mcheli.command.MCH_GuiTitle;
+import mcheli.economy.MCH_EconomyClientData;
 import mcheli.gltd.MCH_ClientGLTDTickHandler;
 import mcheli.gltd.MCH_EntityGLTD;
 import mcheli.gltd.MCH_GuiGLTD;
@@ -41,23 +42,31 @@ import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.client.gui.inventory.GuiContainerCreative;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
+import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,6 +75,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static final float hitTotalDamageScaleOrigin = 2.0f;
     private static final ResourceLocation cross3rd = new ResourceLocation(W_MOD.DOMAIN, "textures/3rdCross.png");
+    private static final ResourceLocation TEX_ICON_SL = new ResourceLocation("mcheli", "textures/gui/economy/coin_sl.png");
+    private static final ResourceLocation TEX_ICON_GE = new ResourceLocation("mcheli", "textures/gui/economy/coin_ge.png");
+    private static final ResourceLocation TEX_ICON_RP = new ResourceLocation("mcheli", "textures/gui/economy/coin_rp.png");
     public static MCH_ClientCommonTickHandler instance;
     public static int cameraMode = 0;
     public static MCH_EntityAircraft ridingAircraft = null;
@@ -94,6 +106,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private static double mouseRollDeltaY = 0.0D;
     private static boolean isRideAircraft = false;
     private static float prevTick = 0.0F;
+    private final RenderItem economyHudItemRenderer = new RenderItem();
     public MCH_GuiCommon gui_Common;
     public MCH_Gui gui_Heli;
     public MCH_Gui gui_Plane;
@@ -790,6 +803,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         //渲染命中信息
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
+            drawEconomyGainToast(i, j);
             if (!hitList.isEmpty() && hitTotalDamage > 0) {
                 int x = (int) (i * 0.6f);
                 int y = (int) (j * 0.4f);
@@ -818,6 +832,127 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     );
                 }
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void onGuiScreenDrawPost(GuiScreenEvent.DrawScreenEvent.Post event) {
+        if (event == null || this.mc == null) {
+            return;
+        }
+        boolean isVanillaInventory = event.gui instanceof GuiInventory;
+        boolean isCreativeInventory = event.gui instanceof GuiContainerCreative;
+        if (!isVanillaInventory && !isCreativeInventory) {
+            return;
+        }
+        ScaledResolution scaled = new ScaledResolution(this.mc, this.mc.displayWidth, this.mc.displayHeight);
+        drawEconomyBar(scaled.getScaledWidth(), scaled.getScaledHeight());
+    }
+
+    private void drawEconomyBar(int screenW, int screenH) {
+        int x = 8;
+        int y = screenH - 48;
+        int w = 170;
+        int h = 40;
+        Gui.drawRect(x, y, x + w, y + h, 0x90101010);
+        Gui.drawRect(x, y, x + w, y + 1, 0xB0908050);
+        Gui.drawRect(x, y + h - 1, x + w, y + h, 0xB0606060);
+        this.mc.fontRenderer.drawStringWithShadow("Economy", x + 6, y + 4, 0xF0F0F0);
+        drawEconomyIconAndText(x + 6, y + 16, TEX_ICON_SL, new ItemStack(Items.gold_ingot), "SL " + MCH_EconomyClientData.getSL(), 0xFFE07A);
+        drawEconomyIconAndText(x + 62, y + 16, TEX_ICON_GE, new ItemStack(Items.emerald), "GE " + MCH_EconomyClientData.getGE(), 0xFFD050);
+        drawEconomyIconAndText(x + 118, y + 16, TEX_ICON_RP, new ItemStack(Items.enchanted_book), "RP " + MCH_EconomyClientData.getRP(), 0xA0D0FF);
+    }
+
+    private void drawEconomyIconAndText(int x, int y, ResourceLocation iconTex, ItemStack fallback, String text, int color) {
+        drawEconomyInlineIcon(x, y, iconTex, fallback, 12);
+        this.mc.fontRenderer.drawString(text, x + 14, y + 1, color);
+    }
+
+    private void drawEconomyGainToast(int screenW, int screenH) {
+        if (!MCH_EconomyClientData.hasGainToast()) {
+            return;
+        }
+        byte type = MCH_EconomyClientData.getGainToastType();
+        int sl = MCH_EconomyClientData.getGainToastSL();
+        int ge = MCH_EconomyClientData.getGainToastGE();
+        int rp = MCH_EconomyClientData.getGainToastRP();
+        if (sl <= 0 && ge <= 0 && rp <= 0) {
+            return;
+        }
+
+        String title = type == 2 ? "摧毁载具" : "击杀目标";
+        int gap = 18;
+        int iconSize = 10;
+        int xCursor = 0;
+        int titleWidth = this.mc.fontRenderer.getStringWidth(title);
+        xCursor += titleWidth;
+
+        int slWidth = rewardPieceWidth("+" + sl, sl > 0, iconSize, gap);
+        int geWidth = rewardPieceWidth("+" + ge, ge > 0, iconSize, gap);
+        int rpWidth = rewardPieceWidth("+" + rp, rp > 0, iconSize, gap);
+        int totalWidth = xCursor + slWidth + geWidth + rpWidth;
+
+        int x = (screenW - totalWidth) / 2;
+        int y = Math.max(18, (int) (screenH * 0.12f));
+
+        int drawX = x;
+        this.mc.fontRenderer.drawStringWithShadow(title, drawX, y, 0xFF5050);
+        drawX += titleWidth;
+        if (sl > 0) {
+            drawX += gap;
+            drawGainPiece(drawX, y, TEX_ICON_SL, new ItemStack(Items.gold_ingot), "+" + sl, iconSize);
+            drawX += iconSize + 4 + this.mc.fontRenderer.getStringWidth("+" + sl);
+        }
+        if (ge > 0) {
+            drawX += gap;
+            drawGainPiece(drawX, y, TEX_ICON_GE, new ItemStack(Items.emerald), "+" + ge, iconSize);
+            drawX += iconSize + 4 + this.mc.fontRenderer.getStringWidth("+" + ge);
+        }
+        if (rp > 0) {
+            drawX += gap;
+            drawGainPiece(drawX, y, TEX_ICON_RP, new ItemStack(Items.enchanted_book), "+" + rp, iconSize);
+        }
+    }
+
+    private int rewardPieceWidth(String text, boolean draw, int iconSize, int gap) {
+        if (!draw) {
+            return 0;
+        }
+        return gap + iconSize + 4 + this.mc.fontRenderer.getStringWidth(text);
+    }
+
+    private void drawGainPiece(int x, int y, ResourceLocation iconTex, ItemStack fallback, String text, int iconSize) {
+        drawEconomyInlineIcon(x, y, iconTex, fallback, iconSize);
+        this.mc.fontRenderer.drawStringWithShadow(text, x + iconSize + 4, y + 1, 0xFFFFFF);
+    }
+
+    private void drawEconomyInlineIcon(int x, int y, ResourceLocation iconTex, ItemStack fallback, int iconSize) {
+        if (bindTextureSafely(iconTex)) {
+            GL11.glColor4f(1, 1, 1, 1);
+            Tessellator t = Tessellator.instance;
+            t.startDrawingQuads();
+            t.addVertexWithUV((double) x, (double) (y + iconSize), 0.0D, 0.0D, 1.0D);
+            t.addVertexWithUV((double) (x + iconSize), (double) (y + iconSize), 0.0D, 1.0D, 1.0D);
+            t.addVertexWithUV((double) (x + iconSize), (double) y, 0.0D, 1.0D, 0.0D);
+            t.addVertexWithUV((double) x, (double) y, 0.0D, 0.0D, 0.0D);
+            t.draw();
+            return;
+        }
+        RenderHelper.enableGUIStandardItemLighting();
+        this.economyHudItemRenderer.renderItemAndEffectIntoGUI(this.mc.fontRenderer, this.mc.getTextureManager(), fallback, x - 3, y - 3);
+        RenderHelper.disableStandardItemLighting();
+    }
+
+    private boolean bindTextureSafely(ResourceLocation texture) {
+        if (texture == null) {
+            return false;
+        }
+        try {
+            this.mc.getResourceManager().getResource(texture);
+            this.mc.getTextureManager().bindTexture(texture);
+            return true;
+        } catch (IOException ignored) {
+            return false;
         }
     }
 

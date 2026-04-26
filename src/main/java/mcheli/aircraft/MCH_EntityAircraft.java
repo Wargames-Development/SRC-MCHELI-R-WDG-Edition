@@ -989,12 +989,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     return false;
                 } else {
                     Entity entity = damageSource.getEntity();
+                    EntityLivingBase attackerEntity = resolveEconomyAttackerEntity(entity, damageSource.getSourceOfDamage(), 0);
                     if (this.isFriendlyPlayerAttackingGunnerPilotedVehicle(entity)) {
                         return false;
                     }
                     float impactAngleForDisplay = -1.0F;
-                    if (entity instanceof EntityLivingBase)
-                        this.lastAttackedEntity = entity;
+                    if (attackerEntity != null) {
+                        this.lastAttackedEntity = attackerEntity;
+                    }
                     MCH_IndicatedDamageSource indicated = (damageSource instanceof MCH_IndicatedDamageSource) ? (MCH_IndicatedDamageSource)damageSource : null;
                     if (indicated != null && this.getAcInfo() != null) {
                         Vec3 impactNormal = getImpactNormalForHit(indicated.hitPos, bbIndex);
@@ -1022,13 +1024,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                             //触发载具伤害事件
                             damage *= getAcInfo().armorExplosionDamageMultiplier;
                             String name = (String) getAcInfo().displayNameLang.get("en_US");
-                            if (lastRiddenByEntity instanceof EntityPlayer && lastAttackedEntity instanceof EntityLivingBase) {
-                                EntityPlayer player = (EntityPlayer) lastRiddenByEntity;
-                                if (!player.isOnSameTeam((EntityLivingBase) lastAttackedEntity)) {
-                                    AircraftDamageEvent e = new AircraftDamageEvent(lastAttackedEntity.getCommandSenderName(), name, damage, getMaxHP());
-                                    MinecraftForge.EVENT_BUS.post(e);
-                                }
-                            }
+                            postEconomyAircraftDamageEvent(name, damage, attackerEntity);
                             if (lastAttackedEntity instanceof EntityPlayerMP) {
                                 MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "message.mcheli.overpressure", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
                             } else if (lastAttackedEntity instanceof MCH_DummyEntityPlayer) {
@@ -1123,13 +1119,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                             }
                             //触发载具伤害事件
                             String name = (String) getAcInfo().displayNameLang.get("en_US");
-                            if (lastRiddenByEntity instanceof EntityPlayer && lastAttackedEntity instanceof EntityLivingBase) {
-                                EntityPlayer player = (EntityPlayer) lastRiddenByEntity;
-                                if (!player.isOnSameTeam((EntityLivingBase) lastAttackedEntity)) {
-                                    AircraftDamageEvent e = new AircraftDamageEvent(lastAttackedEntity.getCommandSenderName(), name, damage, getMaxHP());
-                                    MinecraftForge.EVENT_BUS.post(e);
-                                }
-                            }
+                            postEconomyAircraftDamageEvent(name, damage, attackerEntity);
                             if (damageSource instanceof MCH_IndicatedDamageSource && damageSource.getSourceOfDamage() != null) {
                                 MCH_IndicatedDamageSource ids = (MCH_IndicatedDamageSource) damageSource;
                                 // 击中点的世界绝对坐标
@@ -1175,13 +1165,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 this.setDamageTaken(this.getMaxHP());
                                 //触发载具击杀事件
                                 String name = (String) getAcInfo().displayNameLang.get("en_US");
-                                if (lastRiddenByEntity instanceof EntityPlayer && lastAttackedEntity instanceof EntityLivingBase) {
-                                    EntityPlayer player = (EntityPlayer) lastRiddenByEntity;
-                                    if (!player.isOnSameTeam((EntityLivingBase) lastAttackedEntity)) {
-                                        AircraftDestoryEvent e = new AircraftDestoryEvent(lastAttackedEntity.getCommandSenderName(), name);
-                                        MinecraftForge.EVENT_BUS.post(e);
-                                    }
-                                }
+                                postEconomyAircraftDestroyEvent(name, attackerEntity);
                                 this.destroyAircraft(damageSource);
                                 this.timeSinceHit = 20;
                                 String cmd2 = this.getCommand().trim();
@@ -1236,6 +1220,81 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 }
             }
         }
+    }
+
+    private EntityLivingBase resolveEconomyAttackerEntity(Entity directEntity, Entity sourceEntity, int depth) {
+        if (depth > 4) {
+            return null;
+        }
+        if (directEntity instanceof EntityLivingBase) {
+            return (EntityLivingBase) directEntity;
+        }
+        if (sourceEntity instanceof EntityLivingBase) {
+            return (EntityLivingBase) sourceEntity;
+        }
+        if (directEntity instanceof MCH_EntityBaseBullet) {
+            MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) directEntity;
+            EntityLivingBase fromShooter = resolveEconomyAttackerEntity(bullet.shootingEntity, null, depth + 1);
+            if (fromShooter != null) {
+                return fromShooter;
+            }
+            return resolveEconomyAttackerEntity(bullet.shootingAircraft, null, depth + 1);
+        }
+        if (sourceEntity instanceof MCH_EntityBaseBullet) {
+            MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) sourceEntity;
+            EntityLivingBase fromShooter = resolveEconomyAttackerEntity(bullet.shootingEntity, null, depth + 1);
+            if (fromShooter != null) {
+                return fromShooter;
+            }
+            return resolveEconomyAttackerEntity(bullet.shootingAircraft, null, depth + 1);
+        }
+        if (directEntity instanceof MCH_EntitySeat) {
+            MCH_EntityAircraft parent = ((MCH_EntitySeat) directEntity).getParent();
+            return resolveEconomyAttackerEntity(parent, null, depth + 1);
+        }
+        if (sourceEntity instanceof MCH_EntitySeat) {
+            MCH_EntityAircraft parent = ((MCH_EntitySeat) sourceEntity).getParent();
+            return resolveEconomyAttackerEntity(parent, null, depth + 1);
+        }
+        if (directEntity instanceof MCH_EntityAircraft) {
+            EntityPlayer rider = ((MCH_EntityAircraft) directEntity).getFirstMountPlayer();
+            return rider instanceof EntityLivingBase ? (EntityLivingBase) rider : null;
+        }
+        if (sourceEntity instanceof MCH_EntityAircraft) {
+            EntityPlayer rider = ((MCH_EntityAircraft) sourceEntity).getFirstMountPlayer();
+            return rider instanceof EntityLivingBase ? (EntityLivingBase) rider : null;
+        }
+        return null;
+    }
+
+    private void postEconomyAircraftDamageEvent(String vehicleName, float damage, EntityLivingBase attacker) {
+        if (attacker == null) {
+            return;
+        }
+        if (this.lastRiddenByEntity instanceof EntityPlayer && ((EntityPlayer) this.lastRiddenByEntity).isOnSameTeam(attacker)) {
+            return;
+        }
+        String attackerName = attacker.getCommandSenderName();
+        if (attackerName == null || attackerName.isEmpty()) {
+            return;
+        }
+        AircraftDamageEvent e = new AircraftDamageEvent(attackerName, vehicleName, damage, getMaxHP());
+        MinecraftForge.EVENT_BUS.post(e);
+    }
+
+    private void postEconomyAircraftDestroyEvent(String vehicleName, EntityLivingBase attacker) {
+        if (attacker == null) {
+            return;
+        }
+        if (this.lastRiddenByEntity instanceof EntityPlayer && ((EntityPlayer) this.lastRiddenByEntity).isOnSameTeam(attacker)) {
+            return;
+        }
+        String attackerName = attacker.getCommandSenderName();
+        if (attackerName == null || attackerName.isEmpty()) {
+            return;
+        }
+        AircraftDestoryEvent e = new AircraftDestoryEvent(attackerName, vehicleName);
+        MinecraftForge.EVENT_BUS.post(e);
     }
 
     public boolean isExploded() {

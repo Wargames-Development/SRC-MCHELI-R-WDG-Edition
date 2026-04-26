@@ -1,6 +1,7 @@
 package mcheli.aircraft;
 
 import mcheli.MCH_BaseInfo;
+import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
 import mcheli.hud.MCH_Hud;
 import mcheli.hud.MCH_HudManager;
@@ -127,6 +128,12 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public float soundRange;
     public float soundVolume;
     public float soundPitch;
+    public int destroyRewardSLMin;
+    public int destroyRewardSLMax;
+    public int destroyRewardGEMin;
+    public int destroyRewardGEMax;
+    public int destroyRewardRPMin;
+    public int destroyRewardRPMax;
     public IModelCustom model;
     public List hatchList;
     public List cameraList;
@@ -487,6 +494,12 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.soundPitch = 1.0F;
         this.soundVolume = 1.0F;
         this.soundRange = this.getDefaultSoundRange();
+        this.destroyRewardSLMin = -1;
+        this.destroyRewardSLMax = -1;
+        this.destroyRewardGEMin = -1;
+        this.destroyRewardGEMax = -1;
+        this.destroyRewardRPMin = -1;
+        this.destroyRewardRPMax = -1;
         this.model = null;
         this.hatchList = new ArrayList();
         this.cameraList = new ArrayList();
@@ -610,7 +623,56 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
 
     public abstract String getDefaultHudName(int var1);
 
+    private int parseRewardValueOrFallback(String value, int fallback, String keyName) {
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return Math.max(0, parsed);
+        } catch (Exception e) {
+            MCH_Lib.Log("[" + this.name + "] Invalid " + keyName + " value: " + value + ". fallback=" + fallback);
+            return fallback;
+        }
+    }
+
+    private int[] parseDestroyRewardRange(String data, int currentMin, int currentMax, String keyName) {
+        String[] values = this.splitParam(data);
+        if (values.length < 2) {
+            MCH_Lib.Log("[" + this.name + "] Invalid " + keyName + " format: " + data + ". expected min,max");
+            return new int[]{currentMin, currentMax};
+        }
+        int min = parseRewardValueOrFallback(values[0], currentMin, keyName + ".min");
+        int max = parseRewardValueOrFallback(values[1], currentMax, keyName + ".max");
+        if (min >= 0 && max >= 0 && min > max) {
+            int t = min;
+            min = max;
+            max = t;
+        }
+        return new int[]{min, max};
+    }
+
+    private int parseDestroyRewardSingle(String data, int currentValue, String keyName) {
+        return parseRewardValueOrFallback(data, currentValue, keyName);
+    }
+
+    private void normalizeDestroyRewardRanges() {
+        if (this.destroyRewardSLMin >= 0 && this.destroyRewardSLMax >= 0 && this.destroyRewardSLMin > this.destroyRewardSLMax) {
+            int t = this.destroyRewardSLMin;
+            this.destroyRewardSLMin = this.destroyRewardSLMax;
+            this.destroyRewardSLMax = t;
+        }
+        if (this.destroyRewardGEMin >= 0 && this.destroyRewardGEMax >= 0 && this.destroyRewardGEMin > this.destroyRewardGEMax) {
+            int t = this.destroyRewardGEMin;
+            this.destroyRewardGEMin = this.destroyRewardGEMax;
+            this.destroyRewardGEMax = t;
+        }
+        if (this.destroyRewardRPMin >= 0 && this.destroyRewardRPMax >= 0 && this.destroyRewardRPMin > this.destroyRewardRPMax) {
+            int t = this.destroyRewardRPMin;
+            this.destroyRewardRPMin = this.destroyRewardRPMax;
+            this.destroyRewardRPMax = t;
+        }
+    }
+
     public boolean isValidData() throws Exception {
+        normalizeDestroyRewardRanges();
         if (this.cameraPosition.size() <= 0) {
             this.cameraPosition.add(new MCH_AircraftInfo.CameraPosition());
         }
@@ -821,6 +883,30 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                         this.repairOtherVehiclesValue = this.toInt(s[1], 0, 10000000);
                     }
                 }
+            } else if (item.equalsIgnoreCase("DestroyRewardSL")) {
+                int[] range = parseDestroyRewardRange(data, this.destroyRewardSLMin, this.destroyRewardSLMax, "DestroyRewardSL");
+                this.destroyRewardSLMin = range[0];
+                this.destroyRewardSLMax = range[1];
+            } else if (item.equalsIgnoreCase("DestroyRewardGE")) {
+                int[] range = parseDestroyRewardRange(data, this.destroyRewardGEMin, this.destroyRewardGEMax, "DestroyRewardGE");
+                this.destroyRewardGEMin = range[0];
+                this.destroyRewardGEMax = range[1];
+            } else if (item.equalsIgnoreCase("DestroyRewardRP") || item.equalsIgnoreCase("DestroyRewardRL")) {
+                int[] range = parseDestroyRewardRange(data, this.destroyRewardRPMin, this.destroyRewardRPMax, item);
+                this.destroyRewardRPMin = range[0];
+                this.destroyRewardRPMax = range[1];
+            } else if (item.equalsIgnoreCase("DestroyRewardSLMin")) {
+                this.destroyRewardSLMin = parseDestroyRewardSingle(data, this.destroyRewardSLMin, "DestroyRewardSLMin");
+            } else if (item.equalsIgnoreCase("DestroyRewardSLMax")) {
+                this.destroyRewardSLMax = parseDestroyRewardSingle(data, this.destroyRewardSLMax, "DestroyRewardSLMax");
+            } else if (item.equalsIgnoreCase("DestroyRewardGEMin")) {
+                this.destroyRewardGEMin = parseDestroyRewardSingle(data, this.destroyRewardGEMin, "DestroyRewardGEMin");
+            } else if (item.equalsIgnoreCase("DestroyRewardGEMax")) {
+                this.destroyRewardGEMax = parseDestroyRewardSingle(data, this.destroyRewardGEMax, "DestroyRewardGEMax");
+            } else if (item.equalsIgnoreCase("DestroyRewardRPMin") || item.equalsIgnoreCase("DestroyRewardRLMin")) {
+                this.destroyRewardRPMin = parseDestroyRewardSingle(data, this.destroyRewardRPMin, item);
+            } else if (item.equalsIgnoreCase("DestroyRewardRPMax") || item.equalsIgnoreCase("DestroyRewardRLMax")) {
+                this.destroyRewardRPMax = parseDestroyRewardSingle(data, this.destroyRewardRPMax, item);
             } else if (item.equalsIgnoreCase("RadarType")) {
                 try {
                     this.radarType = EnumRadarType.valueOf(data);

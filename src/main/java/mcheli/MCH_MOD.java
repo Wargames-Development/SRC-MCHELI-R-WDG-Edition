@@ -24,6 +24,8 @@ import mcheli.command.MCH_Command;
 import mcheli.command.MCH_CommandAddGunner;
 import mcheli.container.MCH_EntityContainer;
 import mcheli.container.MCH_ItemContainer;
+import mcheli.economy.MCH_EconomyEventHandler;
+import mcheli.economy.MCH_EconomyTechRegistry;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.flare.MCH_EntityFlare;
 import mcheli.gltd.MCH_EntityGLTD;
@@ -40,9 +42,11 @@ import mcheli.lweapon.MCH_LightWeaponInfoManager;
 import mcheli.lweapon.MCH_ItemLightWeaponBase;
 import mcheli.lweapon.MCH_ItemLightWeaponBullet;
 import mcheli.mob.MCH_EntityGunner;
+import mcheli.mob.MCH_EntityNPC;
 import mcheli.mob.MCH_GunnerInfo;
 import mcheli.mob.MCH_GunnerInfoManager;
 import mcheli.mob.MCH_ItemSpawnGunner;
+import mcheli.mob.MCH_ItemSpawnNPC;
 import mcheli.network.PacketHandler;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.parachute.MCH_ItemParachute;
@@ -133,6 +137,7 @@ public class MCH_MOD {
     public static MCH_ItemSpawnGunner itemSpawnGunnerEnemy;
     public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonsterStupid;
     public static MCH_ItemSpawnGunner itemSpawnGunnerEnemyStupid;
+    public static MCH_ItemSpawnNPC itemSpawnNPC;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
@@ -309,6 +314,7 @@ public class MCH_MOD {
         MCH_ThrowableInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/throwable");
         MCH_BlockInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/blocks");
         MCH_GunnerInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/");
+        MCH_EconomyTechRegistry.ensureInitialized();
         MCH_LightWeaponAmmoInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapon_ammo");
         MCH_LightWeaponInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapons");
         MCH_SoundsJson.update(sourcePath + "/assets/" + "mcheli" + "/");
@@ -316,6 +322,7 @@ public class MCH_MOD {
         MCH_Lib.Log("Register item");
         this.registerItemRangeFinder();
         this.registerItemSpawnGunner();
+        this.registerItemSpawnNPC();
         this.registerConfiguredGunnerItems();
         this.registerItemWrench();
         this.registerItemFuel();
@@ -345,6 +352,7 @@ public class MCH_MOD {
         MCH_Lib.Log("Register system");
         W_NetworkRegistry.registerChannel(packetHandler, "MCHeli_CH");
         MinecraftForge.EVENT_BUS.register(new MCH_EventHook());
+        MinecraftForge.EVENT_BUS.register(new MCH_EconomyEventHandler());
 
         proxy.registerClientTick();
 
@@ -471,6 +479,14 @@ public class MCH_MOD {
         W_LanguageRegistry.addNameForObject(item, "zh_CN", fallbackZh);
         MCH_Lib.Log("[mcheli] Gunner profile '%s' missing/invalid, fallback to legacy item '%s'.", profileKey, registerName);
         return item;
+    }
+
+    private void registerItemSpawnNPC() {
+        itemSpawnNPC = new MCH_ItemSpawnNPC();
+        registerItem(itemSpawnNPC, "spawn_npc", creativeTabsGunner);
+        W_LanguageRegistry.addName(itemSpawnNPC, "NPC Spawn Egg");
+        W_LanguageRegistry.addNameForObject(itemSpawnNPC, "ja_JP", "NPC 召喚卵");
+        W_LanguageRegistry.addNameForObject(itemSpawnNPC, "zh_CN", "NPC生成蛋");
     }
 
     private void registerConfiguredGunnerItems() {
@@ -674,6 +690,7 @@ public class MCH_MOD {
         EntityRegistry.registerModEntity(MCH_EntityFlare.class, "MCH.E.Flare", 300, this, 330, 10, true);
         EntityRegistry.registerModEntity(MCH_EntityThrowable.class, "MCH.E.Throwable", 400, this, 330, 10, true);
         EntityRegistry.registerModEntity(MCH_EntityGunner.class, "MCH.E.Gunner", 500, this, 530, 5, true);
+        EntityRegistry.registerModEntity(MCH_EntityNPC.class, "MCH.E.NPC", 501, this, 80, 3, true);
         EntityRegistry.registerModEntity(MCH_EntityLockBox.class, "MCH.E.LockBox", 401, this, 32, 20, false);
         EntityRegistry.registerModEntity(MCH_EntityChaff.class, "MCH.E.Chaff", 402, this, 330, 10, true);
         EntityRegistry.registerModEntity(EntityNukeTorex.class, "MCH.E.Nuke", 403, this, 1000, 20, false);

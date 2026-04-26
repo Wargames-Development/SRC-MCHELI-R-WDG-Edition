@@ -51,12 +51,22 @@ public class MCH_CommonPacketHandler {
         if (!player.worldObj.isRemote) {
             MCH_PacketIndOpenScreen pkt = new MCH_PacketIndOpenScreen();
             pkt.readData(data);
+            MCH_Lib.DbgTrace(
+                player.worldObj,
+                "event=packet_open_screen guiId=%d player=%s pos=%.2f,%.2f,%.2f",
+                pkt.guiID,
+                player.getCommandSenderName(),
+                player.posX,
+                player.posY,
+                player.posZ
+            );
             if (pkt.guiID == 3) {
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
                 if (ac != null) {
                     ac.openInventory(player);
                 }
             } else {
+                MCH_Lib.DbgTrace(player.worldObj, "event=server_open_gui guiId=%d player=%s", pkt.guiID, player.getCommandSenderName());
                 player.openGui(MCH_MOD.instance, pkt.guiID, player.worldObj, (int) player.posX, (int) player.posY, (int) player.posZ);
             }
 

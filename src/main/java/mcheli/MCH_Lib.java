@@ -18,7 +18,10 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -27,6 +30,8 @@ public class MCH_Lib {
     public static final String[] AZIMUTH_8 = new String[]{"S", "SW", "W", "NW", "N", "NE", "E", "SE"};
     public static final int AZIMUTH_8_ANG = 360 / AZIMUTH_8.length;
     private static HashMap mapMaterial = new HashMap();
+    private static final Object DEBUG_TRACE_LOCK = new Object();
+    private static final File DEBUG_TRACE_FILE = new File("logs/mcheli_debug_trace.log");
 
     public static void init() {
         mapMaterial.clear();
@@ -248,6 +253,45 @@ public class MCH_Lib {
 
     public static void DbgLog(World w, String format, Object... data) {
         DbgLog(w.isRemote, format, data);
+    }
+
+    public static void DbgTrace(String format, Object... data) {
+        if (!MCH_Config.DebugLog) {
+            return;
+        }
+        String line;
+        try {
+            line = String.format(format, data);
+        } catch (Exception ex) {
+            line = format;
+        }
+        String output = "[" + getTime() + "] " + line;
+        System.out.println(output);
+        appendDebugTraceFile(output);
+    }
+
+    public static void DbgTrace(World world, String format, Object... data) {
+        if (world == null) {
+            DbgTrace("[MCHDBG] side=unknown " + format, data);
+            return;
+        }
+        DbgTrace((world.isRemote ? "[MCHDBG] side=client " : "[MCHDBG] side=server ") + format, data);
+    }
+
+    private static void appendDebugTraceFile(String line) {
+        synchronized (DEBUG_TRACE_LOCK) {
+            File parent = DEBUG_TRACE_FILE.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(DEBUG_TRACE_FILE, true));
+                writer.write(line);
+                writer.newLine();
+                writer.close();
+            } catch (IOException ignored) {
+            }
+        }
     }
 
     public static String getTime() {
