@@ -1,0 +1,112 @@
+DisplayName = ZFB-05
+AddDisplayName = zh_CN, ZFB-05 装甲防爆车
+AddDisplayName = en_US, ZFB-05
+
+MaxHp = 600
+Speed = 0.9
+ThrottleUpDown = 3.0
+Gravity = -0.1
+GravityInWater = -0.1
+DamageFactor = 0.00
+EnableNightVision = true
+EnableEntityRadar = false
+Sound = JeepMove
+DefaultFreelook = true
+
+HUD = M1161ITV,mbt_gnr
+WeightType = Tank
+
+CameraZoom = 3
+
+Float = false
+ThrottleUpDown = 3.5
+
+throttledownfactor=0.8
+
+
+MobilityRoll = 0
+
+
+
+ArmorDamageFactor = 1
+
+EnableBack = true
+SetWheelPos =  1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+SubmergedDamageHeight = 2
+WeightedCenterZ = 0.1
+
+OnGroundPitchFactor = 0.9
+OnGroundRollFactor  = 0.9
+
+MobilityYawOnGround = 2
+PivotTurnThrottle = 0.0
+
+AddSeat =  0.6820, 1.22, 0.8092
+AddGunnerSeat =   -0.6820, 1.22, 0.8092, 0.002528, 4,  -0.8248,  false, -90, 90, true
+
+
+
+
+HideEntity = false
+
+
+CameraRotationSpeed = 50
+
+StepHeight = 4
+HideEntity = true
+
+ArmorMinDamage = 10
+
+MotionFactor = 0.9
+
+MaxFuel         = 1500
+FuelConsumption = 1.0
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.3807,  2.068
+AddTrackRoller = -1.541,  0.3805,  -2.270
+
+
+
+MinRotationPitch = -85
+MaxRotationPitch =  10
+
+;AddWeapon = ai ,   -3.0, 0.0,  2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+;AddWeapon = ai ,   3.0, 0.0,  2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+;AddWeapon = ai ,   -3.0, 0.0,  -2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+;AddWeapon = ai ,   3.0, 0.0,  -2.3,   0.0, 0.0, false, 1, 0, -360,360, -0,0
+
+
+AddPartWeapon        = Gunner_HMG,     false,  true,  false,   0.002528,  0.649,    -0.7841
+AddPartWeaponChild  =   false, true,  0.002528, 3.409,  -0.8248
+AddWeapon = Gunner_HMG ,   0.002528, 3.409,  -0.8248,   0.0, 0.0, false, 2, 0, -360,360, -40,10
+
+
+;AddPartWeaponMissile = ai,   false, false, false,   0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,  -0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,   0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,  -0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,   0.297,  0.518, -8.699
+;AddPartWeaponMissile = ai,   false, false, false,  -0.297,  0.518, -8.699
+
+
+
+
+
+BoundingBox =  0.0, 0.8875,  2.572,   2.5, 2.5,  0.6
+BoundingBox =  0.0, 1.147,  -0.1272,   3.0, 3.0,  1
+BoundingBox =  0.0, 1.147,  -2.778,   2.5, 3.0,  1
+
+
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+
+NameOnAdvancedAARadar = 
+NameOnModernAARadar =
+NameOnEarlyAARadar =
+NameOnModernASRadar = CAR
+NameOnEarlyASRadar = ?
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

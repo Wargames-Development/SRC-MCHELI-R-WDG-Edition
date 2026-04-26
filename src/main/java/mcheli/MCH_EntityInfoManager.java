@@ -92,10 +92,7 @@ public class MCH_EntityInfoManager {
         }
         if (MCH_FMURUtil.isSoldier(entity) || entity instanceof EntityPlayer || entity instanceof MCH_IEntityLockChecker) {
             if (entity instanceof MCP_EntityPlane || entity instanceof MCH_EntityHeli || entity instanceof MCH_EntityChaff) {
-                if (!isShip(entity) && entity.posY - w.getHeightValue((int) entity.posX, (int) entity.posZ) < 30) {
-                    return false;
-                }
-                if (!isShip(entity) && entity.motionX * entity.motionX + entity.motionY * entity.motionY + entity.motionZ * entity.motionZ < 0.5 * 0.5) {
+                if (!isShip(entity) && entity.posY - w.getHeightValue((int) entity.posX, (int) entity.posZ) < 0) {
                     return false;
                 }
             }

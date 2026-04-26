@@ -43,12 +43,22 @@ public final class MCH_RadarDisplayTextureManager {
         }
         long phaseKey = buildPhaseKey(worldTick, partialTicks);
         boolean firstUpdate = state.lastUpdatePhaseKey < 0L;
-        if (!firstUpdate && phaseKey == state.lastUpdatePhaseKey) {
+        boolean lockActive = MCH_RenderRWR.getRadarTrackingTargetId(ac) > 0;
+        if (!lockActive && !firstUpdate && phaseKey == state.lastUpdatePhaseKey) {
             return state.location;
         }
         MCH_RenderRWR.RadarDisplayFrame frame = MCH_RenderRWR.buildRadarDisplayFrame(ac, player, partialTicks);
+        boolean lockNoPoint = frame != null
+            && frame.trackingTargetId > 0
+            && (frame.points == null || frame.points.isEmpty());
+        if (lockNoPoint && state.lastFrameHadPoints) {
+            state.lastUpdateTick = worldTick;
+            state.lastUpdatePhaseKey = phaseKey;
+            return state.location;
+        }
         int radarUiColor = MCH_RenderRWR.getEnableRadarUiColor(frame.aircraft);
         renderGraphicsFrame(state.pixels, frame, radarUiColor);
+        state.lastFrameHadPoints = frame != null && frame.points != null && !frame.points.isEmpty();
         if (shouldUpdateTextLayer(state, frame, radarUiColor, worldTick)) {
             renderTextLayer(state.textPixels, frame, radarUiColor);
             state.lastTextTick = worldTick;
@@ -451,6 +461,7 @@ public final class MCH_RadarDisplayTextureManager {
         public int warmupCursor = 0;
         public boolean ready = false;
         public boolean clearUploaded = false;
+        public boolean lastFrameHadPoints = false;
     }
 
     private static void drawText(int[] pixels, String text, int x, int y, int color, int scale) {

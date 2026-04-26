@@ -1,0 +1,51 @@
+﻿DisplayName = LY-1
+AddDisplayName = zh_CN, 燎原-1 激光近防系统
+AddDisplayName = en_US, LY-1
+MaxHp = 300
+Speed = 0
+ThrottleUpDown = 0
+MobilityRoll = 50
+CanMoveOnGround = false
+DefaultFreelook = true
+EnableGunnerMode = true
+HideEntity = false
+MinRotationPitch = -85
+MaxRotationPitch = 10
+DamageFactor = 0.8
+CameraZoom = 6
+CameraPosition = 0.9,3.43, 0,true
+CameraRotationSpeed = 60.0
+ThirdPersonDist = 12
+EnableEntityRadar = true
+ArmorMinDamage = 5
+;ArmorMaxDamage 最大ダメージ、これより大きいダメージは最大ダメージに丸められる
+ArmorMaxDamage = 1200
+PivotTurnThrottle = 0.0
+; W = WWII,  A = AAGun(対空砲)
+Category = W.A
+
+HUD = MBT_GUNNER
+
+AddGunnerSeat = 0.00,  0.0, -0.2, 0.00,  0.0, 0.0, false,-85,10,true
+
+hideentity=true
+
+
+AddPartWeapon = LY-1_50KW/LY-1_100KW/LY-1_300KW, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 2.423, -0.1830
+AddTurretWeapon = LY-1_50KW,          0.00, 2.423, -0.1830,  0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = LY-1_100KW,          0.00, 2.423, -0.1830,  0, 0.0, true,1, 0,-360,360, -85, 10
+AddTurretWeapon = LY-1_300KW,          0.00, 2.423, -0.1830,  0, 0.0, true,1, 0,-360,360, -85, 10
+
+BoundingBox =  0.0, 1.5, 0.0,  4.0, 3.0
+
+NameOnAdvancedAARadar = AAA
+NameOnModernAARadar = AAA
+NameOnEarlyAARadar = AAA
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+RadarType = MODERN_AA
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+enableRWR=true

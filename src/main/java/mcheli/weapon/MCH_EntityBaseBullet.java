@@ -1298,7 +1298,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
 
             Entity hitEntity = null;
-            List entities = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.addCoord(mx, my, mz).expand(21.0D, 21.0D, 21.0D));
+            List entities = super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.addCoord(mx, my, mz).expand(96.0D, 96.0D, 96.0D));
             double d2 = 0.0D;
             MovingObjectPosition result = m;
             for (Object o : entities) {

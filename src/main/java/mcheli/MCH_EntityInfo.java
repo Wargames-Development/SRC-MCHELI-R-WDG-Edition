@@ -19,15 +19,22 @@ public class MCH_EntityInfo {
     public double lastTickPosX;
     public double lastTickPosY;
     public double lastTickPosZ;
+    public float rotationYaw;
+    public float rotationPitch;
     public byte countermeasureFlags;
     public long countermeasureUntilTick;
     public long lastUpdateTime;
 
     public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ) {
-        this(entityId, worldName, entityName, entityClassName, posX, posY, posZ, lastTickPosX, lastTickPosY, lastTickPosZ, (byte)0, -1L);
+        this(entityId, worldName, entityName, entityClassName, posX, posY, posZ, lastTickPosX, lastTickPosY, lastTickPosZ, 0.0F, 0.0F, (byte)0, -1L);
     }
 
     public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ, byte countermeasureFlags, long countermeasureUntilTick) {
+        this(entityId, worldName, entityName, entityClassName, posX, posY, posZ, lastTickPosX, lastTickPosY, lastTickPosZ, 0.0F, 0.0F, countermeasureFlags, countermeasureUntilTick);
+    }
+
+    public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ,
+                          float rotationYaw, float rotationPitch, byte countermeasureFlags, long countermeasureUntilTick) {
         this.entityId = entityId;
         this.worldName = worldName;
         this.entityName = entityName;
@@ -38,6 +45,8 @@ public class MCH_EntityInfo {
         this.lastTickPosX = lastTickPosX;
         this.lastTickPosY = lastTickPosY;
         this.lastTickPosZ = lastTickPosZ;
+        this.rotationYaw = rotationYaw;
+        this.rotationPitch = rotationPitch;
         this.countermeasureFlags = countermeasureFlags;
         this.countermeasureUntilTick = countermeasureUntilTick;
         this.lastUpdateTime = System.currentTimeMillis();
@@ -82,6 +91,7 @@ public class MCH_EntityInfo {
             e.getClass().getName(),
             e.posX, e.posY, e.posZ,
             e.lastTickPosX, e.lastTickPosY, e.lastTickPosZ,
+            e.rotationYaw, e.rotationPitch,
             countermeasureFlags, countermeasureUntilTick
         );
     }

@@ -1,0 +1,128 @@
+DisplayName = M270 MLRS
+AddDisplayName = zh_CN,M270 火箭炮[ATACMS]
+AddDisplayName = en_US,M270 MLRS
+ItemID = 91128
+MaxHp = 400
+Speed = 0.8
+ThrottleUpDown = 3.0
+Gravity = -0.1
+GravityInWater = -0.5
+DamageFactor = 0.0
+EnableNightVision = true
+EnableEntityRadar = false
+Sound = mbt_run
+HUD = mlrs, mbt_hud
+WeightType = Tank
+DefaultFreelook = true
+FlareType = 10
+
+ThirdPersonDist = 8
+
+
+NameOnModernAARadar = MLRS
+NameOnEarlyAARadar = MLRS
+NameOnModernASRadar = M270
+NameOnEarlyASRadar = MLRS
+RadarType = MODERN_AS
+
+
+EnableBack = true
+SetWheelPos =  1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+SubmergedDamageHeight = 2
+WeightedCenterZ = 0.0
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor  = 3.5
+
+MobilityYawOnGround = 3.5
+PivotTurnThrottle = 0.0
+
+AddGunnerSeat =  0.00, 1.58, 0.44,    -0.6, 1.78, 2.0,  false, -90, 90, true
+Entitywidth=0
+Entityheight=0
+
+HideEntity = true
+
+CameraPosition = 0.00,  5.3, 0.00, true
+CameraRotationSpeed = 8
+
+StepHeight = 2
+HideEntity = true
+
+
+
+MotionFactor = 0.9
+
+MaxFuel         = 1500
+FuelConsumption = 1.0
+
+TrackRollerRot = 50
+
+
+AddCrawlerTrack = true, 0.22, -1.5162, -0.2347/2.3901, -0.127/2.6452, 0.1463/3.3154,0.2432/3.545, 0.3453/3.6164,0.4728/3.6419,0.5953/3.6164,0.6973/3.545,0.7688/3.443, 0.7943/3.3154, 0.7943/-3.3221, 0.7688/-3.4446, 0.6973/-3.5466, 0.5953/-3.618, 0.4728/-3.6436, 0.3453/-3.618, 0.2432/-3.5466, 0.1718/-3.4446, -0.127/-2.8093,-0.2064/-2.6959, -0.2347/-2.5599, -0.2347/-2.5589, -0.2347/2.389
+AddCrawlerTrack = true, 0.22, 1.5162, -0.2347/2.3901, -0.127/2.6452, 0.1463/3.3154,0.2432/3.545, 0.3453/3.6164,0.4728/3.6419,0.5953/3.6164,0.6973/3.545,0.7688/3.443, 0.7943/3.3154, 0.7943/-3.3221, 0.7688/-3.4446, 0.6973/-3.5466, 0.5953/-3.618, 0.4728/-3.6436, 0.3453/-3.618, 0.2432/-3.5466, 0.1718/-3.4446, -0.127/-2.8093,-0.2064/-2.6959, -0.2347/-2.5599, -0.2347/-2.5589, -0.2347/2.389
+AddTrackRoller = -1.5, 0.4728,3.3154
+AddTrackRoller = -1.5, 0.1281,2.3901
+AddTrackRoller = -1.5, 0.1281,1.5276
+AddTrackRoller = -1.5, 0.1281,0.3651
+AddTrackRoller = -1.5, 0.1281,-0.5849
+AddTrackRoller = -1.5, 0.1281,-1.7099
+AddTrackRoller = -1.5, 0.1281,-2.5599
+AddTrackRoller = -1.5, 0.4728,-3.3221
+
+AddTrackRoller = 1.5, 0.4728,3.3154
+AddTrackRoller = 1.5, 0.1281,2.3901
+AddTrackRoller = 1.5, 0.1281,1.5276
+AddTrackRoller = 1.5, 0.1281,0.3651
+AddTrackRoller = 1.5, 0.1281,-0.5849
+AddTrackRoller = 1.5, 0.1281,-1.7099
+AddTrackRoller = 1.5, 0.1281,-2.5599
+AddTrackRoller = 1.5, 0.4728,-3.3221
+
+
+
+
+AddWeapon			= MLRS_M270_ATACMS,    1,  2.5, -2.8,  0.0, 0.0, false,  1, 0, -360, 360, -85, 2
+AddWeapon			= MLRS_M270_ATACMS,    -1,  2.5, -2.8,  0.0, 0.0, false,  1, 0, -360, 360, -85, 2
+
+AddPartWeapon 		= MLRS_M270_ATACMS,    true, true,  false, 0.00,  1.0628, -2.3196
+AddPartWeaponChild 		= false, true, 0.00,  1.4128, -3.8959
+ArmorMinDamage = 10
+;AddRecipe = "GIG",  "III",  "RIR",   G, glass, I, iron_ingot, R, redstone
+
+BoundingBox = 0.0, 0.359, 0.0,  3.62, 1.411, 8.204, 0.5, DEFAULT, 车体
+BoundingBox = 0.0, 1.992, 2.963,  3.444, 1.765, 2.209, 1.0, DEFAULT, 驾驶舱
+BoundingBox = 0.0, 1.992, -1.154,  3.444, 1.765, 5.816, 1.0, TURRET, 火箭弹发射箱
+
+
+
+MinRotationPitch = -85
+MaxRotationPitch =  1
+
+BoundingBox =  0.0, 1.4, 2.0,   3.4, 2.3,  1.00
+
+
+weapongrouptype=2
+
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+hudtype=1
+
+engineShutdownThreshold = 15
+throttledownfactor=2.5
+explosionsizebycrash=10
+
+
+
+hasMaintenance=true
+MaintenceUsetime=60
+MaintenceWaittime=300
+
+NameOnAdvancedAARadar = MLRS
+NameOnModernAARadar = MLRS
+NameOnEarlyAARadar =
+NameOnModernASRadar = M270
+NameOnEarlyASRadar = MLRS
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

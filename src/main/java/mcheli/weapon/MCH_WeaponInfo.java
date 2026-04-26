@@ -458,6 +458,22 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 弹药在RWR上面显示什么
      */
     public String nameOnRWR = "MSL";
+    /**
+     * 武器RCS前向系数（0.01~10）
+     */
+    public float rcsFrontFactor = 1.0F;
+    /**
+     * 武器RCS侧向系数（0.01~10）
+     */
+    public float rcsSideFactor = 1.0F;
+    /**
+     * 武器RCS后向系数（0.01~10）
+     */
+    public float rcsRearFactor = 1.0F;
+    /**
+     * 武器RCS接触保持时间系数（0.01~10）
+     */
+    public float rcsTimeFactor = 1.0F;
 
     /**
      * 多久启用近炸引信，-1永不启用
@@ -574,6 +590,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.nukeFlashRadiusFactor = 14.0F;
         this.nukeFlashDurationMin = 20;
         this.nukeFlashDurationMax = 80;
+        this.rcsFrontFactor = 1.0F;
+        this.rcsSideFactor = 1.0F;
+        this.rcsRearFactor = 1.0F;
+        this.rcsTimeFactor = 1.0F;
     }
 
     public void checkData() {
@@ -1066,6 +1086,22 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             } else if (item.equalsIgnoreCase("NameOnRWR")) {
                 String name = data.trim();
                 this.nameOnRWR = "NULL".equals(name) ? "" : name;
+            } else if (item.equalsIgnoreCase("RCSFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 1) {
+                    this.rcsFrontFactor = this.toFloat(s[0], 0.01F, 10.0F);
+                }
+                if (s.length >= 2) {
+                    this.rcsSideFactor = this.toFloat(s[1], 0.01F, 10.0F);
+                }
+                if (s.length >= 3) {
+                    this.rcsRearFactor = this.toFloat(s[2], 0.01F, 10.0F);
+                }
+                if (s.length >= 4) {
+                    this.rcsTimeFactor = this.toFloat(s[3], 0.01F, 10.0F);
+                }
+            } else if (item.equalsIgnoreCase("RCSTimeFactor")) {
+                this.rcsTimeFactor = this.toFloat(data, 0.01F, 10.0F);
             } else if (item.equalsIgnoreCase("ProximityFuseTick")) {
                 this.proximityFuseTick = this.toInt(data);
                 this.hasProximityFuseTickSet = true;

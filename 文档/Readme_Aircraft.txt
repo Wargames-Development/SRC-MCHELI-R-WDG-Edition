@@ -793,12 +793,29 @@ RadarScanTick=12
 ;每多少 tick 扫一次
 RadarDetectChanceBase=0.75
 ;基础命中概率
+RadarGainFactor=1.5,0.5
+;雷达距离增益系数（近距,远距）
+;格式：近距系数,远距系数
+;近距=0米，远距=最大探测距离
+;每项范围=0.01~10
+;默认值=1.5,0.5
+RadarRCSFactor=1.0,1.0,1.0,1.0
+;载具RCS系数（用于雷达探测概率与接触保持）
+;格式：前向,侧向,后向,时间系数
+;前三项影响被雷达发现概率（值越小越“隐身”）
+;第4项影响雷达接触保持时间，实际保持Tick = RadarContactHoldTick * 时间系数
+;当只填写前三项时，第4项默认=1.0（兼容旧配置）
+;每项范围=0.01~10
+RadarRCSTimeFactor=1.0
+;可单独设置RCS时间系数（等价于RadarRCSFactor第4项）
+;默认值=1.0
 RadarContactHoldTick=40
 ;命中后显示保持时长
 RadarSearchType=SRC
 ;雷达搜索模式
-;可选值=SRC|TWS|GMTI_SRC|GMTI_TWS
-;GMTI_SRC/GMTI_TWS=仅对地模式（包含低空在内的所有目标）
+;可选值=SRC|TWS|GMTI_SRC|GMTI_TWS|MULTI_SRC|MULTI_TWS
+;GMTI_SRC/GMTI_TWS=对地优先搜索（不再额外做速度门过滤）
+;MULTI_SRC/MULTI_TWS=空地混合搜索：空中目标用RadarMinScanAltitude，地面目标用RadarMaxScanAltitude
 ;默认值=SRC
 RadarTrackAzimuthDeg=90
 ;雷达跟踪最大水平角度
@@ -816,12 +833,12 @@ RadarMaxTargetRange =
 RadarMinScanAltitude=10
 ;雷达最小扫描高度（离地高度，AGL）
 ;低于该高度的目标不参与雷达扫描
-;仅对SRC/TWS生效，GMTI模式下不生效
+;对SRC/TWS/MULTI模式中的空中目标生效
 ;默认值=10
 RadarMaxScanAltitude=25
 ;雷达最大扫描高度（离地高度，AGL）
 ;高于该高度的目标不参与雷达扫描
-;仅对GMTI_SRC/GMTI_TWS生效，SRC/TWS不生效
+;对GMTI模式生效；MULTI模式中仅对地面目标生效
 ;默认值=25
 
 hasEcmJammer=true
@@ -841,5 +858,6 @@ ecmJammerWaitTime = 400
 
 hasDIRCM = false
 ;是否拥有DIRCM，需要配合FlareType = 9使用，DIRCM会顶替掉热焰弹的位置，启动的持续时间内能够使得周围所有红外制导导弹，激光制导导弹，指令线制导导弹和电视制导导弹失去制导
+
 
 

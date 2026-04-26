@@ -234,6 +234,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private Vec3 lastPredictedImpactPoint;
     private boolean switchSeat = false;
     public int jammingTick = 0;
+    private long gunnerPilotMountTick = -1L;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -1972,6 +1973,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.unmountEntity();
         }
 
+        this.updateGunnerTakeoffAssistState();
         this.updateExtraBoundingBox();
         boolean var11 = super.onGround;
         double var12 = super.motionY;
@@ -2056,6 +2058,35 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
             }
         }
+    }
+
+    private void updateGunnerTakeoffAssistState() {
+        Entity pilot = this.getRiddenByEntity();
+        if (!(pilot instanceof MCH_EntityGunner)) {
+            this.gunnerPilotMountTick = -1L;
+            return;
+        }
+        if (!W_Entity.isEqual(this.lastRiddenByEntity, pilot)) {
+            this.gunnerPilotMountTick = super.worldObj != null ? super.worldObj.getTotalWorldTime() : -1L;
+        }
+    }
+
+    protected float getEffectiveAircraftGravity(boolean inWater) {
+        if (this.getAcInfo() == null) {
+            return 0.0F;
+        }
+        float base = inWater ? this.getAcInfo().gravityInWater : this.getAcInfo().gravity;
+        if (inWater) {
+            return base;
+        }
+        if (this.gunnerPilotMountTick < 0L || super.worldObj == null) {
+            return base;
+        }
+        if (!(this.getRiddenByEntity() instanceof MCH_EntityGunner)) {
+            return base;
+        }
+        long elapsed = super.worldObj.getTotalWorldTime() - this.gunnerPilotMountTick;
+        return elapsed >= 0L && elapsed < 40L ? -0.02F : base;
     }
 
     public void updateControl() {

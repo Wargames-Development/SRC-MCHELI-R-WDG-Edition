@@ -1,0 +1,30 @@
+﻿DisplayName = TL-4 LAUNCHER
+AddDisplayName = zh_CN, 天雷-4 导弹发射器
+AddDisplayName = en_US, TL-4 LAUNCHER
+MaxHp = 60
+EnableNightVision = false
+CameraZoom = 3
+AddSeat = 0.4,0,0
+CameraPosition = 0,  1.25,  0
+HideEntity = false
+EntityWidth  = 0.9
+EntityHeight = 0.9
+HUD = TL-4
+ArmorMinDamage = 2
+;ArmorMaxDamage 最大ダメージ、これより大きいダメージは最大ダメージに丸められる
+ArmorMaxDamage = 1200
+RotationPitchMin = -25
+RotationPitchMax =  25
+CameraRotationSpeed = 20
+AddPart = false, true, false, 0,   0, 0, 0
+AddPart = false,true, true,  0,   0, 0, 0
+AddTurretWeapon = TL4_1,  0.00, 1.3, 2.43,   0.0, 0.0,   true,1, 0,-360,360, -80, 25
+AddTurretWeapon = TL4_2,  0.00, 1.3, 2.43,   0.0, 0.0,   true,1, 0,-360,360, -80, 25
+Boundingbox = 0.00,  1.10,  0.00,  0.7, 1.0
+
+NameOnAdvancedAARadar =
+NameOnModernAARadar =
+NameOnEarlyAARadar =
+NameOnModernASRadar = AT
+NameOnEarlyASRadar = AT
+RadarType = EARLY_AS

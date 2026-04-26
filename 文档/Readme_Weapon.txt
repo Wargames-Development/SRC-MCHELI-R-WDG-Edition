@@ -333,6 +333,18 @@ isHeatSeekerMissile = true
 isRadarMissile = false
 ;是否为雷达弹，会受到箔条干扰
 ;默认值=false
+
+RCSFactor = 1.0, 1.0, 1.0, 1.0
+;武器RCS系数（用于机载雷达/RWR探测概率与接触保持）
+;格式：前向,侧向,后向,时间系数
+;前三项影响被雷达发现概率（值越小越“隐身”）
+;第4项影响雷达接触保持时间，实际保持Tick = RadarContactHoldTick * 时间系数
+;当只填写前三项时，第4项默认=1.0（兼容旧配置）
+;每项范围=0.01~10
+
+RCSTimeFactor = 1.0
+;可单独设置RCS时间系数（等价于RCSFactor第4项）
+;默认值=1.0
  
 maxDegreeOfMissile = 60
 ;弹药导引头最大导引角度，超过该角度导弹不制导。

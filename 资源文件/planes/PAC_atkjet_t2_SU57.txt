@@ -1,0 +1,244 @@
+DisplayName = SU-57
+AddDisplayName = zh_CN,SU-57 近卫
+AddDisplayName = en_US,SU-57
+ItemID = 28705
+MaxHp =400
+DamageFactor = 0.0
+AutoPilotRot = 0
+VtolYaw = 2
+VtolPitch = 2
+
+;Stealth = 0.5
+
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+
+;AddPartNozzle = 1.55, 1.871, -12.46, -1,0,0
+;AddPartNozzle = -1.55, 1.871, -12.46, -1,0,0
+
+
+
+
+
+
+
+Speed = 2.0
+FlareType = 5
+ThrottleUpDown = 0.6
+MaxFuel         = 1800
+FuelConsumption = 1.0
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+ThirdPersonDist = 25
+EnableGunnerMode = true
+CameraPosition =  0.00, 1.2, -0.7212
+
+
+ArmorMinDamage = 12
+VariableSweepWing = true
+AddPartwing =   0.00,  0.9411,-6.735,  1,0, 0, 40
+
+AddPartWeaponBay = ATKJET_SU57_ARM / ATKJET_SU57_GPSBOMB, -0.5850, 1.363,-2.916,   0.027, -0.031, 1.000, -85
+AddPartWeaponBay = ATKJET_SU57_ARM/ ATKJET_SU57_GPSBOMB,  0.5850, 1.363,-2.916,  -0.027, -0.031, 1.000,  85
+AddPartWeaponBay = ATKJET_SU57_ARM / ATKJET_SU57_GPSBOMB, -0.5850, 1.468,-8.867,   0.027, -0.031, 1.000, -85
+AddPartWeaponBay = ATKJET_SU57_ARM/ ATKJET_SU57_GPSBOMB,  0.5850, 1.468,-8.867,  -0.027, -0.031, 1.000,  85
+
+
+
+
+SweepWingSpeed = 0.9
+
+AddPartSteeringWheel =  3.316, 1.883,-10.9, 1, 0, 0.0,   -8
+AddPartSteeringWheel =  -3.316, 1.883,-10.9,  -1, 0, 0.0,   -8
+AddPartSteeringWheel =  2.825, 2.328,-9.146, 0, 1, 0.0,   -15
+AddPartSteeringWheel =  -2.825, 2.328,-9.146,  0, 1, 0.0,   -15
+AddPartSteeringWheel =  -0,2.107,3.903, 0, 0, 1,   -10
+
+AddPartThrottle =  0.4669, 2.105, 3.596,  1,0,0.00, 40
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+Category = M.A
+
+
+HUD = JET
+MobilityYaw = 0.8
+MobilityPitch = 0.8
+MobilityRoll = 1
+
+
+AddSeat = 0.00,  1.781, 3.453
+
+
+
+;Front
+AddPartLG    =  0.000, 1.646,1.223,   0.00, 0.000, 0.00, 90
+
+AddPartLGRev = -0.3126, 1.237, 2.278,    0.05, -0.075, 1.00, -89
+AddPartLGRev =  0.3126, 1.237, 2.278,   -0.05, -0.075, 1.00,  89
+AddPartLGRev = -0.1416, 1.278, 0.4976,    0.05, -0.075, 1.00, -89
+AddPartLGRev =  0.1416, 1.278, 0.4976,   -0.05, -0.075, 1.00,  89
+
+
+AddPartLG    =  -2.21, 1.874,-4.942,   0.00, 0.000, 0.00, 90
+
+
+
+AddPartLGRev =  -2.571, 1.649, -5.796,   0.05, 0.075, 1.00,  -50
+
+AddPartLG    =  2.21, 1.874,-4.942,   0.00, 0.000, 0.00, 90
+AddPartLGRev =  2.571, 1.649, -5.796,   -0.05, 0.075, 1.00,  50
+
+
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 250
+
+
+
+
+
+
+
+AddPartWeaponMissile = ATKJET_SU57_GPSBOMB,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile = ATKJET_SU57_GPSBOMB,  false, false, false,  -5.0, 0,  0
+AddPartWeaponMissile =ATKJET_SU57_ARM,  false, false, false,  -5.0, 0,  0
+
+AddWeapon = ATKJET_SU57_30MM_AS,  -0.8,  2.5,  0.8,  0.0,  0.0
+AddWeapon = ATKJET_SU57_GPSBOMB,-0.7484, 1, 1.632,   0.0, 0.0
+AddWeapon = ATKJET_SU57_GPSBOMB,0.7484, 1.0, 1.632,   0.0, 0.0
+
+AddWeapon = ATKJET_SU57_ARM,-0.0, 1.0, -3.82,   1.0, 0.0
+
+
+
+
+
+BoundingBox = 0.0, 2.207, 3.237,  2.0, 2.794, 2.0, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.207, 6.286,  2.0, 2.188, 4.021, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.016, -0.194,  6.62, 2.711, 4.908, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.016, -6.491,  7.922, 2.711, 7.612, 1.0, DEFAULT, 机身
+BoundingBox = 5.832, 2.017, -7.256,  4.577, 1.567, 4.398, 1.0, DEFAULT, 机身
+BoundingBox = -5.832, 2.017, -7.256,  4.577, 1.567, 4.398, 1.0, DEFAULT, 机身
+BoundingBox = 3.99, 2.017, -11.445,  3.056, 1.046, 3.393, 1.0, DEFAULT, 机身
+BoundingBox = -3.99, 2.017, -11.445,  3.056, 1.046, 3.393, 1.0, DEFAULT, 机身
+BoundingBox = 0, 2.017, -11.444,  4.716, 1.046, 2.347, 1.5, DEFAULT, 引擎
+BoundingBox = 3.289, 3.711, -10.058,  0.688, 2.478, 2.346, 1.0, DEFAULT, 机身
+BoundingBox = -3.289, 3.711, -10.058,  0.688, 2.478, 2.346, 1.0, DEFAULT, 机身
+
+
+
+NameOnAdvancedAARadar = S57
+NameOnModernAARadar = 
+NameOnEarlyAARadar = 
+NameOnModernASRadar = 
+NameOnEarlyASRadar = 
+RadarType = ADVANCED_AA
+
+EntityWidth  = 0.85
+EntityHeight = 0.85
+
+
+
+
+motionfactor=0.965
+
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 200
+
+hasMaintenance=true
+
+
+
+engineShutdownThreshold = 0
+
+explosionsizebycrash=10
+
+Gravity = -0.038
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+weapongrouptype=20
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+enablerwr=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+
+
+
+
+MobilityPitch = 0.85
+MobilityRoll  = 1.8
+MobilityYaw   = 0.55
+MotionFactor = 0.96
+
+
+
+
+
+MobilityPitch = 0.85
+MobilityRoll  = 1.8
+MobilityYaw   = 0.55
+MotionFactor = 0.96
+
+AddExhaustFlame = Exhaustflame, Exhaustflame_BLUE, 1.55, 1.871, -12, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_BLUE, -1.55, 1.871, -12, -1, 0, 0, 0, 1
+
+
+enableRadar=true
+RadarScanElevationDeg =300
+;俯仰扫描扇区总角度
+;范围=0~180（0=不扫描，180=上下全域）
+;默认值=40
+
+RadarFollowTurretYaw = false
+;是否让雷达水平正方向跟随坦克炮塔转向（仅坦克生效）
+;可选值=true|false
+;默认值：坦克=true，其它载具=false
+
+RadarElevationReference = AIRCRAFT
+;俯仰扫描参考系
+;可选值=HORIZON|AIRCRAFT
+;HORIZON=按平飞水平面计算（推荐地面载具）
+;AIRCRAFT=按机体当前姿态计算（推荐战斗机）
+;默认值=AIRCRAFT
+
+RadarPanelFillAlpha=0.075
+
+RadarElevationCoverage = FULL
+;俯仰扫描覆盖模式
+;可选值=UP_ONLY|FULL
+;UP_ONLY=仅上视扫描（不下视）
+;FULL=全域扫描（上+下）
+;默认值=UP_ONLY
+RadarScanAzimuthDeg=300
+;水平扫描范围
+RadarScanTick=60
+;每多少 tick 扫一次
+RadarDetectChanceBase=1
+;基础命中概率
+RadarContactHoldTick=90
+;命中后显示保持时长
+RadarMaxTargetRange =1400
+;最大显示距离
+
+RadarTrackAzimuthDeg=300
+;雷达跟踪最大水平角度
+;建议不超过RadarScanAzimuthDeg
+;默认值=90
+RadarTrackElevationDeg=300
+;雷达跟踪最大俯仰角度
+RadarSearchType=MULTI_TWS
+enableBVR=true
+hasecmJammer=true
+
+NameOnRWR=S57
+RadarRCSFactor=0.06,0.45,0.1,0.5

@@ -8,13 +8,18 @@ import mcheli.MCH_RadarDebug;
 import mcheli.MCH_RWRThreatClientTracker;
 import mcheli.MCH_RWRThreatEvent;
 import mcheli.MCH_RWRThreatTable;
+import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.network.packets.PacketRadarLockState;
+import mcheli.plane.MCP_PlaneInfoManager;
 import mcheli.plane.MCP_EntityPlane;
+import mcheli.tank.MCH_TankInfoManager;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
+import mcheli.vehicle.MCH_VehicleInfoManager;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import mcheli.weapon.MCH_WeaponInfo;
@@ -76,6 +81,8 @@ public class MCH_RenderRWR {
     private static final double _MIN_DISTANCE = 50.0;  // 最小显示距离（米）
     private static final double _MAX_DISTANCE = 4096.0; // 雷达/火控最大处理距离（米）
     private static final double _RWR_RING_MAX_DISTANCE = 4096.0; // 仅RWR威胁环的显示最大距离（米）
+    private static final double AIR_SPEED_GATE_BLOCK_PER_TICK = 0.5D / 3.0D;
+    private static final double AIR_SPEED_GATE_SQ = AIR_SPEED_GATE_BLOCK_PER_TICK * AIR_SPEED_GATE_BLOCK_PER_TICK;
     private static final int _MIN_RADIUS = 30;          // 最小显示半径（像素
     private static final Map<Integer, Map<Integer, RadarContact>> radarContactCache = new HashMap<Integer, Map<Integer, RadarContact>>();
     private static final Map<Integer, Long> radarLastDecayTick = new HashMap<Integer, Long>();
@@ -669,9 +676,11 @@ public class MCH_RenderRWR {
 
 
     // 新增实体校验方法
-    private static boolean isValidEntity(MCH_EntityInfo entity, EntityPlayer player, double minDist) {
-        if (entity.entityClassName.contains("MCH_EntityChaff") || entity.entityClassName.contains("MCH_EntityFlare")
-            || entity.entityClassName.contains("EntityPlayer") || entity.entityClassName.contains("EntitySoldier")) {
+    private static boolean isValidEntity(MCH_EntityInfo entity, EntityPlayer player, double minDist, String searchType) {
+        if (entity.entityClassName.contains("MCH_EntityChaff") || entity.entityClassName.contains("MCH_EntityFlare")) {
+            return false;
+        }
+        if (isFacGroundTargetEntity(entity) && !isMultiMode(searchType) && !isGmtiMode(searchType)) {
             return false;
         }
         if (entity.getDistanceSqToEntity(player) < minDist * minDist) {
@@ -873,9 +882,13 @@ public class MCH_RenderRWR {
         if (phase > 1.0D) {
             phase = phase - Math.floor(phase);
         }
-        boolean srcLikeMode = "SRC".equals(searchType) || "GMTI_SRC".equals(searchType);
-        boolean hideSweepOnLock = !acmMode && srcLikeMode && trackState.trackingTargetId > 0;
+        float scanAzClamp = Math.max(0.0F, Math.min(360.0F, scanAngleDeg));
+        float scanElClamp = Math.max(0.0F, Math.min(180.0F, elevationDeg));
         decayRadarContactsStatic(aircraftId, t);
+        validateTrackingStateImmediate(ac, player, aircraftId, partialTicks, elevationRef, followTurretYaw,
+            elevationCoverage, scanAzClamp, scanElClamp, ac.getAcInfo().radarMinScanAltitude, ac.getAcInfo().radarMaxScanAltitude, maxDistance, searchType);
+        pruneRadarContactsImmediate(ac, player, aircraftId, partialTicks, elevationRef, followTurretYaw,
+            elevationCoverage, scanAzClamp, scanElClamp, ac.getAcInfo().radarMinScanAltitude, ac.getAcInfo().radarMaxScanAltitude, maxDistance, searchType);
         if (ac.jammingTick <= 0) {
             if (acmMode) {
                 refreshRadarContactsAcm(aircraftId, ac, player, t, partialTicks, usedScanTick, acmFovDeg, elevationDeg, elevationRef, elevationCoverage, followTurretYaw, minDistance, renderMaxDistance);
@@ -889,6 +902,8 @@ public class MCH_RenderRWR {
                 refreshRadarContacts(aircraftId, ac, player, t, partialTicks, usedScanTick, scanAngleDeg, elevationDeg, elevationRef, elevationCoverage, followTurretYaw, minDistance, maxDistance);
             }
         }
+        boolean srcLikeMode = isSrcLikeMode(searchType);
+        boolean hideSweepOnLock = !acmMode && srcLikeMode && trackState.trackingTargetId > 0;
         boolean showMainSweep = !hideSweepOnLock && !acmMode;
         // Keep normal radar panel elements visible in ACM; only replace the sweep animation.
         drawRadarScanSkeleton(sx, adjustedCy, radius, scanAngleDeg, phase, axisDeg, panelFillAlpha, radarUiColor, showMainSweep);
@@ -910,11 +925,19 @@ public class MCH_RenderRWR {
                 modeLabel = "GMTI STT";
             } else if ("GMTI_TWS".equals(searchType)) {
                 modeLabel = "GMTI TWS*";
+            } else if ("MULTI_SRC".equals(searchType)) {
+                modeLabel = "MULTI STT";
+            } else if ("MULTI_TWS".equals(searchType)) {
+                modeLabel = "MULTI TWS*";
             }
         } else if ("GMTI_SRC".equals(searchType)) {
             modeLabel = "GMTI SRC";
         } else if ("GMTI_TWS".equals(searchType)) {
             modeLabel = "GMTI TWS";
+        } else if ("MULTI_SRC".equals(searchType)) {
+            modeLabel = "MULTI SRC";
+        } else if ("MULTI_TWS".equals(searchType)) {
+            modeLabel = "MULTI TWS";
         }
         renderRadarPanelScaleText(mc, sc, sx, adjustedCy, radius, scanAngleDeg, elevationDeg, elevationCoverage, renderMaxDistance, modeLabel, radarUiColor);
         if (ac.jammingTick <= 0) {
@@ -1278,8 +1301,8 @@ public class MCH_RenderRWR {
         float maxAltitude = ac.getAcInfo() != null ? ac.getAcInfo().radarMaxScanAltitude : 25.0F;
         String elevationCoverage = ac.getAcInfo() != null ? ac.getAcInfo().radarElevationCoverage : "UP_ONLY";
         String searchType = normalizeRadarSearchType(ac.getAcInfo() != null ? ac.getAcInfo().radarSearchType : "SRC");
-        boolean srcLikeMode = "SRC".equals(searchType) || "GMTI_SRC".equals(searchType);
-        boolean twsLikeMode = "TWS".equals(searchType) || "GMTI_TWS".equals(searchType);
+        boolean srcLikeMode = isSrcLikeMode(searchType);
+        boolean twsLikeMode = isTwsLikeMode(searchType);
         RadarTrackState state = getOrCreateRadarTrackState(aircraftId);
         if (srcLikeMode && state.trackingTargetId > 0) {
             RadarRenderPoint p = renderSingleContact(mc, sc, ac, player, state.trackingTargetId, cx, cy, radius, minRadius, axisDeg, partialTicks, elevationRef, followTurretYaw, minDistance, maxDistance, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, searchType, true, radarUiColor);
@@ -1350,7 +1373,7 @@ public class MCH_RenderRWR {
                 continue;
             }
             double mAgl = computeAgl(ac.worldObj, missile.posX, missile.posY, missile.posZ);
-            if (!isProjectionInsideScanRange(mProj, mAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType)) {
+            if (!isProjectionInsideScanRange(mProj, mAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType, null)) {
                 continue;
             }
             RadarRenderPoint mp = projectToPanelPoint(mProj, cx, cy, radius, minRadius, axisDeg, minDistance, maxDistance);
@@ -1365,7 +1388,8 @@ public class MCH_RenderRWR {
                 continue;
             }
             double tAgl = computeAgl(ac.worldObj, target.posX, target.posY, target.posZ);
-            if (!isProjectionInsideScanRange(tProj, tAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType)) {
+            MCH_EntityInfo tInfo = MCH_EntityInfoClientTracker.getEntityInfo(target.getEntityId());
+            if (!isProjectionInsideScanRange(tProj, tAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType, tInfo)) {
                 continue;
             }
             RadarRenderPoint tp = projectToPanelPoint(tProj, cx, cy, radius, minRadius, axisDeg, minDistance, maxDistance);
@@ -1405,8 +1429,10 @@ public class MCH_RenderRWR {
         if (entity == null) {
             return null;
         }
-        boolean gmtiMode = isGmtiMode(searchType);
-        if (gmtiMode && !isGmtiTrackableEntity(entity)) {
+        RadarTrackState state = radarTrackStateMap.get(ac.getEntityId());
+        // Keep lock symbol and radar point in sync: while lock exists, do not suppress this target by normal scan filtering.
+        boolean lockSyncedRender = forceTrackingColor && state != null && state.trackingTargetId == entityId;
+        if (!lockSyncedRender && !isTrackableForSearchType(entity, searchType)) {
             return null;
         }
         RadarProjection projection = projectContact(ac, player, entity, partialTicks, elevationRef, followTurretYaw);
@@ -1417,14 +1443,13 @@ public class MCH_RenderRWR {
         double targetY = interpolate(entity.posY, entity.lastTickPosY, partialTicks);
         double targetZ = interpolate(entity.posZ, entity.lastTickPosZ, partialTicks);
         double targetAgl = computeAgl(ac.worldObj, targetX, targetY, targetZ);
-        if (!isProjectionInsideScanRange(projection, targetAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType)) {
+        if (!lockSyncedRender && !isProjectionInsideScanRange(projection, targetAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType, entity)) {
             return null;
         }
         MCH_RWRResult rwrResult = getTargetTypeOnRadar(entity, ac);
         RadarRenderPoint panelPoint = projectToPanelPoint(projection, cx, cy, radius, minRadius, axisDeg, minDistance, maxDistance);
         double px = panelPoint.x;
         double py = panelPoint.y;
-        RadarTrackState state = radarTrackStateMap.get(ac.getEntityId());
         boolean isTracking = state != null && state.trackingTargetId == entityId;
         boolean isSelected = state != null && state.selectedTargetId == entityId;
         boolean highlight = forceTrackingColor || isSelected || isTracking;
@@ -1481,11 +1506,20 @@ public class MCH_RenderRWR {
     }
 
     private static boolean isProjectionInsideScanRange(RadarProjection proj, double targetAgl, float scanAzClamp, float scanElClamp,
-                                                String elevationCoverage, float minAltitude, float maxAltitude, double maxDistance, String searchType) {
+                                                String elevationCoverage, float minAltitude, float maxAltitude, double maxDistance, String searchType,
+                                                MCH_EntityInfo targetInfo) {
         if (proj == null) {
             return false;
         }
-        if (isGmtiMode(searchType)) {
+        if (isMultiMode(searchType)) {
+            if (isGroundRadarTargetEntity(targetInfo)) {
+                if (targetAgl > maxAltitude) {
+                    return false;
+                }
+            } else if (targetAgl < minAltitude) {
+                return false;
+            }
+        } else if (isGmtiMode(searchType)) {
             if (targetAgl > maxAltitude) {
                 return false;
             }
@@ -1607,6 +1641,79 @@ public class MCH_RenderRWR {
         radarLastDecayTick.put(aircraftId, worldTick);
     }
 
+    private static void validateTrackingStateImmediate(MCH_EntityAircraft ac, EntityPlayer player, int aircraftId, float partialTicks,
+                                                       String elevationRef, boolean followTurretYaw, String elevationCoverage,
+                                                       float scanAzClamp, float scanElClamp, float minAltitude, float maxAltitude,
+                                                       double maxDistance, String searchType) {
+        if (ac == null || player == null) {
+            return;
+        }
+        RadarTrackState state = radarTrackStateMap.get(aircraftId);
+        if (state == null || state.trackingTargetId <= 0) {
+            return;
+        }
+        float trackAzClamp = Math.max(0.0F, Math.min(scanAzClamp, ac.getAcInfo() != null ? ac.getAcInfo().radarTrackAzimuthDeg : 90.0F));
+        float trackElClamp = Math.max(0.0F, Math.min(scanElClamp, ac.getAcInfo() != null ? ac.getAcInfo().radarTrackElevationDeg : 45.0F));
+        MCH_EntityInfo trackingInfo = MCH_EntityInfoClientTracker.getEntityInfo(state.trackingTargetId);
+        RadarProjection trackProj = projectContactStatic(ac, player, trackingInfo, partialTicks, elevationRef, followTurretYaw);
+        String invalidReason = getTrackingInvalidReason(ac, player, trackProj, trackingInfo, trackAzClamp, trackElClamp, elevationCoverage,
+            minAltitude, maxAltitude, maxDistance, searchType);
+        if (invalidReason != null) {
+            if (MCH_RadarDebug.isEnabled()) {
+                MCH_RadarDebug.trace(ac.worldObj, ac, "track drop acId=%d target=%d reason=%s(immediate)", aircraftId, state.trackingTargetId, invalidReason);
+            }
+            int oldTrack = state.trackingTargetId;
+            setTrackingTarget(ac, aircraftId, state, -1);
+            if (state.selectedTargetId == oldTrack) {
+                state.selectedTargetId = -1;
+            }
+        }
+    }
+
+    private static void pruneRadarContactsImmediate(MCH_EntityAircraft ac, EntityPlayer player, int aircraftId, float partialTicks,
+                                                    String elevationRef, boolean followTurretYaw, String elevationCoverage,
+                                                    float scanAzClamp, float scanElClamp, float minAltitude, float maxAltitude,
+                                                    double maxDistance, String searchType) {
+        if (ac == null || player == null) {
+            return;
+        }
+        Map<Integer, RadarContact> cache = radarContactCache.get(aircraftId);
+        if (cache == null || cache.isEmpty()) {
+            return;
+        }
+        Iterator<Map.Entry<Integer, RadarContact>> it = cache.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Integer, RadarContact> entry = it.next();
+            MCH_EntityInfo info = MCH_EntityInfoClientTracker.getEntityInfo(entry.getKey());
+            if (info == null) {
+                it.remove();
+                continue;
+            }
+            if (System.currentTimeMillis() - info.lastUpdateTime > 4000L) {
+                it.remove();
+                continue;
+            }
+            if (!isTrackableForSearchType(info, searchType)
+                || isSelfTarget(ac, player, info)
+                || isOwnLaunchedMissile(ac, player, info)
+                || isSameTeamTarget(player, ac, info)
+                || isTargetCountermeasureActive(ac, info)
+                || shouldFilterByAirSpeedGate(searchType, info)) {
+                it.remove();
+                continue;
+            }
+            RadarProjection proj = projectContactStatic(ac, player, info, partialTicks, elevationRef, followTurretYaw);
+            if (proj == null) {
+                it.remove();
+                continue;
+            }
+            double targetAgl = computeAgl(ac.worldObj, info.posX, info.posY, info.posZ);
+            if (!isProjectionInsideScanRange(proj, targetAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType, info)) {
+                it.remove();
+            }
+        }
+    }
+
     private void refreshRadarContacts(int aircraftId, MCH_EntityAircraft ac, EntityPlayer player, long worldTick, float partialTicks, int scanTick,
                                       float scanAngleDeg, float elevationDeg, String elevationRef, String elevationCoverage, boolean followTurretYaw,
                                       double minDistance, double maxDistance) {
@@ -1670,9 +1777,12 @@ public class MCH_RenderRWR {
             return;
         }
         float pBase = Math.max(0.0F, Math.min(1.0F, ac.getAcInfo().radarDetectChanceBase));
+        float gainNear = ac.getAcInfo() != null ? ac.getAcInfo().radarGainNearFactor : 1.5F;
+        float gainFar = ac.getAcInfo() != null ? ac.getAcInfo().radarGainFarFactor : 0.5F;
+        gainNear = Math.max(0.01F, Math.min(10.0F, gainNear));
+        gainFar = Math.max(0.01F, Math.min(10.0F, gainFar));
         int holdTick = Math.max(1, ac.getAcInfo().radarContactHoldTick);
         String searchType = normalizeRadarSearchType(ac.getAcInfo() != null ? ac.getAcInfo().radarSearchType : "SRC");
-        boolean gmtiMode = isGmtiMode(searchType);
         float minAltitude = ac.getAcInfo() != null ? ac.getAcInfo().radarMinScanAltitude : 10.0F;
         float maxAltitude = ac.getAcInfo() != null ? ac.getAcInfo().radarMaxScanAltitude : 25.0F;
         float azClamp = Math.max(0.0F, Math.min(360.0F, scanAngleDeg));
@@ -1694,8 +1804,8 @@ public class MCH_RenderRWR {
         int passProb = 0;
         int hit = 0;
         for (MCH_EntityInfo info : getServerLoadedEntityStatic()) {
-            boolean trackable = gmtiMode ? isGmtiTrackableEntity(info) : isRadarTrackableEntity(info);
-            if (!isValidEntity(info, player, minDistance) || !trackable) {
+            boolean trackable = isTrackableForSearchType(info, searchType);
+            if (!isValidEntity(info, player, minDistance, searchType) || !trackable) {
                 continue;
             }
             if (isSelfTarget(ac, player, info) || isOwnLaunchedMissile(ac, player, info)) {
@@ -1706,16 +1816,25 @@ public class MCH_RenderRWR {
             double targetY = interpolate(info.posY, info.lastTickPosY, partialTicks);
             double targetZ = interpolate(info.posZ, info.lastTickPosZ, partialTicks);
             double targetAgl = computeAgl(ac.worldObj, targetX, targetY, targetZ);
-            if (gmtiMode) {
+            if (isMultiMode(searchType)) {
+                if (isGroundRadarTargetEntity(info)) {
+                    if (targetAgl > maxAltitude) {
+                        continue;
+                    }
+                } else if (targetAgl < minAltitude) {
+                    continue;
+                }
+            } else if (isGmtiMode(searchType)) {
                 if (targetAgl > maxAltitude) {
                     continue;
                 }
-            } else {
-                if (targetAgl < minAltitude) {
-                    continue;
-                }
+            } else if (targetAgl < minAltitude) {
+                continue;
             }
             passAlt++;
+            if (shouldFilterByAirSpeedGate(searchType, info)) {
+                continue;
+            }
             RadarProjection proj = projectContactStatic(ac, player, info, partialTicks, elevationRef, followTurretYaw);
             if (proj == null || proj.distance <= 1.0E-4D || proj.distance > maxDistance) {
                 continue;
@@ -1729,7 +1848,13 @@ public class MCH_RenderRWR {
                 continue;
             }
             passElev++;
-            float p = computeDetectProbabilityStatic(pBase, proj.bearingDeg, proj.elevationDeg, azClamp, elClamp, proj.distance, maxDistance, elevationCoverage);
+            RcsProfile rcsProfile = computeTargetRcsProfile(ac, info, partialTicks);
+            float p = computeDetectProbabilityStatic(pBase, proj.bearingDeg, proj.elevationDeg, azClamp, elClamp, proj.distance, maxDistance,
+                elevationCoverage, gainNear, gainFar, rcsProfile.detectFactor);
+            boolean halfGround = isMultiMode(searchType) && isGroundRadarTargetEntity(info);
+            if (halfGround) {
+                p *= 0.5F;
+            }
             if (ac.worldObj.rand.nextFloat() > p) {
                 continue;
             }
@@ -1739,7 +1864,8 @@ public class MCH_RenderRWR {
                 c = new RadarContact();
                 cache.put(info.entityId, c);
             }
-            c.ttl = holdTick;
+            float holdFactor = halfGround ? (rcsProfile.holdTimeFactor * 0.5F) : rcsProfile.holdTimeFactor;
+            c.ttl = computeContactHoldTick(holdTick, holdFactor);
             hit++;
         }
         if (trackState.trackingTargetId > 0) {
@@ -1794,7 +1920,6 @@ public class MCH_RenderRWR {
             radarContactCache.put(aircraftId, cache);
         }
         String searchType = normalizeRadarSearchType(ac.getAcInfo() != null ? ac.getAcInfo().radarSearchType : "SRC");
-        boolean gmtiMode = isGmtiMode(searchType);
         float minAltitude = ac.getAcInfo() != null ? ac.getAcInfo().radarMinScanAltitude : 10.0F;
         float maxAltitude = ac.getAcInfo() != null ? ac.getAcInfo().radarMaxScanAltitude : 25.0F;
         float scanAzLimit = Math.max(0.0F, Math.min(360.0F, ac.getAcInfo().radarScanAzimuthDeg));
@@ -1826,8 +1951,8 @@ public class MCH_RenderRWR {
         int bestId = -1;
         double bestScore = Double.MAX_VALUE;
         for (MCH_EntityInfo info : getServerLoadedEntityStatic()) {
-            boolean trackable = gmtiMode ? isGmtiTrackableEntity(info) : isRadarTrackableEntity(info);
-            if (!trackable || !isValidEntity(info, player, minDistance)) {
+            boolean trackable = isTrackableForSearchType(info, searchType);
+            if (!trackable || !isValidEntity(info, player, minDistance, searchType)) {
                 continue;
             }
             if (isSelfTarget(ac, player, info) || isOwnLaunchedMissile(ac, player, info) || isSameTeamTarget(player, ac, info) || isTargetCountermeasureActive(ac, info)) {
@@ -1844,11 +1969,22 @@ public class MCH_RenderRWR {
                 continue;
             }
             double targetAgl = computeAgl(ac.worldObj, info.posX, info.posY, info.posZ);
-            if (gmtiMode) {
+            if (isMultiMode(searchType)) {
+                if (isGroundRadarTargetEntity(info)) {
+                    if (targetAgl > maxAltitude) {
+                        continue;
+                    }
+                } else if (targetAgl < minAltitude) {
+                    continue;
+                }
+            } else if (isGmtiMode(searchType)) {
                 if (targetAgl > maxAltitude) {
                     continue;
                 }
             } else if (targetAgl < minAltitude) {
+                continue;
+            }
+            if (shouldFilterByAirSpeedGate(searchType, info)) {
                 continue;
             }
             double relBearing = wrapDeg180(proj.bearingDeg - acmCenterBearing);
@@ -1856,12 +1992,15 @@ public class MCH_RenderRWR {
             if (Math.abs(relBearing) > acmHalf || Math.abs(relElevation) > acmHalf) {
                 continue;
             }
+            RcsProfile rcsProfile = computeTargetRcsProfile(ac, info, partialTicks);
             RadarContact c = cache.get(info.entityId);
             if (c == null) {
                 c = new RadarContact();
                 cache.put(info.entityId, c);
             }
-            c.ttl = holdTick;
+            boolean halfGround = isMultiMode(searchType) && isGroundRadarTargetEntity(info);
+            float holdFactor = halfGround ? (rcsProfile.holdTimeFactor * 0.5F) : rcsProfile.holdTimeFactor;
+            c.ttl = computeContactHoldTick(holdTick, holdFactor);
             double score = Math.abs(relBearing) + Math.abs(relElevation) + proj.distance * 0.001D;
             if (score < bestScore) {
                 bestScore = score;
@@ -2046,7 +2185,8 @@ public class MCH_RenderRWR {
         return elevDeg >= 0.0D && elevDeg <= e;
     }
 
-    private static float computeDetectProbabilityStatic(float base, double bearingDeg, double elevDeg, float azDeg, float elDeg, double distance, double maxDistance, String coverage) {
+    private static float computeDetectProbabilityStatic(float base, double bearingDeg, double elevDeg, float azDeg, float elDeg, double distance, double maxDistance,
+                                                        String coverage, float gainNear, float gainFar, float rcsFactor) {
         double angleFactor;
         if (azDeg >= 359.9F) {
             angleFactor = 1.0D;
@@ -2066,9 +2206,114 @@ public class MCH_RenderRWR {
             elevFactor = 1.0D - Math.min(1.0D, Math.max(0.0D, elevDeg) / max);
         }
         double rangeRatio = Math.min(1.0D, Math.max(0.0D, distance / Math.max(1.0D, maxDistance)));
-        double rangeFactor = 1.0D - 0.5D * rangeRatio;
-        double p = base * angleFactor * elevFactor * rangeFactor;
+        double gain = gainNear + (gainFar - gainNear) * rangeRatio;
+        double rcs = Math.max(0.01D, Math.min(10.0D, rcsFactor));
+        double p = base * angleFactor * elevFactor * gain * rcs;
         return (float)Math.max(0.0D, Math.min(1.0D, p));
+    }
+
+    private static RcsProfile computeTargetRcsProfile(MCH_EntityAircraft ac, MCH_EntityInfo info, float partialTicks) {
+        RcsProfile profile = new RcsProfile();
+        if (ac == null || info == null) {
+            return profile;
+        }
+        float front = 1.0F;
+        float side = 1.0F;
+        float rear = 1.0F;
+        float holdTimeFactor = 1.0F;
+        Entity target = ac.worldObj != null ? ac.worldObj.getEntityByID(info.entityId) : null;
+        if (target instanceof MCH_EntityAircraft) {
+            MCH_AircraftInfo ai = ((MCH_EntityAircraft)target).getAcInfo();
+            if (ai != null) {
+                front = ai.radarRcsFrontFactor;
+                side = ai.radarRcsSideFactor;
+                rear = ai.radarRcsRearFactor;
+                holdTimeFactor = ai.radarRcsTimeFactor;
+            }
+        } else if (target instanceof MCH_EntityBaseBullet) {
+            MCH_WeaponInfo weaponInfo = ((MCH_EntityBaseBullet)target).getInfo();
+            if (weaponInfo != null) {
+                front = weaponInfo.rcsFrontFactor;
+                side = weaponInfo.rcsSideFactor;
+                rear = weaponInfo.rcsRearFactor;
+                holdTimeFactor = weaponInfo.rcsTimeFactor;
+            }
+        } else {
+            String className = info.entityClassName != null ? info.entityClassName : "";
+            if (className.contains("MCH_EntityHeli") || className.contains("MCP_EntityPlane")
+                || className.contains("MCH_EntityTank") || className.contains("MCH_EntityVehicle")) {
+                MCH_AircraftInfo ai = resolveAircraftInfoByName(info.entityName);
+                if (ai != null) {
+                    front = ai.radarRcsFrontFactor;
+                    side = ai.radarRcsSideFactor;
+                    rear = ai.radarRcsRearFactor;
+                    holdTimeFactor = ai.radarRcsTimeFactor;
+                }
+            } else if (className.contains("MCH_EntityAAMissile") || className.contains("MCH_EntityASMissile")
+                || className.contains("MCH_EntityATMissile") || className.contains("MCH_EntityTvMissile")) {
+                MCH_WeaponInfo wi = MCH_WeaponInfoManager.get(info.entityName);
+                if (wi != null) {
+                    front = wi.rcsFrontFactor;
+                    side = wi.rcsSideFactor;
+                    rear = wi.rcsRearFactor;
+                    holdTimeFactor = wi.rcsTimeFactor;
+                }
+            }
+        }
+        double targetX = interpolate(info.posX, info.lastTickPosX, partialTicks);
+        double targetZ = interpolate(info.posZ, info.lastTickPosZ, partialTicks);
+        double radarX = interpolate(ac.posX, ac.lastTickPosX, partialTicks);
+        double radarZ = interpolate(ac.posZ, ac.lastTickPosZ, partialTicks);
+        profile.detectFactor = computeAspectRcsFactor(targetX, targetZ, radarX, radarZ, info.rotationYaw, front, side, rear);
+        profile.holdTimeFactor = Math.max(0.01F, Math.min(10.0F, holdTimeFactor));
+        return profile;
+    }
+
+    private static int computeContactHoldTick(int baseHoldTick, float holdTimeFactor) {
+        float factor = Math.max(0.01F, Math.min(10.0F, holdTimeFactor));
+        return Math.max(1, Math.round(baseHoldTick * factor));
+    }
+
+    private static MCH_AircraftInfo resolveAircraftInfoByName(String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        MCH_AircraftInfo info = MCH_HeliInfoManager.get(name);
+        if (info != null) return info;
+        info = MCP_PlaneInfoManager.get(name);
+        if (info != null) return info;
+        info = MCH_TankInfoManager.get(name);
+        if (info != null) return info;
+        return MCH_VehicleInfoManager.get(name);
+    }
+
+    private static float computeAspectRcsFactor(double targetX, double targetZ, double radarX, double radarZ, float targetYawDeg,
+                                                float front, float side, float rear) {
+        front = Math.max(0.01F, Math.min(10.0F, front));
+        side = Math.max(0.01F, Math.min(10.0F, side));
+        rear = Math.max(0.01F, Math.min(10.0F, rear));
+        double toRadarX = radarX - targetX;
+        double toRadarZ = radarZ - targetZ;
+        double toRadarLen = Math.sqrt(toRadarX * toRadarX + toRadarZ * toRadarZ);
+        if (toRadarLen <= 1.0E-6D) {
+            return side;
+        }
+        double nx = toRadarX / toRadarLen;
+        double nz = toRadarZ / toRadarLen;
+        double yawRad = Math.toRadians(targetYawDeg);
+        double fx = -Math.sin(yawRad);
+        double fz = Math.cos(yawRad);
+        double dot = Math.max(-1.0D, Math.min(1.0D, fx * nx + fz * nz));
+        double aspect = Math.toDegrees(Math.acos(dot));
+        float rcs;
+        if (aspect <= 90.0D) {
+            float t = (float)(aspect / 90.0D);
+            rcs = front + (side - front) * t;
+        } else {
+            float t = (float)((aspect - 90.0D) / 90.0D);
+            rcs = side + (rear - side) * t;
+        }
+        return Math.max(0.01F, Math.min(10.0F, rcs));
     }
 
     private double computeRadarPanelCenterY(double baseCy, double radius, float scanAngleDeg, float elevationDeg, String reference, String coverage) {
@@ -2103,26 +2348,115 @@ public class MCH_RenderRWR {
         if (entity == null || entity.entityClassName == null) {
             return false;
         }
-        String className = entity.entityClassName;
-        return className.contains("MCH_EntityHeli")
-            || className.contains("MCP_EntityPlane")
-            || className.contains("MCH_EntityTank")
-            || className.contains("MCH_EntityVehicle")
-            || className.contains("MCH_EntityAAMissile")
-            || className.contains("MCH_EntityASMissile")
-            || className.contains("MCH_EntityATMissile")
-            || className.contains("MCH_EntityTvMissile");
+        return isAirRadarTargetEntity(entity)
+            || isGroundRadarTargetEntity(entity);
     }
 
     private static boolean isGmtiTrackableEntity(MCH_EntityInfo entity) {
         if (entity == null || entity.entityClassName == null) {
             return false;
         }
+        return isGroundRadarTargetEntity(entity) || isAirRadarTargetEntity(entity);
+    }
+
+    private static boolean isTrackableForSearchType(MCH_EntityInfo entity, String searchType) {
+        if (entity == null || entity.entityClassName == null) {
+            return false;
+        }
+        if (isMultiMode(searchType)) {
+            return isAirRadarTargetEntity(entity) || isGroundRadarTargetEntity(entity);
+        }
+        if (isGmtiMode(searchType)) {
+            return isGmtiTrackableEntity(entity);
+        }
+        return isRadarTrackableEntity(entity);
+    }
+
+    private static boolean isAirRadarTargetEntity(MCH_EntityInfo entity) {
+        if (entity == null || entity.entityClassName == null) {
+            return false;
+        }
+        if (isFacGroundTargetEntity(entity)) {
+            return false;
+        }
         String className = entity.entityClassName;
         return className.contains("MCH_EntityHeli")
             || className.contains("MCP_EntityPlane")
-            || className.contains("MCH_EntityTank")
-            || className.contains("MCH_EntityVehicle");
+            || className.contains("MCH_EntityAAMissile")
+            || className.contains("MCH_EntityASMissile")
+            || className.contains("MCH_EntityATMissile")
+            || className.contains("MCH_EntityTvMissile");
+    }
+
+    private static boolean isGroundRadarTargetEntity(MCH_EntityInfo entity) {
+        if (entity == null || entity.entityClassName == null) {
+            return false;
+        }
+        String className = entity.entityClassName;
+        return className.contains("MCH_EntityTank")
+            || className.contains("MCH_EntityVehicle")
+            || isFacGroundTargetEntity(entity);
+    }
+
+    private static boolean isFacGroundTargetEntity(MCH_EntityInfo entity) {
+        if (entity == null || entity.entityClassName == null) {
+            return false;
+        }
+        String className = entity.entityClassName;
+        if (className.toUpperCase(Locale.ROOT).contains("FAC")) {
+            return true;
+        }
+        if (isFacAircraftProfile(entity)) {
+            return true;
+        }
+        return className.contains("EntityPlayer")
+            || className.contains("EntitySoldier")
+            || className.contains("MCH_EntityGunner");
+    }
+
+    private static boolean isFacAircraftProfile(MCH_EntityInfo entity) {
+        if (entity == null || entity.entityName == null) {
+            return false;
+        }
+        String name = entity.entityName.toLowerCase(Locale.ROOT);
+        if (name.contains("fac")) {
+            return true;
+        }
+        mcheli.plane.MCP_PlaneInfo pi = MCP_PlaneInfoManager.get(entity.entityName);
+        if (pi != null) {
+            String category = pi.category != null ? pi.category.toLowerCase(Locale.ROOT) : "";
+            if (category.contains("fac")) {
+                return true;
+            }
+            if (pi.name != null && pi.name.toLowerCase(Locale.ROOT).contains("fac")) {
+                return true;
+            }
+        }
+        mcheli.vehicle.MCH_VehicleInfo vi = MCH_VehicleInfoManager.get(entity.entityName);
+        if (vi != null) {
+            String category = vi.category != null ? vi.category.toLowerCase(Locale.ROOT) : "";
+            if (category.contains("fac")) {
+                return true;
+            }
+            if (vi.name != null && vi.name.toLowerCase(Locale.ROOT).contains("fac")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean shouldFilterByAirSpeedGate(String searchType, MCH_EntityInfo info) {
+        if (isGmtiMode(searchType)) {
+            return false;
+        }
+        if (!isAirRadarTargetEntity(info)) {
+            return false;
+        }
+        double vx = info.posX - info.lastTickPosX;
+        double vy = info.posY - info.lastTickPosY;
+        double vz = info.posZ - info.lastTickPosZ;
+        double speedSq = vx * vx + vy * vy + vz * vz;
+        return speedSq < AIR_SPEED_GATE_SQ;
     }
 
     private static double computeAgl(World world, double x, double y, double z) {
@@ -2156,7 +2490,15 @@ public class MCH_RenderRWR {
             return "NO_PROJECTION";
         }
         double targetAgl = computeAgl(ac != null ? ac.worldObj : null, info.posX, info.posY, info.posZ);
-        if (isGmtiMode(searchType)) {
+        if (isMultiMode(searchType)) {
+            if (isGroundRadarTargetEntity(info)) {
+                if (targetAgl > maxAltitude) {
+                    return "ABOVE_MAX_ALTITUDE";
+                }
+            } else if (targetAgl < minAltitude) {
+                return "BELOW_MIN_ALTITUDE";
+            }
+        } else if (isGmtiMode(searchType)) {
             if (targetAgl > maxAltitude) {
                 return "ABOVE_MAX_ALTITUDE";
             }
@@ -2164,6 +2506,9 @@ public class MCH_RenderRWR {
             if (targetAgl < minAltitude) {
                 return "BELOW_MIN_ALTITUDE";
             }
+        }
+        if (shouldFilterByAirSpeedGate(searchType, info)) {
+            return "BELOW_AIR_SPEED_GATE";
         }
         if (proj.distance <= 1.0E-4D || proj.distance > maxDistance) {
             return "OUT_OF_RANGE";
@@ -2297,7 +2642,8 @@ public class MCH_RenderRWR {
             return "SRC";
         }
         String mode = value.trim().toUpperCase(Locale.ROOT);
-        if (mode.equals("TWS") || mode.equals("GMTI_SRC") || mode.equals("GMTI_TWS")) {
+        if (mode.equals("TWS") || mode.equals("GMTI_SRC") || mode.equals("GMTI_TWS")
+            || mode.equals("MULTI_SRC") || mode.equals("MULTI_TWS")) {
             return mode;
         }
         return "SRC";
@@ -2312,6 +2658,18 @@ public class MCH_RenderRWR {
 
     private static boolean isGmtiMode(String searchType) {
         return "GMTI_SRC".equals(searchType) || "GMTI_TWS".equals(searchType);
+    }
+
+    private static boolean isMultiMode(String searchType) {
+        return "MULTI_SRC".equals(searchType) || "MULTI_TWS".equals(searchType);
+    }
+
+    private static boolean isSrcLikeMode(String searchType) {
+        return "SRC".equals(searchType) || "GMTI_SRC".equals(searchType) || "MULTI_SRC".equals(searchType);
+    }
+
+    private static boolean isTwsLikeMode(String searchType) {
+        return "TWS".equals(searchType) || "GMTI_TWS".equals(searchType) || "MULTI_TWS".equals(searchType);
     }
 
     private static boolean isAircraftMannedForRadarEmission(MCH_EntityAircraft ac) {
@@ -2584,8 +2942,6 @@ public class MCH_RenderRWR {
         RadarTrackState state = radarTrackStateMap.get(aircraftId);
         if (state != null) {
             frame.acmMode = state.acmMode;
-            frame.selectedTargetId = state.selectedTargetId;
-            frame.trackingTargetId = state.trackingTargetId;
         }
         int scanTick = Math.max(1, ac.getAcInfo().radarScanTick);
         int usedScanTick = frame.acmMode ? Math.max(1, scanTick / 4) : scanTick;
@@ -2611,13 +2967,26 @@ public class MCH_RenderRWR {
         String elevationRef = ac.getAcInfo().radarElevationReference;
         String elevationCoverage = ac.getAcInfo().radarElevationCoverage;
         String searchType = normalizeRadarSearchType(ac.getAcInfo().radarSearchType);
-        boolean srcLikeMode = "SRC".equals(searchType) || "GMTI_SRC".equals(searchType);
-        boolean twsLikeMode = "TWS".equals(searchType) || "GMTI_TWS".equals(searchType);
+        boolean srcLikeMode = isSrcLikeMode(searchType);
+        boolean twsLikeMode = isTwsLikeMode(searchType);
         boolean followTurretYaw = (ac instanceof MCH_EntityTank) && ac.getAcInfo().radarFollowTurretYaw;
         float scanAzClamp = Math.max(0.0F, Math.min(360.0F, ac.getAcInfo().radarScanAzimuthDeg));
         float scanElClamp = Math.max(0.0F, Math.min(180.0F, ac.getAcInfo().radarScanElevationDeg));
         float minAltitude = ac.getAcInfo().radarMinScanAltitude;
         float maxAltitude = ac.getAcInfo().radarMaxScanAltitude;
+        validateTrackingStateImmediate(ac, player, aircraftId, partialTicks, elevationRef, followTurretYaw, elevationCoverage,
+            scanAzClamp, scanElClamp, minAltitude, maxAltitude, maxDistance, searchType);
+        pruneRadarContactsImmediate(ac, player, aircraftId, partialTicks, elevationRef, followTurretYaw, elevationCoverage,
+            scanAzClamp, scanElClamp, minAltitude, maxAltitude, maxDistance, searchType);
+        state = radarTrackStateMap.get(aircraftId);
+        if (state != null) {
+            frame.acmMode = state.acmMode;
+            frame.selectedTargetId = state.selectedTargetId;
+            frame.trackingTargetId = state.trackingTargetId;
+        } else {
+            frame.selectedTargetId = -1;
+            frame.trackingTargetId = -1;
+        }
         frame.scanAzimuthDeg = scanAzClamp;
         frame.trackAzimuthDeg = Math.max(0.0D, Math.min(frame.scanAzimuthDeg, ac.getAcInfo().radarTrackAzimuthDeg));
         frame.panelFillAlpha = Math.max(0.0D, Math.min(1.0D, ac.getAcInfo().radarPanelFillAlpha));
@@ -2657,13 +3026,22 @@ public class MCH_RenderRWR {
                 frame.modeLabel = "GMTI STT";
             } else if ("GMTI_TWS".equals(searchType)) {
                 frame.modeLabel = "GMTI TWS*";
+            } else if ("MULTI_SRC".equals(searchType)) {
+                frame.modeLabel = "MULTI STT";
+            } else if ("MULTI_TWS".equals(searchType)) {
+                frame.modeLabel = "MULTI TWS*";
             }
         } else if ("GMTI_SRC".equals(searchType)) {
             frame.modeLabel = "GMTI SRC";
         } else if ("GMTI_TWS".equals(searchType)) {
             frame.modeLabel = "GMTI TWS";
+        } else if ("MULTI_SRC".equals(searchType)) {
+            frame.modeLabel = "MULTI SRC";
+        } else if ("MULTI_TWS".equals(searchType)) {
+            frame.modeLabel = "MULTI TWS";
         }
 
+        boolean hasTrackingPoint = false;
         Map<Integer, RadarContact> cache = radarContactCache.get(aircraftId);
         if (cache != null && !cache.isEmpty()) {
             for (Integer id : cache.keySet()) {
@@ -2682,7 +3060,7 @@ public class MCH_RenderRWR {
                     continue;
                 }
                 double targetAgl = computeAgl(ac.worldObj, info.posX, info.posY, info.posZ);
-                if (!isProjectionInsideScanRange(proj, targetAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType)) {
+                if (!isProjectionInsideScanRange(proj, targetAgl, scanAzClamp, scanElClamp, elevationCoverage, minAltitude, maxAltitude, maxDistance, searchType, info)) {
                     continue;
                 }
                 double rr = (proj.distance - minDistance) / Math.max(1.0D, maxDistance - minDistance);
@@ -2693,6 +3071,9 @@ public class MCH_RenderRWR {
                 p.y = Math.sin(angle) * rr;
                 p.selected = frame.selectedTargetId == id;
                 p.tracking = frame.trackingTargetId == id;
+                if (p.tracking) {
+                    hasTrackingPoint = true;
+                }
                 p.pointSize = info.entityClassName.contains("MCH_EntityAAMissile")
                     || info.entityClassName.contains("MCH_EntityASMissile")
                     || info.entityClassName.contains("MCH_EntityATMissile")
@@ -2727,6 +3108,24 @@ public class MCH_RenderRWR {
                     }
                 }
                 frame.points.add(p);
+            }
+        }
+        if (frame.trackingTargetId > 0 && !hasTrackingPoint) {
+            MCH_EntityInfo tInfo = MCH_EntityInfoClientTracker.getEntityInfo(frame.trackingTargetId);
+            if (tInfo != null && !isSelfTarget(ac, player, tInfo) && !isOwnLaunchedMissile(ac, player, tInfo)) {
+                RadarProjection tProj = projectContactStatic(ac, player, tInfo, partialTicks, elevationRef, followTurretYaw);
+                if (tProj != null) {
+                    double rr = (tProj.distance - minDistance) / Math.max(1.0D, maxDistance - minDistance);
+                    rr = Math.max(0.0D, Math.min(1.0D, rr));
+                    double angle = Math.toRadians(-90.0D + tProj.bearingDeg);
+                    RadarDisplayPoint tp = new RadarDisplayPoint();
+                    tp.x = Math.cos(angle) * rr;
+                    tp.y = Math.sin(angle) * rr;
+                    tp.selected = frame.selectedTargetId == frame.trackingTargetId;
+                    tp.tracking = true;
+                    tp.pointSize = 2;
+                    frame.points.add(tp);
+                }
             }
         }
         frame.valid = true;
@@ -2800,6 +3199,11 @@ public class MCH_RenderRWR {
         public double bearingDeg;
         public double elevationDeg;
         public double distance;
+    }
+
+    private static class RcsProfile {
+        public float detectFactor = 1.0F;
+        public float holdTimeFactor = 1.0F;
     }
 
     public static class RadarDisplayPoint {

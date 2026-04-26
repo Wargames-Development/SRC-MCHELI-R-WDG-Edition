@@ -179,6 +179,30 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public float radarDetectChanceBase = 0.75F;
     /**
+     * 距离增益近端系数（0米）
+     */
+    public float radarGainNearFactor = 1.5F;
+    /**
+     * 距离增益远端系数（最大探测距离）
+     */
+    public float radarGainFarFactor = 0.5F;
+    /**
+     * 载具RCS前向系数（0.01~10）
+     */
+    public float radarRcsFrontFactor = 1.0F;
+    /**
+     * 载具RCS侧向系数（0.01~10）
+     */
+    public float radarRcsSideFactor = 1.0F;
+    /**
+     * 载具RCS后向系数（0.01~10）
+     */
+    public float radarRcsRearFactor = 1.0F;
+    /**
+     * 载具RCS接触保持时间系数（0.01~10）
+     */
+    public float radarRcsTimeFactor = 1.0F;
+    /**
      * 目标接触显示保持时长(tick)
      */
     public int radarContactHoldTick = 40;
@@ -207,7 +231,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public float radarMaxScanAltitude = 25.0F;
     /**
-     * 雷达搜索模式：SRC | TWS | GMTI_SRC | GMTI_TWS
+     * 雷达搜索模式：SRC | TWS | GMTI_SRC | GMTI_TWS | MULTI_SRC | MULTI_TWS
      */
     public String radarSearchType = "SRC";
     /**
@@ -350,6 +374,12 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.radarScanElevationDeg = 40.0F;
         this.radarScanTick = 12;
         this.radarDetectChanceBase = 0.75F;
+        this.radarGainNearFactor = 1.5F;
+        this.radarGainFarFactor = 0.5F;
+        this.radarRcsFrontFactor = 1.0F;
+        this.radarRcsSideFactor = 1.0F;
+        this.radarRcsRearFactor = 1.0F;
+        this.radarRcsTimeFactor = 1.0F;
         this.radarContactHoldTick = 40;
         this.radarElevationReference = "HORIZON";
         this.radarElevationCoverage = "UP_ONLY";
@@ -811,7 +841,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 this.radarMaxScanAltitude = this.toFloat(data, -256.0F, 4096.0F);
             } else if (item.equalsIgnoreCase("RadarSearchType")) {
                 String mode = data.trim().toUpperCase(Locale.ROOT);
-                if (mode.equals("TWS") || mode.equals("GMTI_SRC") || mode.equals("GMTI_TWS")) {
+                if (mode.equals("TWS") || mode.equals("GMTI_SRC") || mode.equals("GMTI_TWS")
+                    || mode.equals("MULTI_SRC") || mode.equals("MULTI_TWS")) {
                     this.radarSearchType = mode;
                 } else {
                     this.radarSearchType = "SRC";
@@ -834,6 +865,36 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 this.radarScanTick = this.toInt(data, 1, 1200);
             } else if (item.equalsIgnoreCase("RadarDetectChanceBase")) {
                 this.radarDetectChanceBase = this.toFloat(data, 0.0F, 1.0F);
+            } else if (item.equalsIgnoreCase("RadarGainFactor") || item.equalsIgnoreCase("GainFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 1) {
+                    this.radarGainNearFactor = this.toFloat(s[0], 0.01F, 10.0F);
+                }
+                if (s.length >= 2) {
+                    this.radarGainFarFactor = this.toFloat(s[1], 0.01F, 10.0F);
+                }
+            } else if (item.equalsIgnoreCase("RadarRCSFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 1) {
+                    this.radarRcsFrontFactor = this.toFloat(s[0], 0.01F, 10.0F);
+                }
+                if (s.length >= 2) {
+                    this.radarRcsSideFactor = this.toFloat(s[1], 0.01F, 10.0F);
+                }
+                if (s.length >= 3) {
+                    this.radarRcsRearFactor = this.toFloat(s[2], 0.01F, 10.0F);
+                }
+                if (s.length >= 4) {
+                    this.radarRcsTimeFactor = this.toFloat(s[3], 0.01F, 10.0F);
+                }
+            } else if (item.equalsIgnoreCase("RadarRCSFrontFactor")) {
+                this.radarRcsFrontFactor = this.toFloat(data, 0.01F, 10.0F);
+            } else if (item.equalsIgnoreCase("RadarRCSSideFactor")) {
+                this.radarRcsSideFactor = this.toFloat(data, 0.01F, 10.0F);
+            } else if (item.equalsIgnoreCase("RadarRCSRearFactor")) {
+                this.radarRcsRearFactor = this.toFloat(data, 0.01F, 10.0F);
+            } else if (item.equalsIgnoreCase("RadarRCSTimeFactor")) {
+                this.radarRcsTimeFactor = this.toFloat(data, 0.01F, 10.0F);
             } else if (item.equalsIgnoreCase("RadarContactHoldTick")) {
                 this.radarContactHoldTick = this.toInt(data, 1, 1200);
             } else if (item.equalsIgnoreCase("RadarElevationReference")) {

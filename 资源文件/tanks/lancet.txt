@@ -1,0 +1,41 @@
+﻿DisplayName =LANCET
+AddDisplayName = zh_CN, LANCET 柳叶刀反载具巡飞弹发射架
+AddDisplayName = en_US, LANCET
+
+MaxHp = 20
+Speed = 0
+ThrottleUpDown = 0
+EnableGunnerMode = true
+MobilityRoll = 50
+HideEntity = false
+MinRotationPitch = -40
+MaxRotationPitch = 40
+DamageFactor = 0.8
+CameraZoom = 1
+CameraPosition = 0.0,1.6, -0.2,true
+ThirdPersonDist = 8
+MobilityYawOnGround = 0.0
+MaxFuel         = 0
+FuelConsumption = 1.0
+CanMoveOnGround = false
+PivotTurnThrottle = 0.0
+; W = WWII,  A = AAGun(対空砲)
+Category = W.A
+CameraRotationSpeed = 30.0
+HUD = M224
+
+AddPartWeapon= lancet_rocket, false,  true,  false,   0.00, -0.2,  0.00 
+AddSeat = 0.0,  0.0, -1.1,0.00,  0.00, -0.2,false,-90,40,true
+AddTurretWeapon = lancet_rocket,  0, 2.5, 0,   0.0, -1.0,   true,1, 0,-10,10, -20,20
+
+DefaultFreelook = true
+
+NameOnAdvancedAARadar = 
+NameOnModernAARadar =
+NameOnEarlyAARadar =
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+RadarType = EARLY_AS
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

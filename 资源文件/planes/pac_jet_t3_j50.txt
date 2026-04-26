@@ -1,0 +1,231 @@
+DisplayName = J-50
+AddDisplayName = zh_CN,歼-50
+AddDisplayName = en_US,J-50
+MaxHp = 400
+ArmorMinDamage = 12
+
+AddPartwing =  0.00, 3.542, -4.496,  -1,0,0,  -20
+SweepWingSpeed = 0.9
+;Stealth = 0.6
+
+Speed = 3.5
+
+FlareType = 4
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+EnableGunnerMode = true
+MaxFuel         = 28000
+FuelConsumption = 20
+; M = Military(軍用機).  F = Fighter(戦闘機)
+Category = M.F
+DamageFactor = 0.0
+HUD = JET, su34_gnr
+
+ThirdPersonDist = 25
+
+MobilityYaw = 0.8
+ThrottleUpDown = 2
+MobilityRoll = 1
+MobilityPitch = 0.7
+
+CameraPosition = 0.0, 0.0, 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+
+AddSeat 	=  0.00,  2.15,  5.78
+
+
+
+;AddPartNozzle =  0.9426, 2.63, -7.226, -1,0,0
+;AddPartNozzle =  -0.9426, 2.63, -7.226, -1,0,0
+
+AddPartWeaponMissile = JET_J50_AAM_HEAVY_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_J50_AAM_HEAVY_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_J50_AAM_HEAVY_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_J50_AAM_HEAVY_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_J50_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile =JET_J50_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_J50_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile =JET_J50_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+
+
+AddPartWeaponBay = JET_J50_AAM_ARM,  -1.921, 1.318, -2.629,  -0.0,-0.00,1, -100
+AddPartWeaponBay = JET_J50_AAM_ARM,  1.921, 1.318, -2.629,  0.0,-0.00,1, 100
+
+AddPartWeaponBay = JET_J50_AAM_HEAVY_ARM,  -0.9553, 1.282, -1.553,  0.01,-0.05,1, -100
+
+
+AddPartWeaponBay = JET_J50_AAM_HEAVY_ARM,  0.9553, 1.282, -1.553,  -0.01,-0.00,1, 100
+
+
+
+
+
+
+AddPartLG    =  0.00,  2,  3.548,    0, 0, 0,  92
+AddPartLGRev =  -0.2958, 1.323, 4.28,  0.02,-0.00,1,-90
+
+AddPartLGRev =  0.2958, 1.323, 4.28,  -0.02,-0.00,1,90
+
+
+
+
+AddPartLG    =  1.9,  2.3,  -3.772,    0, 0, 0,  100
+AddPartLGRev =  2.765, 2.003, -2.71,  0.0,0.0,1,60
+
+
+AddPartLG    =  -1.9,  2.3,  -3.772,    0, 0, 0,  100
+AddPartLGRev =  -2.765, 2.003, -2.71,  0.0,0.0,-1,60
+
+
+AddPartSteeringWheel =  9.845,2.423,-7.5, 1, 0, 0.0,   -30
+AddPartSteeringWheel =  -9.845,2.423,-7.5, 1, 0, 0.0,   30
+AddPartSteeringWheel =  -0.4217,2.499,6.001, 0, 0, 1,   -15
+
+
+
+
+
+
+
+AddPartThrottle =  3.259, 2.426, -7.806,  0,0,1.00, 45
+AddPartThrottle =  -3.259, 2.426, -7.806,  0,0,1.00, -45
+AddPartThrottle =  0.4664, 2.449, 6.07,  1,0,0.00, 40
+
+
+
+NameOnAdvancedAARadar = ?
+NameOnModernAARadar =
+NameOnEarlyAARadar =
+NameOnModernASRadar =
+NameOnEarlyASRadar =
+RadarType = ADVANCED_AA
+
+
+
+AddWeapon = JET_J50_AAM_ARM,     6.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_J50_AAM_ARM,     -6.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_J50_AAM_ARM,     4.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_J50_AAM_ARM,     -4.232,  1.758, -7.699,  0,0.0
+AddWeapon = JET_J50_AAM_HEAVY_ARM,     6.232,  1.758, -7.699,  0,-0
+AddWeapon = JET_J50_AAM_HEAVY_ARM,     -6.232,  1.758, -7.699,  0,-0
+
+
+
+AddPartCanopy =  0.00, 3.0527, -0.6146,  -1,0,0,  50
+
+
+BoundingBox = 0.0, 2.159, 5.781,  5.816, 2.605, 7.499, 1.0, DEFAULT, 机身
+BoundingBox = 0.0, 2.159, -2.81,  8.58, 2.807, 9.528, 1.0, DEFAULT, 机身
+BoundingBox = -7.694, 2.401, -3.99,  6.822, 1.139, 7.575, 1.0, DEFAULT, 机身
+BoundingBox = 7.694, 2.401, -3.99,  6.822, 1.139, 7.575, 1.0, DEFAULT, 机身
+
+BoundingBox = 0.0, 2.401, -8.973,  6.822, 1.139, 2.822, 1.5, DEFAULT, 引擎
+
+
+EntityWidth  = 0.85
+EntityHeight = 0.85
+
+motionfactor=0.965
+
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 250
+
+hasMaintenance=true
+
+
+
+engineShutdownThreshold = 0
+
+explosionsizebycrash=10
+
+Gravity = -0.038
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+weapongrouptype=500
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+enablerwr=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+
+
+
+
+MobilityPitch = 1.00
+MobilityRoll  = 2.39
+MobilityYaw   = 0.60
+MotionFactor = 0.968
+
+
+
+
+
+MobilityPitch = 1.00
+MobilityRoll  = 2.39
+MobilityYaw   = 0.60
+MotionFactor = 0.968
+
+AddExhaustFlame = F119, Exhaustflame_red, 0.9426, 2.63, -7.226, -1, 0, 0, 0, 1
+AddExhaustFlame = F119, Exhaustflame_red, -0.9426, 2.63, -7.226, -1, 0, 0, 0, 1
+
+
+
+enableRadar=true
+RadarScanElevationDeg =140
+;俯仰扫描扇区总角度
+;范围=0~180（0=不扫描，180=上下全域）
+;默认值=40
+
+RadarFollowTurretYaw = false
+;是否让雷达水平正方向跟随坦克炮塔转向（仅坦克生效）
+;可选值=true|false
+;默认值：坦克=true，其它载具=false
+
+RadarElevationReference = AIRCRAFT
+;俯仰扫描参考系
+;可选值=HORIZON|AIRCRAFT
+;HORIZON=按平飞水平面计算（推荐地面载具）
+;AIRCRAFT=按机体当前姿态计算（推荐战斗机）
+;默认值=HORIZON
+
+RadarPanelFillAlpha=0.075
+
+RadarElevationCoverage = FULL
+;俯仰扫描覆盖模式
+;可选值=UP_ONLY|FULL
+;UP_ONLY=仅上视扫描（不下视）
+;FULL=全域扫描（上+下）
+;默认值=UP_ONLY
+RadarScanAzimuthDeg=140
+;水平扫描范围
+RadarScanTick=10
+;每多少 tick 扫一次
+RadarDetectChanceBase=0.9
+;基础命中概率
+RadarContactHoldTick=80
+;命中后显示保持时长
+RadarMaxTargetRange =2000
+;最大显示距离
+
+RadarTrackAzimuthDeg=140
+;雷达跟踪最大水平角度
+;建议不超过RadarScanAzimuthDeg
+;默认值=90
+RadarTrackElevationDeg=140
+;雷达跟踪最大俯仰角度
+RadarSearchType=TWS
+enableBVR=true
+
+RadarMinScanAltitude=10
+RadarMaxScanAltitude=25
+
+RadarGainFactor=2.5,0.5
+NameOnRWR=J50
+RadarRCSFactor=0.03,0.4,0.1,0.5

@@ -1,0 +1,154 @@
+DisplayName = M1AGDS
+AddDisplayName = zh_CN,M1AGDS 火力支援车
+AddDisplayName = en_US,M1AGDS
+ItemID = 30101
+MaxHp = 1200
+Speed = 0.7
+Sound = tank_gte
+MinRotationPitch = -45
+MaxRotationPitch = 10
+MobilityRoll = 0
+Gravity = -0.1
+GravityInWater = -0.1
+DamageFactor = 0.0
+CameraZoom = 6
+CameraPosition = 0.8,  2.9, 0.7724, true
+EnableNightVision = true
+CameraRotationSpeed = 30
+;EnableEntityRadar = true
+MaxFuel         = 1200
+FuelConsumption = 0.1
+StepHeight = 3
+DefaultFreelook = true
+
+FlareType = 10
+ThirdPersonDist = 12
+Entitywidth=0
+Entityheight=0
+ArmorMaxDamage = 900
+ThrottleUpDown = 2
+MobilityYawOnGround = 1.5
+OnGroundPitchFactor = 1.5
+OnGroundRollFactor  = 1.5
+MotionFactor =0.89
+
+ArmorDamageFactor = 1
+
+; 指定した高さまでの水に触れてもダメージを受けない
+; 2であれば2ブロックまでダメージ無し
+SubmergedDamageHeight = 3
+
+HideEntity = true
+
+
+
+
+
+
+; Tank or Car or Unknown
+WeightType = Tank
+
+; 重心Z座標設定
+WeightedCenterZ = 0.0
+
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+SetWheelPos =  1.82,  -0.24,  2.86,  0.70, -0.76, -2.22, -4.14
+
+
+AddGunnerSeat =  0.00,  1.50,  0,    0.00,  2.50,  0.25,  false, -90, 90, true
+
+
+; 地面の滑りやすさ、小さいほど摩擦が大きくなり動きにくくなる
+
+
+;ArmorMinDamage 最小ダメージ、これより小さいダメージは無効化される
+ArmorMinDamage = 15
+
+;ArmorDamageFactor ダメージ係数上記のMin/Max範囲チェック後のダメージの係数 1で100%, 0.5で50%
+ArmorDamageFactor = 1.0
+;後退可能にする
+EnableBack = true
+
+;PivotTurnThrottle を0より大きい値にすると超信地旋回ができなくなる。デフォルトは0
+PivotTurnThrottle = 0.0
+;AddCrawlerTrack = 履帯の表裏逆転,  1つの履帯の間隔, 履帯のXの位置, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, 履帯の回転ポイントY/Z, ...
+;転輪がなくても動作する
+AddTrackRoller = -1.82,  0.792,  3.6506
+AddTrackRoller = -1.82,  0.176,  2.45
+AddTrackRoller = -1.82,  0.176,  1.2566
+AddTrackRoller = -1.82,  0.176,  0.2964
+AddTrackRoller = -1.82,  0.176, -0.6637
+AddTrackRoller = -1.82,  0.176, -1.6234
+AddTrackRoller = -1.82,  0.176, -2.5834
+AddTrackRoller = -1.82,  0.176, -3.5434
+AddTrackRoller = -1.82,  0.8, -4.36
+
+AddCrawlerTrack = false, 0.22, -2.15,  1.14/ -4.62,  1.10/ -4.88,  0.80/ -4.90,  0.54/ -4.84,  -0.16/ -4.07,  -0.23/ -3.45,  -0.23/  2.17,  -0.11/ 2.73,  0.50/ 4.04,  0.78/ 4.12,  1.12/ 4.02,  1.22/ 3.73,
+;主砲
+AddPartWeapon = IFV_M1AGDS_AP, false, true, false,  0.0, 2.1, 0.0, 0
+AddPartWeaponChild = false, true, 0.0, 2.0, 1.25, 0.0
+AddPartWeaponChild = false, true, 0.0, 2.0, 1.25, 0.1
+AddTurretWeapon = IFV_M1AGDS_AP, -0.2142, 2, 1.25,  0.0, 0.0, true,1, 0,-360,360, -80, 10
+AddTurretWeapon = IFV_M1AGDS_AP, 0.2142, 2, 1.25,  0.0, 0.0, true,1, 0,-360,360, -80, 10
+
+AddPartWeapon = IFV_M1AGDS_ATGM_LASERM, false, true, false,  0.0, 2.13, 0, 0
+AddPartWeaponChild = false, true, 0.00, 2.13, -3.12, 0.0
+AddPartWeaponChild = false, true, 0.0,2.13, 0.0
+
+AddTurretWeapon = IFV_M1AGDS_ATGM_LASERM, 1.5, 3.2,0.0,  0.0, 0.0, true,2, 0,-360,360, -70, 0
+AddTurretWeapon = IFV_M1AGDS_ATGM_LASERM, -1.5, 3.2,0.0,  0.0, 0.0, true,2, 0,-360,360, -70, 0
+
+AddPartWeapon = IFV_bunker, false, true, false, 0.0, 2.0,0.0,0,0
+AddPartWeaponChild = false, true, 0.0,2.9868,  -2.2128,0
+
+AddWeapon = IFV_bunker,          0, 0,7,  0.0, 90, true,1, 0,0,0, 0, 0
+
+
+;AddRecipe = "TBT",  "TXT",  "IDI",  T, tnt_minecart, B, bow, X, dispenser, I, iron_ingot, D, diamond
+
+
+BoundingBox =  0.0, 0.645, -0.400820,   4.4, 2.02,  6.3,1,DEFAULT,车体侧面
+BoundingBox =  0.0, 1.21, 3.4,   4.4, 0.7,  1.5,0.6,DEFAULT,首上
+BoundingBox =  0.0, 0.191, 3.52,   4.4, 1.2,  1.7,0.5,DEFAULT,首下
+BoundingBox =  0.0, 0.683, -4.5,   4.4, 2.1,  2.1,1.3,DEFAULT,引擎
+
+BoundingBox =  0.0, 2.16, -0.5,   4, 1,  5.7,0.4, TURRET,炮塔正面
+BoundingBox =  0.0, 2.68, -0.5,   3.184, 0.1,  5,1, TURRET,车顶
+BoundingBox =  2.0, 2.24, -2.5,   0.212, 0.7087,  2.9,1.0, TURRET,炮塔侧面
+BoundingBox =  -2.0, 2.24, -2.5,   0.212, 0.7087,  2.9,1.0, TURRET,炮塔侧面
+BoundingBox =  0, 2.24, -4,   3.8, 0.7087,  0.2,1.3, TURRET,炮塔后面
+
+hasMaintenance=true
+
+
+
+engineShutdownThreshold = 15
+throttledownfactor=3
+explosionsizebycrash=10
+
+
+hasMaintenance=true
+
+
+
+NameOnAdvancedAARadar = MBT
+NameOnModernAARadar = MBT
+NameOnEarlyAARadar =
+NameOnModernASRadar = M1
+NameOnEarlyASRadar = MBT
+RadarType = EARLY_AA
+
+enablerwr=true
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+weapongrouptype=158
+
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+hudtype=1
+HUD = IFV, MBT_GUNNER
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

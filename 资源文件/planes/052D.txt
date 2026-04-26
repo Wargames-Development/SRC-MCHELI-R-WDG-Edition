@@ -1,0 +1,276 @@
+DisplayName = 052D KUNMING
+AddDisplayName = zh_CN, 052D型导弹驱逐舰 172"昆明"号
+AddDisplayName = en_US, 052D KUNMING
+ItemID = 30514
+MaxHp = 10000
+EnableNightVision = true
+Speed = 0.3
+Sound = boat
+DamageFactor = 0.00
+MinRotationPitch = 0
+MaxRotationPitch = 0
+InventorySize = 64
+
+CameraPosition  =-0.8, 9.4, 0
+
+ThirdPersonDist = 125
+
+Float = true
+ThrottleUpDown = 0.6
+FloatOffset = -0.4
+
+MobilityRoll = 0
+Gravity = -0.15
+GravityInWater = -0.1
+DamageFactor = 0.0
+StepHeight = 0.0
+
+
+ArmorMinDamage = 30
+
+CanMoveOnGround = false
+CanRotOnGround  = false
+MobilityYawOnGround = 1.0
+
+MaxFuel         = 1500
+FuelConsumption = 2.0
+
+HUD = FAC,FAC,FAC,FAC,FAC
+Category=FAC
+; 水しぶき を発生させる
+;AddParticleSplash = 座標X,   Y,    Z,   表示数, サイズ,  速度,  表示時間, 上昇, 重力
+AddParticleSplash =  1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash = -1.6, -0.18,   1.0,   3,      9.0,    1.1,   20,       0.30,  -0.03
+AddParticleSplash =  1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -4.8,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash =  1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -1.6, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash =  0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+AddParticleSplash = -0.8, -0.18,  -8.0,   2,      9.0,    1.1,   60,       0.01,   0
+
+;操縦席
+AddgunnerSeat = 0.00, 9.29, 0, 0.00, 9.29, 0,  false, -360, 360,true
+
+;主炮
+AddgunnerSeat = 0.0, 8.5, 20.22, 0.0, 8.5, 20.22,  false, -360, 360,false
+
+
+
+;反潜深弹
+AddgunnerSeat = -4.968, 8.607, -52.76, -4.968, 8.607, -52.76, false, -360, 360,false
+
+;反潜深弹
+AddgunnerSeat = 4.968, 8.607, -52.76, 4.968, 8.607, -52.76, false, -360, 360,false
+
+;海红旗10
+AddgunnerSeat = 0.00, 10.72, -52.44, 0.00, 12.72, -52.44, false, -360, 360,false
+
+;鹰击18
+AddPartWeaponBay = warship_052D_ASM_ARM, -2.3107,4.4479,30.5141,0.0,0.0,-1.9707,-90
+AddPartWeaponBay = warship_052D_ASM_ARM, -0.4005,4.4479,30.5141,0.0,0.0,-1.8538,90
+AddPartWeaponBay = warship_052D_ASM_ARM, 0.401,4.4479,30.5141,0.0,0.0,-2.9535,-90
+AddPartWeaponBay = warship_052D_ASM_ARM, 2.3112,4.4479,30.5141,0.0,0.0,-3.8247,90
+;红酒
+AddPartWeaponBay = warship_052D_AAM_ARM, -2.3107,4.4479,30.5141,0.0,0.0,-1.9707,-90
+AddPartWeaponBay = warship_052D_AAM_ARM, -0.4005,4.4479,30.5141,0.0,0.0,-1.8538,90
+AddPartWeaponBay = warship_052D_AAM_ARM, 0.401,4.4479,30.5141,0.0,0.0,-2.9535,-90
+AddPartWeaponBay = warship_052D_AAM_ARM, 2.3112,4.4479,30.5141,0.0,0.0,-3.8247,90
+
+;鹰击20
+AddPartWeaponBay = warship_052D_gps_missile, -4.0824,4.8118,-44.8656,8.1653,0.0,0.0,90
+AddPartWeaponBay = warship_052D_gps_missile, -4.0824,4.8118,-46.7758,8.1653,0.0,0.0,-90
+AddPartWeaponBay = warship_052D_gps_missile, 4.0829,4.8118,-47.5773,-8.1653,0.0,0.0,-90
+AddPartWeaponBay = warship_052D_gps_missile, -4.0824,4.8118,-49.4876,8.1653,0.0,0.0,-90
+
+
+
+AddParticleSplash =  0.42,  0.18,   11.56,   8,      12.0,    1.1,   80,       0.30,  -0.005
+AddParticleSplash = -0.42,  0.18,   11.56,   8,      12.0,    1.1,   80,       0.30,  -0.005
+AddParticleSplash =  5.84, -0.18,  13.25,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash = -5.84, -0.18,  13.25,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash =  4.15, -0.18,  -3.89,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash = -4.15, -0.18,  -3.89,   8,      12.0,    1.1,   60,       0.10,   -0.005
+AddParticleSplash =  4.7, 0.00, -46.67,   8,      12.0,    1.1,   80,       0.10,   -0.005
+AddParticleSplash = -4.7, 0.00, -46.67,   8,      12.0,    1.1,   80,       0.10,   -0.005
+AddParticleSplash =  4.6323, -0.18,  -54.4,   8,      12.0,    1.1,   60,       0.23,  -0.005
+AddParticleSplash = -4.6323, -0.18,  -54.4,   8,      12.0,    1.1,   60,       0.23,  -0.005
+AddParticleSplash =  5,  0.18,  -64.65,   8,      12.0,    1.1,   80,       0.20,   -0.005
+AddParticleSplash = -5,  0.18,  -64.65,   8,      12.0,    1.1,   80,       0.20,   -0.005
+
+
+
+
+;スポット機能
+
+AddPartWeapon = warship_052d_30mm, false, true, false, 0.00, 8.338, -0.0
+AddPartWeaponChild = false, true, 0.00, 8.338, 0.0
+AddPartRotWeapon = warship_052d_30mm, false, true, true,  -0.000, 8.41,   0.0, 0,0
+
+AddPartWeapon = warship_052d_HE_VT, false, true, false,  0.0, 4.595, 20.22
+AddPartWeaponChild = false, true,  0.0, 6.893, 20.48
+AddPartWeaponChild = false, true,  0.0, 6.893, 20.48,0.1
+
+AddPartWeapon = warship_052d_rocket_r, false, true, false,  -4.962, 6.446, -52.8
+AddPartWeaponChild = false, true,  -4.962, 7.587, -52.55
+
+AddPartWeapon = warship_052d_rocket_l, false, true, false,  4.962, 6.446, -52.8
+AddPartWeaponChild = false, true,  4.962, 7.587, -52.55
+
+AddPartWeapon = warship_052d_aam_irm, false, true, false,  0, 8.155, -52.53
+AddPartWeaponChild = false, true, 0, 9.877, -52.53
+
+AddPartWeapon = warship_052d_aam_irm, false, true, false,  0, 8.155, -52.53
+AddPartWeaponChild = false, true, 0, 9.877, -52.53
+
+AddTurretWeapon = warship_052d_30mm,          -0.00, 8.338, 0.0,  0.0, 0.0, true,1, 0,-360,360, -85, 10
+
+AddWeapon = warship_052D_AAM_ARM, -1.875, 4.519, 11.85,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_052D_AAM_ARM, 0.8366, 4.519, 12.84,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_052D_AAM_ARM, -0.8366, 4.519, 13.82,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+AddWeapon = warship_052D_AAM_ARM, 1.876, 4.519, 12.84,  0.0, -90.0, true,5, 0,-180,180, -75, 10
+
+AddWeapon = warship_052D_ASM_ARM, -1.875, 4.519, 6.85,  0.0, -90.0, true,1, 0,-180,180, -75, 10
+AddWeapon = warship_052D_ASM_ARM, 0.8366, 4.519, 7.84,  0.0, -90.0, true,1, 0,-180,180, -75, 10
+AddWeapon = warship_052D_ASM_ARM, -0.8366, 4.519, 8.82,  0.0, -90.0, true,1, 0,-180,180, -75, 10
+AddWeapon = warship_052D_ASM_ARM, 1.876, 4.519, 7.84,  0.0, -90.0, true,1, 0,-180,180, -75, 10
+
+
+
+
+
+
+AddWeapon = warship_052d_HE_VT,0.0, 6.893, 20.48,  0.0, 0.0, false,2, 0,-360,360, -85, 10
+
+AddWeapon = warship_052D_GPS_MISSILE, 2.665, 4.883, -45.30,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+AddWeapon = warship_052D_GPS_MISSILE, -2.665, 4.883, -46.34,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+AddWeapon = warship_052D_GPS_MISSILE, -2.665, 4.883, -45.30,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+AddWeapon = warship_052D_GPS_MISSILE, 2.665, 4.883, -46.34,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+
+AddWeapon = WARSHIP_052D_GSP_MISSILE_radar, 2.665, 4.883, -46.34,  0.0, -90.0, false,2, 0,-180,180, -75, 10
+
+
+AddWeapon = warship_052d_rocket_r, -4.962, 7.587, -52.55, 0.0, 0.0, false, 3, 0, -0, 180, -50, 20
+AddWeapon = warship_052d_torpedo_r, -6.622, 4.363, -58.54, 0.0, 0.0, false, 3, 0, -0, 180, -50, 20
+
+AddWeapon = warship_052d_rocket_l, 4.962, 7.587 ,-52.55, 0.0, 0.0, false, 4, 0, -180, 0, -50, 20
+AddWeapon = warship_052d_torpedo_l, 6.622, 4.363, -58.54, 0.0, 0.0, false, 4, 0,-180, 0, -50, 20
+
+
+AddWeapon = warship_052d_aam_irm,-0, 9.877, -52.53,  0.0, 0.0, false,5, 0,-360,360, -85, 10
+
+
+;BoundingBox = 0.0, 0.212, 26.368,  13.046, 11.985, 21.806, 0.9, DEFAULT, 舰艏
+;BoundingBox = 0.0, 0.212, 8.903,  13.046, 11.985, 13.242, 2.0, DEFAULT, 舰艏弹药库
+;BoundingBox = 0.0, 0.212, -46.6,  15.076, 10.371, 7.962, 2.0, DEFAULT, 舰舯弹药库
+;BoundingBox = 0.0, 0.212, -65.739,  15.076, 7.352, 30.156, 1.0, DEFAULT, 舰艉
+;BoundingBox = 0.0, 0.212, -20.011,  15.076, 9.818, 44.942, 0.8, DEFAULT, 舰舯
+BoundingBox = 0.0, 9.76, -14.982,  11.986, 9.02, 25.58, 1.5, DEFAULT, 舰岛
+
+
+
+;AddPartNozzle =  0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -0.91, 0.00, -5.53, -1,0,0
+;AddPartNozzle = -1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  1.08, 0.00, -5.53, -1,0,0
+;AddPartNozzle =  0.73, 0.00, -5.64, -1,0,0
+;AddPartNozzle = -0.73, 0.00, -5.64, -1,0,0
+
+ ;AddRecipe = " Y ",  "XXX",  "DXD",  X, iron_block, Y, glass, D, diamond_block
+
+
+hasMaintenance=true
+maintenanceUseTime = 15
+maintenanceWaitTime = 800
+
+EntityWidth  = 0.00
+EntityHeight = 0.00
+
+
+NameOnAdvancedAARadar = 052
+NameOnModernAARadar = 052
+NameOnEarlyAARadar = NVL
+NameOnModernASRadar = 052
+NameOnEarlyASRadar = NVL
+RadarType = MODERN_AS
+
+weapongrouptype=52
+AddPartRotation = 0.00,  10.15,-38.13,   0,-1,0,     15,      true
+
+enableRWR=false
+
+DefaultFreelook = true
+EnableBack = true
+
+
+AddPartRotor =    3.267,  -3.879,-71.75,   0,0, 1
+AddBlade = 1, 0,  3.267,  -3.879,-71.75,   0,0, 1
+
+AddPartRotor =    -3.267,  -3.879,-71.75,   0,0, 1
+AddBlade = 1, 0,  -3.267,  -3.879,-71.75,   0,0, 1
+
+MobilityYaw=0.5
+ThrottleUpDown = 0.3
+
+
+BoundingBox = 0.0, 0.0, -21.39,  14.778, 14.778, 120.051, 1.0, DEFAULT, 舰体
+
+
+explosionsizebycrash=50
+
+armorExplosionDamageMultiplier = 0.5
+
+NameOnRWR=346
+enableRWR=false
+enableBVR=true
+EnableRadar = true
+;是否启用新雷达扫描动画面板（true=启用，false=禁用）
+;默认值=false
+
+RadarScanElevationDeg = 80
+;俯仰扫描扇区总角度
+;范围=0~180（0=不扫描，180=上下全域）
+;默认值=40
+
+RadarFollowTurretYaw = true
+;是否让雷达水平正方向跟随坦克炮塔转向（仅坦克生效）
+;可选值=true|false
+;默认值：坦克=true，其它载具=false
+
+RadarElevationReference = HORIZON
+;俯仰扫描参考系
+;可选值=HORIZON|AIRCRAFT
+;HORIZON=按平飞水平面计算（推荐地面载具）
+;AIRCRAFT=按机体当前姿态计算（推荐战斗机）
+;默认值=HORIZON
+
+RadarPanelFillAlpha=0.07
+
+RadarElevationCoverage =UP_ONLY
+;俯仰扫描覆盖模式
+;可选值=UP_ONLY|FULL
+;UP_ONLY=仅上视扫描（不下视）
+;FULL=全域扫描（上+下）
+;默认值=UP_ONLY
+RadarScanAzimuthDeg=360
+RadarScanTick=20
+;每多少 tick 扫一次
+RadarDetectChanceBase=0.9
+;基础命中概率
+RadarContactHoldTick=80
+;命中后显示保持时长
+RadarMaxTargetRange =4000
+;最大显示距离
+
+RadarTrackAzimuthDeg=360
+;雷达跟踪最大水平角度
+;建议不超过RadarScanAzimuthDeg
+;默认值=90
+RadarTrackElevationDeg=80
+;雷达跟踪最大俯仰角度
+RadarSearchType=MULTI_TWS
+RadarGainFactor=5,0.5
+
+
+explosionsizebycrash=50
+
+armorExplosionDamageMultiplier = 0.5
