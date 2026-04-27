@@ -14,6 +14,8 @@ public class MCH_PacketNotifyEconomySync extends MCH_Packet {
     public int ge;
     public int rp;
     public String unlockedNodes = "";
+    public String activeTreeId = "";
+    public String allowedTreeIds = "";
 
     public MCH_PacketNotifyEconomySync() {
     }
@@ -23,10 +25,20 @@ public class MCH_PacketNotifyEconomySync extends MCH_Packet {
     }
 
     public MCH_PacketNotifyEconomySync(int sl, int ge, int rp, String unlockedNodes) {
+        this(sl, ge, rp, unlockedNodes, "", "");
+    }
+
+    public MCH_PacketNotifyEconomySync(int sl, int ge, int rp, String unlockedNodes, String activeTreeId) {
+        this(sl, ge, rp, unlockedNodes, activeTreeId, "");
+    }
+
+    public MCH_PacketNotifyEconomySync(int sl, int ge, int rp, String unlockedNodes, String activeTreeId, String allowedTreeIds) {
         this.sl = Math.max(0, sl);
         this.ge = Math.max(0, ge);
         this.rp = Math.max(0, rp);
         this.unlockedNodes = unlockedNodes == null ? "" : unlockedNodes;
+        this.activeTreeId = activeTreeId == null ? "" : activeTreeId;
+        this.allowedTreeIds = allowedTreeIds == null ? "" : allowedTreeIds;
     }
 
     public static void sendToPlayer(EntityPlayerMP player, int sl, int ge, int rp) {
@@ -34,10 +46,18 @@ public class MCH_PacketNotifyEconomySync extends MCH_Packet {
     }
 
     public static void sendToPlayer(EntityPlayerMP player, int sl, int ge, int rp, String unlockedNodes) {
+        sendToPlayer(player, sl, ge, rp, unlockedNodes, "");
+    }
+
+    public static void sendToPlayer(EntityPlayerMP player, int sl, int ge, int rp, String unlockedNodes, String activeTreeId) {
+        sendToPlayer(player, sl, ge, rp, unlockedNodes, activeTreeId, "");
+    }
+
+    public static void sendToPlayer(EntityPlayerMP player, int sl, int ge, int rp, String unlockedNodes, String activeTreeId, String allowedTreeIds) {
         if (player == null) {
             return;
         }
-        W_Network.sendToPlayer(new MCH_PacketNotifyEconomySync(sl, ge, rp, unlockedNodes), player);
+        W_Network.sendToPlayer(new MCH_PacketNotifyEconomySync(sl, ge, rp, unlockedNodes, activeTreeId, allowedTreeIds), player);
     }
 
     @Override
@@ -52,6 +72,8 @@ public class MCH_PacketNotifyEconomySync extends MCH_Packet {
             this.ge = data.readInt();
             this.rp = data.readInt();
             this.unlockedNodes = data.readUTF();
+            this.activeTreeId = data.readUTF();
+            this.allowedTreeIds = data.readUTF();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -64,6 +86,8 @@ public class MCH_PacketNotifyEconomySync extends MCH_Packet {
             dos.writeInt(Math.max(0, this.ge));
             dos.writeInt(Math.max(0, this.rp));
             dos.writeUTF(this.unlockedNodes == null ? "" : this.unlockedNodes);
+            dos.writeUTF(this.activeTreeId == null ? "" : this.activeTreeId);
+            dos.writeUTF(this.allowedTreeIds == null ? "" : this.allowedTreeIds);
         } catch (IOException e) {
             e.printStackTrace();
         }

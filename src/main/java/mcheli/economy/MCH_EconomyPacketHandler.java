@@ -17,6 +17,8 @@ public final class MCH_EconomyPacketHandler {
         pkt.readData(data);
         MCH_EconomyClientData.update(pkt.sl, pkt.ge, pkt.rp);
         MCH_EconomyClientData.updateUnlockedNodes(pkt.unlockedNodes);
+        MCH_EconomyClientData.updateActiveTechTreeId(pkt.activeTreeId);
+        MCH_EconomyClientData.updateAllowedTechTreeIds(pkt.allowedTreeIds);
     }
 
     public static void onPacketIndEconomyTechAction(EntityPlayer player, ByteArrayDataInput data) {
@@ -37,6 +39,8 @@ public final class MCH_EconomyPacketHandler {
         pkt.readData(data);
         MCH_EconomyClientData.update(pkt.sl, pkt.ge, pkt.rp);
         MCH_EconomyClientData.updateUnlockedNodes(pkt.unlockedNodes);
+        MCH_EconomyClientData.updateActiveTechTreeId(pkt.activeTreeId);
+        MCH_EconomyClientData.updateAllowedTechTreeIds(pkt.allowedTreeIds);
         MCH_EconomyClientData.updateTechResult(pkt.success, pkt.action, pkt.nodeId, pkt.message);
     }
 

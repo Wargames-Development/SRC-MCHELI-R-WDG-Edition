@@ -68,7 +68,10 @@ public class MCH_GuiCommonHandler implements IGuiHandler {
 
                 return new MCH_ContainerScoreboard(player);
             case 6:
-                return new MCH_ContainerEconomyTechTree();
+                if (MCH_MOD.config == null || !MCH_Config.EnableTechTreeGameplay.prmBool) {
+                    return null;
+                }
+                return new MCH_ContainerEconomyTechTree(player.inventory);
         }
 
         return null;
@@ -104,6 +107,9 @@ public class MCH_GuiCommonHandler implements IGuiHandler {
             case 5:
                 return new MCH_GuiScoreboard(player);
             case 6:
+                if (MCH_MOD.config == null || !MCH_Config.EnableTechTreeGameplay.prmBool) {
+                    return null;
+                }
                 return new MCH_GuiEconomyTechTree(player);
         }
 

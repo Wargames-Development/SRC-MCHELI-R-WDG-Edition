@@ -1,6 +1,8 @@
 package mcheli.economy;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import mcheli.MCH_Config;
+import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -20,21 +22,32 @@ import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 
 import java.util.Map;
 import java.util.Random;
 
 public class MCH_EconomyEventHandler {
 
+    private static final String ROOT_TAG = "MCH_Economy";
+
     public MCH_EconomyEventHandler() {
         MCH_EconomyRewardConfig.ensureLoaded();
     }
 
+    private boolean isTechTreeGameplayEnabled() {
+        return MCH_MOD.config != null && MCH_Config.EnableTechTreeGameplay.prmBool;
+    }
+
     @SubscribeEvent
     public void onPlayerJoinSyncEconomy(EntityJoinWorldEvent event) {
+        if (!isTechTreeGameplayEnabled()) {
+            return;
+        }
         if (event == null || event.world == null || event.world.isRemote) {
             return;
         }
@@ -45,7 +58,35 @@ public class MCH_EconomyEventHandler {
     }
 
     @SubscribeEvent
+    public void onPlayerCloneKeepEconomy(PlayerEvent.Clone event) {
+        if (!isTechTreeGameplayEnabled()) {
+            return;
+        }
+        if (MCH_Config.EconomyKeepOnDeath != null && !MCH_Config.EconomyKeepOnDeath.prmBool) {
+            return;
+        }
+        if (event == null || event.entityPlayer == null || event.original == null) {
+            return;
+        }
+        if (event.entityPlayer.worldObj == null || event.entityPlayer.worldObj.isRemote) {
+            return;
+        }
+        NBTTagCompound oldRoot = event.original.getEntityData();
+        if (oldRoot == null || !oldRoot.hasKey(ROOT_TAG)) {
+            return;
+        }
+        NBTTagCompound oldEco = oldRoot.getCompoundTag(ROOT_TAG);
+        event.entityPlayer.getEntityData().setTag(ROOT_TAG, oldEco.copy());
+        if (event.entityPlayer instanceof EntityPlayerMP) {
+            MCH_EconomyService.syncToClient((EntityPlayerMP) event.entityPlayer);
+        }
+    }
+
+    @SubscribeEvent
     public void onAircraftDestroyReward(AircraftDestoryEvent event) {
+        if (!isTechTreeGameplayEnabled()) {
+            return;
+        }
         if (event == null || event.getAttackerName() == null || event.getAttackerName().isEmpty()) {
             return;
         }
@@ -72,6 +113,9 @@ public class MCH_EconomyEventHandler {
 
     @SubscribeEvent
     public void onAircraftDamageRecord(AircraftDamageEvent event) {
+        if (!isTechTreeGameplayEnabled()) {
+            return;
+        }
         if (event == null || event.getAttackerName() == null || event.getAttackerName().isEmpty()) {
             return;
         }
@@ -85,6 +129,9 @@ public class MCH_EconomyEventHandler {
 
     @SubscribeEvent
     public void onMobHurtRecord(LivingHurtEvent event) {
+        if (!isTechTreeGameplayEnabled()) {
+            return;
+        }
         if (event == null || event.entityLiving == null || event.entityLiving.worldObj == null || event.entityLiving.worldObj.isRemote) {
             return;
         }
@@ -102,6 +149,9 @@ public class MCH_EconomyEventHandler {
 
     @SubscribeEvent
     public void onMobKillReward(LivingDeathEvent event) {
+        if (!isTechTreeGameplayEnabled()) {
+            return;
+        }
         if (event == null || event.entityLiving == null || event.entityLiving.worldObj == null || event.entityLiving.worldObj.isRemote) {
             return;
         }

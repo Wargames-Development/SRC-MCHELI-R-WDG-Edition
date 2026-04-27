@@ -1,5 +1,7 @@
 package mcheli.multiplay;
 
+import mcheli.MCH_Config;
+import mcheli.MCH_MOD;
 import mcheli.MCH_ServerSettings;
 import mcheli.economy.MCH_GuiEconomyTechTree;
 import mcheli.wrapper.W_GuiButton;
@@ -41,9 +43,11 @@ public class MCH_GuiScoreboard_Main extends MCH_GuiScoreboard_Base {
             btn = new W_GuiButton(1280, LEFT, 160, WIDTH, 20, "Destroy All");
             btn.addHoverString("Destroy all aircraft and vehicle.");
             super.listGui.add(btn);
-            btn = new W_GuiButton(1536, LEFT, 180, WIDTH, 20, "Tech Tree");
-            btn.addHoverString("Open economy tech tree.");
-            super.listGui.add(btn);
+            if (MCH_MOD.config != null && MCH_Config.EnableTechTreeGameplay.prmBool) {
+                btn = new W_GuiButton(1536, LEFT, 180, WIDTH, 20, "Tech Tree");
+                btn.addHoverString("Open economy tech tree.");
+                super.listGui.add(btn);
+            }
         }
     }
 
@@ -86,7 +90,9 @@ public class MCH_GuiScoreboard_Main extends MCH_GuiScoreboard_Base {
                     MCH_PacketIndMultiplayCommand.send(1280, "");
                     break;
                 case 1536:
-                    super.mc.displayGuiScreen(new MCH_GuiEconomyTechTree(super.mc.thePlayer));
+                    if (MCH_MOD.config != null && MCH_Config.EnableTechTreeGameplay.prmBool) {
+                        super.mc.displayGuiScreen(new MCH_GuiEconomyTechTree(super.mc.thePlayer));
+                    }
             }
         }
 

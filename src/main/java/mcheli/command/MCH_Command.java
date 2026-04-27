@@ -14,6 +14,7 @@ import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.block.MCH_BlockInfoManager;
 import mcheli.block.MCH_ConfigSpawnerBlock;
 import mcheli.block.MCH_ConfigSpawnerTileEntity;
+import mcheli.economy.MCH_EconomyService;
 import mcheli.render.MCH_RenderRWR;
 import mcheli.structure.MCH_StructureBlob;
 import mcheli.structure.MCH_StructureDebugLogger;
@@ -80,7 +81,8 @@ public class MCH_Command extends CommandBase {
     public static final String CMD_RWR_SOUND = "rwrsound";
     public static final String CMD_STRUCT = "struct";
     public static final String CMD_LIST = "list";
-    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "expdebug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "bvrdebug", "mslwatch", "rwrwatch", "rwrdiag", "rwrsound", "struct", "list"};
+    public static final String CMD_GIVE = "give";
+    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "expdebug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "bvrdebug", "mslwatch", "rwrwatch", "rwrdiag", "rwrsound", "struct", "give", "list"};
     public static MCH_Command instance = new MCH_Command();
 
 
@@ -322,6 +324,8 @@ public class MCH_Command extends CommandBase {
                         this.executeRwrSound(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("struct")) {
                         this.executeStructureCommand(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("give")) {
+                        this.executeEconomyGive(sender, prm);
                     } else {
                         if (!prm[0].equalsIgnoreCase("list")) {
                             throw new CommandException("Unknown mcheli command. please type /mcheli list", new Object[0]);
@@ -342,6 +346,61 @@ public class MCH_Command extends CommandBase {
 
             }
         }
+    }
+
+    private void executeEconomyGive(ICommandSender sender, String[] args) {
+        if (MCH_MOD.config == null || !MCH_Config.EnableTechTreeGameplay.prmBool) {
+            throw new CommandException("Tech tree gameplay is disabled in mcheli.cfg (EnableTechTreeGameplay=false).", new Object[0]);
+        }
+        if (args.length != 3 && args.length != 4) {
+            throw new WrongUsageException("/mcheli give [player] <SL|GE|RP> <value>", new Object[0]);
+        }
+
+        EntityPlayerMP target;
+        String currency;
+        String valueText;
+        if (args.length == 4) {
+            target = getPlayer(sender, args[1]);
+            currency = args[2];
+            valueText = args[3];
+        } else {
+            if (!MCH_MOD.proxy.isSinglePlayer()) {
+                throw new WrongUsageException("/mcheli give <player> <SL|GE|RP> <value>", new Object[0]);
+            }
+            if (!(sender instanceof EntityPlayerMP)) {
+                throw new CommandException("In singleplayer mode, command sender must be player when target is omitted.", new Object[0]);
+            }
+            target = (EntityPlayerMP) sender;
+            currency = args[1];
+            valueText = args[2];
+        }
+
+        int value;
+        try {
+            value = Integer.parseInt(valueText);
+        } catch (Exception ignored) {
+            throw new WrongUsageException("Value must be a positive integer.", new Object[0]);
+        }
+        if (value <= 0) {
+            throw new WrongUsageException("Value must be > 0.", new Object[0]);
+        }
+
+        int addSL = 0;
+        int addGE = 0;
+        int addRP = 0;
+        String type = currency == null ? "" : currency.trim().toUpperCase(Locale.ROOT);
+        if ("SL".equals(type)) {
+            addSL = value;
+        } else if ("GE".equals(type)) {
+            addGE = value;
+        } else if ("RP".equals(type)) {
+            addRP = value;
+        } else {
+            throw new WrongUsageException("Currency must be SL, GE or RP.", new Object[0]);
+        }
+
+        MCH_EconomyService.grant(target, addSL, addGE, addRP, "Admin Give");
+        sender.addChatMessage(new ChatComponentText("[Economy] give success: " + target.getCommandSenderName() + " +" + value + " " + type));
     }
 
     private void executeAttackEntity(ICommandSender sender, String[] args) {
@@ -754,6 +813,24 @@ public class MCH_Command extends CommandBase {
                     }
                     if (prm.length == 7 && prm[1].equalsIgnoreCase("verify")) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"0", "90", "180", "270"});
+                    }
+                } else if (prm[0].equalsIgnoreCase("give")) {
+                    if (prm.length == 2) {
+                        ArrayList<String> list = new ArrayList<String>();
+                        list.add("SL");
+                        list.add("GE");
+                        list.add("RP");
+                        Collections.addAll(list, MinecraftServer.getServer().getAllUsernames());
+                        return getListOfStringsFromIterableMatchingLastWord(prm, list);
+                    }
+                    if (prm.length == 3) {
+                        if ("SL".equalsIgnoreCase(prm[1]) || "GE".equalsIgnoreCase(prm[1]) || "RP".equalsIgnoreCase(prm[1])) {
+                            return getListOfStringsMatchingLastWord(prm, new String[]{"100", "1000", "10000"});
+                        }
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"SL", "GE", "RP"});
+                    }
+                    if (prm.length == 4) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"100", "1000", "10000"});
                     }
                 }
             }

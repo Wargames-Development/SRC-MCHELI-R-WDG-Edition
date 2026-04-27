@@ -18,6 +18,8 @@ public class MCH_PacketNotifyEconomyTechResult extends MCH_Packet {
     public int ge;
     public int rp;
     public String unlockedNodes = "";
+    public String activeTreeId = "";
+    public String allowedTreeIds = "";
 
     public static void sendToPlayer(EntityPlayerMP player, MCH_EconomyTechService.Result result) {
         if (player == null || result == null) {
@@ -32,6 +34,8 @@ public class MCH_PacketNotifyEconomyTechResult extends MCH_Packet {
         pkt.ge = MCH_EconomyService.getGE(player);
         pkt.rp = MCH_EconomyService.getRP(player);
         pkt.unlockedNodes = MCH_EconomyTechService.getUnlockedNodesRaw(player);
+        pkt.activeTreeId = MCH_EconomyTechService.getActiveTechTreeId(player);
+        pkt.allowedTreeIds = MCH_EconomyTechService.getAllowedTechTreeIdsRaw(player);
         W_Network.sendToPlayer(pkt, player);
     }
 
@@ -51,6 +55,8 @@ public class MCH_PacketNotifyEconomyTechResult extends MCH_Packet {
             this.ge = data.readInt();
             this.rp = data.readInt();
             this.unlockedNodes = data.readUTF();
+            this.activeTreeId = data.readUTF();
+            this.allowedTreeIds = data.readUTF();
         } catch (Exception e) {
             e.printStackTrace();
             this.success = false;
@@ -61,6 +67,8 @@ public class MCH_PacketNotifyEconomyTechResult extends MCH_Packet {
             this.ge = 0;
             this.rp = 0;
             this.unlockedNodes = "";
+            this.activeTreeId = "";
+            this.allowedTreeIds = "";
         }
     }
 
@@ -75,6 +83,8 @@ public class MCH_PacketNotifyEconomyTechResult extends MCH_Packet {
             dos.writeInt(Math.max(0, this.ge));
             dos.writeInt(Math.max(0, this.rp));
             dos.writeUTF(this.unlockedNodes == null ? "" : this.unlockedNodes);
+            dos.writeUTF(this.activeTreeId == null ? "" : this.activeTreeId);
+            dos.writeUTF(this.allowedTreeIds == null ? "" : this.allowedTreeIds);
         } catch (IOException e) {
             e.printStackTrace();
         }

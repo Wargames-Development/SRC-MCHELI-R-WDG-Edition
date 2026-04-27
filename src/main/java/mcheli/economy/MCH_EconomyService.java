@@ -75,7 +75,9 @@ public final class MCH_EconomyService {
             tag.getInteger(KEY_SL),
             tag.getInteger(KEY_GE),
             tag.getInteger(KEY_RP),
-            MCH_EconomyTechService.getUnlockedNodesRaw(player)
+            MCH_EconomyTechService.getUnlockedNodesRaw(player),
+            MCH_EconomyTechService.getActiveTechTreeId(player),
+            MCH_EconomyTechService.getAllowedTechTreeIdsRaw(player)
         );
     }
 

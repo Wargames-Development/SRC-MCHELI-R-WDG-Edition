@@ -13,6 +13,8 @@ public final class MCH_EconomyClientData {
     private static volatile String lastTechNodeId = "";
     private static volatile byte lastTechAction;
     private static volatile String unlockedNodesRaw = "";
+    private static volatile String activeTechTreeId = "";
+    private static volatile String allowedTechTreeIdsRaw = "";
     private static volatile byte gainToastType;
     private static volatile int gainToastSL;
     private static volatile int gainToastGE;
@@ -68,6 +70,53 @@ public final class MCH_EconomyClientData {
 
     public static void updateUnlockedNodes(String raw) {
         unlockedNodesRaw = raw == null ? "" : raw;
+    }
+
+    public static void updateActiveTechTreeId(String treeId) {
+        activeTechTreeId = MCH_EconomyTechRegistry.normalizeId(treeId);
+    }
+
+    public static String getActiveTechTreeId() {
+        return activeTechTreeId == null ? "" : activeTechTreeId;
+    }
+
+    public static void updateAllowedTechTreeIds(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            allowedTechTreeIdsRaw = "";
+            return;
+        }
+        String[] arr = raw.split("[|,;]");
+        LinkedHashSet<String> set = new LinkedHashSet<String>();
+        for (String s : arr) {
+            String id = MCH_EconomyTechRegistry.normalizeId(s);
+            if (!id.isEmpty()) {
+                set.add(id);
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String id : set) {
+            if (sb.length() > 0) {
+                sb.append(';');
+            }
+            sb.append(id);
+        }
+        allowedTechTreeIdsRaw = sb.toString();
+    }
+
+    public static Set<String> getAllowedTechTreeIds() {
+        LinkedHashSet<String> set = new LinkedHashSet<String>();
+        String raw = allowedTechTreeIdsRaw;
+        if (raw == null || raw.trim().isEmpty()) {
+            return set;
+        }
+        String[] arr = raw.split(";");
+        for (String s : arr) {
+            String id = MCH_EconomyTechRegistry.normalizeId(s);
+            if (!id.isEmpty()) {
+                set.add(id);
+            }
+        }
+        return set;
     }
 
     public static boolean isUnlocked(String nodeId) {

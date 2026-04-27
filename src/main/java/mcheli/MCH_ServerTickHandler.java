@@ -3,6 +3,7 @@ package mcheli;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
+import mcheli.mob.MCH_TechNpcVillageSpawner;
 import cpw.mods.fml.common.network.internal.FMLProxyPacket;
 import mcheli.structure.MCH_StructureDebugLogger;
 import mcheli.wrapper.W_Reflection;
@@ -78,6 +79,7 @@ public class MCH_ServerTickHandler {
     }
 
     private void onServerTickPost() {
+        MCH_TechNpcVillageSpawner.getInstance().serverTick();
         if (MCH_MOD.rwrThreatManager != null) {
             MCH_MOD.rwrThreatManager.serverTick();
         }

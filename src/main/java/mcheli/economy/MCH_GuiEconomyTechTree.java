@@ -29,13 +29,15 @@ import java.util.Set;
 @SideOnly(Side.CLIENT)
 public class MCH_GuiEconomyTechTree extends GuiScreen {
 
-    private static final int BTN_ACTION = 1;
+    private static final int BTN_RESEARCH = 1;
     private static final int BTN_RESET_VIEW = 2;
     private static final int BTN_CLOSE = 3;
-    private static final int NODE_W = 26;
-    private static final int NODE_H = 26;
-    private static final int NODE_GRID_X = 86;
-    private static final int NODE_GRID_Y = 58;
+    private static final int BTN_PURCHASE = 4;
+    private static final int NODE_W = 108;
+    private static final int NODE_H = 36;
+    private static final int NODE_GRID_X = 162;
+    private static final int NODE_GRID_Y = 86;
+    private static final int TREE_GAP_X = 180;
     private static final ResourceLocation TEX_ACHIEVEMENT_BG = new ResourceLocation("textures/gui/achievement/achievement_background.png");
     private static final ResourceLocation TEX_ICON_SL = new ResourceLocation("mcheli", "textures/gui/economy/coin_sl.png");
     private static final ResourceLocation TEX_ICON_GE = new ResourceLocation("mcheli", "textures/gui/economy/coin_ge.png");
@@ -45,8 +47,10 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
     private final List<MCH_EconomyTechNode> nodes = new ArrayList<MCH_EconomyTechNode>();
     private final Map<String, Point> nodePos = new LinkedHashMap<String, Point>();
     private final Map<String, ItemStack> nodeIconCache = new HashMap<String, ItemStack>();
+    private final Map<String, String> nodeTitleCache = new HashMap<String, String>();
     private final Map<String, Integer> depthCache = new HashMap<String, Integer>();
     private final Set<String> resolving = new HashSet<String>();
+    private final List<TreeGroupHeader> treeHeaders = new ArrayList<TreeGroupHeader>();
     private final RenderItem itemRenderer = new RenderItem();
 
     private String selectedNodeId = "";
@@ -76,7 +80,9 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         this.panY = 0;
         this.draggingTree = false;
         this.refreshLayout();
-        this.buttonList.add(new GuiButton(BTN_ACTION, this.detailLeft + 8, this.detailTop + this.detailHeight - 56, this.detailWidth - 16, 20, "执行操作"));
+        int actionW = (this.detailWidth - 20) / 2;
+        this.buttonList.add(new GuiButton(BTN_RESEARCH, this.detailLeft + 8, this.detailTop + this.detailHeight - 56, actionW, 20, "RP研发"));
+        this.buttonList.add(new GuiButton(BTN_PURCHASE, this.detailLeft + 12 + actionW, this.detailTop + this.detailHeight - 56, actionW, 20, "SL购买"));
         this.buttonList.add(new GuiButton(BTN_RESET_VIEW, this.detailLeft + 8, this.detailTop + this.detailHeight - 32, this.detailWidth - 84, 20, "重置视图"));
         this.buttonList.add(new GuiButton(BTN_CLOSE, this.detailLeft + this.detailWidth - 72, this.detailTop + this.detailHeight - 32, 64, 20, "关闭"));
     }
@@ -92,11 +98,26 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         this.detailHeight = this.treeHeight;
 
         this.nodes.clear();
-        Collection<MCH_EconomyTechNode> allNodes = MCH_EconomyTechRegistry.getNodes();
+        Set<String> allowedTreeIds = MCH_EconomyClientData.getAllowedTechTreeIds();
+        String activeTreeId = MCH_EconomyClientData.getActiveTechTreeId();
+        Collection<MCH_EconomyTechNode> allNodes = !allowedTreeIds.isEmpty()
+            ? MCH_EconomyTechRegistry.getNodesByTrees(allowedTreeIds)
+            : (activeTreeId.isEmpty() ? MCH_EconomyTechRegistry.getNodes() : MCH_EconomyTechRegistry.getNodesByTree(activeTreeId));
+        if (allNodes.isEmpty()) {
+            allNodes = MCH_EconomyTechRegistry.getNodes();
+        }
         this.nodes.addAll(allNodes);
+        this.depthCache.clear();
+        this.resolving.clear();
         Collections.sort(this.nodes, new Comparator<MCH_EconomyTechNode>() {
             @Override
             public int compare(MCH_EconomyTechNode o1, MCH_EconomyTechNode o2) {
+                String t1 = MCH_EconomyTechRegistry.normalizeId(o1.treeId);
+                String t2 = MCH_EconomyTechRegistry.normalizeId(o2.treeId);
+                int tc = t1.compareTo(t2);
+                if (tc != 0) {
+                    return tc;
+                }
                 int d1 = resolveDepth(o1.id);
                 int d2 = resolveDepth(o2.id);
                 if (d1 != d2) {
@@ -106,18 +127,50 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
             }
         });
         this.nodePos.clear();
-        this.depthCache.clear();
-        this.resolving.clear();
         this.nodeIconCache.clear();
-        Map<Integer, Integer> rowByDepth = new HashMap<Integer, Integer>();
+        this.nodeTitleCache.clear();
+        this.treeHeaders.clear();
+
+        LinkedHashMap<String, List<MCH_EconomyTechNode>> byTree = new LinkedHashMap<String, List<MCH_EconomyTechNode>>();
         for (MCH_EconomyTechNode node : this.nodes) {
-            int depth = resolveDepth(node.id);
-            Integer rowObj = rowByDepth.get(Integer.valueOf(depth));
-            int row = rowObj == null ? 0 : rowObj.intValue();
-            rowByDepth.put(Integer.valueOf(depth), Integer.valueOf(row + 1));
-            int x = depth * NODE_GRID_X;
-            int y = row * NODE_GRID_Y;
-            this.nodePos.put(node.id, new Point(x, y));
+            String treeId = MCH_EconomyTechRegistry.normalizeId(node.treeId);
+            List<MCH_EconomyTechNode> list = byTree.get(treeId);
+            if (list == null) {
+                list = new ArrayList<MCH_EconomyTechNode>();
+                byTree.put(treeId, list);
+            }
+            list.add(node);
+        }
+
+        int treeBaseX = 0;
+        for (Map.Entry<String, List<MCH_EconomyTechNode>> entry : byTree.entrySet()) {
+            String treeId = entry.getKey();
+            List<MCH_EconomyTechNode> treeNodes = entry.getValue();
+            Map<Integer, Integer> colByDepth = new HashMap<Integer, Integer>();
+            int maxDepth = 0;
+            int maxCol = 0;
+            for (MCH_EconomyTechNode node : treeNodes) {
+                int depth = resolveDepth(node.id);
+                if (depth > maxDepth) {
+                    maxDepth = depth;
+                }
+                Integer colObj = colByDepth.get(Integer.valueOf(depth));
+                int col = colObj == null ? 0 : colObj.intValue();
+                colByDepth.put(Integer.valueOf(depth), Integer.valueOf(col + 1));
+                if (col > maxCol) {
+                    maxCol = col;
+                }
+                int x = treeBaseX + col * NODE_GRID_X;
+                int y = depth * NODE_GRID_Y;
+                this.nodePos.put(node.id, new Point(x, y));
+            }
+            int groupWidth = Math.max(NODE_W + 20, maxCol * NODE_GRID_X + NODE_W + 20);
+            this.treeHeaders.add(new TreeGroupHeader(treeId, treeBaseX - 10, treeBaseX - 10 + groupWidth));
+            treeBaseX += groupWidth + TREE_GAP_X;
+        }
+
+        if (!this.selectedNodeId.isEmpty() && !this.nodePos.containsKey(this.selectedNodeId)) {
+            this.selectedNodeId = "";
         }
         if (this.selectedNodeId.isEmpty() && !this.nodes.isEmpty()) {
             this.selectedNodeId = this.nodes.get(0).id;
@@ -160,18 +213,24 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
             this.panY = 0;
             return;
         }
-        if (button.id == BTN_ACTION) {
+        if (button.id == BTN_RESEARCH) {
             MCH_EconomyTechNode node = getSelectedNode();
             if (node == null) {
                 return;
             }
-            if (node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK) {
-                MCH_PacketIndEconomyTechAction.send(MCH_PacketIndEconomyTechAction.ACTION_UNLOCK_RP, node.id);
-            } else if (node.type == MCH_EconomyTechNode.NodeType.SL_PURCHASE) {
-                MCH_PacketIndEconomyTechAction.send(MCH_PacketIndEconomyTechAction.ACTION_PURCHASE_SL, node.id);
-            } else {
+            if (node.type == MCH_EconomyTechNode.NodeType.GE_EXCHANGE) {
                 MCH_PacketIndEconomyTechAction.send(MCH_PacketIndEconomyTechAction.ACTION_EXCHANGE_GE, node.id);
+            } else {
+                MCH_PacketIndEconomyTechAction.send(MCH_PacketIndEconomyTechAction.ACTION_UNLOCK_RP, node.id);
             }
+            return;
+        }
+        if (button.id == BTN_PURCHASE) {
+            MCH_EconomyTechNode node = getSelectedNode();
+            if (node == null) {
+                return;
+            }
+            MCH_PacketIndEconomyTechAction.send(MCH_PacketIndEconomyTechAction.ACTION_PURCHASE_SL, node.id);
         }
     }
 
@@ -217,22 +276,78 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        this.drawDefaultBackground();
-        drawAchievementLikeTreeBackground();
-        drawDetailPanelFrame();
-        this.fontRendererObj.drawStringWithShadow("科技树 (拖拽浏览)", this.treeLeft + 6, this.treeTop + 5, 0xE0E0E0);
+        // Keep tree area transparent; only detail panel and nodes are rendered.
+        drawTierGuides();
+        String title = buildTreeTitle();
+        this.fontRendererObj.drawStringWithShadow(title, this.treeLeft + 6, this.treeTop + 5, 0xE0E0E0);
+        drawTreeHeaders();
         drawConnections();
         drawNodes(mouseX, mouseY);
-        drawDetailPanel();
+        drawDetailOverlay();
         drawNodeTooltip(mouseX, mouseY);
         updateButtons();
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
+    private void drawPageBackdropExcludingDetail() {
+        int alpha = 0x66000000;
+        int detailRight = this.detailLeft + this.detailWidth;
+        int detailBottom = this.detailTop + this.detailHeight;
+        if (this.detailTop > 0) {
+            drawRect(0, 0, this.width, this.detailTop, alpha);
+        }
+        if (this.detailLeft > 0) {
+            drawRect(0, this.detailTop, this.detailLeft, detailBottom, alpha);
+        }
+        if (detailRight < this.width) {
+            drawRect(detailRight, this.detailTop, this.width, detailBottom, alpha);
+        }
+        if (detailBottom < this.height) {
+            drawRect(0, detailBottom, this.width, this.height, alpha);
+        }
+    }
+
+    private void drawDetailOverlay() {
+        // Keep detail panel on normal GUI layer; buttons are drawn by super.drawScreen().
+        drawDetailPanelFrame();
+        drawDetailPanel();
+    }
+
+    private void drawTreeHeaders() {
+        if (this.treeHeaders.isEmpty()) {
+            return;
+        }
+        int headerTop = nodeScreenY(-22);
+        int headerBottom = headerTop + 14;
+        for (TreeGroupHeader header : this.treeHeaders) {
+            int left = nodeScreenX(header.startX);
+            int right = nodeScreenX(header.endX);
+            if (right < this.treeLeft || left > this.treeLeft + this.treeWidth) {
+                continue;
+            }
+            int drawLeft = Math.max(left, this.treeLeft + 2);
+            int drawRight = Math.min(right, this.treeLeft + this.treeWidth - 2);
+            if (drawRight - drawLeft < 22) {
+                continue;
+            }
+            if (headerTop < this.treeTop + 19 || headerBottom > this.treeTop + this.treeHeight - 2) {
+                continue;
+            }
+            drawRect(drawLeft, headerTop, drawRight, headerBottom, 0xA0202020);
+            drawRect(drawLeft, headerTop, drawRight, headerTop + 1, 0xC0B09040);
+            String label = buildTreeHeaderText(header.treeId);
+            int textW = this.fontRendererObj.getStringWidth(label);
+            int textX = drawLeft + Math.max(4, (drawRight - drawLeft - textW) / 2);
+            this.fontRendererObj.drawStringWithShadow(label, textX, headerTop + 3, 0xF0E0C0);
+        }
+    }
+
     private void drawAchievementLikeTreeBackground() {
-        drawRect(this.treeLeft - 1, this.treeTop - 1, this.treeLeft + this.treeWidth + 1, this.treeTop + this.treeHeight + 1, 0xD0000000);
-        drawRect(this.treeLeft, this.treeTop, this.treeLeft + this.treeWidth, this.treeTop + this.treeHeight, 0xCC000000);
-        drawRect(this.treeLeft, this.treeTop, this.treeLeft + this.treeWidth, this.treeTop + 18, 0xC0202020);
+        drawRect(this.treeLeft - 1, this.treeTop - 1, this.treeLeft + this.treeWidth + 1, this.treeTop + this.treeHeight + 1, 0xE0050A10);
+        drawGradientRect(this.treeLeft, this.treeTop, this.treeLeft + this.treeWidth, this.treeTop + this.treeHeight, 0xE0111D29, 0xE009131D);
+        drawRect(this.treeLeft, this.treeTop, this.treeLeft + this.treeWidth, this.treeTop + 18, 0xD01D2B38);
+        drawRect(this.treeLeft, this.treeTop + 18, this.treeLeft + this.treeWidth, this.treeTop + 19, 0x90546D82);
         this.mc.getTextureManager().bindTexture(TEX_ACHIEVEMENT_BG);
         int baseX = this.treeLeft + this.treeWidth / 2 + this.panX;
         int baseY = this.treeTop + 24 + this.panY;
@@ -243,7 +358,21 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
                 this.drawTexturedModalRect(x, y, 0, 0, 16, 16);
             }
         }
-        drawRect(this.treeLeft, this.treeTop, this.treeLeft + this.treeWidth, this.treeTop + this.treeHeight, 0x60301010);
+        drawRect(this.treeLeft, this.treeTop, this.treeLeft + this.treeWidth, this.treeTop + this.treeHeight, 0x9C0A131C);
+    }
+
+    private void drawTierGuides() {
+        int xMin = this.treeLeft + 2;
+        int xMax = this.treeLeft + this.treeWidth - 2;
+        for (int depth = 0; depth < 8; depth++) {
+            int y = nodeScreenY(depth * NODE_GRID_Y + NODE_H / 2);
+            if (y < this.treeTop + 20 || y > this.treeTop + this.treeHeight) {
+                continue;
+            }
+            drawRect(xMin, y, xMax, y + 1, 0x2A9BC3E2);
+            String tier = "T" + (depth + 1);
+            this.fontRendererObj.drawStringWithShadow(tier, this.treeLeft + 6, y - 8, 0x98D6EE);
+        }
     }
 
     private void drawDetailPanelFrame() {
@@ -274,10 +403,12 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
                 }
                 int x1 = nodeScreenX(src.x) + NODE_W / 2;
                 int y1 = nodeScreenY(src.y) + NODE_H / 2;
-                drawLine(t, x1, y1, x2, y2, 0x70505050);
+                Point start = clipToNodeEdge(x1, y1, x2, y2, 2);
+                Point end = clipToNodeEdge(x2, y2, x1, y1, 2);
+                drawLine(t, start.x, start.y, end.x, end.y, 0x50657D91);
                 if (MCH_EconomyClientData.isUnlocked(pre)) {
                     int alpha = 120 + (int) (80.0F * pulse);
-                    drawLine(t, x1, y1, x2, y2, (alpha << 24) | 0xA0FF90);
+                    drawLine(t, start.x, start.y, end.x, end.y, (alpha << 24) | 0x7FD7FF);
                 }
             }
         }
@@ -296,7 +427,6 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
 
     private void drawNodes(int mouseX, int mouseY) {
         String hoverNode = findNodeAt(mouseX, mouseY);
-        this.mc.getTextureManager().bindTexture(TEX_ACHIEVEMENT_BG);
         RenderHelper.enableGUIStandardItemLighting();
         for (MCH_EconomyTechNode node : this.nodes) {
             Point p = this.nodePos.get(node.id);
@@ -311,15 +441,26 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
             boolean unlocked = MCH_EconomyClientData.isUnlocked(node.id);
             boolean selected = node.id.equals(this.selectedNodeId);
             boolean reqOk = hasPrerequisites(node);
-            int frameU = 0;
-            if (unlocked) {
-                frameU = 52;
-            } else if (reqOk) {
-                frameU = 26;
-            }
-            this.drawTexturedModalRect(sx, sy, frameU, 202, NODE_W, NODE_H);
+            boolean premiumUnlocked = unlocked && node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK;
+            int bg = premiumUnlocked ? 0xCC4B3A15 : (unlocked ? 0xCC203A48 : (reqOk ? 0xCC253242 : 0xCC2C2626));
+            int edge = premiumUnlocked ? 0xE0E1BE62 : (unlocked ? 0xD06FC8E8 : (reqOk ? 0xC08CA8BC : 0xC0927070));
+            int edgeLow = premiumUnlocked ? 0xA07A5A1E : 0x90304050;
+            drawRect(sx, sy, sx + NODE_W, sy + NODE_H, bg);
+            drawRect(sx, sy, sx + NODE_W, sy + 1, edge);
+            drawRect(sx, sy + NODE_H - 1, sx + NODE_W, sy + NODE_H, edgeLow);
+            drawRect(sx, sy, sx + 1, sy + NODE_H, edge);
+            drawRect(sx + NODE_W - 1, sy, sx + NODE_W, sy + NODE_H, edgeLow);
+
+            int iconBoxX = sx + 3;
+            int iconBoxY = sy + 7;
+            drawRect(iconBoxX, iconBoxY, iconBoxX + 18, iconBoxY + 18, 0xB0141E2A);
+            drawRect(iconBoxX, iconBoxY, iconBoxX + 18, iconBoxY + 1, 0x90597896);
+            drawRect(iconBoxX, iconBoxY + 17, iconBoxX + 18, iconBoxY + 18, 0x70242F3C);
+            drawRect(iconBoxX, iconBoxY, iconBoxX + 1, iconBoxY + 18, 0x90597896);
+            drawRect(iconBoxX + 17, iconBoxY, iconBoxX + 18, iconBoxY + 18, 0x70242F3C);
+
             if (selected || node.id.equals(hoverNode)) {
-                int border = selected ? 0xE0F0D070 : 0x90D0D0D0;
+                int border = selected ? 0xE0F6D47C : 0xA0CFE4F0;
                 drawRect(sx - 1, sy - 1, sx + NODE_W + 1, sy, border);
                 drawRect(sx - 1, sy + NODE_H, sx + NODE_W + 1, sy + NODE_H + 1, border);
                 drawRect(sx - 1, sy, sx, sy + NODE_H, border);
@@ -327,10 +468,33 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
             }
             ItemStack icon = resolveNodeIcon(node);
             if (icon != null) {
-                this.itemRenderer.renderItemAndEffectIntoGUI(this.fontRendererObj, this.mc.getTextureManager(), icon, sx + 5, sy + 5);
-                this.itemRenderer.renderItemOverlayIntoGUI(this.fontRendererObj, this.mc.getTextureManager(), icon, sx + 5, sy + 5);
+                this.itemRenderer.renderItemAndEffectIntoGUI(this.fontRendererObj, this.mc.getTextureManager(), icon, sx + 4, sy + 8);
             }
-            this.fontRendererObj.drawStringWithShadow(trimNodeName(node), sx + NODE_W + 4, sy + 9, unlocked ? 0xC0FFC0 : 0xE6E6E6);
+            String title = fitText(resolveNodeTitle(node), NODE_W - 30);
+            this.fontRendererObj.drawStringWithShadow(title, sx + 24, sy + 4, unlocked ? 0xD2EEFF : 0xDCE4EA);
+            boolean geUnlockNode = node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK;
+            int primaryCost = geUnlockNode ? node.costGE : node.costRP;
+            int sl = slCostForPurchase(node);
+            int costY = sy + 16;
+            int primaryIconX = sx + 24;
+            drawCurrencyIcon(primaryIconX, costY - 1, geUnlockNode ? TEX_ICON_GE : TEX_ICON_RP, geUnlockNode ? new ItemStack(Items.emerald) : new ItemStack(Items.enchanted_book));
+            int primaryTextX = primaryIconX + 12;
+            this.fontRendererObj.drawString(String.valueOf(primaryCost), primaryTextX, costY + 1, geUnlockNode ? 0xFFD9A0 : 0xAFCFFF);
+            int slIconX = primaryTextX + this.fontRendererObj.getStringWidth(String.valueOf(primaryCost)) + 8;
+            drawCurrencyIcon(slIconX, costY - 1, TEX_ICON_SL, new ItemStack(Items.gold_ingot));
+            int slTextX = slIconX + 12;
+            this.fontRendererObj.drawString(String.valueOf(sl), slTextX, costY + 1, 0xE6C27B);
+
+            String badge = unlocked ? "已研" : (reqOk ? (node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK ? "未购买" : "可研") : "锁定");
+            int badgeBg = premiumUnlocked ? 0xC0A77A1C : (unlocked ? 0xC03C7A55 : (reqOk ? 0xC07A5E2F : 0xC05C2E2E));
+            int badgeFg = premiumUnlocked ? 0xFFF7D2 : (unlocked ? 0xD5FFE6 : (reqOk ? 0xFFF0D2 : 0xFFE0D8));
+            int badgeEdge = premiumUnlocked ? 0xA0F2DB96 : 0x70FFFFFF;
+            int badgeW = this.fontRendererObj.getStringWidth(badge) + 8;
+            int badgeX = sx + NODE_W - badgeW - 3;
+            int badgeY = sy + 2;
+            drawRect(badgeX, badgeY, badgeX + badgeW, badgeY + 10, badgeBg);
+            drawRect(badgeX, badgeY, badgeX + badgeW, badgeY + 1, badgeEdge);
+            this.fontRendererObj.drawString(badge, badgeX + 4, badgeY + 2, badgeFg);
         }
         RenderHelper.disableStandardItemLighting();
     }
@@ -357,8 +521,20 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         y += 11;
         this.fontRendererObj.drawString("类型: " + typeLabel(node.type), x, y, 0xB8B8B8);
         y += 11;
-        this.fontRendererObj.drawString("花费: SL " + node.costSL + " / GE " + node.costGE + " / RP " + node.costRP, x, y, 0xE0B080);
+        if (node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK) {
+            this.fontRendererObj.drawString("购买高级载具: GE " + node.costGE, x, y, 0xE8C67A);
+        } else {
+            this.fontRendererObj.drawString("研发: RP " + node.costRP, x, y, 0xE0B080);
+        }
         y += 11;
+        if (node.purchaseCostSL > 0 || node.type == MCH_EconomyTechNode.NodeType.SL_PURCHASE) {
+            this.fontRendererObj.drawString("购买: SL " + slCostForPurchase(node), x, y, 0xE0B080);
+            y += 11;
+        }
+        if (node.type == MCH_EconomyTechNode.NodeType.GE_EXCHANGE) {
+            this.fontRendererObj.drawString("兑换消耗: GE " + node.costGE, x, y, 0xE0B080);
+            y += 11;
+        }
         if (node.grantSL > 0 || node.grantGE > 0 || node.grantRP > 0) {
             this.fontRendererObj.drawString("兑换: SL " + node.grantSL + " / GE " + node.grantGE + " / RP " + node.grantRP, x, y, 0x80D0A0);
             y += 11;
@@ -428,7 +604,7 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         List<String> lines = new ArrayList<String>();
         lines.add(trimNodeName(node));
         lines.add(typeLabel(node.type));
-        lines.add("花费 SL " + node.costSL + " / GE " + node.costGE + " / RP " + node.costRP);
+        lines.add("研发 RP " + node.costRP + " / 购买 SL " + slCostForPurchase(node) + " / 兑换 GE " + node.costGE);
         if (!node.prerequisites.isEmpty()) {
             lines.add("前置: " + prerequisiteText(node));
         }
@@ -458,18 +634,84 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
     }
 
     private void updateButtons() {
-        GuiButton action = getButton(BTN_ACTION);
-        if (action == null) {
+        GuiButton research = getButton(BTN_RESEARCH);
+        GuiButton purchase = getButton(BTN_PURCHASE);
+        if (research == null || purchase == null) {
             return;
         }
         MCH_EconomyTechNode node = getSelectedNode();
         if (node == null) {
-            action.enabled = false;
-            action.displayString = "执行操作";
+            research.visible = true;
+            purchase.visible = true;
+            research.enabled = false;
+            purchase.enabled = false;
+            research.displayString = "RP研发";
+            purchase.displayString = "SL购买";
             return;
         }
-        action.displayString = actionText(node);
-        action.enabled = canDoAction(node);
+        if (node.type == MCH_EconomyTechNode.NodeType.GE_EXCHANGE) {
+            research.visible = true;
+            purchase.visible = true;
+            research.displayString = "GE兑换";
+            research.enabled = canExchange(node);
+            purchase.displayString = "SL购买";
+            purchase.enabled = false;
+            return;
+        }
+        research.displayString = node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK ? "购买高级载具" : "RP研发";
+        purchase.displayString = "SL购买";
+        research.visible = true;
+        purchase.visible = true;
+        research.enabled = canUnlock(node);
+        purchase.enabled = canPurchase(node);
+    }
+
+    private boolean canUnlock(MCH_EconomyTechNode node) {
+        if (node == null) {
+            return false;
+        }
+        boolean rpUnlock = node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK;
+        boolean geUnlock = node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK;
+        if (!rpUnlock && !geUnlock) {
+            return false;
+        }
+        if (!hasPrerequisites(node)) {
+            return false;
+        }
+        if (MCH_EconomyClientData.isUnlocked(node.id)) {
+            return false;
+        }
+        if (geUnlock) {
+            return MCH_EconomyClientData.getGE() >= node.costGE;
+        }
+        return MCH_EconomyClientData.getRP() >= node.costRP;
+    }
+
+    private boolean canPurchase(MCH_EconomyTechNode node) {
+        if (node == null) {
+            return false;
+        }
+        if (!hasPrerequisites(node)) {
+            return false;
+        }
+        boolean purchaseType = node.type == MCH_EconomyTechNode.NodeType.SL_PURCHASE;
+        boolean unlockedThenPurchase = (node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK || node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK)
+            && node.purchaseCostSL > 0
+            && MCH_EconomyClientData.isUnlocked(node.id);
+        if (!purchaseType && !unlockedThenPurchase) {
+            return false;
+        }
+        return MCH_EconomyClientData.getSL() >= slCostForPurchase(node);
+    }
+
+    private boolean canExchange(MCH_EconomyTechNode node) {
+        if (node == null || node.type != MCH_EconomyTechNode.NodeType.GE_EXCHANGE) {
+            return false;
+        }
+        if (!hasPrerequisites(node)) {
+            return false;
+        }
+        return MCH_EconomyClientData.getGE() >= node.costGE;
     }
 
     private boolean canDoAction(MCH_EconomyTechNode node) {
@@ -479,29 +721,65 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         if (!hasPrerequisites(node)) {
             return false;
         }
-        if (node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK && MCH_EconomyClientData.isUnlocked(node.id)) {
+        byte action = resolveAction(node);
+        if (action == MCH_PacketIndEconomyTechAction.ACTION_UNLOCK_RP && MCH_EconomyClientData.isUnlocked(node.id)) {
             return false;
         }
-        if (MCH_EconomyClientData.getSL() < node.costSL) {
+        if (action == MCH_PacketIndEconomyTechAction.ACTION_PURCHASE_SL
+            && (node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK || node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK)
+            && !MCH_EconomyClientData.isUnlocked(node.id)) {
             return false;
         }
-        if (MCH_EconomyClientData.getGE() < node.costGE) {
+        int needSL = action == MCH_PacketIndEconomyTechAction.ACTION_PURCHASE_SL ? slCostForPurchase(node) : 0;
+        int needGE = action == MCH_PacketIndEconomyTechAction.ACTION_EXCHANGE_GE ? node.costGE : 0;
+        int needRP = action == MCH_PacketIndEconomyTechAction.ACTION_UNLOCK_RP ? node.costRP : 0;
+        if (MCH_EconomyClientData.getSL() < needSL) {
             return false;
         }
-        if (MCH_EconomyClientData.getRP() < node.costRP) {
+        if (MCH_EconomyClientData.getGE() < needGE) {
+            return false;
+        }
+        if (MCH_EconomyClientData.getRP() < needRP) {
             return false;
         }
         return true;
     }
 
     private String actionText(MCH_EconomyTechNode node) {
-        if (node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK) {
-            return MCH_EconomyClientData.isUnlocked(node.id) ? "已解锁" : "RP 解锁";
+        byte action = resolveAction(node);
+        if (action == MCH_PacketIndEconomyTechAction.ACTION_UNLOCK_RP) {
+            return node != null && node.type == MCH_EconomyTechNode.NodeType.GE_UNLOCK ? "GE 购买高级载具" : "RP 研发";
         }
-        if (node.type == MCH_EconomyTechNode.NodeType.SL_PURCHASE) {
+        if (action == MCH_PacketIndEconomyTechAction.ACTION_PURCHASE_SL) {
             return "SL 购买";
         }
         return "GE 兑换";
+    }
+
+    private byte resolveAction(MCH_EconomyTechNode node) {
+        if (node == null) {
+            return MCH_PacketIndEconomyTechAction.ACTION_UNLOCK_RP;
+        }
+        if (node.type == MCH_EconomyTechNode.NodeType.GE_EXCHANGE) {
+            return MCH_PacketIndEconomyTechAction.ACTION_EXCHANGE_GE;
+        }
+        if (node.type == MCH_EconomyTechNode.NodeType.SL_PURCHASE) {
+            return MCH_PacketIndEconomyTechAction.ACTION_PURCHASE_SL;
+        }
+        if (MCH_EconomyClientData.isUnlocked(node.id) && node.purchaseCostSL > 0) {
+            return MCH_PacketIndEconomyTechAction.ACTION_PURCHASE_SL;
+        }
+        return MCH_PacketIndEconomyTechAction.ACTION_UNLOCK_RP;
+    }
+
+    private int slCostForPurchase(MCH_EconomyTechNode node) {
+        if (node == null) {
+            return 0;
+        }
+        if (node.type == MCH_EconomyTechNode.NodeType.SL_PURCHASE) {
+            return node.costSL;
+        }
+        return node.purchaseCostSL;
     }
 
     private boolean hasPrerequisites(MCH_EconomyTechNode node) {
@@ -584,16 +862,65 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
     }
 
     private String trimNodeName(MCH_EconomyTechNode node) {
-        return trimNodeName(node == null ? "" : node.id);
+        return node == null ? "" : resolveNodeTitle(node);
     }
 
     private String trimNodeName(String nodeId) {
         if (nodeId == null || nodeId.isEmpty()) {
             return "";
         }
-        int i = nodeId.lastIndexOf('.');
-        String name = i >= 0 && i < nodeId.length() - 1 ? nodeId.substring(i + 1) : nodeId;
-        return name.length() > 18 ? name.substring(0, 18) : name;
+        MCH_EconomyTechNode node = MCH_EconomyTechRegistry.getNode(nodeId);
+        if (node != null) {
+            return resolveNodeTitle(node);
+        }
+        return idFallbackName(nodeId);
+    }
+
+    private String resolveNodeTitle(MCH_EconomyTechNode node) {
+        if (node == null) {
+            return "";
+        }
+        String cached = this.nodeTitleCache.get(node.id);
+        if (cached != null && !cached.isEmpty()) {
+            return cached;
+        }
+        String title = "";
+        if (node.npcItemName != null && !node.npcItemName.isEmpty()) {
+            title = MCH_EconomyVehicleResolver.getVehicleDisplayName(node.npcItemName, resolveLanguageCode());
+        }
+        if (title == null || title.trim().isEmpty()) {
+            title = idFallbackName(node.id);
+        }
+        title = title.trim();
+        this.nodeTitleCache.put(node.id, title);
+        return title;
+    }
+
+    private String idFallbackName(String nodeId) {
+        String raw = nodeId == null ? "" : nodeId;
+        if (raw.startsWith("node_")) {
+            raw = raw.substring(5);
+        } else if (raw.startsWith("node.")) {
+            raw = raw.substring(5);
+        }
+        int i = raw.lastIndexOf('.');
+        String name = i >= 0 && i < raw.length() - 1 ? raw.substring(i + 1) : raw;
+        return name.length() > 24 ? name.substring(0, 24) : name;
+    }
+
+    private String fitText(String text, int maxWidth) {
+        if (text == null) {
+            return "";
+        }
+        if (this.fontRendererObj.getStringWidth(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int cut = text.length();
+        while (cut > 1 && this.fontRendererObj.getStringWidth(text.substring(0, cut) + ellipsis) > maxWidth) {
+            cut--;
+        }
+        return text.substring(0, Math.max(1, cut)) + ellipsis;
     }
 
     private ItemStack resolveNodeIcon(MCH_EconomyTechNode node) {
@@ -605,11 +932,14 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
             return cached;
         }
         ItemStack stack = null;
-        if (node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK) {
+        if (node.npcItemName != null && !node.npcItemName.isEmpty()) {
+            stack = MCH_EconomyVehicleResolver.createVehicleStack(node.npcItemName);
+        }
+        if (stack == null && node.type == MCH_EconomyTechNode.NodeType.RP_UNLOCK) {
             stack = new ItemStack(Items.enchanted_book);
-        } else if (node.type == MCH_EconomyTechNode.NodeType.GE_EXCHANGE) {
+        } else if (stack == null && node.type == MCH_EconomyTechNode.NodeType.GE_EXCHANGE) {
             stack = new ItemStack(Items.emerald);
-        } else if (node.npcItemName != null && !node.npcItemName.isEmpty()) {
+        } else if (stack == null && node.npcItemName != null && !node.npcItemName.isEmpty()) {
             Object obj = Item.itemRegistry.getObject(node.npcItemName);
             if (!(obj instanceof Item)) {
                 obj = Item.itemRegistry.getObject("mcheli:" + node.npcItemName);
@@ -625,6 +955,53 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         return stack;
     }
 
+    private String buildTreeTitle() {
+        Set<String> allowedTreeIds = MCH_EconomyClientData.getAllowedTechTreeIds();
+        if (!allowedTreeIds.isEmpty()) {
+            if (allowedTreeIds.size() == 1) {
+                return "科技树[" + allowedTreeIds.iterator().next() + "] (拖拽浏览)";
+            }
+            return "科技树[多树:" + allowedTreeIds.size() + "] (拖拽浏览)";
+        }
+        String activeTreeId = MCH_EconomyClientData.getActiveTechTreeId();
+        return activeTreeId.isEmpty() ? "科技树 (拖拽浏览)" : ("科技树[" + activeTreeId + "] (拖拽浏览)");
+    }
+
+    private String buildTreeHeaderText(String treeId) {
+        String id = MCH_EconomyTechRegistry.normalizeId(treeId);
+        if (id.isEmpty()) {
+            return "基础树";
+        }
+        return MCH_EconomyTechRegistry.getTreeDisplayName(id, resolveLanguageCode());
+    }
+
+    private String resolveLanguageCode() {
+        if (this.mc == null || this.mc.gameSettings == null || this.mc.gameSettings.language == null) {
+            return "";
+        }
+        return this.mc.gameSettings.language;
+    }
+
+    private Point clipToNodeEdge(int fromX, int fromY, int toX, int toY, int inset) {
+        double dx = toX - fromX;
+        double dy = toY - fromY;
+        if (dx == 0.0D && dy == 0.0D) {
+            return new Point(fromX, fromY);
+        }
+        double halfW = (NODE_W / 2.0D) - inset;
+        double halfH = (NODE_H / 2.0D) - inset;
+        if (halfW < 1.0D) {
+            halfW = 1.0D;
+        }
+        if (halfH < 1.0D) {
+            halfH = 1.0D;
+        }
+        double scale = 1.0D / Math.max(Math.abs(dx) / halfW, Math.abs(dy) / halfH);
+        int x = (int) Math.round(fromX + dx * scale);
+        int y = (int) Math.round(fromY + dy * scale);
+        return new Point(x, y);
+    }
+
     @Override
     public boolean doesGuiPauseGame() {
         return false;
@@ -637,6 +1014,18 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         Point(int x, int y) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    private static final class TreeGroupHeader {
+        final String treeId;
+        final int startX;
+        final int endX;
+
+        TreeGroupHeader(String treeId, int startX, int endX) {
+            this.treeId = treeId;
+            this.startX = startX;
+            this.endX = endX;
         }
     }
 }

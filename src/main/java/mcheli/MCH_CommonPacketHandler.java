@@ -66,6 +66,11 @@ public class MCH_CommonPacketHandler {
                     ac.openInventory(player);
                 }
             } else {
+                if (pkt.guiID == 6) {
+                    if (MCH_MOD.config == null || !MCH_Config.EnableTechTreeGameplay.prmBool) {
+                        return;
+                    }
+                }
                 MCH_Lib.DbgTrace(player.worldObj, "event=server_open_gui guiId=%d player=%s", pkt.guiID, player.getCommandSenderName());
                 player.openGui(MCH_MOD.instance, pkt.guiID, player.worldObj, (int) player.posX, (int) player.posY, (int) player.posZ);
             }
