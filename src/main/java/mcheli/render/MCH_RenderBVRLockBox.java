@@ -4,11 +4,15 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.MCH_RadarDebug;
+import mcheli.MCH_RWRThreatEvent;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.helicopter.MCH_EntityHeli;
+import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
+import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponInfoManager;
@@ -136,6 +140,10 @@ public class MCH_RenderBVRLockBox {
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
         MCH_AircraftInfo acInfo = ac.getAcInfo();
         if (wi == null || acInfo == null || !acInfo.enableBVR) return;
+        if (!acInfo.enableRadar || !ac.isRadarEnabledRuntime()) return;
+        if (wi.antiRadiationMissile) {
+            renderArmNarrowBandBoxes(mc, player, ac, event.partialTicks);
+        }
         RenderManager rm = RenderManager.instance;
         final double camX = rm.viewerPosX;
         final double camY = rm.viewerPosY;
@@ -285,13 +293,14 @@ public class MCH_RenderBVRLockBox {
             double hudBlend = getHudBlendFactor(dist);
             float worldAlpha = (float)(alpha * (1.0D - hudBlend));
             float hudAlpha = (float)(alpha * hudBlend);
+            int markerColor = highlight ? 0xFF0000 : 0x00FF00;
             if (worldAlpha > 0.01F) {
-                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, isMSL, highlight, showDataLinkRings, stateText, text, color, drawText, worldAlpha);
+                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, color, drawText, worldAlpha);
             }
             if (hudAlpha > 0.01F) {
                 HudProjection projection = projectRelativeToHud((float)gx, (float)(gy + 0.2D), (float)gz, sc, mc, partialTicks);
                 if (projection != null) {
-                    drawHudMarker(mc, projection, isMSL, highlight, showDataLinkRings, stateText, text, color, drawText, hudAlpha);
+                    drawHudMarker(mc, projection, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, color, drawText, hudAlpha);
                 }
             }
         }
@@ -310,8 +319,100 @@ public class MCH_RenderBVRLockBox {
         }
     }
 
+    private void renderArmNarrowBandBoxes(Minecraft mc, EntityPlayer player, MCH_EntityAircraft ac, float partialTicks) {
+        ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        RenderManager rm = RenderManager.instance;
+        float rollDeg = getViewRollDeg(mc, ac, partialTicks);
+        double fovRad = Math.toRadians(mc.gameSettings.fovSetting);
+        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+        MCH_WeaponInfo wi = ws != null ? ws.getInfo() : null;
+        if (wi == null) {
+            return;
+        }
+        boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
+        List<MCH_RenderRWR.ArmBvrDisplayContact> contacts = MCH_RenderRWR.getArmBvrDisplayContacts(ac, player);
+        for (MCH_RenderRWR.ArmBvrDisplayContact contact : contacts) {
+            Entity targetEntity = mc.theWorld != null ? mc.theWorld.getEntityByID(contact.emitterId) : null;
+            if (!(targetEntity instanceof MCH_EntityAircraft) || targetEntity.isDead) {
+                continue;
+            }
+            if (!isArmContactAllowedByWeaponType(mc, ac, player, contact.emitterId)) {
+                continue;
+            }
+            double gx = interpolate(targetEntity.posX, targetEntity.lastTickPosX, partialTicks);
+            double gy = interpolate(targetEntity.posY, targetEntity.lastTickPosY, partialTicks) + 1.0D;
+            double gz = interpolate(targetEntity.posZ, targetEntity.lastTickPosZ, partialTicks);
+            double x = gx - rm.viewerPosX;
+            double y = gy - rm.viewerPosY;
+            double z = gz - rm.viewerPosZ;
+            double dist = Math.sqrt(targetEntity.getDistanceSqToEntity(ac));
+            double angle = calculateAngle(wi.enableHMS ? player : ac, gx, gy, gz);
+            float alpha = 0.4F;
+            if (angle <= 90.0D) {
+                alpha = 1.0F;
+            } else if (angle <= 100.0D) {
+                alpha = 1.0F;
+            } else if (angle <= 110.0D) {
+                alpha = 0.8F;
+            } else if (angle <= 120.0D) {
+                alpha = 0.6F;
+            }
+            if (alpha <= 0.01F) {
+                continue;
+            }
+            double vdist = Math.sqrt(x * x + y * y + z * z);
+            if (vdist < 1e-4) {
+                continue;
+            }
+            float sPerPixel = (float) ((2.0 * vdist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
+            String stateText = armNarrowBandMode ? (contact.tracking ? "LOCK" : (contact.selected ? "SELECT" : null)) : null;
+            String text = String.format("[%s %.1fm]", contact.name == null ? "UNKNOWN" : contact.name, dist);
+            int textColor = contact.color;
+            int markerColor = contact.color;
+            boolean highlight = (armNarrowBandMode && (contact.tracking || contact.selected))
+                || contact.threatMode == MCH_RWRThreatEvent.MODE_STT;
+            boolean showArmLockRings = armNarrowBandMode && contact.tracking;
+            double hudBlend = getHudBlendFactor(dist);
+            float worldAlpha = (float)(alpha * (1.0D - hudBlend));
+            float hudAlpha = (float)(alpha * hudBlend);
+            if (worldAlpha > 0.01F) {
+                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, false, markerColor, highlight, showArmLockRings, stateText, text, textColor, true, worldAlpha);
+            }
+            if (hudAlpha > 0.01F) {
+                HudProjection projection = projectRelativeToHud((float)gx, (float)(gy + 0.2D), (float)gz, sc, mc, partialTicks);
+                if (projection != null) {
+                    drawHudMarker(mc, projection, false, markerColor, highlight, showArmLockRings, stateText, text, textColor, true, hudAlpha);
+                }
+            }
+        }
+    }
+
+    private boolean isArmContactAllowedByWeaponType(Minecraft mc, MCH_EntityAircraft ac, EntityPlayer player, int emitterId) {
+        if (mc == null || ac == null || player == null || mc.theWorld == null) {
+            return false;
+        }
+        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+        MCH_WeaponInfo wi = ws != null ? ws.getInfo() : null;
+        if (wi == null || !wi.antiRadiationMissile) {
+            return false;
+        }
+        Entity target = mc.theWorld.getEntityByID(emitterId);
+        if (!(target instanceof MCH_EntityAircraft)) {
+            return false;
+        }
+        MCH_EntityAircraft targetAc = (MCH_EntityAircraft) target;
+        String type = wi.type != null ? wi.type.toLowerCase() : "";
+        if ("aamissile".equals(type)) {
+            return targetAc instanceof MCP_EntityPlane || targetAc instanceof MCH_EntityHeli;
+        }
+        if ("atmissile".equals(type)) {
+            return targetAc instanceof MCH_EntityTank || targetAc instanceof MCH_EntityVehicle;
+        }
+        return true;
+    }
+
     private void drawBillboardMarker(Minecraft mc, RenderManager rm, float rollDeg, double x, double y, double z, float sPerPixel,
-                                     boolean isMSL, boolean highlight, boolean showDataLinkRings, String stateText,
+                                     boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings, String stateText,
                                      String text, int textColor, boolean drawText, float alpha) {
         GL11.glPushMatrix();
         GL11.glTranslated(x, y, z);
@@ -319,11 +420,11 @@ public class MCH_RenderBVRLockBox {
         GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
         GL11.glRotatef(-rollDeg, 0.0F, 0.0F, 1.0F);
         GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
-        drawMarkerCore(mc, isMSL, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
+        drawMarkerCore(mc, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
         GL11.glPopMatrix();
     }
 
-    private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, boolean highlight, boolean showDataLinkRings,
+    private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings,
                                String stateText, String text, int textColor, boolean drawText, float alpha) {
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
@@ -333,25 +434,24 @@ public class MCH_RenderBVRLockBox {
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
         GL11.glTranslated(projection.x, projection.y, 0.0D);
-        drawMarkerCore(mc, isMSL, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
+        drawMarkerCore(mc, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
     }
 
-    private void drawMarkerCore(Minecraft mc, boolean isMSL, boolean highlight, boolean showDataLinkRings, String stateText,
+    private void drawMarkerCore(Minecraft mc, boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings, String stateText,
                                 String text, int textColor, boolean drawText, float alpha) {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glDisable(GL11.GL_LIGHTING);
-        if (highlight) {
-            GL11.glColor4f(1.0F, 0F, 0F, alpha);
-        } else {
-            GL11.glColor4f(0F, 1.0F, 0F, alpha);
-        }
+        float mr = ((markerColor >> 16) & 0xFF) / 255.0F;
+        float mg = ((markerColor >> 8) & 0xFF) / 255.0F;
+        float mb = (markerColor & 0xFF) / 255.0F;
+        GL11.glColor4f(mr, mg, mb, alpha);
         mc.getTextureManager().bindTexture(isMSL ? MSL : FRAME);
         Tessellator tess = Tessellator.instance;
         float half = BOX_SIZE * 0.5f;

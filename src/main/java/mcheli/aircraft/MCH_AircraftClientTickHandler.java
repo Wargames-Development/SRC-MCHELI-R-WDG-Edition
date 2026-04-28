@@ -3,6 +3,7 @@ package mcheli.aircraft;
 import mcheli.*;
 import mcheli.gui.MCH_GuiGPSInput;
 import mcheli.network.packets.PacketAirburstDistReset;
+import mcheli.network.packets.PacketRadarSwitchState;
 import mcheli.network.packets.PacketUseWeapon;
 import mcheli.render.MCH_RenderLeadCircle;
 import mcheli.render.MCH_RenderRWR;
@@ -57,6 +58,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
     public MCH_Key KeyAirburstDistReset;
     public MCH_Key KeyOpenGPSPanel;
     public MCH_Key KeyFireControlLock;
+    public MCH_Key KeyRadarSwitch;
     protected boolean isRiding = false;
     protected boolean isBeforeRiding = false;
 
@@ -93,6 +95,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         this.KeyAirburstDistReset = new MCH_Key(MCH_Config.KeyAirburstDistReset.prmInt);
         this.KeyOpenGPSPanel = new MCH_Key(MCH_Config.KeyOpenGPSPanel.prmInt);
         this.KeyFireControlLock = new MCH_Key(MCH_Config.KeyFireControlLock.prmInt);
+        this.KeyRadarSwitch = new MCH_Key(MCH_Config.KeyRadarSwitch.prmInt);
     }
 
     protected void commonPlayerControlInGUI(EntityPlayer player, MCH_EntityAircraft ac, boolean isPilot, MCH_PacketPlayerControlBase pc) {
@@ -271,8 +274,21 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         }
         if (!ac.isDestroyed() && !ac.isPilotReloading()) {
             if (ac.getSeatIdByEntity(player) <= 1) {
+                if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar && this.KeyRadarSwitch.isKeyDown()) {
+                    boolean newRadarEnabled = !ac.isRadarEnabledRuntime();
+                    ac.setRadarEnabledRuntime(newRadarEnabled, true);
+                    MCH_RenderRWR.handleRadarPowerStateChanged(ac, newRadarEnabled);
+                    MCH_MOD.getPacketHandler().sendToServer(new PacketRadarSwitchState(ac.getEntityId(), newRadarEnabled));
+                    playSoundOK();
+                }
+                boolean armCurrentWeapon = MCH_RenderRWR.isArmCurrentWeapon(ac, player);
+                boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
                 int fireControlToggle;
-                if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar) {
+                if (armNarrowBandMode) {
+                    fireControlToggle = MCH_RenderRWR.handleArmSelectKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                } else if (armCurrentWeapon) {
+                    fireControlToggle = 0;
+                } else if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar && ac.isRadarEnabledRuntime()) {
                     fireControlToggle = MCH_RenderRWR.handleRadarSelectKey(this.KeyFireControlLock.isKeyDown(), player, ac);
                 } else {
                     fireControlToggle = MCH_RenderLeadCircle.handleFireControlLockKey(this.KeyFireControlLock.isKeyDown(), player, ac);
@@ -288,13 +304,29 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
 
             boolean lockKeyPress = this.KeyCurrentWeaponLock.isKeyPress();
-            if (lockKeyPress) {
-                ac.currentWeaponLock(player);
-                send = true;
-            } else {
+            boolean armCurrentWeapon = MCH_RenderRWR.isArmCurrentWeapon(ac, player);
+            boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
+            if (armCurrentWeapon) {
+                // ARM窄频使用RWR目标层锁定，不走常规武器锁定与雷达STT上报
                 ac.currentWeaponUnlock(player);
+                MCH_RenderRWR.clearRadarTrackForArmMode(ac);
+                if (armNarrowBandMode) {
+                    int armTrackToggle = MCH_RenderRWR.handleArmTrackToggleKey(lockKeyPress, player, ac);
+                    if (armTrackToggle == 1 || armTrackToggle == -1) {
+                        playSoundOK();
+                    } else if (armTrackToggle == 2) {
+                        playSoundNG();
+                    }
+                }
+            } else {
+                if (lockKeyPress) {
+                    ac.currentWeaponLock(player);
+                    send = true;
+                } else {
+                    ac.currentWeaponUnlock(player);
+                }
             }
-            boolean radarEnabled = ac.getAcInfo() != null && ac.getAcInfo().enableRadar;
+            boolean radarEnabled = ac.getAcInfo() != null && ac.getAcInfo().enableRadar && ac.isRadarEnabledRuntime();
             if (radarEnabled) {
                 int acmToggle = MCH_RenderRWR.handleRadarAcmToggleKey(MCH_Key.isKeyDown(-98), player, ac);
                 if (acmToggle == 1 || acmToggle == -1) {
@@ -305,7 +337,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 boolean weaponNeedsRightLock = shouldKeepWeaponRightLock(ac, player);
                 boolean hasRadarTracking = MCH_RenderRWR.getRadarTrackingTargetId(ac) > 0;
                 boolean allowRadarToggle = !weaponNeedsRightLock || !hasRadarTracking;
-                if (allowRadarToggle) {
+                if (allowRadarToggle && !armCurrentWeapon) {
                     int trackToggle = MCH_RenderRWR.handleRadarTrackToggleKey(lockKeyPress, player, ac);
                     if (trackToggle == 1 || trackToggle == -1) {
                         playSoundOK();

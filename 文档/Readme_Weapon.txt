@@ -749,6 +749,35 @@ cameraFollowStrength = 0.3
 AntiRadiationMissile = false
 ;是否为反辐射导弹，其前置条件为当前导弹必须为主动雷达制导导弹。在主动雷达制导导弹的基础上筛选EnableRWR=true的目标（MCHR目前的RWR系统和雷达系统基本是一体的)
 
+ArmEmitterLostGraceTick = 10
+;ARM在辐射源短暂丢失后的宽限时间（tick）
+;导弹在该时间内继续按HOMING状态处理，超过后进入MEMORY
+;取值范围：0~10000，默认10
+
+ArmMemoryTimeTick = 100
+;ARM进入MEMORY后的记忆导引时长（tick）
+;记忆时长耗尽后进入LOST状态并失去有效引导
+;取值范围：0~10000，默认100
+
+ArmCruiseEnable = false
+;ARM巡航弹道开关，true启用“先巡航后终端”导引
+;仅在AntiRadiationMissile=true时生效
+
+ArmCruiseStartDistance = 150
+;ARM启用巡航段的最小距离（米）
+;目标距离小于该值时直接进入终端导引
+;默认150
+
+ArmCruiseTerminalRadius = 50
+;ARM终端段判定圆柱半径（米）
+;导弹进入该半径后切换终端导引
+;默认50
+
+ArmCruiseTerminalHeight = 1024
+;ARM终端段判定圆柱高度（米）
+;用于限制终端导引空间范围
+;默认1024
+
 
 semiActiveRadar = false
 ;是否为半主动雷达弹，其前置条件为当前导弹必须为主动雷达制导导弹。在主动雷达制导导弹的基础上，筛选机头指向一定范围的目标追踪

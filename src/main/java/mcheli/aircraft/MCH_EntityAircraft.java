@@ -84,6 +84,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private static final int CMN_ID_CNTRL_UP = 9;
     private static final int CMN_ID_CNTRL_DOWN = 10;
     private static final int CMN_ID_CNTRL_BRAKE = 11;
+    private static final int CMN_ID_GUNNER_STATUS = 12;
+    private static final int CMN_ID_RADAR_ENABLED = 13;
 
     private static final MCH_EntitySeat[] seatsDummy = new MCH_EntitySeat[0];
     public final MCH_MissileDetector missileDetector;
@@ -239,7 +241,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public MCH_EntityAircraft(World world) {
         super(world);
         this.setAcInfo(null);
-        this.commonStatus = 0;
+        this.commonStatus = 1 << CMN_ID_RADAR_ENABLED;
         super.dropContentsWhenDead = false;
         super.ignoreFrustumCheck = true;
         this.flareDv = new MCH_Flare(world, this);
@@ -410,6 +412,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.setCommonStatus(3, MCH_Config.InfinityAmmo.prmBool);
             this.setCommonStatus(4, MCH_Config.InfinityFuel.prmBool);
             setGunnerStatus(true);
+            this.setRadarEnabledRuntime(true);
         }
 
         this.getEntityData().setString("EntityType", this.getEntityType());
@@ -2382,7 +2385,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             for (int i = 0; i < this.turretRotPartRotation.length; ++i) {
                 this.prevTurretRotPartRotation[i] = this.turretRotPartRotation[i];
                 MCH_AircraftInfo.TurretRotPart trp = (MCH_AircraftInfo.TurretRotPart) this.getAcInfo().partTurretRotPart.get(i);
-                if (!this.isDestroyed() && (trp.rotAlways || this.getCurrentThrottle() > 0.01D || this.getRiddenByEntity() != null)) {
+                if (!this.isDestroyed() && this.isRadarEnabledRuntime() && (trp.rotAlways || this.getCurrentThrottle() > 0.01D || this.getRiddenByEntity() != null)) {
                     float rotSpeed = 360.0F / (this.getAcInfo().radarScanTick > 0 ? this.getAcInfo().radarScanTick : 40);
                     this.turretRotPartRotation[i] += rotSpeed;
                     if (this.turretRotPartRotation[i] >= 360.0F) {
@@ -3157,7 +3160,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void updateRadar(int radarSpeed) {
-        if (this.isEntityRadarMounted()) {
+        if (this.isEntityRadarMounted() && this.isRadarEnabledRuntime()) {
             this.radarRotate += radarSpeed;
             if (this.radarRotate >= 360) {
                 this.radarRotate = 0;
@@ -6618,12 +6621,24 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean getGunnerStatus() {
-        return getCommonStatus(12);
+        return getCommonStatus(CMN_ID_GUNNER_STATUS);
     }
 
     public void setGunnerStatus(boolean b) {
         if (!this.worldObj.isRemote)
-            setCommonStatus(12, b);
+            setCommonStatus(CMN_ID_GUNNER_STATUS, b);
+    }
+
+    public boolean isRadarEnabledRuntime() {
+        return this.getCommonStatus(CMN_ID_RADAR_ENABLED);
+    }
+
+    public void setRadarEnabledRuntime(boolean enabled) {
+        this.setRadarEnabledRuntime(enabled, false);
+    }
+
+    public void setRadarEnabledRuntime(boolean enabled, boolean writeClient) {
+        this.setCommonStatus(CMN_ID_RADAR_ENABLED, enabled, writeClient);
     }
 
     public MCH_EntityChain getTowChainEntity() {

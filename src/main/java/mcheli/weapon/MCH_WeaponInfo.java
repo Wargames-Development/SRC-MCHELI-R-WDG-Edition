@@ -437,6 +437,30 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 反辐射导弹
      */
     public boolean antiRadiationMissile = false;
+    /**
+     * ARM 丢失辐射源宽限时间（tick）
+     */
+    public int armEmitterLostGraceTick = 10;
+    /**
+     * ARM 记忆导引持续时间（tick）
+     */
+    public int armMemoryTimeTick = 100;
+    /**
+     * ARM 巡航弹道开关
+     */
+    public boolean armCruiseEnable = false;
+    /**
+     * ARM 进入巡航段的最小距离（米）
+     */
+    public double armCruiseStartDistance = 150.0D;
+    /**
+     * ARM 终端段圆柱半径（米）
+     */
+    public double armCruiseTerminalRadius = 50.0D;
+    /**
+     * ARM 终端段圆柱高度（米）
+     */
+    public double armCruiseTerminalHeight = 1024.0D;
 
     /**
      * 半主动弹，需要载机引导才能命中
@@ -737,6 +761,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         }
         if (this.ballisticTerminalCylinderRadius < 0.0D) {
             this.ballisticTerminalCylinderRadius = 0.0D;
+        }
+        if (this.armCruiseStartDistance < 0.0D) {
+            this.armCruiseStartDistance = 0.0D;
+        }
+        if (this.armCruiseTerminalRadius < 0.0D) {
+            this.armCruiseTerminalRadius = 0.0D;
+        }
+        if (this.armCruiseTerminalHeight < 0.0D) {
+            this.armCruiseTerminalHeight = 0.0D;
         }
 
         if (!isCCIPSupportedType(this.type)) {
@@ -1074,6 +1107,18 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.cameraFollowStrength = this.toFloat(data);
             } else if (item.equalsIgnoreCase("AntiRadiationMissile")) {
                 this.antiRadiationMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("ArmEmitterLostGraceTick")) {
+                this.armEmitterLostGraceTick = this.toInt(data, 0, 10000);
+            } else if (item.equalsIgnoreCase("ArmMemoryTimeTick")) {
+                this.armMemoryTimeTick = this.toInt(data, 0, 10000);
+            } else if (item.equalsIgnoreCase("ArmCruiseEnable")) {
+                this.armCruiseEnable = this.toBool(data);
+            } else if (item.equalsIgnoreCase("ArmCruiseStartDistance")) {
+                this.armCruiseStartDistance = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("ArmCruiseTerminalRadius")) {
+                this.armCruiseTerminalRadius = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("ArmCruiseTerminalHeight")) {
+                this.armCruiseTerminalHeight = this.toDouble(data);
             } else if (item.equalsIgnoreCase("SemiActiveRadar")) {
                 this.semiActiveRadar = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableDataLink")) {

@@ -276,7 +276,7 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        // Keep tree area transparent; only detail panel and nodes are rendered.
+        drawDarkBlueBackdrop();
         drawTierGuides();
         String title = buildTreeTitle();
         this.fontRendererObj.drawStringWithShadow(title, this.treeLeft + 6, this.treeTop + 5, 0xE0E0E0);
@@ -288,6 +288,11 @@ public class MCH_GuiEconomyTechTree extends GuiScreen {
         updateButtons();
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private void drawDarkBlueBackdrop() {
+        // Draw first to keep it at the lowest render priority.
+        drawGradientRect(0, 0, this.width, this.height, 0xFF0B1B2E, 0xFF061223);
     }
 
     private void drawPageBackdropExcludingDetail() {

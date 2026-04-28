@@ -15,6 +15,9 @@ import mcheli.network.packets.PacketLockTarget;
 import mcheli.network.packets.PacketPlaySound;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.mob.MCH_EntityGunner;
+import mcheli.tank.MCH_EntityTank;
+import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vector.Vector3f;
 import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_EntityPlayer;
@@ -1435,6 +1438,70 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             || bullet instanceof MCH_EntityASMissile;
     }
 
+    private EntityLivingBase resolveArmSeekerTeamEntity() {
+        if (this.shootingEntity instanceof EntityLivingBase) {
+            return (EntityLivingBase) this.shootingEntity;
+        }
+        if (this.shootingAircraft instanceof MCH_EntityAircraft) {
+            MCH_EntityAircraft aircraft = (MCH_EntityAircraft) this.shootingAircraft;
+            for (int i = 0; i <= aircraft.getSeatNum(); ++i) {
+                Entity seatEntity = aircraft.getEntityBySeatId(i);
+                if (seatEntity instanceof EntityLivingBase) {
+                    return (EntityLivingBase) seatEntity;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isFriendlyArmEmitterSource(MCH_EntityAircraft emitter) {
+        if (emitter == null) {
+            return false;
+        }
+        EntityLivingBase seeker = resolveArmSeekerTeamEntity();
+        if (seeker == null || seeker.getTeam() == null) {
+            return false;
+        }
+        for (int i = 0; i <= emitter.getSeatNum(); ++i) {
+            Entity seatEntity = emitter.getEntityBySeatId(i);
+            if (!(seatEntity instanceof EntityLivingBase)) {
+                continue;
+            }
+            EntityLivingBase occupant = (EntityLivingBase) seatEntity;
+            if (occupant.getTeam() == null) {
+                continue;
+            }
+            // Friendly shielding includes player-crewed and gunner-crewed radar platforms.
+            if (seeker.isOnSameTeam(occupant) && (occupant instanceof EntityPlayer || occupant instanceof MCH_EntityGunner)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean hasArmEmitterCrew(MCH_EntityAircraft emitter) {
+        if (emitter == null) {
+            return false;
+        }
+        for (int i = 0; i <= emitter.getSeatNum(); ++i) {
+            Entity seatEntity = emitter.getEntityBySeatId(i);
+            if (seatEntity instanceof EntityPlayer || seatEntity instanceof MCH_EntityGunner) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean isArmEmitterRadiatingSource(MCH_EntityAircraft emitter) {
+        if (emitter == null || emitter.getAcInfo() == null || !emitter.getAcInfo().hasRWR) {
+            return false;
+        }
+        if (!hasArmEmitterCrew(emitter)) {
+            return false;
+        }
+        return (emitter.getAcInfo().enableRadar && emitter.isRadarEnabledRuntime()) || emitter.isECMJammerUsing();
+    }
+
     public void notifyHitBullet() {
         if (this.shootingAircraft instanceof MCH_EntityAircraft && W_EntityPlayer.isPlayer(this.shootingEntity)) {
             MCH_PacketNotifyHitBullet.send((MCH_EntityAircraft) this.shootingAircraft, (EntityPlayer) this.shootingEntity);
@@ -2065,6 +2132,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (list != null && !list.isEmpty()) {
             double closestAngle = Double.MAX_VALUE;
             Entity closestTarget = null;
+            double closestArmScore = Double.MAX_VALUE;
+            Entity closestArmTarget = null;
 
             // 记录最近的箔条及其距离
             double nearestChaffDistSq = Double.MAX_VALUE;
@@ -2091,6 +2160,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                     // 未发现箔条时按原有逻辑扫描飞机
                     else if (entity instanceof MCH_EntityAircraft) {
+                        MCH_EntityAircraft ac = (MCH_EntityAircraft) entity;
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
                             && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
@@ -2106,7 +2176,27 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         double angle = Math.abs(Vector3f.angle(missileDirection, targetDir));
                         if (angle > Math.toRadians(this.getCurrentMaxDegreeOfMissile())) continue;
 
-                        if (angle < closestAngle) {
+                        boolean antiRadiation = getInfo().antiRadiationMissile;
+                        if (antiRadiation) {
+                            if (isFriendlyArmEmitterSource(ac)) {
+                                continue;
+                            }
+                            boolean hojEmitter = ac.isECMJammerUsing();
+                            if (!isArmEmitterRadiatingSource(ac)) {
+                                continue;
+                            }
+                            double distSq = dx * dx + dy * dy + dz * dz;
+                            double rangeNorm = range > 0.0D ? Math.min(1.0D, distSq / (range * range)) : 1.0D;
+                            double armScore = angle + rangeNorm * 0.15D;
+                            if (hojEmitter) {
+                                // HOJ: jammer-on emitters get the highest acquisition priority.
+                                armScore -= Math.toRadians(180.0D);
+                            }
+                            if (armScore < closestArmScore) {
+                                closestArmScore = armScore;
+                                closestArmTarget = entity;
+                            }
+                        } else if (angle < closestAngle) {
                             closestAngle = angle;
                             closestTarget = entity;
                         }
@@ -2146,11 +2236,21 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                             && ((EntityPlayer) entity.riddenByEntity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
                             continue;
                         }
-                        boolean isTargetOnGround = MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().lockMinHeight);
-                        if (!isTargetOnGround) continue;
-                        if (getInfo().antiRadiationMissile) {
-                            boolean ecmType2Using = ac.getAcInfo() != null && ac.getAcInfo().ecmJammerType == 2 && ac.isECMJammerUsing();
-                            if (ecmType2Using || ac.getAcInfo() == null || !ac.getAcInfo().hasRWR) {
+                        boolean antiRadiation = getInfo().antiRadiationMissile;
+                        if (antiRadiation) {
+                            if (!(ac instanceof MCH_EntityTank || ac instanceof MCH_EntityVehicle)) {
+                                continue;
+                            }
+                        } else {
+                            boolean isTargetOnGround = MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().lockMinHeight);
+                            if (!isTargetOnGround) continue;
+                        }
+                        if (antiRadiation) {
+                            if (isFriendlyArmEmitterSource(ac)) {
+                                continue;
+                            }
+                            boolean hojEmitter = ac.isECMJammerUsing();
+                            if (!isArmEmitterRadiatingSource(ac)) {
                                 continue;
                             }
                         }
@@ -2160,7 +2260,19 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         Vector3f targetDirection = new Vector3f((float) dx, (float) dy, (float) dz);
                         double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
                         if (angle > Math.toRadians(this.getCurrentMaxDegreeOfMissile())) continue;
-                        if (angle < closestAngle) {
+                        if (antiRadiation) {
+                            double distSq = dx * dx + dy * dy + dz * dz;
+                            double rangeNorm = range > 0.0D ? Math.min(1.0D, distSq / (range * range)) : 1.0D;
+                            double armScore = angle + rangeNorm * 0.15D;
+                            if (ac.isECMJammerUsing()) {
+                                // HOJ: jammer-on emitters get the highest acquisition priority.
+                                armScore -= Math.toRadians(180.0D);
+                            }
+                            if (armScore < closestArmScore) {
+                                closestArmScore = armScore;
+                                closestArmTarget = entity;
+                            }
+                        } else if (angle < closestAngle) {
                             closestAngle = angle;
                             closestTarget = entity;
                         }
@@ -2184,8 +2296,13 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                 }
             }
-            // 优先锁定箔条
-            if (nearestChaff != null) {
+            // ARM always prioritizes radiating emitters once detected.
+            if (getInfo().antiRadiationMissile && closestArmTarget != null) {
+                targetEntity = closestArmTarget;
+                if (getInfo().activeRadar) {
+                    setActiveRadarCaptured(true);
+                }
+            } else if (nearestChaff != null) {
                 targetEntity = nearestChaff;
                 numLockedChaff++;
                 if (getInfo().activeRadar) {

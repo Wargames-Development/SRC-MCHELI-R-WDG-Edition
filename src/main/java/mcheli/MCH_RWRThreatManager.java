@@ -48,7 +48,7 @@ public class MCH_RWRThreatManager {
             return;
         }
         MCH_EntityAircraft ac = (MCH_EntityAircraft) emitter;
-        if (!isAircraftMannedForEmission(ac)) {
+        if (!isAircraftMannedForEmission(ac) || !ac.isRadarEnabledRuntime()) {
             trackingReports.remove(emitterAircraftId);
             return;
         }
@@ -71,7 +71,7 @@ public class MCH_RWRThreatManager {
         if (emitterAircraftId <= 0) {
             return;
         }
-        if (!isAircraftMannedForEmission(emitter) || emitter.isDestroyed() || emitter.getAcInfo() == null || !emitter.getAcInfo().enableRadar) {
+        if (!isAircraftMannedForEmission(emitter) || !emitter.isRadarEnabledRuntime() || emitter.isDestroyed() || emitter.getAcInfo() == null || !emitter.getAcInfo().enableRadar) {
             gunnerTrackingReports.remove(emitterAircraftId);
             return;
         }
@@ -471,6 +471,7 @@ public class MCH_RWRThreatManager {
         return ac != null
             && ac.getAcInfo() != null
             && ac.getAcInfo().enableRadar
+            && ac.isRadarEnabledRuntime()
             && isAircraftMannedForEmission(ac)
             && !ac.isDestroyed();
     }

@@ -16,10 +16,12 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
+import java.util.Locale;
 
 public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
     private static final int OPTION_FLAG_DATALINK = 1 << 8;
     private static final int OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY = 1 << 9;
+    private static final int OPTION_FLAG_ARM_NARROW_BAND = 1 << 10;
     private static final long SNAPSHOT_TARGET_STALE_MS = 1500L;
 
     public MCH_WeaponAAMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
@@ -41,8 +43,34 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
     }
 
     @Override
+    public String getName() {
+        if (!getInfo().antiRadiationMissile) {
+            return super.getName();
+        }
+        String suffix = isArmNarrowBandMode()
+            ? (isChineseLocale() ? " [窄频]" : " [NB]")
+            : (isChineseLocale() ? " [宽频]" : " [WB]");
+        return super.getName() + suffix;
+    }
+
+    @Override
     public boolean shot(MCH_WeaponParam prm) {
+        if (getInfo().antiRadiationMissile) {
+            super.optionParameter2 &= ~OPTION_FLAG_ARM_NARROW_BAND;
+            if (isArmNarrowBandMode()) {
+                super.optionParameter2 |= OPTION_FLAG_ARM_NARROW_BAND;
+                if (super.worldObj.isRemote && prm.entity instanceof MCH_EntityAircraft && prm.user != null) {
+                    MCH_EntityAircraft ac = (MCH_EntityAircraft) prm.entity;
+                    int armLockTargetId = MCH_RenderRWR.getArmTrackingTargetId(ac);
+                    prm.option1 = Math.max(0, armLockTargetId);
+                    super.optionParameter1 = prm.option1;
+                }
+            }
+        }
         if (shouldBlockShotByDataLink(prm)) {
+            return false;
+        }
+        if (shouldBlockShotByArmBandConstraint(prm)) {
             return false;
         }
         boolean result = false;
@@ -164,6 +192,34 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
 
         return result;
+    }
+
+    private boolean isArmNarrowBandMode() {
+        return getInfo().antiRadiationMissile && this.getCurrentMode() == 1;
+    }
+
+    private boolean isChineseLocale() {
+        String lang = Locale.getDefault().toString().toLowerCase(Locale.ROOT);
+        return lang.startsWith("zh");
+    }
+
+    private boolean shouldBlockShotByArmBandConstraint(MCH_WeaponParam prm) {
+        if (!getInfo().antiRadiationMissile) {
+            return false;
+        }
+        boolean narrowBand = (super.optionParameter2 & OPTION_FLAG_ARM_NARROW_BAND) != 0;
+        if (!narrowBand) {
+            return false;
+        }
+        boolean hasTarget = prm.user != null && prm.user.worldObj != null && prm.option1 > 0
+            && prm.user.worldObj.getEntityByID(prm.option1) != null;
+        if (!hasTarget) {
+            if (super.worldObj.isRemote) {
+                sendDenyMessage(prm.user, "窄频模式需要先锁定目标 / Narrow-band mode requires target lock");
+            }
+            return true;
+        }
+        return false;
     }
 
     private boolean shouldBlockShotByDataLink(MCH_WeaponParam prm) {

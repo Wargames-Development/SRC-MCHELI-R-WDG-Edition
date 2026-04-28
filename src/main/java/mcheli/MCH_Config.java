@@ -70,6 +70,7 @@ public class MCH_Config {
     public static MCH_ConfigPrm KeyAirburstDistReset;
     public static MCH_ConfigPrm KeyOpenGPSPanel;
     public static MCH_ConfigPrm KeyFireControlLock;
+    public static MCH_ConfigPrm KeyRadarSwitch;
     public static List DamageVs;
     public static List IgnoreBulletHitList;
     public static MCH_ConfigPrm IgnoreBulletHitItem;
@@ -258,6 +259,7 @@ public class MCH_Config {
         KeyAirburstDistReset = new MCH_ConfigPrm("KeyAirburstDistReset", -99);
         KeyOpenGPSPanel = new MCH_ConfigPrm("KeyOpenGPSPanel", 37);
         KeyFireControlLock = new MCH_ConfigPrm("KeyFireControlLock", 58);
+        KeyRadarSwitch = new MCH_ConfigPrm("KeyRadarSwitch", 41);
         KeyExtra = new MCH_ConfigPrm("KeyExtra", 33);
         KeyCameraDistUp = new MCH_ConfigPrm("KeyCameraDistanceUp", 201);
         KeyCameraDistDown = new MCH_ConfigPrm("KeyCameraDistanceDown", 209);
@@ -268,7 +270,7 @@ public class MCH_Config {
         KeyDownFromRack = new MCH_ConfigPrm("KeyDownFromRack", 22);
         KeyScoreboard = new MCH_ConfigPrm("KeyScoreboard", 38);
         KeyMultiplayManager = new MCH_ConfigPrm("KeyMultiplayManager", 50);
-        KeyConfig = new MCH_ConfigPrm[]{KeyUp, KeyDown, KeyRight, KeyLeft, KeySwitchMode, KeySwitchHovering, KeySwitchWeapon1, KeySwitchWeapon2, KeySwWeaponMode, KeyZoom, KeyCameraMode, KeyUnmount, KeyFlare, KeyExtra, KeyCameraDistUp, KeyCameraDistDown, KeyFreeLook, KeyGUI, KeyGearUpDown, KeyPutToRack, KeyDownFromRack, KeyScoreboard, KeyMultiplayManager, KeyChaff, KeyMaintenance, KeyAPS, KeyECMJammer, KeyAirburstDistReset, KeyOpenGPSPanel, KeyFireControlLock};
+        KeyConfig = new MCH_ConfigPrm[]{KeyUp, KeyDown, KeyRight, KeyLeft, KeySwitchMode, KeySwitchHovering, KeySwitchWeapon1, KeySwitchWeapon2, KeySwWeaponMode, KeyZoom, KeyCameraMode, KeyUnmount, KeyFlare, KeyExtra, KeyCameraDistUp, KeyCameraDistDown, KeyFreeLook, KeyGUI, KeyGearUpDown, KeyPutToRack, KeyDownFromRack, KeyScoreboard, KeyMultiplayManager, KeyChaff, KeyMaintenance, KeyAPS, KeyECMJammer, KeyAirburstDistReset, KeyOpenGPSPanel, KeyFireControlLock, KeyRadarSwitch};
         DamageVs = new ArrayList();
         CommandPermission = new ArrayList();
         CommandPermissionList = new ArrayList();

@@ -259,6 +259,10 @@ public class MCH_MissileDetector {
             for (Object o : list) {
                 MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
                 if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
+                    if (msl.getInfo() != null && msl.getInfo().antiRadiationMissile) {
+                        // ARM lock should not trigger generic missile lock warning audio.
+                        continue;
+                    }
                     result = true;
                     double dx = msl.posX - this.ac.posX;
                     double dy = msl.posY - this.ac.posY;

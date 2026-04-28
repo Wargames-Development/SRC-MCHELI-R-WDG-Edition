@@ -1,6 +1,7 @@
 package mcheli.weapon;
 
 import mcheli.MCH_RadarDebug;
+import mcheli.aircraft.MCH_EntityAircraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
@@ -8,11 +9,16 @@ import net.minecraft.world.World;
 public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker, MCH_IMissile {
 
     private static final int DL_RELAY_LOST_GRACE_TICK = 15;
+    private static final int ARM_STATE_HOMING = 1;
+    private static final int ARM_STATE_MEMORY = 2;
+    private static final int ARM_STATE_LOST = 3;
     public boolean passiveRadarBVRLocking = false;
     public int passiveRadarBVRLockingPosX = 0;
     public int passiveRadarBVRLockingPosY = 0;
     public int passiveRadarBVRLockingPosZ = 0;
     private int dlRelayLostTick = 0;
+    private int armGuidanceState = ARM_STATE_HOMING;
+    private int armLastRadiationSeenTick = -1;
 
     public MCH_EntityAAMissile(World par1World) {
         super(par1World);
@@ -32,6 +38,10 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
         }
 
         if (!worldObj.isRemote && this.getInfo() != null) {
+            if (this.getInfo().antiRadiationMissile) {
+                this.onUpdateArmGuidance();
+                return;
+            }
             boolean dlRelay = this.isDataLinkRelayMode();
             if (super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead) {
                 if (dlRelay && (getInfo().passiveRadar || getInfo().semiActiveRadar) && !this.isDataLinkRelaySourceMaintained()) {
@@ -124,6 +134,113 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     scanForTargets();
                 }
             }
+        }
+    }
+
+    private boolean isArmEmitterRadiating(Entity target) {
+        if (!(target instanceof MCH_EntityAircraft)) {
+            return false;
+        }
+        MCH_EntityAircraft ac = (MCH_EntityAircraft) target;
+        return isArmEmitterRadiatingSource(ac);
+    }
+
+    private void saveArmLastKnownFromTarget(Entity target) {
+        this.lastTargetPosX = target.posX;
+        this.lastTargetPosY = target.posY;
+        this.lastTargetPosZ = target.posZ;
+        this.lastTargetVelX = target.motionX;
+        this.lastTargetVelY = target.motionY;
+        this.lastTargetVelZ = target.motionZ;
+        this.hasLastKnownTarget = true;
+    }
+
+    private boolean shouldUseArmCruise(double tx, double ty, double tz) {
+        if (!getInfo().armCruiseEnable) {
+            return false;
+        }
+        double dx = tx - this.posX;
+        double dy = ty - this.posY;
+        double dz = tz - this.posZ;
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist <= getInfo().armCruiseStartDistance) {
+            return false;
+        }
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        return !(horizontal <= getInfo().armCruiseTerminalRadius && Math.abs(dy) <= getInfo().armCruiseTerminalHeight);
+    }
+
+    private void guideArmToPosition(double tx, double ty, double tz) {
+        if (shouldUseArmCruise(tx, ty, tz)) {
+            // Cruise segment: hold altitude and only perform horizontal steering.
+            guidanceToPos(tx, this.posY, tz);
+        } else {
+            guidanceToPos(tx, ty, tz);
+        }
+    }
+
+    private void onUpdateArmGuidance() {
+        boolean hasValidTarget = super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead;
+        if (hasValidTarget && isArmEmitterRadiating(super.targetEntity)) {
+            this.armGuidanceState = ARM_STATE_HOMING;
+            this.armLastRadiationSeenTick = this.ticksExisted;
+            saveArmLastKnownFromTarget(super.targetEntity);
+            double x = super.posX - super.targetEntity.posX;
+            double y = super.posY - super.targetEntity.posY;
+            double z = super.posZ - super.targetEntity.posZ;
+            double d = x * x + y * y + z * z;
+            if (d > 3422500.0D) {
+                if (MCH_RadarDebug.isEnabled()) {
+                    MCH_RadarDebug.trace(this.worldObj, this,
+                        "msl_death type=AA_ARM reason=TARGET_DISTANCE_LIMIT msl=%d target=%d dist=%.1f distSq=%.1f limitSq=3422500.0 pos=(%.1f,%.1f,%.1f) tpos=(%.1f,%.1f,%.1f)",
+                        this.getEntityId(),
+                        super.targetEntity.getEntityId(),
+                        Math.sqrt(d), d,
+                        this.posX, this.posY, this.posZ,
+                        super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
+                }
+                setDead();
+                return;
+            }
+            if (getCountOnUpdate() > getInfo().rigidityTime) {
+                guideArmToPosition(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
+            }
+            return;
+        }
+
+        if (super.targetEntity != null && !isArmEmitterRadiating(super.targetEntity)) {
+            this.setTargetEntity(null);
+        }
+        if (super.targetEntity == null) {
+            // ARM seeker reacquires radiation source continuously (not gated by scanInterval).
+            scanForTargets();
+        }
+        hasValidTarget = super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead;
+        if (hasValidTarget && isArmEmitterRadiating(super.targetEntity)) {
+            this.armGuidanceState = ARM_STATE_HOMING;
+            this.armLastRadiationSeenTick = this.ticksExisted;
+            saveArmLastKnownFromTarget(super.targetEntity);
+            if (getCountOnUpdate() > getInfo().rigidityTime) {
+                guideArmToPosition(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
+            }
+            return;
+        }
+
+        int lostTick = this.armLastRadiationSeenTick < 0 ? Integer.MAX_VALUE : this.ticksExisted - this.armLastRadiationSeenTick;
+        int armGraceTick = Math.max(0, getInfo().armEmitterLostGraceTick);
+        int armMemoryTick = Math.max(0, getInfo().armMemoryTimeTick);
+        if (this.hasLastKnownTarget && lostTick <= armGraceTick + armMemoryTick) {
+            this.armGuidanceState = ARM_STATE_MEMORY;
+            if (getCountOnUpdate() > getInfo().rigidityTime) {
+                // Memory phase keeps flying to the last radiating coordinate only.
+                guideArmToPosition(this.lastTargetPosX, this.lastTargetPosY, this.lastTargetPosZ);
+            }
+            return;
+        }
+
+        this.armGuidanceState = ARM_STATE_LOST;
+        if (super.targetEntity != null) {
+            this.setTargetEntity(null);
         }
     }
 
