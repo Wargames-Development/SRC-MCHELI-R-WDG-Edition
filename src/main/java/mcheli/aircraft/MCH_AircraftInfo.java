@@ -139,6 +139,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public List cameraList;
     public List partWeapon;
     public List partWeaponBay;
+    public List partTurretWeaponBay;
     public List canopyList;
     public List landingGear;
     public List partThrottle;
@@ -506,6 +507,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.partWeapon = new ArrayList();
         this.lastWeaponPart = null;
         this.partWeaponBay = new ArrayList();
+        this.partTurretWeaponBay = new ArrayList();
         this.canopyList = new ArrayList();
         this.landingGear = new ArrayList();
         this.partThrottle = new ArrayList();
@@ -755,6 +757,32 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                     }
                 }
 
+                for (var10 = 0; var10 < this.partTurretWeaponBay.size(); ++var10) {
+                    MCH_AircraftInfo.WeaponBay var12 = (MCH_AircraftInfo.WeaponBay) this.partTurretWeaponBay.get(var10);
+                    String[] weaponNames = var12.weaponName.split("\\s*/\\s*");
+                    if (weaponNames.length <= 0) {
+                        this.partTurretWeaponBay.remove(var10);
+                    } else {
+                        ArrayList list = new ArrayList();
+                        String[] arr$ = weaponNames;
+                        int len$ = weaponNames.length;
+
+                        for (int i$ = 0; i$ < len$; ++i$) {
+                            String s = arr$[i$];
+                            int id = this.getWeaponIdByName(s);
+                            if (id >= 0) {
+                                list.add(Integer.valueOf(id));
+                            }
+                        }
+
+                        if (list.size() <= 0) {
+                            this.partTurretWeaponBay.remove(var10);
+                        } else {
+                            ((MCH_AircraftInfo.WeaponBay) this.partTurretWeaponBay.get(var10)).weaponIds = (Integer[]) list.toArray(new Integer[0]);
+                        }
+                    }
+                }
+
                 return true;
             }
         }
@@ -806,6 +834,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
 
     public boolean haveHatch() {
         return this.hatchList.size() > 0;
+    }
+
+    public boolean haveTurretWeaponBay() {
+        return this.partTurretWeaponBay.size() > 0;
     }
 
     public boolean havePartCamera() {
@@ -1336,7 +1368,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             this.isEnableConcurrentGunnerMode = this.toBool(data);
                                                         } else {
                                                             boolean var32;
-                                                            if (!item.equalsIgnoreCase("AddPartWeaponBay") && !item.equalsIgnoreCase("AddPartSlideWeaponBay")) {
+                                                            if (!item.equalsIgnoreCase("AddPartWeaponBay") && !item.equalsIgnoreCase("AddPartSlideWeaponBay") && !item.equalsIgnoreCase("AddPartTurretWeaponBay")) {
                                                                 if (item.compareTo("addparthatch") != 0 && item.compareTo("addpartslidehatch") != 0) {
                                                                     if (item.compareTo("addpartcanopy") != 0 && item.compareTo("addpartslidecanopy") != 0) {
                                                                         if (!item.equalsIgnoreCase("AddPartLG") && !item.equalsIgnoreCase("AddPartSlideRotLG") && !item.equalsIgnoreCase("AddPartLGRev") && !item.equalsIgnoreCase("AddPartLGHatch")) {
@@ -1568,19 +1600,22 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                     }
                                                                 }
                                                             } else {
-                                                                var32 = item.equalsIgnoreCase("AddPartSlideWeaponBay");
+                                                                boolean isTurretBay = item.equalsIgnoreCase("AddPartTurretWeaponBay");
+                                                                var32 = !isTurretBay && item.equalsIgnoreCase("AddPartSlideWeaponBay");
                                                                 var17 = data.split("\\s*,\\s*");
                                                                 var20 = null;
                                                                 MCH_AircraftInfo.WeaponBay var33;
+                                                                String modelPrefix = isTurretBay ? "weaponwb" : "wb";
+                                                                List targetList = isTurretBay ? this.partTurretWeaponBay : this.partWeaponBay;
                                                                 if (var32) {
                                                                     if (var17.length >= 4) {
-                                                                        var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), 0.0F, 0.0F, 0.0F, 90.0F, "wb" + this.partWeaponBay.size(), var32);
-                                                                        this.partWeaponBay.add(var33);
+                                                                        var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), 0.0F, 0.0F, 0.0F, 90.0F, modelPrefix + targetList.size(), var32);
+                                                                        targetList.add(var33);
                                                                     }
                                                                 } else if (var17.length >= 7) {
                                                                     ry = var17.length >= 8 ? this.toFloat(var17[7], -180.0F, 180.0F) : 90.0F;
-                                                                    var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), this.toFloat(var17[4]), this.toFloat(var17[5]), this.toFloat(var17[6]), ry / 90.0F, "wb" + this.partWeaponBay.size(), var32);
-                                                                    this.partWeaponBay.add(var33);
+                                                                    var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), this.toFloat(var17[4]), this.toFloat(var17[5]), this.toFloat(var17[6]), ry / 90.0F, modelPrefix + targetList.size(), var32);
+                                                                    targetList.add(var33);
                                                                 }
                                                             }
                                                         }
@@ -1823,6 +1858,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.lightHatchList.clear();
         this.partWeapon.clear();
         this.partWeaponBay.clear();
+        this.partTurretWeaponBay.clear();
         this.repellingHooks.clear();
         this.rideRacks.clear();
         this.seatList.clear();

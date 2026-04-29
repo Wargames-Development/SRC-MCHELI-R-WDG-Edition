@@ -259,7 +259,7 @@ public class MCH_RenderRWR {
         }
     }
 
-    private int resolveThreatColor(MCH_RWRThreatEvent evt, long nowTick) {
+    private static int resolveThreatColor(MCH_RWRThreatEvent evt, long nowTick) {
         byte threatMode = evt.threatMode;
         if (threatMode == MCH_RWRThreatEvent.MODE_MSL_ACTIVE || threatMode == MCH_RWRThreatEvent.MODE_MSL_DATALINK) {
             boolean strong = ((nowTick / RWR_MSL_BLINK_TICK) & 1L) == 0L;
@@ -3492,6 +3492,110 @@ public class MCH_RenderRWR {
         return frame;
     }
 
+    public static RWRDisplayFrame buildRWRDisplayFrame(MCH_EntityAircraft ac, EntityPlayer player, float partialTicks) {
+        RWRDisplayFrame frame = new RWRDisplayFrame();
+        frame.aircraft = ac;
+
+        if (ac == null || ac.getAcInfo() == null || !ac.getAcInfo().hasRWR) {
+            return frame;
+        }
+
+        long nowTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
+
+        MCH_RWRThreatTable table = MCH_RWRThreatClientTracker.getTable(ac.getEntityId());
+        RwrHudState hudState = updateRwrHudState(ac, nowTick);
+
+        if (hudState != null) {
+            if (hudState.missileUntilTick >= nowTick && !hudState.missileSourceName.isEmpty()) {
+                frame.missileSourceName = hudState.missileSourceName;
+                frame.missileUntilTick = hudState.missileUntilTick;
+            }
+            if (hudState.lockUntilTick >= nowTick && !hudState.lockSourceName.isEmpty()) {
+                frame.lockSourceName = hudState.lockSourceName;
+                frame.lockUntilTick = hudState.lockUntilTick;
+            }
+            for (Map.Entry<String, Long> e : hudState.scanEvents.entrySet()) {
+                if (e.getValue() >= nowTick) {
+                    frame.scanSources.add(e.getKey());
+                }
+            }
+        }
+
+        double minDistance = _MIN_DISTANCE;
+        double maxDistance = _RWR_RING_MAX_DISTANCE;
+        if (ac.getAcInfo().radarMaxTargetRange > 0.0F) {
+            maxDistance = Math.min(maxDistance, ac.getAcInfo().radarMaxTargetRange);
+        }
+        if (maxDistance <= minDistance) {
+            minDistance = Math.max(0.0D, maxDistance - 50.0D);
+        }
+        frame.maxDistanceMeters = (int) Math.round(maxDistance);
+
+        if (table != null && table.events != null) {
+
+            for (MCH_RWRThreatEvent evt : table.events) {
+                if (evt == null || evt.emitterId == ac.getEntityId()) {
+                    continue;
+                }
+                String name = normalizeRwrSourceName(evt.sourceName);
+                if (name.isEmpty() || "?".equals(name)) {
+                    if (evt.emitterKind == MCH_RWRThreatEvent.EMITTER_MISSILE) {
+                        name = "MSL";
+                    } else {
+                        MCH_EntityInfo emitterInfo = MCH_EntityInfoClientTracker.getEntityInfo(evt.emitterId);
+                        if (emitterInfo != null && emitterInfo.entityName != null && !emitterInfo.entityName.trim().isEmpty()) {
+                            name = emitterInfo.entityName.trim();
+                        } else {
+                            name = "UNKNOWN";
+                        }
+                    }
+                }
+
+                double distance = evt.distanceMeters > 0.0F ? evt.distanceMeters
+                    : (maxDistance - MCH_RWRThreatEvent.clamp01(evt.strength) * (maxDistance - minDistance));
+                if (distance <= 1.0E-4D) {
+                    continue;
+                }
+                distance = Math.max(minDistance, Math.min(maxDistance, distance));
+                double rangeNorm = (distance - minDistance) / Math.max(1.0D, maxDistance - minDistance);
+                rangeNorm = Math.max(0.0D, Math.min(1.0D, rangeNorm));
+                double angleRad = Math.toRadians(evt.bearingDeg - 90.0D);
+
+                boolean isMsl = evt.threatMode == MCH_RWRThreatEvent.MODE_MSL_ACTIVE
+                             || evt.threatMode == MCH_RWRThreatEvent.MODE_MSL_DATALINK;
+                int color = resolveThreatColor(evt, nowTick);
+                if (isMsl && hudState != null && hudState.missileUntilTick >= nowTick) {
+                    boolean strong = ((nowTick / 3) & 1L) == 0L;
+                    color = strong ? 0xFF2D2D : 0xCC3030;
+                }
+
+                RWRDisplayPoint point = new RWRDisplayPoint();
+                point.rangeNorm = rangeNorm;
+                point.angleRad = angleRad;
+                point.color = color;
+                point.label = name;
+                point.threatMode = evt.threatMode;
+                point.isMissile = isMsl;
+                point.distanceMeters = distance;
+                frame.points.add(point);
+            }
+
+            java.util.Collections.sort(frame.points, new java.util.Comparator<RWRDisplayPoint>() {
+                @Override
+                public int compare(RWRDisplayPoint a, RWRDisplayPoint b) {
+                    return Double.compare(b.distanceMeters, a.distanceMeters);
+                }
+            });
+
+            while (frame.points.size() > 12) {
+                frame.points.remove(frame.points.size() - 1);
+            }
+        }
+
+        frame.valid = true;
+        return frame;
+    }
+
     private static List<ContactCandidate> getSelectableCandidates(MCH_EntityAircraft ac, EntityPlayer player, Map<Integer, RadarContact> cache, RadarTrackState state) {
         List<ContactCandidate> result = new ArrayList<ContactCandidate>();
         if (ac == null || player == null || ac.getAcInfo() == null || cache == null || cache.isEmpty()) {
@@ -3598,6 +3702,28 @@ public class MCH_RenderRWR {
         public int halfAzimuthDeg = 180;
         public String modeLabel = "SRC";
         public final List<RadarDisplayPoint> points = new ArrayList<RadarDisplayPoint>();
+    }
+
+    public static class RWRDisplayPoint {
+        public double rangeNorm;
+        public double angleRad;
+        public int color;
+        public String label;
+        public byte threatMode;
+        public boolean isMissile;
+        public double distanceMeters;
+    }
+
+    public static class RWRDisplayFrame {
+        public MCH_EntityAircraft aircraft;
+        public boolean valid = false;
+        public String missileSourceName = "";
+        public long missileUntilTick = -1L;
+        public String lockSourceName = "";
+        public long lockUntilTick = -1L;
+        public final List<String> scanSources = new ArrayList<String>();
+        public final List<RWRDisplayPoint> points = new ArrayList<RWRDisplayPoint>();
+        public int maxDistanceMeters = 4096;
     }
 
     private static class RadarContact {

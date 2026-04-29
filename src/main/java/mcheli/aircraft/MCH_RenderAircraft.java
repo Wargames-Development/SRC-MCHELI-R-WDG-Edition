@@ -9,6 +9,8 @@ import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.multiplay.MCH_GuiTargetMarker;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.render.MCH_RadarDisplayTextureManager;
+import mcheli.render.MCH_RWRDisplayTextureManager;
+import mcheli.render.MCH_TextureRenderUtil;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vehicle.MCH_EntityVehicle;
@@ -659,6 +661,31 @@ public abstract class MCH_RenderAircraft extends W_Render {
             GL11.glPopMatrix();
         }
 
+    }
+
+    public static void renderTurretWeaponBay(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        for (int i = 0; i < info.partTurretWeaponBay.size(); ++i) {
+            MCH_AircraftInfo.WeaponBay w = (MCH_AircraftInfo.WeaponBay) info.partTurretWeaponBay.get(i);
+            MCH_EntityAircraft.WeaponBay ws = ac.turretWeaponBays[i];
+            GL11.glPushMatrix();
+            GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
+            float riderYaw = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+            GL11.glRotatef(riderYaw, 0.0F, -1.0F, 0.0F);
+            GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
+            if (w.isSlide) {
+                float r = ws.rot / 90.0F;
+                float pr = ws.prevRot / 90.0F;
+                float f = pr + (r - pr) * tickTime;
+                GL11.glTranslated(w.pos.xCoord * (double) f, w.pos.yCoord * (double) f, w.pos.zCoord * (double) f);
+            } else {
+                GL11.glTranslated(w.pos.xCoord, w.pos.yCoord, w.pos.zCoord);
+                GL11.glRotatef((ws.prevRot + (ws.rot - ws.prevRot) * tickTime) * w.maxRotFactor, (float) w.rot.xCoord, (float) w.rot.yCoord, (float) w.rot.zCoord);
+                GL11.glTranslated(-w.pos.xCoord, -w.pos.yCoord, -w.pos.zCoord);
+            }
+
+            renderPart(w.model, info.model, w.modelName);
+            GL11.glPopMatrix();
+        }
     }
 
     public static void renderCamera(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
@@ -1480,6 +1507,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
     public void renderCommonPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, double x, double y, double z, float tickTime) {
         renderRope(ac, info, x, y, z, tickTime);
         this.renderRadarDisplayPart(ac, info, tickTime);
+        this.renderRWRDisplayPart(ac, info, tickTime);
         renderERA(ac, info);
         renderWeapon(ac, info, tickTime);
         renderRotPart(ac, info, tickTime);
@@ -1494,11 +1522,15 @@ public abstract class MCH_RenderAircraft extends W_Render {
         renderCamera(ac, info, tickTime);
         renderLandingGear(ac, info, tickTime);
         renderWeaponBay(ac, info, tickTime);
+        renderTurretWeaponBay(ac, info, tickTime);
         renderCanopy(ac, info, tickTime);
     }
 
     private void renderRadarDisplayPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         if (ac == null || info == null || info.model == null || !(info.model instanceof W_ModelCustom)) {
+            return;
+        }
+        if (!info.enableRadar || !ac.isRadarEnabledRuntime()) {
             return;
         }
         W_ModelCustom bodyModel = (W_ModelCustom)info.model;
@@ -1515,22 +1547,80 @@ public abstract class MCH_RenderAircraft extends W_Render {
             GL11.glDisable(GL11.GL_TEXTURE_2D);
             GL11.glDisable(GL11.GL_BLEND);
             GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
-            GL11.glPolygonOffset(-2.0F, -2.0F);
+            GL11.glPolygonOffset(1.0F, 1.0F);
             GL11.glColor4f(0.0F, 0.0F, 0.0F, 1.0F);
             bodyModel.renderPart(partName);
             GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
 
             // Pass 2: overlay radar dynamic sweep/contacts from enableRadar data source.
             EntityPlayer player = Minecraft.getMinecraft().thePlayer;
-            ResourceLocation radarDynamicTex = MCH_RadarDisplayTextureManager.getTexture(ac, player, tickTime);
+            boolean isJammed = ac.jammingTick > 0;
+            ResourceLocation radarDynamicTex;
+            if (isJammed) {
+                long worldTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
+                radarDynamicTex = MCH_TextureRenderUtil.getSharedJamTexture(worldTick);
+            } else {
+                radarDynamicTex = MCH_RadarDisplayTextureManager.getTexture(ac, player, tickTime);
+            }
             if (radarDynamicTex != null) {
                 GL11.glEnable(GL11.GL_TEXTURE_2D);
                 GL11.glEnable(GL11.GL_BLEND);
                 GL11.glDisable(GL11.GL_ALPHA_TEST);
-                GL11.glDisable(GL11.GL_DEPTH_TEST);
                 GL11.glDepthMask(false);
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                 this.bindTexture(radarDynamicTex);
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+                bodyModel.renderPart(partName);
+            }
+        } finally {
+            GL11.glPopAttrib();
+            this.bindAircraftTexture(ac);
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glPopMatrix();
+        }
+    }
+
+    private void renderRWRDisplayPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        if (ac == null || info == null || info.model == null || !(info.model instanceof W_ModelCustom)) {
+            return;
+        }
+        if (!info.hasRWR) {
+            return;
+        }
+        W_ModelCustom bodyModel = (W_ModelCustom) info.model;
+        String partName = "$rwrdisplay";
+        if (!bodyModel.containsPart(partName)) {
+            return;
+        }
+        GL11.glPushMatrix();
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_POLYGON_BIT | GL11.GL_TEXTURE_BIT);
+        try {
+            GL11.glDisable(GL11.GL_LIGHTING);
+
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+            GL11.glPolygonOffset(1.0F, 1.0F);
+            GL11.glColor4f(0.0F, 0.0F, 0.0F, 1.0F);
+            bodyModel.renderPart(partName);
+            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+
+            EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+            boolean isJammed = ac.jammingTick > 0;
+            ResourceLocation rwrDynamicTex;
+            if (isJammed) {
+                long worldTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
+                rwrDynamicTex = MCH_TextureRenderUtil.getSharedJamTexture(worldTick);
+            } else {
+                rwrDynamicTex = MCH_RWRDisplayTextureManager.getTexture(ac, player, tickTime);
+            }
+            if (rwrDynamicTex != null) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glEnable(GL11.GL_BLEND);
+                GL11.glDisable(GL11.GL_ALPHA_TEST);
+                GL11.glDepthMask(false);
+                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                this.bindTexture(rwrDynamicTex);
                 GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
                 bodyModel.renderPart(partName);
             }

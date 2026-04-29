@@ -434,6 +434,10 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
             c7 = (MCH_AircraftInfo.WeaponBay) i$.next();
         }
 
+        for (i$ = info.partTurretWeaponBay.iterator(); i$.hasNext(); c7.model = this.loadPartModel(path, info.name, info.model, c7.modelName)) {
+            c7 = (MCH_AircraftInfo.WeaponBay) i$.next();
+        }
+
         MCH_AircraftInfo.CrawlerTrack c8;
         for (i$ = info.partCrawlerTrack.iterator(); i$.hasNext(); c8.model = this.loadPartModel(path, info.name, info.model, c8.modelName)) {
             c8 = (MCH_AircraftInfo.CrawlerTrack) i$.next();

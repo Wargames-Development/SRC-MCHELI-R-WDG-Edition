@@ -237,6 +237,19 @@ public class MCH_I18n {
         addTranslation("aircraft.info.weapon_list", "zh_CN", "武器列表");
         addTranslation("aircraft.info.no_weapon", "en_US", "No Armament");
         addTranslation("aircraft.info.no_weapon", "zh_CN", "无武装");
+
+        addTranslation("mortar.impact", "en_US", "IMPACT");
+        addTranslation("mortar.impact", "zh_CN", "落点");
+        addTranslation("mortar.elev", "en_US", "ELEV");
+        addTranslation("mortar.elev", "zh_CN", "仰角");
+        addTranslation("mortar.weapon", "en_US", "WPN");
+        addTranslation("mortar.weapon", "zh_CN", "武器");
+        addTranslation("mortar.overheat", "en_US", "OVERHEAT");
+        addTranslation("mortar.overheat", "zh_CN", "过热");
+        addTranslation("mortar.heat", "en_US", "HEAT");
+        addTranslation("mortar.heat", "zh_CN", "热量");
+        addTranslation("mortar.reloading", "en_US", "RELOD");
+        addTranslation("mortar.reloading", "zh_CN", "装填");
     }
 
     private static void addTranslation(Object key, String lang, String value) {

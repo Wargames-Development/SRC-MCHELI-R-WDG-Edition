@@ -86,6 +86,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private static final int CMN_ID_CNTRL_BRAKE = 11;
     private static final int CMN_ID_GUNNER_STATUS = 12;
     private static final int CMN_ID_RADAR_ENABLED = 13;
+    private static final int CMN_ID_MORTAR_RADAR_ENABLED = 14;
 
     private static final MCH_EntitySeat[] seatsDummy = new MCH_EntitySeat[0];
     public final MCH_MissileDetector missileDetector;
@@ -141,6 +142,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public Vec3 lastBBHitNormal;
     public Vec3 lastBBHitPos;
     public MCH_EntityAircraft.WeaponBay[] weaponBays;
+    public MCH_EntityAircraft.WeaponBay[] turretWeaponBays;
     public float[] rotPartRotation;
     public float[] prevRotPartRotation;
     public float[] turretRotPartRotation;
@@ -296,6 +298,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.partCanopy = null;
         this.partLandingGear = null;
         this.weaponBays = new MCH_EntityAircraft.WeaponBay[0];
+        this.turretWeaponBays = new MCH_EntityAircraft.WeaponBay[0];
         this.rotPartRotation = new float[0];
         this.prevRotPartRotation = new float[0];
         this.turretRotPartRotation = new float[0];
@@ -5974,6 +5977,42 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
 
+        for (int i = 0; i < this.turretWeaponBays.length; ++i) {
+            MCH_EntityAircraft.WeaponBay wb = this.turretWeaponBays[i];
+            MCH_AircraftInfo.WeaponBay info = (MCH_AircraftInfo.WeaponBay) this.getAcInfo().partTurretWeaponBay.get(i);
+            boolean isSelected = false;
+            Integer[] arr$ = info.weaponIds;
+            int len$ = arr$.length;
+
+            for (int i$ = 0; i$ < len$; ++i$) {
+                int wid = arr$[i$].intValue();
+
+                for (int sid = 0; sid < this.currentWeaponID.length; ++sid) {
+                    if (wid == this.currentWeaponID[sid] && this.getEntityBySeatId(sid) != null) {
+                        isSelected = true;
+                    }
+                }
+            }
+
+            wb.prevRot = wb.rot;
+            if (isSelected) {
+                if (wb.rot < 90.0F) {
+                    wb.rot += 3.0F;
+                }
+
+                if (wb.rot >= 90.0F) {
+                    wb.rot = 90.0F;
+                }
+            } else {
+                if (wb.rot > 0.0F) {
+                    wb.rot -= 3.0F;
+                }
+
+                if (wb.rot <= 0.0F) {
+                    wb.rot = 0.0F;
+                }
+            }
+        }
     }
 
     public int getHitStatus() {
@@ -6082,6 +6121,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.partCanopy = this.createCanopy();
             this.partLandingGear = this.createLandingGear();
             this.weaponBays = this.createWeaponBays();
+            this.turretWeaponBays = this.createTurretWeaponBays();
             this.rotPartRotation = new float[info.partRotPart.size()];
             this.prevRotPartRotation = new float[info.partRotPart.size()];
             this.turretRotPartRotation = new float[info.partTurretRotPart.size()];
@@ -6422,6 +6462,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return wbs;
     }
 
+    protected MCH_EntityAircraft.WeaponBay[] createTurretWeaponBays() {
+        MCH_EntityAircraft.WeaponBay[] wbs = new MCH_EntityAircraft.WeaponBay[this.getAcInfo().partTurretWeaponBay.size()];
+
+        for (int i = 0; i < wbs.length; ++i) {
+            wbs[i] = new MCH_EntityAircraft.WeaponBay();
+        }
+
+        return wbs;
+    }
+
     protected MCH_Parts createHatch() {
         MCH_Parts hatch = null;
         if (this.getAcInfo().haveHatch()) {
@@ -6639,6 +6689,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void setRadarEnabledRuntime(boolean enabled, boolean writeClient) {
         this.setCommonStatus(CMN_ID_RADAR_ENABLED, enabled, writeClient);
+    }
+
+    public boolean isMortarRadarEnabledRuntime() {
+        return this.getCommonStatus(CMN_ID_MORTAR_RADAR_ENABLED);
+    }
+
+    public void setMortarRadarEnabledRuntime(boolean enabled) {
+        this.setCommonStatus(CMN_ID_MORTAR_RADAR_ENABLED, enabled, true);
     }
 
     public MCH_EntityChain getTowChainEntity() {
