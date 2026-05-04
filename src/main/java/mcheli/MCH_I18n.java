@@ -174,6 +174,8 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.key.maintenance", "zh_CN", "快速维修");
         addTranslation("gui.mcheli.key.aps", "en_US", "APS");
         addTranslation("gui.mcheli.key.aps", "zh_CN", "主动防御系统");
+        addTranslation("key.mcheli.aps.radar_off", "en_US", "\u00a7cPlease turn on the radar first before using APS");
+        addTranslation("key.mcheli.aps.radar_off", "zh_CN", "\u00a7c请先开启雷达再使用APS");
         addTranslation("gui.mcheli.key.ecm_jammer", "en_US", "ECM Jammer");
         addTranslation("gui.mcheli.key.ecm_jammer", "zh_CN", "电子战干扰系统");
         addTranslation("gui.mcheli.key.reset_airburst_dist", "en_US", "Reset Airburst Dist");
@@ -250,6 +252,23 @@ public class MCH_I18n {
         addTranslation("mortar.heat", "zh_CN", "热量");
         addTranslation("mortar.reloading", "en_US", "RELOD");
         addTranslation("mortar.reloading", "zh_CN", "装填");
+
+        addTranslation("weapon.deny.narrow_band", "en_US", "Narrow-band mode requires target lock");
+        addTranslation("weapon.deny.narrow_band", "zh_CN", "窄频模式需要先锁定目标");
+        addTranslation("weapon.deny.at_arm_airborne", "en_US", "AT ARM cannot lock airborne target");
+        addTranslation("weapon.deny.at_arm_airborne", "zh_CN", "ATM反辐射导弹不可锁定空中目标");
+        addTranslation("weapon.deny.lock_first", "en_US", "Please lock a target first");
+        addTranslation("weapon.deny.lock_first", "zh_CN", "请先锁定目标");
+        addTranslation("weapon.deny.select_or_lock", "en_US", "Please select or lock a target first");
+        addTranslation("weapon.deny.select_or_lock", "zh_CN", "请先选择或锁定目标");
+        addTranslation("weapon.deny.radar_lock_first", "en_US", "Lock a target with radar first");
+        addTranslation("weapon.deny.radar_lock_first", "zh_CN", "请先使用雷达锁定目标");
+        addTranslation("weapon.deny.ir_too_far", "en_US", "Target too far, IR seeker cannot acquire");
+        addTranslation("weapon.deny.ir_too_far", "zh_CN", "距离过远，红外导引头无法截获目标");
+        addTranslation("weapon.deny.ir_too_high", "en_US", "Target too high above ground, IR seeker cannot acquire");
+        addTranslation("weapon.deny.ir_too_high", "zh_CN", "目标离地过高，红外导引头无法截获");
+        addTranslation("npc.tech_tree_disabled", "en_US", "Tech tree gameplay is currently disabled.");
+        addTranslation("npc.tech_tree_disabled", "zh_CN", "科技树玩法当前未启用。");
     }
 
     private static void addTranslation(Object key, String lang, String value) {

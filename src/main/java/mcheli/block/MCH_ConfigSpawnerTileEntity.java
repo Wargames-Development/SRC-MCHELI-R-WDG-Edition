@@ -1,5 +1,7 @@
 package mcheli.block;
 
+import mcheli.MCH_FmurDebug;
+import mcheli.MCH_FMURUtil;
 import mcheli.MCH_ServerSettings;
 import mcheli.MCH_WaypointNavDebug;
 import mcheli.aircraft.MCH_EntityAircraft;
@@ -300,6 +302,8 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
             return false;
         }
         gunner.mountEntity(mountTarget);
+        MCH_FmurDebug.log(this.worldObj, "[ConfigSpawnerTileEntity] gunner mount done, calling spawnAiSoldierOnAircraft acId=%d", aircraft.getEntityId());
+        MCH_FMURUtil.spawnAiSoldierOnAircraft(this.worldObj, aircraft, gunner.getTeam());
         return true;
     }
 

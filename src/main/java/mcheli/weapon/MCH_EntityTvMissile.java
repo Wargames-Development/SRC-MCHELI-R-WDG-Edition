@@ -125,7 +125,11 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
     }
 
     public void onLaserGuide(double x, double y, double z) {
-        guidanceToPos(x, y, z);
+        if (this.getInfo() != null && this.getInfo().armCruiseEnable) {
+            guidanceToPosWithCruise(x, y, z);
+        } else {
+            guidanceToPos(x, y, z);
+        }
     }
 
 

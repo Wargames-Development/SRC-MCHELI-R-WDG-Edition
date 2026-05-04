@@ -673,8 +673,30 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         }
     }
 
+    private void applyApsRadarDefaults() {
+        if (this.aps == null) return;
+
+        this.enableBVR = true;
+        this.enableRadar = true;
+
+        if (Math.abs(this.radarScanElevationDeg - 40.0F) < 0.01F) this.radarScanElevationDeg = 80.0F;
+        if (!this.radarFollowTurretYaw) this.radarFollowTurretYaw = true;
+        if (Math.abs(this.radarPanelFillAlpha - 0.30F) < 0.01F) this.radarPanelFillAlpha = 0.15F;
+        if (Math.abs(this.radarScanAzimuthDeg - 120.0F) < 0.01F) this.radarScanAzimuthDeg = 360.0F;
+        if (this.radarScanTick == 12) this.radarScanTick = 10;
+        if (Math.abs(this.radarDetectChanceBase - 0.75F) < 0.01F) this.radarDetectChanceBase = 0.6F;
+        if (this.radarContactHoldTick == 40) this.radarContactHoldTick = 80;
+        if (Math.abs(this.radarMaxTargetRange - 3000.0F) < 0.01F) this.radarMaxTargetRange = 128.0F;
+        if (Math.abs(this.radarTrackElevationDeg - 45.0F) < 0.01F) this.radarTrackElevationDeg = 75.0F;
+        if (this.radarSearchType.equals("SRC")) this.radarSearchType = "TWS";
+        if (this.radarMinScanAltitude == 10.0F) this.radarMinScanAltitude = 0.0F;
+        if (this.radarMaxScanAltitude == 25.0F) this.radarMaxScanAltitude = 10.0F;
+        if (this.nameOnRWR.equals("?")) this.nameOnRWR = "APS";
+    }
+
     public boolean isValidData() throws Exception {
         normalizeDestroyRewardRanges();
+        applyApsRadarDefaults();
         if (this.cameraPosition.size() <= 0) {
             this.cameraPosition.add(new MCH_AircraftInfo.CameraPosition());
         }
@@ -959,6 +981,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 this.radarMaxScanAltitude = this.toFloat(data, -256.0F, 4096.0F);
             } else if (item.equalsIgnoreCase("RadarSearchType")) {
                 String mode = data.trim().toUpperCase(Locale.ROOT);
+                mode = mode.replace(" ", "_");
                 if (mode.equals("TWS") || mode.equals("GMTI_SRC") || mode.equals("GMTI_TWS")
                     || mode.equals("MULTI_SRC") || mode.equals("MULTI_TWS")) {
                     this.radarSearchType = mode;

@@ -146,7 +146,11 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
                     //非攻顶
                     else {
-                        this.guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
+                        if (dlRelay && getInfo().armCruiseEnable) {
+                            this.guidanceToPosWithCruise(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
+                        } else {
+                            this.guidanceToTarget(super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
+                        }
                     }
                 }
             } else {
@@ -191,24 +195,12 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
         this.hasLastKnownTarget = true;
     }
 
-    private boolean shouldUseArmCruise(double tx, double ty, double tz) {
-        if (!getInfo().armCruiseEnable) {
-            return false;
-        }
-        double dx = tx - this.posX;
-        double dy = ty - this.posY;
-        double dz = tz - this.posZ;
-        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (dist <= getInfo().armCruiseStartDistance) {
-            return false;
-        }
-        double horizontal = Math.sqrt(dx * dx + dz * dz);
-        return !(horizontal <= getInfo().armCruiseTerminalRadius && Math.abs(dy) <= getInfo().armCruiseTerminalHeight);
-    }
-
     private void guideAtToPosition(double tx, double ty, double tz) {
-        if (shouldUseArmCruise(tx, ty, tz)) {
-            // Cruise segment: hold altitude and only perform horizontal steering.
+        if (armHojCepActive) {
+            tx += (super.rand.nextDouble() - 0.5D) * 14.0D;
+            tz += (super.rand.nextDouble() - 0.5D) * 14.0D;
+        }
+        if (shouldUseCruise(tx, ty, tz)) {
             this.guidanceToPos(tx, this.posY, tz);
             return;
         }

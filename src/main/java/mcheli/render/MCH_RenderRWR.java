@@ -1089,7 +1089,10 @@ public class MCH_RenderRWR {
             return;
         }
         MCH_WeaponInfo wi = ws.getInfo();
-        if (wi.antiRadiationMissile || !(wi.activeRadar || wi.passiveRadar || wi.semiActiveRadar) || !wi.enableDataLink) {
+        if (wi.antiRadiationMissile || !wi.enableDataLink) {
+            return;
+        }
+        if (!(wi.activeRadar || wi.passiveRadar || wi.semiActiveRadar) && !(("aamissile".equals(wi.type) || "atmissile".equals(wi.type)) && wi.isHeatSeekerMissile && !wi.activeRadar && !wi.passiveRadar && !wi.semiActiveRadar)) {
             return;
         }
         boolean dlMode = wi.onlyDataLink || ws.isDataLinkMode();
@@ -3135,17 +3138,16 @@ public class MCH_RenderRWR {
         if (wi == null || !wi.antiRadiationMissile) {
             return false;
         }
-        Entity target = ac.worldObj.getEntityByID(emitterId);
-        if (!(target instanceof MCH_EntityAircraft)) {
+        MCH_EntityInfo info = MCH_EntityInfoClientTracker.getEntityInfo(emitterId);
+        if (info == null || info.entityClassName == null) {
             return false;
         }
-        MCH_EntityAircraft targetAc = (MCH_EntityAircraft) target;
         String type = wi.type != null ? wi.type.toLowerCase() : "";
         if ("aamissile".equals(type)) {
-            return targetAc instanceof MCP_EntityPlane || targetAc instanceof MCH_EntityHeli;
+            return info.entityClassName.contains("MCP_EntityPlane") || info.entityClassName.contains("MCH_EntityHeli");
         }
         if ("atmissile".equals(type)) {
-            return targetAc instanceof MCH_EntityTank || targetAc instanceof MCH_EntityVehicle;
+            return info.entityClassName.contains("MCH_EntityTank") || info.entityClassName.contains("MCH_EntityVehicle");
         }
         return true;
     }

@@ -155,28 +155,12 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
         this.hasLastKnownTarget = true;
     }
 
-    private boolean shouldUseArmCruise(double tx, double ty, double tz) {
-        if (!getInfo().armCruiseEnable) {
-            return false;
-        }
-        double dx = tx - this.posX;
-        double dy = ty - this.posY;
-        double dz = tz - this.posZ;
-        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (dist <= getInfo().armCruiseStartDistance) {
-            return false;
-        }
-        double horizontal = Math.sqrt(dx * dx + dz * dz);
-        return !(horizontal <= getInfo().armCruiseTerminalRadius && Math.abs(dy) <= getInfo().armCruiseTerminalHeight);
-    }
-
     private void guideArmToPosition(double tx, double ty, double tz) {
-        if (shouldUseArmCruise(tx, ty, tz)) {
-            // Cruise segment: hold altitude and only perform horizontal steering.
-            guidanceToPos(tx, this.posY, tz);
-        } else {
-            guidanceToPos(tx, ty, tz);
+        if (armHojCepActive) {
+            tx += (super.rand.nextDouble() - 0.5D) * 14.0D;
+            tz += (super.rand.nextDouble() - 0.5D) * 14.0D;
         }
+        guidanceToPosWithCruise(tx, ty, tz);
     }
 
     private void onUpdateArmGuidance() {

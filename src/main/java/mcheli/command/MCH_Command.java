@@ -2,6 +2,8 @@ package mcheli.command;
 
 import com.google.gson.JsonParseException;
 import mcheli.MCH_Config;
+import mcheli.MCH_FmurDebug;
+import mcheli.MCH_FMURUtil;
 import mcheli.MCH_FreeLookDebug;
 import mcheli.MCH_Lib;
 import mcheli.MCH_WaypointNavDebug;
@@ -322,6 +324,8 @@ public class MCH_Command extends CommandBase {
                         this.executeRwrDiag(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("rwrsound")) {
                         this.executeRwrSound(sender, prm);
+                    } else if (prm[0].equalsIgnoreCase("fmurcheck")) {
+                        this.executeFmurCheck(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("struct")) {
                         this.executeStructureCommand(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("give")) {
@@ -792,6 +796,10 @@ public class MCH_Command extends CommandBase {
                     if (prm.length == 2) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"scan", "lock", "both", "rwr_scan", "rwr_lock", "RWR_SCAN", "RWR_LOCK", "alert", "locked"});
                     }
+                } else if (prm[0].equalsIgnoreCase("fmurcheck")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"on", "off", "toggle", "status", "scan"});
+                    }
                 } else if (prm[0].equalsIgnoreCase("struct")) {
                     if (prm.length == 2) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"capture", "place", "list", "validate", "verify", "importschem"});
@@ -1153,6 +1161,12 @@ public class MCH_Command extends CommandBase {
             sender.addChatMessage(new ChatComponentText("RWR watch: " + (MCH_RadarDebug.isRwrWatchEnabled() ? "ON" : "OFF")
                 + ", intervalTick=" + MCH_RadarDebug.getRwrWatchIntervalTick()));
             sender.addChatMessage(new ChatComponentText("Log file: " + MCH_RadarDebug.getLogPath()));
+            if (sender.getEntityWorld() != null) {
+                long worldTime = sender.getEntityWorld().getTotalWorldTime();
+                long localTick = MCH_MOD.rwrThreatManager.getCurrentTick();
+                sender.addChatMessage(new ChatComponentText("Time: localTick=" + localTick + " worldTime(dim" + sender.getEntityWorld().provider.dimensionId + ")=" + worldTime));
+                sender.addChatMessage(new ChatComponentText("  Expire check: " + (localTick - (localTick % 100)) + "~" + (localTick + 100)));
+            }
             return;
         } else if (args.length >= 2 && (args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("false")
             || args[1].equalsIgnoreCase("on") || args[1].equalsIgnoreCase("off"))) {
@@ -1918,6 +1932,72 @@ public class MCH_Command extends CommandBase {
             }
         }
         return max - min <= slopeMax;
+    }
+
+    private void executeFmurCheck(ICommandSender sender, String[] args) {
+        boolean loaded = MCH_FMURUtil.isFMURLoaded();
+        sender.addChatMessage(new ChatComponentText("FMUR mod loaded: " + (loaded ? "YES" : "NO")));
+        if (!loaded) {
+            return;
+        }
+        if (args.length == 1 || (args.length >= 2 && (args[1].equalsIgnoreCase("toggle") || args[1].equalsIgnoreCase("on") || args[1].equalsIgnoreCase("off") || args[1].equalsIgnoreCase("true") || args[1].equalsIgnoreCase("false")))) {
+            boolean on = args.length < 2 || args[1].equalsIgnoreCase("toggle") ? !MCH_FmurDebug.isEnabled() : (args[1].equalsIgnoreCase("on") || args[1].equalsIgnoreCase("true"));
+            MCH_FmurDebug.setEnabled(on);
+            MCH_FmurDebug.log("[fmurcheck] Debug %s by %s", on ? "ENABLED" : "DISABLED", sender.getCommandSenderName());
+            sender.addChatMessage(new ChatComponentText("FMUR debug: " + (on ? "ON" : "OFF") + " -> see logs/mcheli_fmurcheck.log"));
+            return;
+        }
+        if (args.length >= 2 && (args[1].equalsIgnoreCase("status") || args[1].equalsIgnoreCase("scan"))) {
+            sender.addChatMessage(new ChatComponentText("FMUR debug: " + (MCH_FmurDebug.isEnabled() ? "ON" : "OFF")));
+            sender.addChatMessage(new ChatComponentText("Log file: " + MCH_FmurDebug.getLogPath()));
+            if (!(sender instanceof EntityPlayerMP)) {
+                sender.addChatMessage(new ChatComponentText("Scan: player only."));
+                return;
+            }
+            EntityPlayerMP player = (EntityPlayerMP)sender;
+            List<mcheli.aircraft.MCH_EntityAircraft> aircraftList = player.worldObj.getEntitiesWithinAABB(
+                mcheli.aircraft.MCH_EntityAircraft.class,
+                player.boundingBox.expand(50.0D, 50.0D, 50.0D));
+            int totalAc = 0;
+            int withSoldier = 0;
+            for (mcheli.aircraft.MCH_EntityAircraft ac : aircraftList) {
+                if (ac.isDead) continue;
+                totalAc++;
+                boolean found = false;
+                Entity ridden = ac;
+                while (ridden.riddenByEntity != null) {
+                    ridden = ridden.riddenByEntity;
+                    if (ridden.getClass().getName().contains("EntitySoldier")) {
+                        withSoldier++;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    mcheli.aircraft.MCH_EntitySeat[] seats = ac.getSeats();
+                    if (seats != null) {
+                        for (mcheli.aircraft.MCH_EntitySeat seat : seats) {
+                            if (seat == null) continue;
+                            Entity sr = seat.riddenByEntity;
+                            if (sr != null && sr.getClass().getName().contains("EntitySoldier")) {
+                                withSoldier++;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            sender.addChatMessage(new ChatComponentText("MCH aircraft within 50m: " + totalAc));
+            sender.addChatMessage(new ChatComponentText("  With FMUR AI soldier mounted: " + withSoldier));
+            if (totalAc > 0 && withSoldier == 0) {
+                sender.addChatMessage(new ChatComponentText("  Status: Gunner spawn does NOT auto-mount FMUR AI soldier."));
+            } else if (totalAc > 0 && withSoldier > 0) {
+                sender.addChatMessage(new ChatComponentText("  Status: Gunner spawn correctly mounts FMUR AI soldier."));
+            }
+            return;
+        }
+        throw new WrongUsageException("/mcheli fmurcheck <toggle|on|off|true|false|status|scan>", new Object[0]);
     }
 
 }

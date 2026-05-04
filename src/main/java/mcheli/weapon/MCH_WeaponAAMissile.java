@@ -12,7 +12,7 @@ import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
@@ -68,6 +68,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             }
         }
         if (shouldBlockShotByDataLink(prm)) {
+            return false;
+        }
+        if (shouldBlockShotByHeatSeekerDatalink(prm)) {
             return false;
         }
         if (shouldBlockShotByArmBandConstraint(prm)) {
@@ -181,6 +184,8 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         } else {
             if (getInfo().passiveRadar || getInfo().activeRadar || getInfo().semiActiveRadar) {
                 result = true;
+            } else if ("aamissile".equals(getInfo().type) && getInfo().isHeatSeekerMissile && !getInfo().activeRadar && !getInfo().passiveRadar && !getInfo().semiActiveRadar && !getInfo().antiRadiationMissile && super.optionParameter1 > 0) {
+                result = true;
             } else if (super.guidanceSystem.lock(prm.user) && super.guidanceSystem.lastLockEntity != null) {
                 result = true;
                 super.optionParameter1 = W_Entity.getEntityId(super.guidanceSystem.lastLockEntity);
@@ -212,10 +217,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             return false;
         }
         boolean hasTarget = prm.user != null && prm.user.worldObj != null && prm.option1 > 0
-            && prm.user.worldObj.getEntityByID(prm.option1) != null;
+            && (prm.user.worldObj.getEntityByID(prm.option1) != null
+                || mcheli.MCH_EntityInfoClientTracker.getEntityInfo(prm.option1) != null);
         if (!hasTarget) {
             if (super.worldObj.isRemote) {
-                sendDenyMessage(prm.user, "窄频模式需要先锁定目标 / Narrow-band mode requires target lock");
+                sendDenyMessage(prm.user, "weapon.deny.narrow_band");
             }
             return true;
         }
@@ -247,7 +253,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (getInfo().passiveRadar || getInfo().semiActiveRadar) {
             targetId = trackingId;
             if (targetId <= 0) {
-                sendDenyMessage(prm.user, "请先锁定目标 / Please lock a target first");
+                sendDenyMessage(prm.user, "weapon.deny.lock_first");
                 return true;
             }
         } else if (getInfo().activeRadar) {
@@ -259,20 +265,20 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 twsSelectedOnlyLaunch = trackingId <= 0 && selectedId > 0;
             }
             if (targetId <= 0) {
-                sendDenyMessage(prm.user, "请先选择或锁定目标 / Please select or lock a target first");
+                sendDenyMessage(prm.user, "weapon.deny.select_or_lock");
                 return true;
             }
         }
         Entity target = prm.user.worldObj.getEntityByID(targetId);
         if (target != null && !target.isDead) {
             if (!isTargetInMissileFov(prm.user, target)) {
-                sendDenyMessage(prm.user, "请先锁定目标 / Please lock a target first");
+                sendDenyMessage(prm.user, "weapon.deny.lock_first");
                 return true;
             }
         } else {
             MCH_EntityInfo snap = MCH_EntityInfoClientTracker.getEntityInfo(targetId);
             if (!isSnapshotTargetUsable(prm.user, snap)) {
-                sendDenyMessage(prm.user, "请先锁定目标 / Please lock a target first");
+                sendDenyMessage(prm.user, "weapon.deny.lock_first");
                 return true;
             }
         }
@@ -313,6 +319,43 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         return isTargetInMissileFov(user, snap.posX, snap.posY, snap.posZ);
     }
 
+    private boolean shouldBlockShotByHeatSeekerDatalink(MCH_WeaponParam prm) {
+        if (!(prm.entity instanceof MCH_EntityAircraft) || prm.user == null || !super.worldObj.isRemote) {
+            return false;
+        }
+        if (!"aamissile".equals(getInfo().type) || !getInfo().isHeatSeekerMissile || getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar || getInfo().antiRadiationMissile) {
+            return false;
+        }
+        super.optionParameter2 &= ~(OPTION_FLAG_DATALINK | OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY);
+        MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
+        MCH_WeaponSet ws = ac.getCurrentWeapon(prm.user);
+        if (ws == null || ws.getInfo() == null || !ws.getInfo().enableDataLink) {
+            return false;
+        }
+        boolean dlMode = ws.getInfo().onlyDataLink || ws.isDataLinkMode();
+        if (!dlMode) {
+            return false;
+        }
+        int trackingId = MCH_RenderRWR.getRadarTrackingTargetId(ac);
+        if (trackingId <= 0) {
+            sendDenyMessage(prm.user, "weapon.deny.radar_lock_first");
+            return true;
+        }
+        Entity target = prm.user.worldObj.getEntityByID(trackingId);
+        if (target == null || target.isDead) {
+            sendDenyMessage(prm.user, "weapon.deny.radar_lock_first");
+            return true;
+        }
+        double dist = prm.entity.getDistanceToEntity(target);
+        if (dist > 350.0D) {
+            sendDenyMessage(prm.user, "weapon.deny.ir_too_far");
+            return true;
+        }
+        super.optionParameter1 = trackingId;
+        super.optionParameter2 |= OPTION_FLAG_DATALINK;
+        return false;
+    }
+
     private boolean isTargetInMissileFov(Entity user, double targetX, double targetY, double targetZ) {
         if (user == null) {
             return false;
@@ -333,9 +376,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         return angle <= getInfo().getEffectiveMaxDegreeOfMissile(0);
     }
 
-    private void sendDenyMessage(Entity user, String message) {
+    private void sendDenyMessage(Entity user, String translationKey) {
         if (user instanceof EntityPlayer) {
-            ((EntityPlayer)user).addChatMessage(new ChatComponentText(message));
+            ((EntityPlayer)user).addChatMessage(new ChatComponentTranslation(translationKey));
         }
     }
 
@@ -345,6 +388,20 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             // do nothing
         } else {
             if (updateDataLinkTargetsFromRadar(prm, false)) {
+                return false;
+            }
+            // IR data link: skip manual seeker lock, use radar tracking target directly
+            if ("aamissile".equals(getInfo().type) && getInfo().isHeatSeekerMissile && !getInfo().activeRadar && !getInfo().passiveRadar && !getInfo().semiActiveRadar && !getInfo().antiRadiationMissile
+                && prm.entity instanceof MCH_EntityAircraft) {
+                MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
+                int trackingId = MCH_RenderRWR.getRadarTrackingTargetId(ac);
+                if (trackingId > 0) {
+                    Entity target = prm.user.worldObj.getEntityByID(trackingId);
+                    for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
+                        bullet.clientSetTargetEntity(target);
+                    }
+                    super.optionParameter1 = trackingId;
+                }
                 return false;
             }
             if (getInfo().passiveRadar) {
@@ -419,7 +476,8 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
         MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
         MCH_WeaponSet ws = ac.getCurrentWeapon(prm.user);
-        if (ws == null || ws.getInfo() == null || !ws.getInfo().enableDataLink || ws.getInfo().antiRadiationMissile) {
+        if (ws == null || ws.getInfo() == null || !ws.getInfo().enableDataLink || ws.getInfo().antiRadiationMissile
+            || (ws.getInfo().isHeatSeekerMissile && !ws.getInfo().activeRadar && !ws.getInfo().passiveRadar && !ws.getInfo().semiActiveRadar)) {
             return false;
         }
         boolean dlMode = ws.getInfo().onlyDataLink || ws.isDataLinkMode();

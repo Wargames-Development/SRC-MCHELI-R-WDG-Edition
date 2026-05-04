@@ -1,5 +1,7 @@
 package mcheli.command;
 
+import mcheli.MCH_FmurDebug;
+import mcheli.MCH_FMURUtil;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.mob.MCH_EntityGunner;
@@ -194,6 +196,11 @@ public class MCH_CommandAddGunner extends CommandBase {
         }
         world.spawnEntityInWorld(gunner);
         gunner.mountEntity(mountTarget);
+        Entity aircraftForAI = mountTarget instanceof MCH_EntityAircraft ? mountTarget : ((MCH_EntitySeat) mountTarget).getParent();
+        if (aircraftForAI != null) {
+            MCH_FmurDebug.log(world, "[CommandAddGunner] gunner spawn done, calling spawnAiSoldierOnAircraft acId=%d", aircraftForAI.getEntityId());
+            MCH_FMURUtil.spawnAiSoldierOnAircraft(world, aircraftForAI, team);
+        }
         return true;
     }
 

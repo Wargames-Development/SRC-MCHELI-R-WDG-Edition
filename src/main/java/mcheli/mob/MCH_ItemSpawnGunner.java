@@ -4,6 +4,8 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
 import java.util.Locale;
+import mcheli.MCH_FmurDebug;
+import mcheli.MCH_FMURUtil;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.wrapper.W_Item;
@@ -170,6 +172,9 @@ public class MCH_ItemSpawnGunner extends W_Item {
 
             world.spawnEntityInWorld((Entity) gunner);
             gunner.mountEntity(mountTarget);
+            MCH_FmurDebug.log(world, "[ItemSpawnGunner] gunner spawned, calling spawnAiSoldierOnAircraft acId=%s",
+                mountTarget instanceof MCH_EntityAircraft ? String.valueOf(mountTarget.getEntityId()) : ((MCH_EntitySeat) mountTarget).getParent().getEntityId());
+            MCH_FMURUtil.spawnAiSoldierOnAircraft(world, mountTarget instanceof MCH_EntityAircraft ? mountTarget : ((MCH_EntitySeat) mountTarget).getParent(), resolvedTeam);
             W_WorldFunc.MOD_playSoundAtEntity((Entity) gunner, "wrench", 1.0F, 3.0F);
             MCH_EntityAircraft ac = (mountTarget instanceof MCH_EntityAircraft) ? (MCH_EntityAircraft) mountTarget : ((MCH_EntitySeat) mountTarget).getParent();
             player.addChatMessage((IChatComponent) new ChatComponentText("The gunner was put on " + EnumChatFormatting.GOLD + (ac.getAcInfo()).displayName + EnumChatFormatting.RESET + " seat " + (ac.getSeatIdByEntity((Entity) gunner) + 1) + " by " + ScorePlayerTeam.formatPlayerName(player.getTeam(), player.getDisplayName())));

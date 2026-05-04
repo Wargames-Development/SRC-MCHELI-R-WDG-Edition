@@ -636,8 +636,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         if (this.nukeFlashDurationMax < this.nukeFlashDurationMin) {
             this.nukeFlashDurationMax = this.nukeFlashDurationMin;
         }
-        if (!this.hasEnableDataLinkSet && (this.activeRadar || this.passiveRadar || this.semiActiveRadar) && !this.antiRadiationMissile) {
-            this.enableDataLink = true;
+        if (!this.hasEnableDataLinkSet && !this.antiRadiationMissile) {
+            if (this.activeRadar || this.passiveRadar || this.semiActiveRadar) {
+                this.enableDataLink = true;
+            } else if ("aamissile".equals(this.type) || "atmissile".equals(this.type)) {
+                if (this.isHeatSeekerMissile && !this.activeRadar && !this.passiveRadar && !this.semiActiveRadar) {
+                    this.enableDataLink = true;
+                }
+            }
         }
         if (!this.enableDataLink) {
             this.onlyDataLink = false;

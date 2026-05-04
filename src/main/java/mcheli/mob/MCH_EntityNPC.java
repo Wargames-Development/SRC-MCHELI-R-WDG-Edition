@@ -9,6 +9,7 @@ import mcheli.economy.MCH_EconomyService;
 import mcheli.economy.MCH_EconomyTechService;
 import mcheli.gui.MCH_GuiCommonHandler;
 import net.minecraft.entity.EntityAgeable;
+import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -28,7 +29,7 @@ public class MCH_EntityNPC extends EntityVillager {
         }
         if (MCH_MOD.config == null || !MCH_Config.EnableTechTreeGameplay.prmBool) {
             if (!this.worldObj.isRemote) {
-                player.addChatMessage(new net.minecraft.util.ChatComponentText("科技树玩法当前未启用。"));
+                player.addChatMessage(new ChatComponentTranslation("npc.tech_tree_disabled"));
             }
             return true;
         }

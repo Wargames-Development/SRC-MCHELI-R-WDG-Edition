@@ -38,6 +38,11 @@ public class MCH_RWRThreatManager {
     private final Map<Long, Long> scanPairLastTouchedTick = new HashMap<Long, Long>();
     private final Map<ThreatKey, ActiveThreatState> activeThreats = new HashMap<ThreatKey, ActiveThreatState>();
     private long snapshotSeq = 0L;
+    private long threatManagerTick = 0L;
+
+    public long getCurrentTick() {
+        return this.threatManagerTick;
+    }
 
     public void reportRadarTracking(EntityPlayerMP reporter, int emitterAircraftId, int trackingTargetId) {
         if (reporter == null || reporter.worldObj == null || emitterAircraftId <= 0) {
@@ -55,7 +60,7 @@ public class MCH_RWRThreatManager {
         if (!isReporterControllingAircraft(ac, reporter)) {
             return;
         }
-        long now = ac.worldObj.getTotalWorldTime();
+        long now = this.threatManagerTick;
         if (trackingTargetId <= 0) {
             trackingReports.remove(emitterAircraftId);
         } else {
@@ -78,7 +83,7 @@ public class MCH_RWRThreatManager {
         if (tracker != null && emitter.getSeatIdByEntity(tracker) < 0) {
             return;
         }
-        long now = emitter.worldObj.getTotalWorldTime();
+        long now = this.threatManagerTick;
         MCH_EntityAircraft target = resolveThreatReceiverAircraft(targetEntity);
         if (target == null || target == emitter || target.isDead || isSameTeam(emitter, target)) {
             gunnerTrackingReports.remove(emitterAircraftId);
@@ -91,10 +96,7 @@ public class MCH_RWRThreatManager {
         if (emitterAircraftId <= 0) {
             return "tracking emitterId=invalid";
         }
-        long now = 0L;
-        if (MinecraftServer.getServer() != null && MinecraftServer.getServer().getEntityWorld() != null) {
-            now = MinecraftServer.getServer().getEntityWorld().getTotalWorldTime();
-        }
+        long now = this.threatManagerTick;
         RadarTrackingReport packet = trackingReports.get(emitterAircraftId);
         RadarTrackingReport gunner = gunnerTrackingReports.get(emitterAircraftId);
         String packetTarget = (packet != null && packet.expireTick >= now && packet.targetEntityId > 0) ? String.valueOf(packet.targetEntityId) : "-";
@@ -117,11 +119,12 @@ public class MCH_RWRThreatManager {
     }
 
     public void serverTick() {
+        this.threatManagerTick++;
         WorldServer[] worlds = MinecraftServer.getServer().worldServers;
         if (worlds == null) {
             return;
         }
-        long now = MinecraftServer.getServer().getEntityWorld().getTotalWorldTime();
+        long now = this.threatManagerTick;
         boolean shouldWatchLog = MCH_RadarDebug.isRwrWatchEnabled()
             && now % Math.max(1, MCH_RadarDebug.getRwrWatchIntervalTick()) == 0L;
         int activeTrackingReports = 0;

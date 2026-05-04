@@ -818,7 +818,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                 // 计算目标实体与玩家之间的平方距离
                                 double dist = entity.getDistanceSqToEntity(rm.livingPlayer);
                                 double distance = Math.sqrt(dist);
-                                if (wi != null && ac.getAcInfo() != null && ac.getAcInfo().enableBVR && distance < wi.minRangeBVR) {
+                                if (wi != null && ac.getAcInfo() != null && ac.getAcInfo().enableBVR) {
                                     return;
                                 }
                                 double bvrDisplayMaxRange = 4096.0D;

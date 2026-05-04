@@ -30,14 +30,28 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
     public MCH_WeaponASMissile(World world, Vec3 position, float yaw, float pitch, String name, MCH_WeaponInfo weaponInfo) {
         super(world, position, yaw, pitch, name, weaponInfo);
-        this.acceleration = 3.0F;  // 加速度
-        this.explosionPower = 9;   // 爆炸威力
-        this.power = 40;           // 武器威力
-        this.interval = -350;      // 射击间隔
+        this.acceleration = 3.0F;
+        this.explosionPower = 9;
+        this.power = 40;
+        this.interval = -350;
+        this.numMode = 2;
     }
 
     public boolean isCooldownCountReloadTime() {
         return true;
+    }
+
+    @Override
+    public String getName() {
+        if (this.numMode > 0 && getInfo() != null && getInfo().isGPSMissile) {
+            String base = super.getName();
+            if (this.getCurrentMode() == 1) {
+                return base + " [巡航]";
+            } else {
+                return base + " [常规]";
+            }
+        }
+        return super.getName();
     }
 
 
@@ -94,6 +108,7 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 MCH_EntityASMissile missile = new MCH_EntityASMissile(this.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, this.acceleration);
                 missile.setInfoByName(this.name);
                 missile.setParameterFromWeapon(this, prm.entity, prm.user);
+                missile.cruiseMode = (this.getCurrentMode() == 1) && getInfo().armCruiseEnable;
                 boolean targetAssigned = false;
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
                 if (prm.user instanceof MCH_EntityGunner && tgtEnt != null && !tgtEnt.isDead) {

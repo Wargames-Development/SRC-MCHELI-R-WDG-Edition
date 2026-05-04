@@ -15,6 +15,7 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
     public double originTargetPosY;
     public double originTargetPosZ;
     public boolean targeting;
+    public boolean cruiseMode;
     public boolean gpsGuidanceReleased;
     public double launchPosX;
     public double launchPosY;
@@ -97,10 +98,18 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
                         }
                     }
                     Vec3 aim = computeBallisticAimPoint(targetPosX, targetPosY, targetPosZ);
-                    guidanceToPos(aim.xCoord, aim.yCoord, aim.zCoord);
+                    if (this.cruiseMode) {
+                        guidanceToPosWithCruise(aim.xCoord, aim.yCoord, aim.zCoord);
+                    } else {
+                        guidanceToPos(aim.xCoord, aim.yCoord, aim.zCoord);
+                    }
                 } else {
                     Vec3 aim = computeBallisticAimPoint(originTargetPosX, originTargetPosY, originTargetPosZ);
-                    guidanceToPos(aim.xCoord, aim.yCoord, aim.zCoord);
+                    if (this.cruiseMode) {
+                        guidanceToPosWithCruise(aim.xCoord, aim.yCoord, aim.zCoord);
+                    } else {
+                        guidanceToPos(aim.xCoord, aim.yCoord, aim.zCoord);
+                    }
                 }
             }
         } else if (!super.worldObj.isRemote) {

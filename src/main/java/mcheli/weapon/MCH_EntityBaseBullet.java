@@ -78,6 +78,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public boolean antiFlareUse;
     public int antiFlareTick;
     public int numLockedChaff = 0;
+    public boolean armHojCepActive = false;
+    public boolean heatSeekerDatalinkMode = false;
     public int airburstDist = 0;
     public Vec3 initPos;
     boolean doingTopAttack = false;
@@ -422,6 +424,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (v) {
             this.dataLinkRelayEverEnabled = true;
             this.activeRadarCaptured = false;
+            if (getInfo() != null && getInfo().isHeatSeekerMissile && !getInfo().activeRadar && !getInfo().passiveRadar && !getInfo().semiActiveRadar) {
+                this.heatSeekerDatalinkMode = true;
+            }
         }
         syncDataLinkFlags();
     }
@@ -472,7 +477,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         return MCH_MOD.rwrThreatManager.isEmitterTrackingTarget(
             this.shootingAircraft.getEntityId(),
             this.targetEntity.getEntityId(),
-            this.worldObj.getTotalWorldTime());
+            MCH_MOD.rwrThreatManager.getCurrentTick());
     }
 
     public void setDataLinkTwsSelectedOnly(boolean v) {
@@ -684,6 +689,31 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.rotationPitch = -((float) (Math.atan2(this.motionY, r) * 180.0D / Math.PI));
     }
 
+    public boolean shouldUseCruise(double tx, double ty, double tz) {
+        if (getInfo() == null || !getInfo().armCruiseEnable) {
+            return false;
+        }
+        double dx = tx - this.posX;
+        double dy = ty - this.posY;
+        double dz = tz - this.posZ;
+        double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist <= getInfo().armCruiseStartDistance) {
+            return false;
+        }
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        if (horizontal <= getInfo().armCruiseTerminalRadius && Math.abs(dy) <= getInfo().armCruiseTerminalHeight) {
+            return false;
+        }
+        return true;
+    }
+
+    public void guidanceToPosWithCruise(double tx, double ty, double tz) {
+        if (shouldUseCruise(tx, ty, tz)) {
+            this.guidanceToPos(tx, this.posY, tz);
+        } else {
+            this.guidanceToPos(tx, ty, tz);
+        }
+    }
 
     public void guidanceToTarget(double targetPosX, double targetPosY, double targetPosZ) {
         this.guidanceToTarget(targetPosX, targetPosY, targetPosZ, 1.0F);
@@ -2299,17 +2329,20 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             // ARM always prioritizes radiating emitters once detected.
             if (getInfo().antiRadiationMissile && closestArmTarget != null) {
                 targetEntity = closestArmTarget;
+                armHojCepActive = (closestArmTarget instanceof MCH_EntityAircraft) && ((MCH_EntityAircraft)closestArmTarget).isECMJammerUsing();
                 if (getInfo().activeRadar) {
                     setActiveRadarCaptured(true);
                 }
             } else if (nearestChaff != null) {
                 targetEntity = nearestChaff;
                 numLockedChaff++;
+                armHojCepActive = false;
                 if (getInfo().activeRadar) {
                     setActiveRadarCaptured(false);
                 }
             } else if (closestTarget != null) {
                 targetEntity = closestTarget;
+                armHojCepActive = false;
                 if (getInfo().activeRadar) {
                     setActiveRadarCaptured(true);
                 }
@@ -2372,6 +2405,15 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             return;
         }
 
+        // For AHEAD-capable weapons, ProximityFuseDist is treated as pre-airburst lead distance
+        // and should only work when radar fire-control has produced a valid airburst solution.
+        if (getInfo().ahead) {
+            int abDist = this.airburstDist;
+            if (abDist <= 5 || abDist >= 3000) {
+                return;
+            }
+        }
+
         float searchRange = getInfo().proximityFuseDist * 5f;
 
         List<Entity> nearbyEntities = worldObj.getEntitiesWithinAABBExcludingEntity(
@@ -2406,11 +2448,19 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 continue;
             }
 
-            if (!(entity instanceof MCH_EntityAircraft)) {
+            boolean isAircraftTarget = entity instanceof MCH_EntityAircraft;
+            boolean isLockedMissileTarget =
+                entity instanceof MCH_IMissile
+                    && this.targetEntity != null
+                    && !this.targetEntity.isDead
+                    && W_Entity.isEqual(entity, this.targetEntity);
+
+            // Keep legacy aircraft proximity behavior, and extend to locked missile targets only.
+            if (!isAircraftTarget && !isLockedMissileTarget) {
                 continue;
             }
 
-            if(MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().proximityFuseHeight)) {
+            if (isAircraftTarget && MCH_WeaponGuidanceSystem.isEntityOnGround(entity, getInfo().proximityFuseHeight)) {
                 continue;
             }
 
@@ -2501,6 +2551,12 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                             float damage = MCH_Config.applyDamageVsEntity(entity, ds, this.getInfo().proximityFuseDamage);
                             damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
                             entity.attackEntityFrom(ds, damage);
+
+                            // Locked missile targets should be killable by proximity trigger even with low blast damage setup.
+                            if (isLockedMissileTarget && entity instanceof MCH_EntityBaseBullet) {
+                                ((MCH_EntityBaseBullet) entity).setDead();
+                            }
+
                             if(damage > 0) {
                                 this.notifyHitBullet();
                             }

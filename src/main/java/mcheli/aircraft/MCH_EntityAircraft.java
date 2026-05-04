@@ -3667,7 +3667,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean canUseAPS() {
-        return this.getAcInfo() != null && this.getAcInfo().haveAPS() && this.aps.tick == 0;
+        return this.getAcInfo() != null && this.getAcInfo().haveAPS() && this.aps.tick == 0
+            && this.getAcInfo().enableRadar && this.isRadarEnabledRuntime();
     }
 
     public boolean canUseECMJammer() {

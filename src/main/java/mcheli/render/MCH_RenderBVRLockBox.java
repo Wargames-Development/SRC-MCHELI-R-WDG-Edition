@@ -278,9 +278,16 @@ public class MCH_RenderBVRLockBox {
             boolean drawText = isMSL || isRadarSelectedOrTracking || (alpha >= 0.6f);
             MCH_WeaponSet currentWs = ac.getCurrentWeapon(player);
             MCH_WeaponInfo currentWi = currentWs != null ? currentWs.getInfo() : null;
-            boolean dataLinkMode = currentWi != null && currentWi.enableDataLink && (currentWi.onlyDataLink || currentWs.isDataLinkMode()) && !currentWi.antiRadiationMissile;
+            boolean dataLinkMode = currentWi != null && !currentWi.antiRadiationMissile && (
+                (currentWi.enableDataLink && (currentWi.onlyDataLink || currentWs.isDataLinkMode()) && (currentWi.activeRadar || currentWi.passiveRadar || currentWi.semiActiveRadar))
+                ||
+                (currentWi.enableDataLink && (currentWi.onlyDataLink || currentWs.isDataLinkMode()) && ("aamissile".equals(currentWi.type) || "atmissile".equals(currentWi.type))
+                    && currentWi.isHeatSeekerMissile && !currentWi.activeRadar && !currentWi.passiveRadar && !currentWi.semiActiveRadar)
+            );
+            boolean isHeatSeekerDatalink = currentWi != null && currentWi.enableDataLink && ("aamissile".equals(currentWi.type) || "atmissile".equals(currentWi.type))
+                && currentWi.isHeatSeekerMissile && !currentWi.activeRadar && !currentWi.passiveRadar && !currentWi.semiActiveRadar && currentWs.isDataLinkMode();
             boolean inMissileFov = currentWi != null && angle <= currentWi.getHudPreferredMissileFovDeg();
-            boolean highlight = isMSL || isRadarSelectedOrTracking || isFireControlLocked;
+            boolean highlight = isRadarSelectedOrTracking || isFireControlLocked;
             boolean showDataLinkRings = dataLinkMode && inMissileFov && (isRadarSelectedOrTracking || isFireControlLocked);
             String stateText = null;
             if (isRadarTracking) {
@@ -293,14 +300,16 @@ public class MCH_RenderBVRLockBox {
             double hudBlend = getHudBlendFactor(dist);
             float worldAlpha = (float)(alpha * (1.0D - hudBlend));
             float hudAlpha = (float)(alpha * hudBlend);
-            int markerColor = highlight ? 0xFF0000 : 0x00FF00;
+            int markerColor = (isMSL || highlight) ? 0xFF0000 : 0x00FF00;
             if (worldAlpha > 0.01F) {
-                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, color, drawText, worldAlpha);
+                int heatSeekerRingColor = isHeatSeekerDatalink ? (dist <= 350.0D ? 0xFF0000 : 0xFFFFFF) : 0;
+                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, isMSL, markerColor, highlight, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, color, drawText, worldAlpha);
             }
             if (hudAlpha > 0.01F) {
                 HudProjection projection = projectRelativeToHud((float)gx, (float)(gy + 0.2D), (float)gz, sc, mc, partialTicks);
                 if (projection != null) {
-                    drawHudMarker(mc, projection, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, color, drawText, hudAlpha);
+                    int heatSeekerRingColor = isHeatSeekerDatalink ? (dist <= 350.0D ? 0xFF0000 : 0xFFFFFF) : 0;
+                    drawHudMarker(mc, projection, isMSL, markerColor, highlight, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, color, drawText, hudAlpha);
                 }
             }
         }
@@ -332,20 +341,20 @@ public class MCH_RenderBVRLockBox {
         boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
         List<MCH_RenderRWR.ArmBvrDisplayContact> contacts = MCH_RenderRWR.getArmBvrDisplayContacts(ac, player);
         for (MCH_RenderRWR.ArmBvrDisplayContact contact : contacts) {
-            Entity targetEntity = mc.theWorld != null ? mc.theWorld.getEntityByID(contact.emitterId) : null;
-            if (!(targetEntity instanceof MCH_EntityAircraft) || targetEntity.isDead) {
+            MCH_EntityInfo targetInfo = MCH_EntityInfoClientTracker.getEntityInfo(contact.emitterId);
+            if (targetInfo == null || targetInfo.entityClassName == null) {
                 continue;
             }
-            if (!isArmContactAllowedByWeaponType(mc, ac, player, contact.emitterId)) {
+            if (!isArmContactClassNameAllowedByWeaponType(targetInfo.entityClassName, wi)) {
                 continue;
             }
-            double gx = interpolate(targetEntity.posX, targetEntity.lastTickPosX, partialTicks);
-            double gy = interpolate(targetEntity.posY, targetEntity.lastTickPosY, partialTicks) + 1.0D;
-            double gz = interpolate(targetEntity.posZ, targetEntity.lastTickPosZ, partialTicks);
+            double gx = interpolate(targetInfo.posX, targetInfo.lastTickPosX, partialTicks);
+            double gy = interpolate(targetInfo.posY, targetInfo.lastTickPosY, partialTicks) + 1.0D;
+            double gz = interpolate(targetInfo.posZ, targetInfo.lastTickPosZ, partialTicks);
             double x = gx - rm.viewerPosX;
             double y = gy - rm.viewerPosY;
             double z = gz - rm.viewerPosZ;
-            double dist = Math.sqrt(targetEntity.getDistanceSqToEntity(ac));
+            double dist = Math.sqrt(targetInfo.getDistanceSqToEntity(ac));
             double angle = calculateAngle(wi.enableHMS ? player : ac, gx, gy, gz);
             float alpha = 0.4F;
             if (angle <= 90.0D) {
@@ -376,43 +385,33 @@ public class MCH_RenderBVRLockBox {
             float worldAlpha = (float)(alpha * (1.0D - hudBlend));
             float hudAlpha = (float)(alpha * hudBlend);
             if (worldAlpha > 0.01F) {
-                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, false, markerColor, highlight, showArmLockRings, stateText, text, textColor, true, worldAlpha);
+                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, false, markerColor, highlight, showArmLockRings, false, 0, stateText, text, textColor, true, worldAlpha);
             }
             if (hudAlpha > 0.01F) {
                 HudProjection projection = projectRelativeToHud((float)gx, (float)(gy + 0.2D), (float)gz, sc, mc, partialTicks);
                 if (projection != null) {
-                    drawHudMarker(mc, projection, false, markerColor, highlight, showArmLockRings, stateText, text, textColor, true, hudAlpha);
+                    drawHudMarker(mc, projection, false, markerColor, highlight, showArmLockRings, false, 0, stateText, text, textColor, true, hudAlpha);
                 }
             }
         }
     }
 
-    private boolean isArmContactAllowedByWeaponType(Minecraft mc, MCH_EntityAircraft ac, EntityPlayer player, int emitterId) {
-        if (mc == null || ac == null || player == null || mc.theWorld == null) {
+    private boolean isArmContactClassNameAllowedByWeaponType(String entityClassName, MCH_WeaponInfo wi) {
+        if (entityClassName == null || wi == null || !wi.antiRadiationMissile) {
             return false;
         }
-        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
-        MCH_WeaponInfo wi = ws != null ? ws.getInfo() : null;
-        if (wi == null || !wi.antiRadiationMissile) {
-            return false;
-        }
-        Entity target = mc.theWorld.getEntityByID(emitterId);
-        if (!(target instanceof MCH_EntityAircraft)) {
-            return false;
-        }
-        MCH_EntityAircraft targetAc = (MCH_EntityAircraft) target;
         String type = wi.type != null ? wi.type.toLowerCase() : "";
         if ("aamissile".equals(type)) {
-            return targetAc instanceof MCP_EntityPlane || targetAc instanceof MCH_EntityHeli;
+            return entityClassName.contains("MCP_EntityPlane") || entityClassName.contains("MCH_EntityHeli");
         }
         if ("atmissile".equals(type)) {
-            return targetAc instanceof MCH_EntityTank || targetAc instanceof MCH_EntityVehicle;
+            return entityClassName.contains("MCH_EntityTank") || entityClassName.contains("MCH_EntityVehicle");
         }
         return true;
     }
 
     private void drawBillboardMarker(Minecraft mc, RenderManager rm, float rollDeg, double x, double y, double z, float sPerPixel,
-                                     boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings, String stateText,
+                                     boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor, String stateText,
                                      String text, int textColor, boolean drawText, float alpha) {
         GL11.glPushMatrix();
         GL11.glTranslated(x, y, z);
@@ -420,11 +419,11 @@ public class MCH_RenderBVRLockBox {
         GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
         GL11.glRotatef(-rollDeg, 0.0F, 0.0F, 1.0F);
         GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
-        drawMarkerCore(mc, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
+        drawMarkerCore(mc, isMSL, markerColor, highlight, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, textColor, drawText, alpha);
         GL11.glPopMatrix();
     }
 
-    private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings,
+    private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor,
                                String stateText, String text, int textColor, boolean drawText, float alpha) {
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
@@ -434,14 +433,14 @@ public class MCH_RenderBVRLockBox {
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
         GL11.glTranslated(projection.x, projection.y, 0.0D);
-        drawMarkerCore(mc, isMSL, markerColor, highlight, showDataLinkRings, stateText, text, textColor, drawText, alpha);
+        drawMarkerCore(mc, isMSL, markerColor, highlight, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, textColor, drawText, alpha);
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
     }
 
-    private void drawMarkerCore(Minecraft mc, boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings, String stateText,
+    private void drawMarkerCore(Minecraft mc, boolean isMSL, int markerColor, boolean highlight, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor, String stateText,
                                 String text, int textColor, boolean drawText, float alpha) {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
@@ -471,7 +470,14 @@ public class MCH_RenderBVRLockBox {
             tess.draw();
         }
         if (showDataLinkRings) {
-            drawDualRedRings(half * 0.88F, half * 1.03F, alpha);
+            if (isHeatSeekerDatalink) {
+                long tick = Minecraft.getMinecraft().theWorld != null ? Minecraft.getMinecraft().theWorld.getTotalWorldTime() : 0L;
+                float blinkAlpha = ((tick / 5L) % 2L == 0L) ? 0.5F : 1.0F;
+                 float ringAlpha = alpha * blinkAlpha;
+                 drawSingleRedRing(half * 1.60F, ringAlpha, heatSeekerRingColor);
+            } else {
+                drawDualRedRings(half * 0.88F, half * 1.03F, alpha);
+            }
         }
         if (stateText != null) {
             int lw = mc.fontRenderer.getStringWidth(stateText);
@@ -532,6 +538,16 @@ public class MCH_RenderBVRLockBox {
         GL11.glColor4f(1.0F, 0.0F, 0.0F, alpha);
         drawRingLine(tess, r1);
         drawRingLine(tess, r2);
+    }
+
+    private void drawSingleRedRing(float radius, float alpha, int color) {
+        Tessellator tess = Tessellator.instance;
+        GL11.glLineWidth(1.5F);
+        float r = ((color >> 16) & 0xFF) / 255.0F;
+        float g = ((color >> 8) & 0xFF) / 255.0F;
+        float b = (color & 0xFF) / 255.0F;
+        GL11.glColor4f(r, g, b, alpha);
+        drawRingLine(tess, radius);
     }
 
     private void drawRingLine(Tessellator tess, float radius) {
