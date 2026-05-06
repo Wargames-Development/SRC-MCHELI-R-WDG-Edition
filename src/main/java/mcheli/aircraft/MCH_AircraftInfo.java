@@ -111,6 +111,16 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public float mobilityYaw;
     public float mobilityPitch;
     public float mobilityRoll;
+    // Advanced flight model selector
+    public String flightModelType = "legacy";
+    public float massEmpty = 10000.0F;
+    public float fuelMass = 0.0F;public float advancedWingArea = 27.87F;      // F-16 approx m^2
+    public float advancedMaxThrust = 1.0F;       // game-scaled thrust
+    public float advancedLiftCoeff = 1.15F;      // baseline CL
+    public float advancedDragCoeff = 0.035F;     // baseline CD
+    public float advancedAirDensity = 1.0F;      // game-scaled rho
+    public float advancedGravity = 9.81F;       // game-scaled gravity
+    public boolean advancedFlightDebug = false;
     public float mobilityYawOnGround;
     public float minRotationPitch;
     public float maxRotationPitch;
@@ -354,6 +364,16 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.mobilityYaw = 1.0F;
         this.mobilityPitch = 1.0F;
         this.mobilityRoll = 1.0F;
+        this.flightModelType = "legacy";
+        this.massEmpty = 10000.0F;
+        this.fuelMass = 0.0F;
+        this.advancedWingArea = 27.87F;
+        this.advancedMaxThrust = 1.0F;
+        this.advancedLiftCoeff = 1.15F;
+        this.advancedDragCoeff = 0.035F;
+        this.advancedAirDensity = 1.0F;
+        this.advancedGravity = 9.81F;
+        this.advancedFlightDebug = false;
         this.mobilityYawOnGround = 1.0F;
         this.minRotationPitch = this.getMinRotationPitch();
         this.maxRotationPitch = this.getMaxRotationPitch();
@@ -883,6 +903,26 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                 this.mobilityPitch = this.toFloat(data, 0.0F, 100.0F);
                                             } else if (item.equalsIgnoreCase("MobilityRoll")) {
                                                 this.mobilityRoll = this.toFloat(data, 0.0F, 100.0F);
+                                            } else if (item.equalsIgnoreCase("FlightModelType")) {
+                                                this.flightModelType = data.trim().toLowerCase();
+                                            } else if (item.equalsIgnoreCase("MassEmpty")) {
+                                                this.massEmpty = this.toFloat(data, 1.0F, 1000000.0F);
+                                            } else if (item.equalsIgnoreCase("FuelMass")) {
+                                                this.fuelMass = this.toFloat(data, 0.0F, 1000000.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedWingArea")) {
+                                                this.advancedWingArea = this.toFloat(data, 1.0F, 1000.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedMaxThrust")) {
+                                                this.advancedMaxThrust = this.toFloat(data, 0.0F, 1000.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedLiftCoeff")) {
+                                                this.advancedLiftCoeff = this.toFloat(data, 0.0F, 10.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedDragCoeff")) {
+                                                this.advancedDragCoeff = this.toFloat(data, 0.0F, 10.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedAirDensity")) {
+                                                this.advancedAirDensity = this.toFloat(data, 0.0F, 10.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedGravity")) {
+                                                this.advancedGravity = this.toFloat(data, 0.0F, 1.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedFlightDebug")) {
+                                            this.advancedFlightDebug = this.toBool(data);
                                             } else if (item.equalsIgnoreCase("MinRotationPitch")) {
                                                 this.limitRotation = true;
                                                 this.minRotationPitch = this.toFloat(data, this.getMinRotationPitch(), 0.0F);

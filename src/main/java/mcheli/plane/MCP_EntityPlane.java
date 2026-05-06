@@ -706,6 +706,18 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     protected void onUpdate_Client() {
+        if (this.isAdvancedFlightModel()) {
+            float serverRoll = this.getServerRoll();
+            float rollDiff = MathHelper.wrapAngleTo180_float(serverRoll - this.getRotRoll());
+
+            if (W_Lib.isClientPlayer(this.getRiddenByEntity())) {
+                // Local pilot: smooth roll to avoid camera snap/vibration.
+                this.setRotRoll(this.getRotRoll() + rollDiff * 0.05F);
+            } else {
+                // Other clients: follow server more directly.
+                this.setRotRoll(this.getRotRoll() + rollDiff * 0.35F);
+            }
+        }
         if (this.getRiddenByEntity() != null && W_Lib.isClientPlayer(this.getRiddenByEntity())) {
             this.getRiddenByEntity().rotationPitch = this.getRiddenByEntity().prevRotationPitch;
         }
@@ -752,6 +764,15 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     private void onUpdate_Server() {
+
+        // =============================
+        // ADVANCED PHYSICS OVERRIDE
+        // =============================
+        if (this.isAdvancedFlightModel()) {
+            MCP_AdvancedPlanePhysics.update(this);
+            return;
+        }
+
         Entity rdnEnt = this.getRiddenByEntity();
         double prevMotion = Math.sqrt(super.motionX * super.motionX + super.motionZ * super.motionZ);
         double dp = 0.0D;

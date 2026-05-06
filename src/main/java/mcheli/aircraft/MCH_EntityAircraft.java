@@ -226,6 +226,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private double lastLandInDistance;
     private boolean switchSeat = false;
     public int jammingTick = 0;
+    // Advanced flight angular inertia state
+    public double advancedPitchRate = 0.0D;
+    public double advancedYawRate = 0.0D;
+    public double advancedRollRate = 0.0D;
+
+    public double advancedPitchInput = 0.0D;
+    public double advancedYawInput = 0.0D;
+    public double advancedRollInput = 0.0D;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -304,8 +312,25 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.isParachuting = false;
         this.prevPosition = new MCH_Queue(10, Vec3.createVectorHelper(0.0D, 0.0D, 0.0D));
         this.lastSearchLightYaw = this.lastSearchLightPitch = 0.0F;
+        this.advancedPitchRate = 0.0D;
+        this.advancedYawRate = 0.0D;
+        this.advancedRollRate = 0.0D;
+        this.advancedPitchInput = 0.0D;
+        this.advancedYawInput = 0.0D;
+        this.advancedRollInput = 0.0D;
     }
 
+    public double clampAdvancedFlightInput(double value) {
+        if (value > 1.0D) {
+            return 1.0D;
+        }
+
+        if (value < -1.0D) {
+            return -1.0D;
+        }
+
+        return value;
+    }
     public static MCH_EntityAircraft getAircraft_RiddenOrControl(Entity rider) {
         if (rider != null) {
             if (rider.ridingEntity instanceof MCH_EntityAircraft) {
@@ -1338,6 +1363,28 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (this.isFreeLookMode()) {
             y = 0.0F;
             x = 0.0F;
+        }
+
+        // Advanced flight model:
+        // Store control intent only. Do not let old MCHR instantly rotate the aircraft.
+        // Advanced flight model:
+        // Capture player input only. Physics solver applies rotation later.
+        if (this.isAdvancedFlightModel()) {
+
+            // x/y are already the mouse/control deltas passed into setAngles().
+            this.advancedYawInput = this.clampAdvancedFlightInput((double)x / 40.0D);
+            this.advancedPitchInput = this.clampAdvancedFlightInput((double)-y / 40.0D);
+
+            // For now, use mouse X for roll too, like old plane behavior.
+            this.advancedRollInput = this.clampAdvancedFlightInput((double)x / 40.0D);
+
+            player.prevRotationYaw = this.getRotYaw();
+            player.rotationYaw = this.getRotYaw();
+            player.prevRotationPitch = this.getRotPitch();
+            player.rotationPitch = this.getRotPitch();
+
+            this.aircraftRotChanged = true;
+            return;
         }
 
         float yaw = 0.0F;
@@ -5092,6 +5139,26 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (id < 0 || this.weapons.length <= 0 || id >= this.weapons.length)
             return this.dummyWeapon;
         return this.weapons[id];
+    }
+
+    public boolean isAdvancedFlightModel() {
+        MCH_AircraftInfo info = this.getAcInfo();
+
+        if (info == null) {
+            return false;
+        }
+
+        return info.flightModelType != null && info.flightModelType.equalsIgnoreCase("advanced");
+    }
+
+    public float getAdvancedFlightCurrentMass() {
+        MCH_AircraftInfo info = this.getAcInfo();
+
+        if (info == null) {
+            return 10000.0F;
+        }
+
+        return info.massEmpty + info.fuelMass;
     }
 
     public int getWeaponIDBySeatID(int sid) {
