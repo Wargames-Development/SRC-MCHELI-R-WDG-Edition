@@ -15,7 +15,7 @@ import mcheli.wrapper.W_Reflection;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.entity.player.EntityPlayer;
-
+import mcheli.MCH_ClientCommonTickHandler;
 public class MCP_ClientPlaneTickHandler extends MCH_AircraftClientTickHandler {
 
     public MCH_Key KeySwitchMode;
@@ -129,6 +129,26 @@ public class MCP_ClientPlaneTickHandler extends MCH_AircraftClientTickHandler {
         boolean send;
         send = this.commonPlayerControl(player, plane, isPilot, pc);
         boolean isUav;
+        if (isPilot && plane.isAdvancedFlightModel()) {
+            float pitchInput = 0.0F;
+
+            if (!plane.isFreeLookMode()) {
+                // Read the actual client mouse/stick pitch directly.
+                // This avoids relying on setAngles() running before playerControl().
+                pitchInput = (float)(-MCH_ClientCommonTickHandler.getCurrentStickY() / 40.0D);
+            }
+
+            if (pitchInput > 1.0F) pitchInput = 1.0F;
+            if (pitchInput < -1.0F) pitchInput = -1.0F;
+
+            pc.advancedPitchInput = pitchInput;
+
+            // Keep local debug/client state consistent.
+            plane.advancedPitchInput = pitchInput;
+
+            // Advanced flight needs continuous input packets.
+            send = true;
+        }
         if (isPilot) {
             if (this.KeySwitchMode.isKeyDown()) {
                 if (plane.getIsGunnerMode(player) && plane.canSwitchCameraPos()) {

@@ -411,8 +411,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.getDataWatcher().addObject(25, 0);
         this.getDataWatcher().addObject(21, "");
         this.getDataWatcher().addObject(22, 0);
-        this.getDataWatcher().addObject(26, 0.0F);
-        this.getDataWatcher().addObject(27, "");
+        this.getDataWatcher().addObject(26, 0.0F); // roll
+        this.getDataWatcher().addObject(27, "");   // command string, do not use for pitch
+        this.getDataWatcher().addObject(28, 0.0F); // advanced pitch sync
         this.getDataWatcher().addObject(29, 0);
         this.getDataWatcher().addObject(31, 0);
         if (!super.worldObj.isRemote) {
@@ -426,6 +427,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public float getServerRoll() {
         return this.getDataWatcher().getWatchableObjectFloat(26);
+    }
+    public float getServerPitch() {
+        return this.getDataWatcher().getWatchableObjectFloat(28);
     }
 
     public float getRotYaw() {
@@ -1371,12 +1375,23 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         // Capture player input only. Physics solver applies rotation later.
         if (this.isAdvancedFlightModel()) {
 
-            // x/y are already the mouse/control deltas passed into setAngles().
-            this.advancedYawInput = this.clampAdvancedFlightInput((double)x / 40.0D);
+            if (this.isFreeLookMode() && !fixRot) {
+                this.advancedPitchInput = 0.0D;
+                this.advancedYawInput = 0.0D;
+
+                player.setAngles(deltaX, deltaY);
+
+                this.aircraftRotChanged = true;
+                return;
+            }
+
+            // Mouse Y becomes elevator command.
+            // Negative sign may need flipping after testing.
             this.advancedPitchInput = this.clampAdvancedFlightInput((double)-y / 40.0D);
 
-            // For now, use mouse X for roll too, like old plane behavior.
-            this.advancedRollInput = this.clampAdvancedFlightInput((double)x / 40.0D);
+            // Do not use mouse X for roll here.
+            // Roll already works through moveLeft/moveRight.
+            this.advancedYawInput = 0.0D;
 
             player.prevRotationYaw = this.getRotYaw();
             player.rotationYaw = this.getRotYaw();

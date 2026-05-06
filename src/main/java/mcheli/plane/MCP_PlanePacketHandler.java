@@ -74,6 +74,15 @@ public class MCP_PlanePacketHandler {
                         plane.throttleDown = pc.throttleDown;
                         plane.moveLeft = pc.moveLeft;
                         plane.moveRight = pc.moveRight;
+
+                        if (plane.isAdvancedFlightModel()) {
+                            double pitchInput = pc.advancedPitchInput;
+
+                            if (pitchInput > 1.0D) pitchInput = 1.0D;
+                            if (pitchInput < -1.0D) pitchInput = -1.0D;
+
+                            plane.advancedPitchInput = pitchInput;
+                        }
                     }
 
                     if (pc.useFlareType > 0) {

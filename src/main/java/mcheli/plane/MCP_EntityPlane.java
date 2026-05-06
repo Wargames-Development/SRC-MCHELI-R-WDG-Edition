@@ -42,6 +42,8 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     public float rotationExhaustFlameX;
     public float rotationExhaustFlameY;
     public float rotationExhaustFlameZ;
+    public double advancedSmoothedAoA = 0.0D;
+    public double advancedSmoothedCL = 0.25D;
 
     @SideOnly(Side.CLIENT)
     public ExhaustAnimState exhaustAnimState;
@@ -708,18 +710,25 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     protected void onUpdate_Client() {
         if (this.isAdvancedFlightModel()) {
             float serverRoll = this.getServerRoll();
+            float serverPitch = this.getServerPitch();
+
             float rollDiff = MathHelper.wrapAngleTo180_float(serverRoll - this.getRotRoll());
+            float pitchDiff = MathHelper.wrapAngleTo180_float(serverPitch - this.getRotPitch());
 
             if (W_Lib.isClientPlayer(this.getRiddenByEntity())) {
-                // Local pilot: smooth roll to avoid camera snap/vibration.
+                // Local pilot: smooth attitude to avoid camera snap/vibration.
                 this.setRotRoll(this.getRotRoll() + rollDiff * 0.05F);
+                this.setRotPitch(this.getRotPitch() + pitchDiff * 0.05F);
             } else {
                 // Other clients: follow server more directly.
                 this.setRotRoll(this.getRotRoll() + rollDiff * 0.35F);
+                this.setRotPitch(this.getRotPitch() + pitchDiff * 0.35F);
             }
         }
-        if (this.getRiddenByEntity() != null && W_Lib.isClientPlayer(this.getRiddenByEntity())) {
-            this.getRiddenByEntity().rotationPitch = this.getRiddenByEntity().prevRotationPitch;
+        if (!this.isAdvancedFlightModel()) {
+            if (this.getRiddenByEntity() != null && W_Lib.isClientPlayer(this.getRiddenByEntity())) {
+                this.getRiddenByEntity().rotationPitch = this.getRiddenByEntity().prevRotationPitch;
+            }
         }
 
         if (super.aircraftPosRotInc > 0) {
@@ -754,7 +763,6 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         this.getRiddenByEntity();
-
         this.updateSound();
         this.onUpdate_Particle();
         this.onUpdate_Particle2();

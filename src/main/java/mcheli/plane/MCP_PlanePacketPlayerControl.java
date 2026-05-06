@@ -9,6 +9,7 @@ import java.io.IOException;
 public class MCP_PlanePacketPlayerControl extends MCH_PacketPlayerControlBase {
 
     public byte switchVtol = -1;
+    public float advancedPitchInput = 0.0F;
 
 
     public int getMessageID() {
@@ -20,10 +21,10 @@ public class MCP_PlanePacketPlayerControl extends MCH_PacketPlayerControlBase {
 
         try {
             this.switchVtol = data.readByte();
+            this.advancedPitchInput = data.readFloat();
         } catch (Exception var3) {
             var3.printStackTrace();
         }
-
     }
 
     public void writeData(DataOutputStream dos) {
@@ -31,9 +32,9 @@ public class MCP_PlanePacketPlayerControl extends MCH_PacketPlayerControlBase {
 
         try {
             dos.writeByte(this.switchVtol);
+            dos.writeFloat(this.advancedPitchInput);
         } catch (IOException var3) {
             var3.printStackTrace();
         }
-
     }
 }

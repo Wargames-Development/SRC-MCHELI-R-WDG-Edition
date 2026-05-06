@@ -121,6 +121,18 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public float advancedAirDensity = 1.0F;      // game-scaled rho
     public float advancedGravity = 9.81F;       // game-scaled gravity
     public boolean advancedFlightDebug = false;
+    public float advancedRollControlArea = 3.0F;      // m^2, effective aileron area
+    public float advancedRollMomentArm = 4.5F;        // m, distance from centerline
+    public float advancedRollInertia = 60000.0F;      // kg*m^2
+    public float advancedRollControlPower = 1.0F;     // tuning multiplier
+    public float advancedRollDamping = 0.95F;         // angular damping
+    public float advancedMaxRollRate = 360.0F;
+    public float advancedPitchControlArea = 4.0F;      // m^2, effective elevator/stabilator area
+    public float advancedPitchMomentArm = 5.5F;        // m, tail/stabilator distance from CG
+    public float advancedPitchInertia = 85000.0F;      // kg*m^2
+    public float advancedPitchControlPower = 1.0F;     // tuning multiplier
+    public float advancedPitchDamping = 0.92F;         // angular damping
+    public float advancedMaxPitchRate = 90.0F;         // deg/sec
     public float mobilityYawOnGround;
     public float minRotationPitch;
     public float maxRotationPitch;
@@ -374,6 +386,18 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.advancedAirDensity = 1.0F;
         this.advancedGravity = 9.81F;
         this.advancedFlightDebug = false;
+        this.advancedRollControlArea = 3.0F;
+        this.advancedRollMomentArm = 4.5F;
+        this.advancedRollInertia = 60000.0F;
+        this.advancedRollControlPower = 1.0F;
+        this.advancedRollDamping = 0.95F;
+        this.advancedMaxRollRate = 360.0F;
+        this.advancedPitchControlArea = 3.0F;
+        this.advancedPitchMomentArm = 4.5F;
+        this.advancedPitchInertia = 60000.0F;
+        this.advancedPitchControlPower = 1.0F;
+        this.advancedPitchDamping = 0.95F;
+        this.advancedMaxPitchRate = 360.0F;
         this.mobilityYawOnGround = 1.0F;
         this.minRotationPitch = this.getMinRotationPitch();
         this.maxRotationPitch = this.getMaxRotationPitch();
@@ -923,6 +947,30 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                 this.advancedGravity = this.toFloat(data, 0.0F, 1.0F);
                                             } else if (item.equalsIgnoreCase("AdvancedFlightDebug")) {
                                             this.advancedFlightDebug = this.toBool(data);
+                                            } else if (item.equalsIgnoreCase("AdvancedRollControlArea")) {
+                                                this.advancedRollControlArea = this.toFloat(data, 0.1F, 100.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedRollMomentArm")) {
+                                                this.advancedRollMomentArm = this.toFloat(data, 0.1F, 100.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedRollInertia")) {
+                                                this.advancedRollInertia = this.toFloat(data, 1.0F, 10000000.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedRollControlPower")) {
+                                                this.advancedRollControlPower = this.toFloat(data, 0.0F, 20.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedRollDamping")) {
+                                                this.advancedRollDamping = this.toFloat(data, 0.0F, 1.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedMaxRollRate")) {
+                                                this.advancedMaxRollRate = this.toFloat(data, 30.0F, 1440.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedPitchControlArea")) {
+                                                this.advancedPitchControlArea = this.toFloat(data, 0.1F, 100.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedPitchMomentArm")) {
+                                                this.advancedPitchMomentArm = this.toFloat(data, 0.1F, 100.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedPitchInertia")) {
+                                                this.advancedPitchInertia = this.toFloat(data, 1.0F, 10000000.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedPitchControlPower")) {
+                                                this.advancedPitchControlPower = this.toFloat(data, 0.0F, 20.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedPitchDamping")) {
+                                                this.advancedPitchDamping = this.toFloat(data, 0.0F, 1.0F);
+                                            } else if (item.equalsIgnoreCase("AdvancedMaxPitchRate")) {
+                                                this.advancedMaxPitchRate = this.toFloat(data, 10.0F, 720.0F);
                                             } else if (item.equalsIgnoreCase("MinRotationPitch")) {
                                                 this.limitRotation = true;
                                                 this.minRotationPitch = this.toFloat(data, this.getMinRotationPitch(), 0.0F);
