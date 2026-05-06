@@ -242,6 +242,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public double advancedQx = 0.0D;
     public double advancedQy = 0.0D;
     public double advancedQz = 0.0D;
+    public double advancedTargetDirX = 0.0D;
+    public double advancedTargetDirY = 0.0D;
+    public double advancedTargetDirZ = 1.0D;
+
+    public double advancedLocalPitchError = 0.0D;
+    public double advancedLocalYawError = 0.0D;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -1382,34 +1388,15 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             x = 0.0F;
         }
 
-        // Advanced flight model:
-        // Store control intent only. Do not let old MCHR instantly rotate the aircraft.
-        // Advanced flight model:
-        // Capture player input only. Physics solver applies rotation later.
         if (this.isAdvancedFlightModel()) {
 
-            if (this.isFreeLookMode() && !fixRot) {
-                this.advancedPitchInput = 0.0D;
-                this.advancedYawInput = 0.0D;
+            // Let the pilot/camera aim direction move.
+            // The client packet will send player.getLookVec() as the target direction.
+            player.setAngles(deltaX, deltaY);
 
-                player.setAngles(deltaX, deltaY);
-
-                this.aircraftRotChanged = true;
-                return;
-            }
-
-            // Mouse Y becomes elevator command.
-            // Negative sign may need flipping after testing.
-            this.advancedPitchInput = this.clampAdvancedFlightInput((double)-y / 40.0D);
-
-            // Do not use mouse X for roll here.
-            // Roll already works through moveLeft/moveRight.
+            // Do not directly command pitch/yaw here.
+            this.advancedPitchInput = 0.0D;
             this.advancedYawInput = 0.0D;
-
-            player.prevRotationYaw = this.getRotYaw();
-            player.rotationYaw = this.getRotYaw();
-            player.prevRotationPitch = this.getRotPitch();
-            player.rotationPitch = this.getRotPitch();
 
             this.aircraftRotChanged = true;
             return;

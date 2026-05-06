@@ -16,6 +16,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.entity.player.EntityPlayer;
 import mcheli.MCH_ClientCommonTickHandler;
+import net.minecraft.util.Vec3;
 public class MCP_ClientPlaneTickHandler extends MCH_AircraftClientTickHandler {
 
     public MCH_Key KeySwitchMode;
@@ -130,23 +131,25 @@ public class MCP_ClientPlaneTickHandler extends MCH_AircraftClientTickHandler {
         send = this.commonPlayerControl(player, plane, isPilot, pc);
         boolean isUav;
         if (isPilot && plane.isAdvancedFlightModel()) {
-            float pitchInput = 0.0F;
+            Vec3 look = player.getLookVec();
 
-            if (!plane.isFreeLookMode()) {
-                // Read the actual client mouse/stick pitch directly.
-                // This avoids relying on setAngles() running before playerControl().
-                pitchInput = (float)(-MCH_ClientCommonTickHandler.getCurrentStickY() / 40.0D);
+            if (look != null) {
+                double len = Math.sqrt(
+                        look.xCoord * look.xCoord
+                                + look.yCoord * look.yCoord
+                                + look.zCoord * look.zCoord
+                );
+
+                if (len > 1.0E-6D) {
+                    pc.advancedTargetDirX = (float)(look.xCoord / len);
+                    pc.advancedTargetDirY = (float)(look.yCoord / len);
+                    pc.advancedTargetDirZ = (float)(look.zCoord / len);
+                }
             }
 
-            if (pitchInput > 1.0F) pitchInput = 1.0F;
-            if (pitchInput < -1.0F) pitchInput = -1.0F;
+            // Target-direction mode: server physics computes pitch input.
+            pc.advancedPitchInput = 0.0F;
 
-            pc.advancedPitchInput = pitchInput;
-
-            // Keep local debug/client state consistent.
-            plane.advancedPitchInput = pitchInput;
-
-            // Advanced flight needs continuous input packets.
             send = true;
         }
         if (isPilot) {

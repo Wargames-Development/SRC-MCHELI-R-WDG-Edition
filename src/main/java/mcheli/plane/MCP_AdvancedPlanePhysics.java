@@ -276,24 +276,45 @@ public class MCP_AdvancedPlanePhysics {
         ).isEmpty();
 
         if (isAirborne) {
-            if (plane.moveLeft && !plane.moveRight) {
-                rollInput = -1.0D;
-            }
+            double[] fwdAxis = getAircraftForwardAxis(plane);
+            double[] rightAxis = getAircraftRightAxis(plane);
+            double[] upAxis = getAircraftUpAxis(plane);
 
-            if (plane.moveRight && !plane.moveLeft) {
-                rollInput = 1.0D;
-            }
-        }
+            double[] targetDir = normalizeVec(new double[] {
+                    plane.advancedTargetDirX,
+                    plane.advancedTargetDirY,
+                    plane.advancedTargetDirZ
+            });
 
-        plane.advancedRollInput = rollInput;
+            double targetForward = dotVec(targetDir, fwdAxis);
+            double targetRight = dotVec(targetDir, rightAxis);
+            double targetUp = dotVec(targetDir, upAxis);
 
-        // Pitch input comes from MCP_PlanePacketPlayerControl.
-        // Do not overwrite it here.
-        if (!isAirborne) {
+            double pitchErrorDeg = Math.toDegrees(Math.atan2(targetUp, targetForward));
+            double yawErrorDeg = Math.toDegrees(Math.atan2(targetRight, targetForward));
+
+            plane.advancedLocalPitchError = pitchErrorDeg;
+            plane.advancedLocalYawError = yawErrorDeg;
+
+            double pitchKp = 0.060D;
+            double pitchKd = 0.010D;
+
+            double targetPitchInput =
+                    pitchErrorDeg * pitchKp
+                            - plane.advancedPitchRate * pitchKd;
+
+            if (targetPitchInput > 1.0D) targetPitchInput = 1.0D;
+            if (targetPitchInput < -1.0D) targetPitchInput = -1.0D;
+
+            plane.advancedPitchInput = targetPitchInput;
+
+            // Keep yaw disabled for now until pitch works safely.
+            plane.advancedYawInput = 0.0D;
+        } else {
             plane.advancedPitchInput = 0.0D;
+            plane.advancedYawInput = 0.0D;
             plane.advancedPitchRate *= 0.70D;
         }
-
         // =============================
         // ANGULAR INERTIA
         // =============================
@@ -418,31 +439,44 @@ public class MCP_AdvancedPlanePhysics {
         if (plane.advancedYawRate < -45.0D) plane.advancedYawRate = -45.0D;
 
         // =============================
-        // PHASE 2A: LIVE QUATERNION ROLL
-        // =============================
-        // Pitch and yaw stay on the stable Euler path for this test.
-        // Roll is now applied around the aircraft local forward axis using the
-        // persistent quaternion, then converted back to MCHeli yaw/pitch/roll.
+// PHASE 2B: LIVE QUATERNION PITCH + ROLL
+// =============================
+// Pitch rotates around the aircraft local right / wing-to-wing axis.
+// Roll rotates around the aircraft local forward axis.
+// Yaw remains simple for now because yaw control is not active yet.
 
-        // Keep pitch/yaw stable for now.
-        plane.setRotPitch((float)(plane.getRotPitch() + plane.advancedPitchRate * DT));
+// Keep yaw on the stable Euler path for now.
         plane.setRotYaw((float)(plane.getRotYaw() + plane.advancedYawRate * DT));
 
-        // Start from current Euler attitude so this test only changes roll behavior.
+// Start from current visible attitude.
         syncQuatFromEuler(plane);
 
+        double pitchStepRad = Math.toRadians(plane.advancedPitchRate * DT);
         double rollStepRad = Math.toRadians(plane.advancedRollRate * DT);
+
+        boolean quatChanged = false;
+
+        if (Math.abs(pitchStepRad) > 1.0E-8D) {
+            double[] pitchAxis = getAircraftRightAxis(plane);
+
+            // Pitch around aircraft local wing-to-wing axis.
+            rotateAircraftQuatWorldAxis(plane, pitchAxis, pitchStepRad);
+
+            quatChanged = true;
+        }
 
         if (Math.abs(rollStepRad) > 1.0E-8D) {
             double[] rollAxis = getAircraftForwardAxis(plane);
 
-            // Roll around aircraft local forward axis.
+            // Roll around aircraft local nose/tail axis.
             rotateAircraftQuatWorldAxis(plane, rollAxis, rollStepRad);
 
-            // Convert quaternion attitude back to MCHeli-compatible yaw/pitch/roll.
+            quatChanged = true;
+        }
+
+        if (quatChanged) {
             applyEulerFromQuat(plane);
         } else {
-            // Keep quaternion matched when no roll step is applied.
             syncQuatFromEuler(plane);
         }
 
@@ -479,6 +513,48 @@ public class MCP_AdvancedPlanePhysics {
             plane.getDataWatcher().updateObject(28, MathHelper.wrapAngleTo180_float(plane.getRotPitch()));
         }
 
+        // =============================
+        // ADVANCED PHYSICS SAFETY GUARD
+        // =============================
+        if (!isFinite(plane.motionX) || !isFinite(plane.motionY) || !isFinite(plane.motionZ)
+                || !isFinite(plane.getRotPitch()) || !isFinite(plane.getRotYaw()) || !isFinite(plane.getRotRoll())) {
+
+            plane.motionX = 0.0D;
+            plane.motionY = 0.0D;
+            plane.motionZ = 0.0D;
+
+            plane.advancedPitchRate = 0.0D;
+            plane.advancedRollRate = 0.0D;
+            plane.advancedYawRate = 0.0D;
+
+            plane.advancedPitchInput = 0.0D;
+            plane.advancedRollInput = 0.0D;
+            plane.advancedYawInput = 0.0D;
+
+            return;
+        }
+
+// Prevent corrupt save / void kick if physics ever sends entity out of sane range.
+        if (Math.abs(plane.posX) > 2.9E7D || Math.abs(plane.posZ) > 2.9E7D || Math.abs(plane.posY) > 1000000.0D) {
+            plane.setDead();
+            return;
+        }
+
+// Clamp motion to avoid single-tick world jumps.
+        double maxMotionBT = 10.0D;
+        double motionLen = Math.sqrt(
+                plane.motionX * plane.motionX
+                        + plane.motionY * plane.motionY
+                        + plane.motionZ * plane.motionZ
+        );
+
+        if (motionLen > maxMotionBT) {
+            double scale = maxMotionBT / motionLen;
+            plane.motionX *= scale;
+            plane.motionY *= scale;
+            plane.motionZ *= scale;
+        }
+
         plane.moveEntity(plane.motionX, plane.motionY, plane.motionZ);
 
         if (!plane.worldObj.isRemote && info.advancedFlightDebug && plane.ticksExisted % 20 == 0) {
@@ -492,15 +568,20 @@ public class MCP_AdvancedPlanePhysics {
                     thrustN,
                     dragN);
 
-            MCH_Lib.Log("[AdvInput] pitchIn=%.2f rollIn=%.2f yawIn=%.2f pitchRate=%.2f rollRate=%.2f yawRate=%.2f rotPitch=%.1f rotRoll=%.1f",
+            MCH_Lib.Log("[AdvInput] pitchIn=%.2f localPitchErr=%.1f localYawErr=%.1f rollIn=%.2f yawIn=%.2f pitchRate=%.2f rollRate=%.2f yawRate=%.2f rotPitch=%.1f rotRoll=%.1f targetDir=(%.2f, %.2f, %.2f)",
                     plane.advancedPitchInput,
+                    plane.advancedLocalPitchError,
+                    plane.advancedLocalYawError,
                     plane.advancedRollInput,
                     plane.advancedYawInput,
                     plane.advancedPitchRate,
                     plane.advancedRollRate,
                     plane.advancedYawRate,
                     plane.getRotPitch(),
-                    plane.getRotRoll());
+                    plane.getRotRoll(),
+                    plane.advancedTargetDirX,
+                    plane.advancedTargetDirY,
+                    plane.advancedTargetDirZ);
 
             double[] qEuler = getEulerFromAircraftQuat(plane);
 
@@ -804,5 +885,9 @@ public class MCP_AdvancedPlanePhysics {
                 wrapDeg(pitch),
                 wrapDeg(roll)
         };
+    }
+
+    private static boolean isFinite(double v) {
+        return !Double.isNaN(v) && !Double.isInfinite(v);
     }
 }

@@ -76,12 +76,17 @@ public class MCP_PlanePacketHandler {
                         plane.moveRight = pc.moveRight;
 
                         if (plane.isAdvancedFlightModel()) {
-                            double pitchInput = pc.advancedPitchInput;
+                            double tx = pc.advancedTargetDirX;
+                            double ty = pc.advancedTargetDirY;
+                            double tz = pc.advancedTargetDirZ;
 
-                            if (pitchInput > 1.0D) pitchInput = 1.0D;
-                            if (pitchInput < -1.0D) pitchInput = -1.0D;
+                            double len = Math.sqrt(tx * tx + ty * ty + tz * tz);
 
-                            plane.advancedPitchInput = pitchInput;
+                            if (len > 1.0E-6D) {
+                                plane.advancedTargetDirX = tx / len;
+                                plane.advancedTargetDirY = ty / len;
+                                plane.advancedTargetDirZ = tz / len;
+                            }
                         }
                     }
 
