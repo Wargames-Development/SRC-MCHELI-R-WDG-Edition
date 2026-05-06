@@ -234,6 +234,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public double advancedPitchInput = 0.0D;
     public double advancedYawInput = 0.0D;
     public double advancedRollInput = 0.0D;
+    // Advanced flight orientation state.
+    // This will become the source of truth for aircraft attitude in V2.
+    // For now, it is only initialized and mirrored from current MCHeli rotation.
+    public boolean advancedQuatInitialized = false;
+    public double advancedQw = 1.0D;
+    public double advancedQx = 0.0D;
+    public double advancedQy = 0.0D;
+    public double advancedQz = 0.0D;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -318,6 +326,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.advancedPitchInput = 0.0D;
         this.advancedYawInput = 0.0D;
         this.advancedRollInput = 0.0D;
+        this.advancedQuatInitialized = false;
+        this.advancedQw = 1.0D;
+        this.advancedQx = 0.0D;
+        this.advancedQy = 0.0D;
+        this.advancedQz = 0.0D;
     }
 
     public double clampAdvancedFlightInput(double value) {

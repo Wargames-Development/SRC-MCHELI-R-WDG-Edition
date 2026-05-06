@@ -16,6 +16,12 @@ public class MCP_AdvancedPlanePhysics {
         MCH_AircraftInfo info = plane.getAcInfo();
         if (info == null) return;
 
+        // Phase 1: keep quaternion as a shadow copy of the current MCHeli attitude.
+        // This must not change flight behavior yet.
+        if (!plane.advancedQuatInitialized) {
+            syncQuatFromEuler(plane);
+        }
+
         double mass = plane.getAdvancedFlightCurrentMass();
         if (mass <= 0.0D) {
             mass = info.massEmpty + info.fuelMass;
@@ -411,14 +417,41 @@ public class MCP_AdvancedPlanePhysics {
         if (plane.advancedYawRate > 45.0D) plane.advancedYawRate = 45.0D;
         if (plane.advancedYawRate < -45.0D) plane.advancedYawRate = -45.0D;
 
-        // Integrate rotation using the same pattern that already works for roll.
+        // =============================
+        // PHASE 2A: LIVE QUATERNION ROLL
+        // =============================
+        // Pitch and yaw stay on the stable Euler path for this test.
+        // Roll is now applied around the aircraft local forward axis using the
+        // persistent quaternion, then converted back to MCHeli yaw/pitch/roll.
+
+        // Keep pitch/yaw stable for now.
         plane.setRotPitch((float)(plane.getRotPitch() + plane.advancedPitchRate * DT));
-        plane.setRotRoll((float)(plane.getRotRoll() + plane.advancedRollRate * DT));
         plane.setRotYaw((float)(plane.getRotYaw() + plane.advancedYawRate * DT));
 
+        // Start from current Euler attitude so this test only changes roll behavior.
+        syncQuatFromEuler(plane);
+
+        double rollStepRad = Math.toRadians(plane.advancedRollRate * DT);
+
+        if (Math.abs(rollStepRad) > 1.0E-8D) {
+            double[] rollAxis = getAircraftForwardAxis(plane);
+
+            // Roll around aircraft local forward axis.
+            rotateAircraftQuatWorldAxis(plane, rollAxis, rollStepRad);
+
+            // Convert quaternion attitude back to MCHeli-compatible yaw/pitch/roll.
+            applyEulerFromQuat(plane);
+        } else {
+            // Keep quaternion matched when no roll step is applied.
+            syncQuatFromEuler(plane);
+        }
+
         // Roll slowly returns toward level when player is not rolling
+        // Roll slowly returns toward level when player is not rolling.
+        // Keep quaternion shadow matched after this Euler-leveling helper.
         if (Math.abs(plane.advancedRollInput) < 0.05D) {
             plane.setRotRoll((float)(plane.getRotRoll() * 0.995D));
+            syncQuatFromEuler(plane);
         }
 
         // Sync vanilla entity rotation fields after final clamped attitude.
@@ -468,6 +501,308 @@ public class MCP_AdvancedPlanePhysics {
                     plane.advancedYawRate,
                     plane.getRotPitch(),
                     plane.getRotRoll());
+
+            double[] qEuler = getEulerFromAircraftQuat(plane);
+
+            double dYaw = wrapDeg(qEuler[0] - plane.getRotYaw());
+            double dPitch = wrapDeg(qEuler[1] - plane.getRotPitch());
+            double dRoll = wrapDeg(qEuler[2] - plane.getRotRoll());
+
+            MCH_Lib.Log("[AdvQuatRT] srcYaw=%.1f outYaw=%.1f dYaw=%.2f srcPitch=%.1f outPitch=%.1f dPitch=%.2f srcRoll=%.1f outRoll=%.1f dRoll=%.2f",
+                    plane.getRotYaw(),
+                    qEuler[0],
+                    dYaw,
+                    plane.getRotPitch(),
+                    qEuler[1],
+                    dPitch,
+                    plane.getRotRoll(),
+                    qEuler[2],
+                    dRoll);
         }
+    }
+
+    private static void normalizeAircraftQuat(MCP_EntityPlane plane) {
+        double len = Math.sqrt(
+                plane.advancedQw * plane.advancedQw
+                        + plane.advancedQx * plane.advancedQx
+                        + plane.advancedQy * plane.advancedQy
+                        + plane.advancedQz * plane.advancedQz
+        );
+
+        if (len < 1.0E-8D || Double.isNaN(len) || Double.isInfinite(len)) {
+            plane.advancedQw = 1.0D;
+            plane.advancedQx = 0.0D;
+            plane.advancedQy = 0.0D;
+            plane.advancedQz = 0.0D;
+            plane.advancedQuatInitialized = false;
+            return;
+        }
+
+        plane.advancedQw /= len;
+        plane.advancedQx /= len;
+        plane.advancedQy /= len;
+        plane.advancedQz /= len;
+    }
+
+    private static void syncQuatFromEuler(MCP_EntityPlane plane) {
+        // Build quaternion from MCHeli's current yaw/pitch/roll.
+        // This is only a shadow copy for Phase 1.
+        Vec3 fwdVec = MCH_Lib.RotVec3(
+                0.0D, 0.0D, 1.0D,
+                -plane.getRotYaw(),
+                -plane.getRotPitch(),
+                -plane.getRotRoll()
+        );
+
+        Vec3 upVec = MCH_Lib.RotVec3(
+                0.0D, 1.0D, 0.0D,
+                -plane.getRotYaw(),
+                -plane.getRotPitch(),
+                -plane.getRotRoll()
+        );
+
+        Vec3 rightVec = MCH_Lib.RotVec3(
+                1.0D, 0.0D, 0.0D,
+                -plane.getRotYaw(),
+                -plane.getRotPitch(),
+                -plane.getRotRoll()
+        );
+
+        // Rotation matrix columns are local right, up, forward in world space.
+        double m00 = rightVec.xCoord;
+        double m01 = upVec.xCoord;
+        double m02 = fwdVec.xCoord;
+
+        double m10 = rightVec.yCoord;
+        double m11 = upVec.yCoord;
+        double m12 = fwdVec.yCoord;
+
+        double m20 = rightVec.zCoord;
+        double m21 = upVec.zCoord;
+        double m22 = fwdVec.zCoord;
+
+        double trace = m00 + m11 + m22;
+
+        if (trace > 0.0D) {
+            double s = Math.sqrt(trace + 1.0D) * 2.0D;
+            plane.advancedQw = 0.25D * s;
+            plane.advancedQx = (m21 - m12) / s;
+            plane.advancedQy = (m02 - m20) / s;
+            plane.advancedQz = (m10 - m01) / s;
+        } else if (m00 > m11 && m00 > m22) {
+            double s = Math.sqrt(1.0D + m00 - m11 - m22) * 2.0D;
+            plane.advancedQw = (m21 - m12) / s;
+            plane.advancedQx = 0.25D * s;
+            plane.advancedQy = (m01 + m10) / s;
+            plane.advancedQz = (m02 + m20) / s;
+        } else if (m11 > m22) {
+            double s = Math.sqrt(1.0D + m11 - m00 - m22) * 2.0D;
+            plane.advancedQw = (m02 - m20) / s;
+            plane.advancedQx = (m01 + m10) / s;
+            plane.advancedQy = 0.25D * s;
+            plane.advancedQz = (m12 + m21) / s;
+        } else {
+            double s = Math.sqrt(1.0D + m22 - m00 - m11) * 2.0D;
+            plane.advancedQw = (m10 - m01) / s;
+            plane.advancedQx = (m02 + m20) / s;
+            plane.advancedQy = (m12 + m21) / s;
+            plane.advancedQz = 0.25D * s;
+        }
+
+        normalizeAircraftQuat(plane);
+        plane.advancedQuatInitialized = true;
+    }
+
+    private static double dotVec(double[] a, double[] b) {
+        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    }
+
+    private static double[] crossVec(double[] a, double[] b) {
+        return new double[] {
+                a[1] * b[2] - a[2] * b[1],
+                a[2] * b[0] - a[0] * b[2],
+                a[0] * b[1] - a[1] * b[0]
+        };
+    }
+
+    private static double[] normalizeVec(double[] v) {
+        double len = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+
+        if (len < 1.0E-8D || Double.isNaN(len) || Double.isInfinite(len)) {
+            return new double[] {0.0D, 0.0D, 0.0D};
+        }
+
+        return new double[] {
+                v[0] / len,
+                v[1] / len,
+                v[2] / len
+        };
+    }
+
+    private static double[] getAircraftForwardAxis(MCP_EntityPlane plane) {
+        return normalizeVec(rotateLocalVectorByAircraftQuat(plane, 0.0D, 0.0D, 1.0D));
+    }
+
+    private static double[] getAircraftRightAxis(MCP_EntityPlane plane) {
+        return normalizeVec(rotateLocalVectorByAircraftQuat(plane, 1.0D, 0.0D, 0.0D));
+    }
+
+    private static double[] getAircraftUpAxis(MCP_EntityPlane plane) {
+        return normalizeVec(rotateLocalVectorByAircraftQuat(plane, 0.0D, 1.0D, 0.0D));
+    }
+
+    private static double[] rotateLocalVectorByAircraftQuat(MCP_EntityPlane plane, double x, double y, double z) {
+        normalizeAircraftQuat(plane);
+
+        double qw = plane.advancedQw;
+        double qx = plane.advancedQx;
+        double qy = plane.advancedQy;
+        double qz = plane.advancedQz;
+
+        // v' = v + 2*qw*(q.xyz x v) + 2*(q.xyz x (q.xyz x v))
+        double tx = 2.0D * (qy * z - qz * y);
+        double ty = 2.0D * (qz * x - qx * z);
+        double tz = 2.0D * (qx * y - qy * x);
+
+        return new double[] {
+                x + qw * tx + (qy * tz - qz * ty),
+                y + qw * ty + (qz * tx - qx * tz),
+                z + qw * tz + (qx * ty - qy * tx)
+        };
+    }
+
+    private static void rotateAircraftQuatWorldAxis(MCP_EntityPlane plane, double[] axisIn, double angleRad) {
+        double[] axis = normalizeVec(axisIn);
+
+        double half = angleRad * 0.5D;
+        double s = Math.sin(half);
+
+        double dw = Math.cos(half);
+        double dx = axis[0] * s;
+        double dy = axis[1] * s;
+        double dz = axis[2] * s;
+
+        // qNew = deltaWorld * qCurrent
+        double qw = plane.advancedQw;
+        double qx = plane.advancedQx;
+        double qy = plane.advancedQy;
+        double qz = plane.advancedQz;
+
+        plane.advancedQw = dw * qw - dx * qx - dy * qy - dz * qz;
+        plane.advancedQx = dw * qx + dx * qw + dy * qz - dz * qy;
+        plane.advancedQy = dw * qy - dx * qz + dy * qw + dz * qx;
+        plane.advancedQz = dw * qz + dx * qy - dy * qx + dz * qw;
+
+        normalizeAircraftQuat(plane);
+    }
+
+    private static void applyEulerFromQuat(MCP_EntityPlane plane) {
+        double[] fwd = getAircraftForwardAxis(plane);
+        double[] up = getAircraftUpAxis(plane);
+
+        double newYaw = Math.toDegrees(Math.atan2(-fwd[0], fwd[2]));
+        double newPitch = Math.toDegrees(Math.atan2(
+                -fwd[1],
+                Math.sqrt(fwd[0] * fwd[0] + fwd[2] * fwd[2])
+        ));
+
+        Vec3 noRollUpVec = MCH_Lib.RotVec3(
+                0.0D, 1.0D, 0.0D,
+                (float)-newYaw,
+                (float)-newPitch,
+                0.0F
+        );
+
+        Vec3 noRollRightVec = MCH_Lib.RotVec3(
+                1.0D, 0.0D, 0.0D,
+                (float)-newYaw,
+                (float)-newPitch,
+                0.0F
+        );
+
+        double[] noRollUp = normalizeVec(new double[] {
+                noRollUpVec.xCoord,
+                noRollUpVec.yCoord,
+                noRollUpVec.zCoord
+        });
+
+        double[] noRollRight = normalizeVec(new double[] {
+                noRollRightVec.xCoord,
+                noRollRightVec.yCoord,
+                noRollRightVec.zCoord
+        });
+
+        double newRoll = -Math.toDegrees(Math.atan2(
+                dotVec(up, noRollRight),
+                dotVec(up, noRollUp)
+        ));
+
+        plane.setRotYaw(MathHelper.wrapAngleTo180_float((float)newYaw));
+        plane.setRotPitch((float)newPitch);
+        plane.setRotRoll(MathHelper.wrapAngleTo180_float((float)newRoll));
+
+        plane.rotationYaw = plane.getRotYaw();
+        plane.rotationPitch = plane.getRotPitch();
+    }
+
+    private static double wrapDeg(double a) {
+        while (a > 180.0D) {
+            a -= 360.0D;
+        }
+
+        while (a < -180.0D) {
+            a += 360.0D;
+        }
+
+        return a;
+    }
+
+    private static double[] getEulerFromAircraftQuat(MCP_EntityPlane plane) {
+        double[] fwd = getAircraftForwardAxis(plane);
+        double[] up = getAircraftUpAxis(plane);
+
+        double yaw = Math.toDegrees(Math.atan2(-fwd[0], fwd[2]));
+
+        double pitch = Math.toDegrees(Math.atan2(
+                -fwd[1],
+                Math.sqrt(fwd[0] * fwd[0] + fwd[2] * fwd[2])
+        ));
+
+        Vec3 noRollUpVec = MCH_Lib.RotVec3(
+                0.0D, 1.0D, 0.0D,
+                (float)-yaw,
+                (float)-pitch,
+                0.0F
+        );
+
+        Vec3 noRollRightVec = MCH_Lib.RotVec3(
+                1.0D, 0.0D, 0.0D,
+                (float)-yaw,
+                (float)-pitch,
+                0.0F
+        );
+
+        double[] noRollUp = normalizeVec(new double[] {
+                noRollUpVec.xCoord,
+                noRollUpVec.yCoord,
+                noRollUpVec.zCoord
+        });
+
+        double[] noRollRight = normalizeVec(new double[] {
+                noRollRightVec.xCoord,
+                noRollRightVec.yCoord,
+                noRollRightVec.zCoord
+        });
+
+        double roll = -Math.toDegrees(Math.atan2(
+                dotVec(up, noRollRight),
+                dotVec(up, noRollUp)
+        ));
+
+        return new double[] {
+                wrapDeg(yaw),
+                wrapDeg(pitch),
+                wrapDeg(roll)
+        };
     }
 }
