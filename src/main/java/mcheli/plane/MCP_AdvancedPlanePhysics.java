@@ -275,7 +275,27 @@ public class MCP_AdvancedPlanePhysics {
                 plane.boundingBox.copy().offset(0.0D, -0.35D, 0.0D)
         ).isEmpty();
 
+        // Roll input still uses the proven key-based server input path.
         if (isAirborne) {
+            if (plane.moveLeft && !plane.moveRight) {
+                rollInput = -1.0D;
+            }
+
+            if (plane.moveRight && !plane.moveLeft) {
+                rollInput = 1.0D;
+            }
+        }
+
+        plane.advancedRollInput = rollInput;
+
+        // =============================
+        // TARGET-DIRECTION CONTROL
+        // =============================
+        // Require real flight speed before allowing pitch control.
+        // This prevents the aircraft from pitching hard while still below takeoff speed.
+        boolean hasControlAuthority = isAirborne && speed > 85.0D;
+
+        if (hasControlAuthority) {
             double[] fwdAxis = getAircraftForwardAxis(plane);
             double[] rightAxis = getAircraftRightAxis(plane);
             double[] upAxis = getAircraftUpAxis(plane);
@@ -296,24 +316,76 @@ public class MCP_AdvancedPlanePhysics {
             plane.advancedLocalPitchError = pitchErrorDeg;
             plane.advancedLocalYawError = yawErrorDeg;
 
-            double pitchKp = 0.060D;
-            double pitchKd = 0.010D;
+            plane.advancedYawInput = 0.0D;
 
-            double targetPitchInput =
-                    pitchErrorDeg * pitchKp
-                            - plane.advancedPitchRate * pitchKd;
+            // Clamp aim error so a huge camera/target jump does not command full elevator forever.
+            double maxUsedPitchError = 25.0D;
 
-            if (targetPitchInput > 1.0D) targetPitchInput = 1.0D;
-            if (targetPitchInput < -1.0D) targetPitchInput = -1.0D;
+            if (pitchErrorDeg > maxUsedPitchError) {
+                pitchErrorDeg = maxUsedPitchError;
+            }
+
+            if (pitchErrorDeg < -maxUsedPitchError) {
+                pitchErrorDeg = -maxUsedPitchError;
+            }
+
+// Rate-command controller:
+// target direction -> desired pitch rate -> elevator input.
+// This is smoother than direct angle-error -> elevator.
+            double pitchRatePerDegError = 4.0D;
+            double maxCommandedPitchRate = 140.0D;
+
+            // Since yaw control is not implemented yet, reduce pitch authority when the
+// target is mostly sideways relative to the aircraft nose.
+            double yawAbs = Math.abs(yawErrorDeg);
+
+            double yawBlend = 1.0D;
+            if (yawAbs > 30.0D) {
+                yawBlend = 1.0D - ((yawAbs - 30.0D) / 60.0D);
+
+                if (yawBlend < 0.25D) {
+                    yawBlend = 0.25D;
+                }
+            }
+
+            pitchErrorDeg *= yawBlend;
+
+            double desiredPitchRate = -pitchErrorDeg * pitchRatePerDegError;
+
+            if (desiredPitchRate > maxCommandedPitchRate) {
+                desiredPitchRate = maxCommandedPitchRate;
+            }
+
+            if (desiredPitchRate < -maxCommandedPitchRate) {
+                desiredPitchRate = -maxCommandedPitchRate;
+            }
+
+            double pitchRateError = desiredPitchRate - plane.advancedPitchRate;
+
+// Convert pitch-rate error into elevator command.
+            double pitchRateKp = 0.018D;
+
+            double targetPitchInput = pitchRateError * pitchRateKp;
+
+            if (targetPitchInput > 1.0D) {
+                targetPitchInput = 1.0D;
+            }
+
+            if (targetPitchInput < -1.0D) {
+                targetPitchInput = -1.0D;
+            }
 
             plane.advancedPitchInput = targetPitchInput;
 
-            // Keep yaw disabled for now until pitch works safely.
+            // Yaw stays disabled for now.
             plane.advancedYawInput = 0.0D;
         } else {
             plane.advancedPitchInput = 0.0D;
             plane.advancedYawInput = 0.0D;
+
             plane.advancedPitchRate *= 0.70D;
+            plane.advancedLocalPitchError = 0.0D;
+            plane.advancedLocalYawError = 0.0D;
         }
         // =============================
         // ANGULAR INERTIA
