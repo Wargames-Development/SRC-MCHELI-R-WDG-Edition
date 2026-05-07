@@ -754,76 +754,122 @@ public class MCP_AdvancedPlanePhysics {
         if (plane.advancedYawRate < -45.0D) plane.advancedYawRate = -45.0D;
 
         // =============================
-        // FINAL ALPHA / CORNER-SPEED GOVERNOR
-        // =============================
-        // This is the hard safety layer.
-        // It limits the final pitch rate before attitude integration.
-        // That makes it robust against any upstream controller/input path.
-        //
-        // Observed convention in the current logs:
-        //   positive AoA + positive pitchRate => AoA increases
-        //   negative AoA + negative pitchRate => AoA magnitude increases
-        //
-        // Therefore, pitchRate with the same sign as AoA is "worsening" AoA.
+// BRUTE-FORCE ALPHA / CORNER-SPEED GOVERNOR
+// =============================
+// Robust final limiter.
+// Instead of assuming pitchRate sign, test possible pitch rates and choose
+// the one that best keeps AoA inside the stable envelope.
+// If already past the AoA limit, actively choose the pitch rate that reduces AoA.
 
-        double alphaNow = plane.advancedSmoothedAoA;
-        double absAlphaNow = Math.abs(alphaNow);
+        double debugPredictedAoA = plane.advancedSmoothedAoA;
+        boolean debugAlphaLimited = false;
 
         double alphaLimit = plane.advancedStableAoALimit;
 
-        // Fallback if field has not initialized yet.
         if (Double.isNaN(alphaLimit) || Double.isInfinite(alphaLimit) || alphaLimit < 5.0D) {
             alphaLimit = 14.0D;
         }
 
-        double alphaSign = alphaNow >= 0.0D ? 1.0D : -1.0D;
+// Work from current attitude before final pitch/roll integration.
+        syncQuatFromEuler(plane);
 
-        // Positive worseningRate means current pitchRate is driving deeper into alpha.
-        double worseningRate = plane.advancedPitchRate * alphaSign;
+        double[] alphaFwdAxis = getAircraftForwardAxis(plane);
+        double[] alphaUpAxis = getAircraftUpAxis(plane);
+        double[] alphaPitchAxis = getAircraftRightAxis(plane);
 
-        // Start fading worsening pitch rate before the limit.
-        double softZone = 5.0D;
-        double alphaMargin = alphaLimit - absAlphaNow;
+// Use raw predicted AoA for limiting, not smoothed AoA.
+// Smoothed AoA lags too much at low speed / high pitch command.
+        double currentRawAlpha = computeSignedAoAFromAxes(
+                alphaFwdAxis,
+                alphaUpAxis,
+                vx,
+                vy,
+                vz
+        );
 
-        if (alphaMargin < softZone && worseningRate > 0.0D) {
-            double scale = alphaMargin / softZone;
+        double absCurrentRawAlpha = Math.abs(currentRawAlpha);
 
-            if (scale < 0.0D) {
-                scale = 0.0D;
+        double commandedPitchRate = plane.advancedPitchRate;
+
+// Only intervene near or beyond the stable AoA limit.
+        double alphaSoftZone = 4.0D;
+        boolean nearAlphaLimit = absCurrentRawAlpha > alphaLimit - alphaSoftZone;
+
+        if (nearAlphaLimit && speed > 30.0D) {
+            double maxCandidateRate = Math.abs(commandedPitchRate);
+
+            // Always allow enough authority to unload, even if current command is small.
+            if (maxCandidateRate < 35.0D) {
+                maxCandidateRate = 35.0D;
             }
 
-            if (scale > 1.0D) {
-                scale = 1.0D;
+            // Do not let this search produce insane pitch rates.
+            if (maxCandidateRate > 80.0D) {
+                maxCandidateRate = 80.0D;
             }
 
-            // Near the alpha limit, allow almost no pitch rate that increases AoA.
-            double allowedWorseningRate = 8.0D * scale;
+            double bestRate = commandedPitchRate;
+            double bestAlpha = currentRawAlpha;
+            double bestScore = 1.0E30D;
 
-            if (worseningRate > allowedWorseningRate) {
-                plane.advancedPitchRate = alphaSign * allowedWorseningRate;
+            // Test candidate pitch rates from negative to positive.
+            // 41 samples gives 4 deg/s resolution for +/-80, cheaper than any physics force calc.
+            int samples = 41;
+
+            for (int i = 0; i < samples; i++) {
+                double t = (double)i / (double)(samples - 1);
+                double testRate = -maxCandidateRate + 2.0D * maxCandidateRate * t;
+
+                double testStepRad = Math.toRadians(testRate * DT);
+
+                double[] testFwd = rotateWorldVectorAroundAxis(alphaFwdAxis, alphaPitchAxis, testStepRad);
+                double[] testUp = rotateWorldVectorAroundAxis(alphaUpAxis, alphaPitchAxis, testStepRad);
+
+                double testAlpha = computeSignedAoAFromAxes(
+                        testFwd,
+                        testUp,
+                        vx,
+                        vy,
+                        vz
+                );
+
+                double absTestAlpha = Math.abs(testAlpha);
+
+                double score;
+
+                if (absCurrentRawAlpha > alphaLimit) {
+                    // Already stalled: prioritize reducing AoA immediately.
+                    score = absTestAlpha * 1000.0D;
+
+                    // Small secondary cost to avoid violent rate jumps if multiple rates unload similarly.
+                    score += Math.abs(testRate - commandedPitchRate) * 0.05D;
+                } else {
+                    // Near limit but not stalled yet:
+                    // prefer staying under the limit, while preserving pilot command as much as possible.
+                    double overLimit = absTestAlpha - alphaLimit;
+
+                    if (overLimit < 0.0D) {
+                        overLimit = 0.0D;
+                    }
+
+                    score = overLimit * overLimit * 10000.0D;
+                    score += Math.abs(testRate - commandedPitchRate);
+                }
+
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestRate = testRate;
+                    bestAlpha = testAlpha;
+                }
             }
+
+            if (Math.abs(bestRate - commandedPitchRate) > 0.1D) {
+                plane.advancedPitchRate = bestRate;
+                debugAlphaLimited = true;
+            }
+
+            debugPredictedAoA = bestAlpha;
         }
-
-        // If already past the stable alpha limit, command unloading.
-        // This prevents the 90-degree flat-plate drift state.
-        if (absAlphaNow > alphaLimit) {
-            double exceed = absAlphaNow - alphaLimit;
-
-            double unloadRate = 6.0D + exceed * 2.0D;
-
-            if (unloadRate > 35.0D) {
-                unloadRate = 35.0D;
-            }
-
-            // Opposite sign reduces AoA magnitude.
-            double commandedUnloadRate = -alphaSign * unloadRate;
-
-            // Only override if current rate is not unloading hard enough.
-            if (plane.advancedPitchRate * alphaSign > commandedUnloadRate * alphaSign) {
-                plane.advancedPitchRate = commandedUnloadRate;
-            }
-        }
-
         // =============================
         // PHASE 2B: LIVE QUATERNION PITCH + ROLL
         // =============================
@@ -860,7 +906,30 @@ public class MCP_AdvancedPlanePhysics {
             quatChanged = true;
         }
 
-        if (quatChanged) {
+// =============================
+// FINAL AOA ATTITUDE CLAMP
+// =============================
+// This clamps the actual aircraft attitude after pitch/roll integration.
+// It prevents the plane from remaining at 50 deg AoA / flat-plate drift,
+// even if an upstream input/rate path failed to stop it.
+        boolean alphaAttitudeClamped = false;
+
+        if (speed > 45.0D) {
+            alphaAttitudeClamped = clampAircraftQuatAoA(
+                    plane,
+                    vx,
+                    vy,
+                    vz,
+                    plane.advancedStableAoALimit
+            );
+
+            if (alphaAttitudeClamped) {
+                // Kill residual pitch rate so it does not fight the clamp next tick.
+                plane.advancedPitchRate *= 0.15D;
+            }
+        }
+
+        if (quatChanged || alphaAttitudeClamped) {
             applyEulerFromQuat(plane);
         } else {
             syncQuatFromEuler(plane);
@@ -944,13 +1013,16 @@ public class MCP_AdvancedPlanePhysics {
         plane.moveEntity(plane.motionX, plane.motionY, plane.motionZ);
 
         if (!plane.worldObj.isRemote && info.advancedFlightDebug && plane.ticksExisted % 20 == 0) {
-            MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f AoALim=%.1f AoAMargin=%.1f Beta=%.1f Sep=%.1f CL=%.2f Lift/W=%.2f Drag=%.0f StallDrag=%.0f RevFlow=%.2f Auth=%.2f pitchRate=%.1f rotYaw=%.1f rotPitch=%.1f rotRoll=%.1f",
+            MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f AoALim=%.1f AoAMargin=%.1f PredAoA=%.1f AlphaLim=%s AttClamp=%s Beta=%.1f Sep=%.1f CL=%.2f Lift/W=%.2f Drag=%.0f StallDrag=%.0f RevFlow=%.2f Auth=%.2f pitchRate=%.1f rotYaw=%.1f rotPitch=%.1f rotRoll=%.1f",
                     info.name,
                     speed,
                     horizontalSpeed,
                     plane.advancedSmoothedAoA,
                     plane.advancedStableAoALimit,
                     plane.advancedStableAoALimit - Math.abs(plane.advancedSmoothedAoA),
+                    debugPredictedAoA,
+                    debugAlphaLimited ? "Y" : "N",
+                    alphaAttitudeClamped ? "Y" : "N",
                     rawBeta,
                     flowSeparationAngle,
                     cl,
@@ -1251,6 +1323,141 @@ public class MCP_AdvancedPlanePhysics {
         };
     }
 
+    private static double computeSignedAoAFromAxes(double[] forwardAxis, double[] upAxis, double vx, double vy, double vz) {
+        double speed = Math.sqrt(vx * vx + vy * vy + vz * vz);
+
+        if (speed < 1.0D) {
+            return 0.0D;
+        }
+
+        double forwardSpeedBody =
+                vx * forwardAxis[0]
+                        + vy * forwardAxis[1]
+                        + vz * forwardAxis[2];
+
+        double verticalSpeedBody =
+                vx * upAxis[0]
+                        + vy * upAxis[1]
+                        + vz * upAxis[2];
+
+        double aoa = Math.toDegrees(Math.atan2(
+                -verticalSpeedBody,
+                Math.max(1.0D, Math.abs(forwardSpeedBody))
+        ));
+
+        if (aoa > 50.0D) {
+            aoa = 50.0D;
+        }
+
+        if (aoa < -50.0D) {
+            aoa = -50.0D;
+        }
+
+        return aoa;
+    }
+
+    private static double[] rotateWorldVectorAroundAxis(double[] vIn, double[] axisIn, double angleRad) {
+        double[] axis = normalizeVec(axisIn);
+
+        double x = vIn[0];
+        double y = vIn[1];
+        double z = vIn[2];
+
+        double ax = axis[0];
+        double ay = axis[1];
+        double az = axis[2];
+
+        double cos = Math.cos(angleRad);
+        double sin = Math.sin(angleRad);
+
+        double dot = x * ax + y * ay + z * az;
+
+        // Rodrigues rotation formula.
+        return normalizeVec(new double[] {
+                x * cos + (ay * z - az * y) * sin + ax * dot * (1.0D - cos),
+                y * cos + (az * x - ax * z) * sin + ay * dot * (1.0D - cos),
+                z * cos + (ax * y - ay * x) * sin + az * dot * (1.0D - cos)
+        });
+    }
+
+    private static boolean clampAircraftQuatAoA(MCP_EntityPlane plane, double vx, double vy, double vz, double alphaLimit) {
+        double speed = Math.sqrt(vx * vx + vy * vy + vz * vz);
+
+        if (speed < 45.0D) {
+            return false;
+        }
+
+        if (Double.isNaN(alphaLimit) || Double.isInfinite(alphaLimit) || alphaLimit < 5.0D) {
+            alphaLimit = 14.0D;
+        }
+
+        double[] fwd = getAircraftForwardAxis(plane);
+        double[] up = getAircraftUpAxis(plane);
+        double[] right = getAircraftRightAxis(plane);
+
+        double currentAlpha = computeSignedAoAFromAxes(fwd, up, vx, vy, vz);
+        double absCurrentAlpha = Math.abs(currentAlpha);
+
+        if (absCurrentAlpha <= alphaLimit + 0.25D) {
+            return false;
+        }
+
+        double bestAngleDeg = 0.0D;
+        double bestAlpha = currentAlpha;
+        double bestScore = 1.0E30D;
+
+        // Search a correction around the local pitch axis.
+        // Large enough to pull the aircraft out of 50 deg AoA in one tick,
+        // but still bounded so it cannot teleport attitude violently.
+        double maxCorrectionDeg = 55.0D;
+        int samples = 111;
+
+        for (int i = 0; i < samples; i++) {
+            double t = (double)i / (double)(samples - 1);
+            double angleDeg = -maxCorrectionDeg + 2.0D * maxCorrectionDeg * t;
+            double angleRad = Math.toRadians(angleDeg);
+
+            double[] testFwd = rotateWorldVectorAroundAxis(fwd, right, angleRad);
+            double[] testUp = rotateWorldVectorAroundAxis(up, right, angleRad);
+
+            double testAlpha = computeSignedAoAFromAxes(testFwd, testUp, vx, vy, vz);
+            double absTestAlpha = Math.abs(testAlpha);
+
+            double score;
+
+            if (absTestAlpha > alphaLimit) {
+                // Strongly prefer getting under the limit.
+                double over = absTestAlpha - alphaLimit;
+                score = 100000.0D + over * over * 1000.0D;
+            } else {
+                // Once under the limit, prefer staying close to the limit
+                // rather than snapping all the way to zero AoA.
+                score = alphaLimit - absTestAlpha;
+            }
+
+            // Tiny correction cost so it chooses the least-violent valid correction.
+            score += Math.abs(angleDeg) * 0.001D;
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestAngleDeg = angleDeg;
+                bestAlpha = testAlpha;
+            }
+        }
+
+        if (Math.abs(bestAlpha) >= absCurrentAlpha - 0.10D) {
+            return false;
+        }
+
+        if (Math.abs(bestAngleDeg) < 0.01D) {
+            return false;
+        }
+
+        rotateAircraftQuatWorldAxis(plane, right, Math.toRadians(bestAngleDeg));
+        normalizeAircraftQuat(plane);
+
+        return true;
+    }
     private static boolean isFinite(double v) {
         return !Double.isNaN(v) && !Double.isInfinite(v);
     }
