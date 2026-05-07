@@ -195,7 +195,10 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             super.prevPosX = super.posX;
             super.prevPosY = super.posY;
             super.prevPosZ = super.posZ;
-            if (!this.isDestroyed() && this.isHovering() && MathHelper.abs(this.getRotPitch()) < 70.0F) {
+            if (!this.isAdvancedFlightModel()
+                    && !this.isDestroyed()
+                    && this.isHovering()
+                    && MathHelper.abs(this.getRotPitch()) < 70.0F) {
                 this.setRotPitch(this.getRotPitch() * 0.95F, "isHovering()");
             }
 
@@ -310,20 +313,130 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public float getControlRotYaw(float mouseX, float mouseY, float tick) {
+        float yawCmd;
+
         if (MCH_Config.MouseControlFlightSimMode.prmBool) {
             this.rotationByKey(tick);
-            return this.addkeyRotValue * 20.0F;
+            yawCmd = this.addkeyRotValue * 20.0F;
         } else {
-            return mouseX;
+            yawCmd = mouseX;
         }
+
+        if (!this.isAdvancedFlightModel()) {
+            return yawCmd;
+        }
+
+        double authority = this.advancedAeroControlAuthority;
+
+        if (Double.isNaN(authority) || Double.isInfinite(authority)) {
+            authority = 1.0D;
+        }
+
+        if (authority < 0.05D) {
+            authority = 0.05D;
+        }
+
+        if (authority > 1.0D) {
+            authority = 1.0D;
+        }
+
+        float maxYawCmd = (float)(2.0D * (0.25D + 0.75D * authority));
+
+        if (this.advancedFlowSeparationAngle > 25.0D && maxYawCmd > 0.8F) {
+            maxYawCmd = 0.8F;
+        }
+
+        if (yawCmd > maxYawCmd) {
+            yawCmd = maxYawCmd;
+        }
+
+        if (yawCmd < -maxYawCmd) {
+            yawCmd = -maxYawCmd;
+        }
+
+        return yawCmd;
     }
 
     public float getControlRotPitch(float mouseX, float mouseY, float tick) {
-        return mouseY;
+        if (!this.isAdvancedFlightModel()) {
+            return mouseY;
+        }
+
+        float pitchCmd = mouseY;
+
+        double speedMps = Math.sqrt(
+                super.motionX * super.motionX
+                        + super.motionY * super.motionY
+                        + super.motionZ * super.motionZ
+        ) * 60.0D;
+
+        double authority = this.advancedAeroControlAuthority;
+
+        if (Double.isNaN(authority) || Double.isInfinite(authority)) {
+            authority = 1.0D;
+        }
+
+        if (authority < 0.05D) {
+            authority = 0.05D;
+        }
+
+        if (authority > 1.0D) {
+            authority = 1.0D;
+        }
+
+        // Energy-based pitch-rate limit.
+        // Approximate: max turn rate = normal acceleration / speed.
+        // Higher speed means the nose cannot be whipped around instantly.
+        double effectiveSpeed = speedMps;
+
+        if (effectiveSpeed < 90.0D) {
+            effectiveSpeed = 90.0D;
+        }
+
+        double maxNormalAccel = 8.0D * 9.81D;
+        double maxPitchRateDegPerSec = Math.toDegrees(maxNormalAccel / effectiveSpeed);
+
+        // Gameplay allowance: let nose authority be stronger than pure sustained turn rate,
+        // but still far below instant MCHeli snapping.
+        maxPitchRateDegPerSec *= 2.0D;
+
+        if (maxPitchRateDegPerSec > 55.0D) {
+            maxPitchRateDegPerSec = 55.0D;
+        }
+
+        if (maxPitchRateDegPerSec < 12.0D) {
+            maxPitchRateDegPerSec = 12.0D;
+        }
+
+        // Stall / separated flow reduces pitch authority hard.
+        maxPitchRateDegPerSec *= (0.20D + 0.80D * authority);
+
+        if (this.advancedFlowSeparationAngle > 25.0D && maxPitchRateDegPerSec > 18.0D) {
+            maxPitchRateDegPerSec = 18.0D;
+        }
+
+        if (this.advancedFlowSeparationAngle > 40.0D && maxPitchRateDegPerSec > 10.0D) {
+            maxPitchRateDegPerSec = 10.0D;
+        }
+
+        // Convert deg/sec to approximate per-tick rotation command.
+        float maxPitchCmd = (float)(maxPitchRateDegPerSec * 0.05D);
+
+        if (pitchCmd > maxPitchCmd) {
+            pitchCmd = maxPitchCmd;
+        }
+
+        if (pitchCmd < -maxPitchCmd) {
+            pitchCmd = -maxPitchCmd;
+        }
+
+        return pitchCmd;
     }
 
     public float getControlRotRoll(float mouseX, float mouseY, float tick) {
-        return MCH_Config.MouseControlFlightSimMode.prmBool ? mouseX * 2.0F : (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX);
+        return MCH_Config.MouseControlFlightSimMode.prmBool
+                ? mouseX * 2.0F
+                : (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX);
     }
 
     private void rotationByKey(float partialTicks) {
@@ -381,7 +494,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             }
 
             this.addkeyRotValue = (float) ((double) this.addkeyRotValue * (1.0D - (double) (0.1F * partialTicks)));
-            if (!isFly && MathHelper.abs(this.getRotPitch()) < 40.0F) {
+            if (!this.isAdvancedFlightModel() && !isFly && MathHelper.abs(this.getRotPitch()) < 40.0F) {
                 this.applyOnGroundPitch(0.97F);
             }
 

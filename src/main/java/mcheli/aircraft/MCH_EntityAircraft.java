@@ -248,6 +248,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public double advancedLocalPitchError = 0.0D;
     public double advancedLocalYawError = 0.0D;
+    public double advancedAeroControlAuthority = 1.0D;
+    public double advancedFlowSeparationAngle = 0.0D;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -1286,7 +1288,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         this.keepOnRideRotation = false;
         if (this.getAcInfo() != null) {
-            this.switchFreeLookModeClient(this.getAcInfo().defaultFreelook);
+            // Advanced flight uses normal MCHeli aircraft rotation controls.
+            // Do not start in freelook, or mouse pitch/roll will be ignored.
+            if (this.isAdvancedFlightModel()) {
+                this.switchFreeLookModeClient(false);
+            } else {
+                this.switchFreeLookModeClient(this.getAcInfo().defaultFreelook);
+            }
         }
 
     }
@@ -1386,20 +1394,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (this.isFreeLookMode()) {
             y = 0.0F;
             x = 0.0F;
-        }
-
-        if (this.isAdvancedFlightModel()) {
-
-            // Let the pilot/camera aim direction move.
-            // The client packet will send player.getLookVec() as the target direction.
-            player.setAngles(deltaX, deltaY);
-
-            // Do not directly command pitch/yaw here.
-            this.advancedPitchInput = 0.0D;
-            this.advancedYawInput = 0.0D;
-
-            this.aircraftRotChanged = true;
-            return;
         }
 
         float yaw = 0.0F;
@@ -1823,7 +1817,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         double var12 = super.motionY;
         this.onUpdateAircraft();
         if (this.getAcInfo() != null) {
-            this.updateParts(this.getPartStatus());
+            if (this.isAdvancedFlightModel()) {
+                this.switchFreeLookModeClient(false);
+            } else {
+                this.switchFreeLookModeClient(this.getAcInfo().defaultFreelook);
+            }
         }
 
         if (this.recoilCount > 0) {

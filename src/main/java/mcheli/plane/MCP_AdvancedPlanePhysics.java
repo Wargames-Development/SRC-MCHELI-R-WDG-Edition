@@ -68,22 +68,97 @@ public class MCP_AdvancedPlanePhysics {
         double maxAoA = 18.0D;
 
         // =============================
-        // SIGNED ANGLE OF ATTACK + CL
-        // =============================
+// BODY-RELATIVE AOA + SIDESLIP
+// =============================
+// AoA = airflow angle in local forward/up plane.
+// Beta = airflow angle in local forward/right plane.
+// The 90-degree roll + hard pitch failure is often high beta/sideslip,
+// not only high AoA.
 
-        double rawAoA = 0.0D;
+        Vec3 aoaUpVec = MCH_Lib.RotVec3(
+                0.0D, 1.0D, 0.0D,
+                -plane.getRotYaw(),
+                -plane.getRotPitch(),
+                -plane.getRotRoll()
+        );
 
-        if (speed > 1.0D && horizontalSpeed > 1.0D) {
-            double forwardHorizontal = Math.sqrt(forwardX * forwardX + forwardZ * forwardZ);
-            double noseAngleRad = Math.atan2(forwardY, forwardHorizontal);
-            double flightPathRad = Math.atan2(vy, horizontalSpeed);
+        Vec3 betaRightVec = MCH_Lib.RotVec3(
+                1.0D, 0.0D, 0.0D,
+                -plane.getRotYaw(),
+                -plane.getRotPitch(),
+                -plane.getRotRoll()
+        );
 
-            rawAoA = Math.toDegrees(noseAngleRad - flightPathRad);
+        double aoaUpX = aoaUpVec.xCoord;
+        double aoaUpY = aoaUpVec.yCoord;
+        double aoaUpZ = aoaUpVec.zCoord;
+
+        double rightX = betaRightVec.xCoord;
+        double rightY = betaRightVec.yCoord;
+        double rightZ = betaRightVec.zCoord;
+
+        double upLen = Math.sqrt(
+                aoaUpX * aoaUpX
+                        + aoaUpY * aoaUpY
+                        + aoaUpZ * aoaUpZ
+        );
+
+        if (upLen > 1.0E-6D) {
+            aoaUpX /= upLen;
+            aoaUpY /= upLen;
+            aoaUpZ /= upLen;
         }
 
-        // Clamp raw AoA before filtering so bad transient values cannot spike lift.
-        if (rawAoA > maxAoA) rawAoA = maxAoA;
-        if (rawAoA < -maxAoA) rawAoA = -maxAoA;
+        double rightLen = Math.sqrt(
+                rightX * rightX
+                        + rightY * rightY
+                        + rightZ * rightZ
+        );
+
+        if (rightLen > 1.0E-6D) {
+            rightX /= rightLen;
+            rightY /= rightLen;
+            rightZ /= rightLen;
+        }
+
+        double forwardSpeedBody = vx * forwardX + vy * forwardY + vz * forwardZ;
+        double verticalSpeedBody = vx * aoaUpX + vy * aoaUpY + vz * aoaUpZ;
+        double sideSpeedBody = vx * rightX + vy * rightY + vz * rightZ;
+
+        double rawAoA = 0.0D;
+        double rawBeta = 0.0D;
+
+        if (speed > 1.0D) {
+            rawAoA = Math.toDegrees(Math.atan2(
+                    -verticalSpeedBody,
+                    Math.max(1.0D, Math.abs(forwardSpeedBody))
+            ));
+
+            rawBeta = Math.toDegrees(Math.atan2(
+                    sideSpeedBody,
+                    Math.max(1.0D, Math.abs(forwardSpeedBody))
+            ));
+        }
+
+// Let stall logic see deep AoA/beta.
+// Only clamp impossible spikes.
+        if (rawAoA > 50.0D) {
+            rawAoA = 50.0D;
+        }
+
+        if (rawAoA < -50.0D) {
+            rawAoA = -50.0D;
+        }
+
+        if (rawBeta > 50.0D) {
+            rawBeta = 50.0D;
+        }
+
+        if (rawBeta < -50.0D) {
+            rawBeta = -50.0D;
+        }
+
+        double absBeta = Math.abs(rawBeta);
 
         // Per-aircraft AoA smoothing.
         // Higher value = faster lift response, lower value = less oscillation.
@@ -97,8 +172,8 @@ public class MCP_AdvancedPlanePhysics {
 
         // Soft stall starts before maxAoA.
         // This avoids the previous hard-ish lift behavior near 14–18 deg.
-        double stallStartAoA = 13.0D;
-        double stallFullAoA = 22.0D;
+        double stallStartAoA = 12.0D;
+        double stallFullAoA = 28.0D;
 
         double absAoA = Math.abs(plane.advancedSmoothedAoA);
         double stallFactor = 1.0D;
@@ -106,10 +181,12 @@ public class MCP_AdvancedPlanePhysics {
         if (absAoA > stallStartAoA) {
             stallFactor = 1.0D - ((absAoA - stallStartAoA) / (stallFullAoA - stallStartAoA));
 
-            if (stallFactor < 0.30D) {
-                stallFactor = 0.30D;
+            // Deep stall keeps only a small amount of unstable lift.
+            if (stallFactor < 0.10D) {
+                stallFactor = 0.10D;
             }
         }
+        double flowSeparationAngle = Math.max(absAoA, absBeta);
 
         double targetCL = clLinear * stallFactor;
 
@@ -133,7 +210,9 @@ public class MCP_AdvancedPlanePhysics {
         // FORCES
         // =============================
 
-        double qLift = 0.5D * rho * horizontalSpeed * horizontalSpeed;
+        // Use total airspeed for dynamic pressure.
+// horizontalSpeed was hiding vertical/deep-stall energy.
+        double qLift = 0.5D * rho * speed * speed;
         double qDrag = 0.5D * rho * speed * speed;
 
         double liftN = qLift * wingArea * cl;
@@ -141,9 +220,58 @@ public class MCP_AdvancedPlanePhysics {
         double thrustN = maxThrustN * throttle;
         double weightN = mass * 9.81D;
 
-        // Extra induced drag when producing lift
+        // =============================
+        // HIGH-AOA / STALL DRAG
+        // =============================
+        // After CLmax / stall AoA, drag rises hard. This bleeds speed
+        // before the aircraft gets into clean backwards-flight behavior.
+        double highAoADragN = 0.0D;
+        double highAoAFactor = 0.0D;
+
+        double highAoAStart = 10.0D;
+        double highAoAFull = 35.0D;
+
+        if (flowSeparationAngle > highAoAStart) {
+            highAoAFactor = (flowSeparationAngle - highAoAStart) / (highAoAFull - highAoAStart);
+
+            if (highAoAFactor > 1.0D) highAoAFactor = 1.0D;
+            if (highAoAFactor < 0.0D) highAoAFactor = 0.0D;
+        }
+
+        double cdHighAoA =
+                0.10D * highAoAFactor
+                        + 0.85D * highAoAFactor * highAoAFactor;
+
+        highAoADragN = qDrag * wingArea * cdHighAoA;
+        dragN += highAoADragN;
+
+        // Extra induced drag when producing lift.
         double inducedDragN = qLift * wingArea * 0.035D * cl * cl;
         dragN += inducedDragN;
+
+        // =============================
+        // REVERSE FLOW / BACKWARDS FLIGHT
+        // =============================
+        // If the aircraft nose points opposite velocity, lift becomes mostly useless
+        // and drag becomes massive.
+        double reverseFlowFactor = 0.0D;
+
+        if (speed > 1.0D) {
+            reverseFlowFactor = -forwardSpeedBody / speed;
+
+            if (reverseFlowFactor < 0.0D) reverseFlowFactor = 0.0D;
+            if (reverseFlowFactor > 1.0D) reverseFlowFactor = 1.0D;
+        }
+
+        if (reverseFlowFactor > 0.0D) {
+            liftN *= 1.0D - 0.95D * reverseFlowFactor;
+
+            double reverseCd =
+                    0.35D * reverseFlowFactor
+                            + 1.40D * reverseFlowFactor * reverseFlowFactor;
+
+            dragN += qDrag * wingArea * reverseCd;
+        }
 
         // =============================
         // FORCE DIRECTIONS
@@ -212,31 +340,35 @@ public class MCP_AdvancedPlanePhysics {
         // =============================
         // SIDESLIP / LATERAL DAMPING
         // =============================
-        // Prevents aircraft from "strafing" sideways like a UFO.
-        // Removes velocity perpendicular to the aircraft nose direction.
+        // Damp only velocity along aircraft local right axis.
+        // Do not damp all non-forward velocity, because that also fights pitch/lift
+        // and can flip AoA sign tick-to-tick.
 
-        double forwardSpeed = vx * forwardX + vy * forwardY + vz * forwardZ;
+        double lateralSpeed = 0.0D;
+        double sideDampingAccel = 0.0D;
 
-        double sideVelX = vx - forwardX * forwardSpeed;
-        double sideVelY = vy - forwardY * forwardSpeed;
-        double sideVelZ = vz - forwardZ * forwardSpeed;
+        if (speed > 1.0D) {
+            // rightX/rightY/rightZ were already computed in the AoA + beta block.
+            lateralSpeed = vx * rightX + vy * rightY + vz * rightZ;
 
-        // Do not damp vertical flight-path component too aggressively yet.
-        // Main goal is to remove sideways horizontal sliding.
-        sideVelY *= 0.25D;
+            double sideDampingTime = 1.25D; // seconds. Lower = stronger damping.
+            sideDampingAccel = -lateralSpeed / sideDampingTime;
 
-        double sideSpeed = Math.sqrt(sideVelX * sideVelX + sideVelY * sideVelY + sideVelZ * sideVelZ);
+            // Cap correction so it cannot snap the velocity vector every tick.
+            double maxSideDampingAccel = 30.0D; // m/s^2
 
-        if (sideSpeed > 0.5D) {
-            double sideDampingCoeff = 2.5D;
+            if (sideDampingAccel > maxSideDampingAccel) {
+                sideDampingAccel = maxSideDampingAccel;
+            }
 
-            double sideForce = sideDampingCoeff * sideSpeed * sideSpeed * mass;
+            if (sideDampingAccel < -maxSideDampingAccel) {
+                sideDampingAccel = -maxSideDampingAccel;
+            }
 
-            forceX -= (sideVelX / sideSpeed) * sideForce;
-            forceY -= (sideVelY / sideSpeed) * sideForce;
-            forceZ -= (sideVelZ / sideSpeed) * sideForce;
+            forceX += rightX * sideDampingAccel * mass;
+            forceY += rightY * sideDampingAccel * mass;
+            forceZ += rightZ * sideDampingAccel * mass;
         }
-
         // =============================
         // ACCELERATION + INTEGRATION
         // =============================
@@ -332,8 +464,8 @@ public class MCP_AdvancedPlanePhysics {
 // Rate-command controller:
 // target direction -> desired pitch rate -> elevator input.
 // This is smoother than direct angle-error -> elevator.
-            double pitchRatePerDegError = 4.0D;
-            double maxCommandedPitchRate = 140.0D;
+            double pitchRatePerDegError = 2.0D;
+            double maxCommandedPitchRate = 80.0D;
 
             // Since yaw control is not implemented yet, reduce pitch authority when the
 // target is mostly sideways relative to the aircraft nose.
@@ -375,12 +507,17 @@ public class MCP_AdvancedPlanePhysics {
                 targetPitchInput = -1.0D;
             }
 
-            plane.advancedPitchInput = targetPitchInput;
+            // Smooth elevator command so target-direction control does not flip input every tick.
+            plane.advancedPitchInput += (targetPitchInput - plane.advancedPitchInput) * 0.25D;
 
             // Yaw stays disabled for now.
             plane.advancedYawInput = 0.0D;
         } else {
-            plane.advancedPitchInput = 0.0D;
+            plane.advancedPitchInput *= 0.50D;
+
+            if (Math.abs(plane.advancedPitchInput) < 0.01D) {
+                plane.advancedPitchInput = 0.0D;
+            }
             plane.advancedYawInput = 0.0D;
 
             plane.advancedPitchRate *= 0.70D;
@@ -411,45 +548,62 @@ public class MCP_AdvancedPlanePhysics {
 
         double qControl = 0.5D * rho * speed * speed;
 
-        // Pitch now uses the same dynamic-pressure moment model as roll.
-        // Elevator/stabilator force = q * area * controlPower * input
-        // Pitch moment = force * momentArm
-        // Angular accel = moment / inertia
+        // =============================
+        // HIGH-AOA CONTROL AUTHORITY LIMIT
+        // =============================
+        // This prevents the plane from instantly rotating its nose 180 degrees
+        // while the velocity vector is still going the old direction.
+        double aeroAuthority = 1.0D;
+
+        if (flowSeparationAngle > 8.0D) {
+            aeroAuthority = 1.0D - ((flowSeparationAngle - 8.0D) / 27.0D);
+
+            if (aeroAuthority < 0.15D) {
+                aeroAuthority = 0.15D;
+            }
+
+            if (aeroAuthority > 1.0D) {
+                aeroAuthority = 1.0D;
+            }
+        }
+
+        // Reverse flow should make pitch/yaw authority collapse even more.
+        if (reverseFlowFactor > 0.10D) {
+            double reverseAuthority = 1.0D - reverseFlowFactor;
+
+            if (reverseAuthority < 0.10D) {
+                reverseAuthority = 0.10D;
+            }
+
+            if (reverseAuthority < aeroAuthority) {
+                aeroAuthority = reverseAuthority;
+            }
+        }
+
+        // Expose aerodynamic authority to MCHeli's normal rotation input path.
+        // This is important because MCHeli can rotate the aircraft directly,
+        // bypassing advancedPitchRate.
+        plane.advancedAeroControlAuthority = aeroAuthority;
+        plane.advancedFlowSeparationAngle = flowSeparationAngle;
+
+        // Pitch now uses dynamic-pressure moment model, but control authority
+        // collapses during stall/reverse-flow.
         double pitchControlForce =
                 qControl
                         * info.advancedPitchControlArea
                         * info.advancedPitchControlPower
+                        * aeroAuthority
                         * plane.advancedPitchInput;
 
         double pitchMoment =
                 pitchControlForce
                         * info.advancedPitchMomentArm;
 
-        // =============================
-        // LONGITUDINAL STABILITY
-        // =============================
-        // Adds natural nose-restoring tendency based on AoA.
-        // Positive AoA creates nose-down restoring moment.
-        // Negative AoA creates nose-up restoring moment.
-        double pitchStabilityPower = 0.018D;
-
-        // Pitch-rate damping resists rapid pitch rotation.
-        // This prevents porpoising and over-control.
-        double pitchRateDampingPower = 0.030D;
-
-        double aoaStabilityMoment =
-                -plane.advancedSmoothedAoA
-                        * qControl
-                        * info.advancedWingArea
-                        * pitchStabilityPower;
-
-        double pitchRateDampingMoment =
-                -plane.advancedPitchRate
-                        * qControl
-                        * info.advancedWingArea
-                        * pitchRateDampingPower;
-
-        pitchMoment += aoaStabilityMoment + pitchRateDampingMoment;
+        // Pitch-rate damping is already applied below by:
+        // plane.advancedPitchRate *= info.advancedPitchDamping;
+        //
+        // Do not add a qControl-scaled damping moment here.
+        // At high speed it can overcorrect and flip pitchRate positive/negative every tick.
 
         // Sign may need flipping depending on MCHR pitch convention.
         // If pressing pitch-up makes the nose go down, multiply this by -1.0D.
@@ -458,6 +612,22 @@ public class MCP_AdvancedPlanePhysics {
 
         double pitchAccel =
                 Math.toDegrees(pitchAccelRad);
+
+        // Limit pitch angular acceleration so pitchRate cannot flip violently
+        // positive/negative every tick.
+        double maxPitchAccel = 220.0D * aeroAuthority;
+
+        if (maxPitchAccel < 45.0D) {
+            maxPitchAccel = 45.0D;
+        }
+
+        if (pitchAccel > maxPitchAccel) {
+            pitchAccel = maxPitchAccel;
+        }
+
+        if (pitchAccel < -maxPitchAccel) {
+            pitchAccel = -maxPitchAccel;
+        }
 
         double rollControlForce =
                 qControl
@@ -474,7 +644,7 @@ public class MCP_AdvancedPlanePhysics {
 
         double rollAccel =
                 Math.toDegrees(rollAccelRad);
-        double yawAccel = plane.advancedYawInput * 35.0D * controlSpeedFactor;
+        double yawAccel = plane.advancedYawInput * 35.0D * controlSpeedFactor * aeroAuthority;
 
         // Apply angular acceleration
         plane.advancedPitchRate += pitchAccel * DT;
@@ -487,7 +657,32 @@ public class MCP_AdvancedPlanePhysics {
         plane.advancedYawRate *= 0.90D;
 
         // Clamp angular rates in deg/sec
-        double maxPitchRate = info.advancedMaxPitchRate;
+        // Clamp angular rates in deg/sec.
+        // Clean flow can use the aircraft config, but separated/reverse flow
+        // must not allow instant 180-degree nose flips.
+        double cleanMaxPitchRate = info.advancedMaxPitchRate;
+
+        if (cleanMaxPitchRate > 180.0D) {
+            cleanMaxPitchRate = 180.0D;
+        }
+
+        double maxPitchRate = cleanMaxPitchRate * (0.20D + 0.80D * aeroAuthority);
+
+        if (flowSeparationAngle > 25.0D) {
+            double separatedMaxRate = 45.0D;
+
+            if (maxPitchRate > separatedMaxRate) {
+                maxPitchRate = separatedMaxRate;
+            }
+        }
+
+        if (reverseFlowFactor > 0.25D) {
+            double reverseMaxRate = 25.0D;
+
+            if (maxPitchRate > reverseMaxRate) {
+                maxPitchRate = reverseMaxRate;
+            }
+        }
 
         if (plane.advancedPitchRate > maxPitchRate) {
             plane.advancedPitchRate = maxPitchRate;
@@ -606,13 +801,13 @@ public class MCP_AdvancedPlanePhysics {
             return;
         }
 
-// Prevent corrupt save / void kick if physics ever sends entity out of sane range.
+        // Prevent corrupt save / void kick if physics ever sends entity out of sane range.
         if (Math.abs(plane.posX) > 2.9E7D || Math.abs(plane.posZ) > 2.9E7D || Math.abs(plane.posY) > 1000000.0D) {
             plane.setDead();
             return;
         }
 
-// Clamp motion to avoid single-tick world jumps.
+        // Clamp motion to avoid single-tick world jumps.
         double maxMotionBT = 10.0D;
         double motionLen = Math.sqrt(
                 plane.motionX * plane.motionX
@@ -629,49 +824,22 @@ public class MCP_AdvancedPlanePhysics {
 
         plane.moveEntity(plane.motionX, plane.motionY, plane.motionZ);
 
-        if (!plane.worldObj.isRemote && info.advancedFlightDebug && plane.ticksExisted % 20 == 0) {
-            MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f CL=%.2f Lift/W=%.2f Thrust=%.0fN Drag=%.0fN",
-                    info.name,
-                    speed,
-                    horizontalSpeed,
-                    plane.advancedSmoothedAoA,
-                    cl,
-                    liftN / weightN,
-                    thrustN,
-                    dragN);
-
-            MCH_Lib.Log("[AdvInput] pitchIn=%.2f localPitchErr=%.1f localYawErr=%.1f rollIn=%.2f yawIn=%.2f pitchRate=%.2f rollRate=%.2f yawRate=%.2f rotPitch=%.1f rotRoll=%.1f targetDir=(%.2f, %.2f, %.2f)",
-                    plane.advancedPitchInput,
-                    plane.advancedLocalPitchError,
-                    plane.advancedLocalYawError,
-                    plane.advancedRollInput,
-                    plane.advancedYawInput,
-                    plane.advancedPitchRate,
-                    plane.advancedRollRate,
-                    plane.advancedYawRate,
-                    plane.getRotPitch(),
-                    plane.getRotRoll(),
-                    plane.advancedTargetDirX,
-                    plane.advancedTargetDirY,
-                    plane.advancedTargetDirZ);
-
-            double[] qEuler = getEulerFromAircraftQuat(plane);
-
-            double dYaw = wrapDeg(qEuler[0] - plane.getRotYaw());
-            double dPitch = wrapDeg(qEuler[1] - plane.getRotPitch());
-            double dRoll = wrapDeg(qEuler[2] - plane.getRotRoll());
-
-            MCH_Lib.Log("[AdvQuatRT] srcYaw=%.1f outYaw=%.1f dYaw=%.2f srcPitch=%.1f outPitch=%.1f dPitch=%.2f srcRoll=%.1f outRoll=%.1f dRoll=%.2f",
-                    plane.getRotYaw(),
-                    qEuler[0],
-                    dYaw,
-                    plane.getRotPitch(),
-                    qEuler[1],
-                    dPitch,
-                    plane.getRotRoll(),
-                    qEuler[2],
-                    dRoll);
-        }
+        MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f Beta=%.1f Sep=%.1f CL=%.2f Lift/W=%.2f Drag=%.0f StallDrag=%.0f RevFlow=%.2f Auth=%.2f pitchRate=%.1f rotPitch=%.1f rotRoll=%.1f",
+                info.name,
+                speed,
+                horizontalSpeed,
+                plane.advancedSmoothedAoA,
+                rawBeta,
+                flowSeparationAngle,
+                cl,
+                liftN / weightN,
+                dragN,
+                highAoADragN,
+                reverseFlowFactor,
+                aeroAuthority,
+                plane.advancedPitchRate,
+                plane.getRotPitch(),
+                plane.getRotRoll());
     }
 
     private static void normalizeAircraftQuat(MCP_EntityPlane plane) {
