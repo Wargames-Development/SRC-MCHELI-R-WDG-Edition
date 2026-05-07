@@ -44,6 +44,8 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     public float rotationExhaustFlameZ;
     public double advancedSmoothedAoA = 0.0D;
     public double advancedSmoothedCL = 0.25D;
+    public double advancedStableAoALimit = 15.5D;
+    public double advancedAoAControlMargin = 15.5D;
 
     @SideOnly(Side.CLIENT)
     public ExhaustAnimState exhaustAnimState;
@@ -295,10 +297,10 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public float getPitchFactor() {
-        float pitch = this.getVtolMode() > 0 ? this.getPlaneInfo().vtolPitch : super.getPitchFactor();
+        float pitchFactor = this.getVtolMode() > 0 ? this.getPlaneInfo().vtolPitch : super.getPitchFactor();
 
         if (!this.isAdvancedFlightModel()) {
-            return pitch * 0.8F;
+            return pitchFactor * 0.8F;
         }
 
         double speedMps = Math.sqrt(
@@ -325,10 +327,8 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                 speedAuthority = 1.0D;
             }
         } else {
-            // Above corner speed, pitch rate should fall with speed.
+            // Above corner speed, pitch authority falls with speed.
             speedAuthority = cornerSpeed / speedMps;
-
-            // Slightly stronger falloff than linear.
             speedAuthority = Math.pow(speedAuthority, 1.25D);
 
             if (speedAuthority < 0.45D) {
@@ -341,12 +341,12 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         // Separation/stall authority.
-        // This represents the aircraft fighting excessive pitch / control surfaces losing authority.
+        // This should collapse hard before reverse-flow happens.
         double sep = this.advancedFlowSeparationAngle;
         double flowAuthority = 1.0D;
 
-        if (sep > 10.0D) {
-            flowAuthority = 1.0D - ((sep - 10.0D) / 14.0D);
+        if (sep > 8.0D) {
+            flowAuthority = 1.0D - ((sep - 8.0D) / 10.0D);
 
             if (flowAuthority < 0.0D) {
                 flowAuthority = 0.0D;
@@ -358,20 +358,20 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         // Clean flight: responsive.
-        // Deep stall: pitch authority nearly disappears.
+        // Deep stall/separation: pitch authority almost disappears.
         double multiplier =
-                0.08D
+                0.02D
                         + 1.22D * speedAuthority * flowAuthority;
 
-        if (multiplier < 0.08D) {
-            multiplier = 0.08D;
+        if (multiplier < 0.02D) {
+            multiplier = 0.02D;
         }
 
         if (multiplier > 1.30D) {
             multiplier = 1.30D;
         }
 
-        return pitch * (float)multiplier;
+        return pitchFactor * (float)multiplier;
     }
 
     public float getRollFactor() {
@@ -445,6 +445,40 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                         + super.motionZ * super.motionZ
         ) * 60.0D;
 
+        // =============================
+        // NOSE / VELOCITY ALIGNMENT
+        // =============================
+        // This catches the actual failure before reverse flow.
+        // If the nose is no longer aligned with the velocity vector,
+        // pitch authority should collapse instead of letting the aircraft
+        // rotate into thrust-opposite-velocity flight.
+
+        double vx = super.motionX;
+        double vy = super.motionY;
+        double vz = super.motionZ;
+        double vLen = Math.sqrt(vx * vx + vy * vy + vz * vz);
+
+        double yawRad = Math.toRadians(this.getRotYaw());
+        double pitchRad = Math.toRadians(this.getRotPitch());
+
+        double forwardX = -Math.sin(yawRad) * Math.cos(pitchRad);
+        double forwardY = -Math.sin(pitchRad);
+        double forwardZ = Math.cos(yawRad) * Math.cos(pitchRad);
+
+        double noseVelocityAlignment = 1.0D;
+
+        if (vLen > 1.0E-6D) {
+            noseVelocityAlignment = (vx * forwardX + vy * forwardY + vz * forwardZ) / vLen;
+
+            if (noseVelocityAlignment < -1.0D) {
+                noseVelocityAlignment = -1.0D;
+            }
+
+            if (noseVelocityAlignment > 1.0D) {
+                noseVelocityAlignment = 1.0D;
+            }
+        }
+
         double authority = this.advancedAeroControlAuthority;
 
         if (Double.isNaN(authority) || Double.isInfinite(authority)) {
@@ -460,8 +494,6 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         // Energy-based pitch-rate limit.
-        // Approximate: max turn rate = normal acceleration / speed.
-        // Higher speed means the nose cannot be whipped around instantly.
         double effectiveSpeed = speedMps;
 
         if (effectiveSpeed < 90.0D) {
@@ -471,8 +503,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         double maxNormalAccel = 9.5D * 9.81D;
         double maxPitchRateDegPerSec = Math.toDegrees(maxNormalAccel / effectiveSpeed);
 
-        // Gameplay allowance: stronger than sustained turn rate,
-        // but still controlled enough to prevent instant 180-degree nose flips.
+        // Gameplay allowance, still below instant MCHeli snapping.
         maxPitchRateDegPerSec *= 2.6D;
 
         if (maxPitchRateDegPerSec > 75.0D) {
@@ -483,38 +514,92 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             maxPitchRateDegPerSec = 18.0D;
         }
 
-        // Stall / separated flow reduces pitch authority hard.
+        // Stall / separated flow reduces pitch authority.
         maxPitchRateDegPerSec *= (0.20D + 0.80D * authority);
 
-        if (this.advancedFlowSeparationAngle > 18.0D && maxPitchRateDegPerSec > 18.0D) {
-            maxPitchRateDegPerSec = 18.0D;
+        // Separation clamps. These happen before reverse flow.
+        if (this.advancedFlowSeparationAngle > 14.0D && maxPitchRateDegPerSec > 14.0D) {
+            maxPitchRateDegPerSec = 14.0D;
         }
 
-        if (this.advancedFlowSeparationAngle > 25.0D && maxPitchRateDegPerSec > 10.0D) {
-            maxPitchRateDegPerSec = 10.0D;
+        if (this.advancedFlowSeparationAngle > 18.0D && maxPitchRateDegPerSec > 8.0D) {
+            maxPitchRateDegPerSec = 8.0D;
         }
 
-        if (this.advancedFlowSeparationAngle > 40.0D && maxPitchRateDegPerSec > 5.0D) {
-            maxPitchRateDegPerSec = 5.0D;
+        if (this.advancedFlowSeparationAngle > 25.0D && maxPitchRateDegPerSec > 4.0D) {
+            maxPitchRateDegPerSec = 4.0D;
+        }
+
+        if (this.advancedFlowSeparationAngle > 35.0D && maxPitchRateDegPerSec > 2.0D) {
+            maxPitchRateDegPerSec = 2.0D;
+        }
+
+        // AoA / corner-speed clamps.
+        // This prevents the 90-degree flat-plate drift before reverse flow happens.
+        double absAoA = Math.abs(this.advancedSmoothedAoA);
+        double aoaLimit = this.advancedStableAoALimit;
+
+        if (absAoA > aoaLimit - 2.0D && maxPitchRateDegPerSec > 12.0D) {
+            maxPitchRateDegPerSec = 12.0D;
+        }
+
+        if (absAoA > aoaLimit && maxPitchRateDegPerSec > 6.0D) {
+            maxPitchRateDegPerSec = 6.0D;
+        }
+
+        if (absAoA > aoaLimit + 5.0D && maxPitchRateDegPerSec > 2.0D) {
+            maxPitchRateDegPerSec = 2.0D;
+        }
+
+        // Nose/velocity alignment clamps.
+        // This is the main prevention against thrust-opposite-velocity flight.
+        if (noseVelocityAlignment < 0.75D && maxPitchRateDegPerSec > 12.0D) {
+            maxPitchRateDegPerSec = 12.0D;
+        }
+
+        if (noseVelocityAlignment < 0.50D && maxPitchRateDegPerSec > 6.0D) {
+            maxPitchRateDegPerSec = 6.0D;
+        }
+
+        if (noseVelocityAlignment < 0.25D && maxPitchRateDegPerSec > 3.0D) {
+            maxPitchRateDegPerSec = 3.0D;
+        }
+
+        if (noseVelocityAlignment < 0.0D && maxPitchRateDegPerSec > 1.0D) {
+            maxPitchRateDegPerSec = 1.0D;
         }
 
         // Convert desired deg/sec into MCHeli mouse-command units.
-        // MCHeli applies additional pitch scaling later, so 0.05 was too restrictive.
         float maxPitchCmd = (float)(maxPitchRateDegPerSec * 0.99D);
 
-        // Keep clean-air command usable, but still bounded.
         if (maxPitchCmd > 14.0F) {
             maxPitchCmd = 14.0F;
         }
 
         float minPitchCmd = 3.0F;
 
-        if (this.advancedFlowSeparationAngle > 18.0D) {
-            minPitchCmd = 1.0F;
+        if (this.advancedFlowSeparationAngle > 14.0D
+                || noseVelocityAlignment < 0.75D
+                || absAoA > aoaLimit - 2.0D) {
+            minPitchCmd = 0.8F;
         }
 
-        if (this.advancedFlowSeparationAngle > 30.0D) {
-            minPitchCmd = 0.4F;
+        if (this.advancedFlowSeparationAngle > 18.0D
+                || noseVelocityAlignment < 0.50D
+                || absAoA > aoaLimit) {
+            minPitchCmd = 0.35F;
+        }
+
+        if (this.advancedFlowSeparationAngle > 25.0D
+                || noseVelocityAlignment < 0.25D
+                || absAoA > aoaLimit + 5.0D) {
+            minPitchCmd = 0.15F;
+        }
+
+        if (this.advancedFlowSeparationAngle > 35.0D
+                || noseVelocityAlignment < 0.0D
+                || absAoA > aoaLimit + 10.0D) {
+            minPitchCmd = 0.05F;
         }
 
         if (maxPitchCmd < minPitchCmd) {

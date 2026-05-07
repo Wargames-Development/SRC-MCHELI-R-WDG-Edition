@@ -188,6 +188,54 @@ public class MCP_AdvancedPlanePhysics {
         }
         double flowSeparationAngle = Math.max(absAoA, absBeta);
 
+        // =============================
+        // CORNER-SPEED / ALPHA LIMIT
+        // =============================
+        // Best pitch authority exists near corner speed.
+        // Below corner speed: not enough airflow.
+        // Above corner speed: G / turn-rate limit should reduce allowable AoA.
+        // This prevents stable flight from becoming a 90-degree flat-plate drift.
+
+        double cornerSpeed = 240.0D;       // m/s, tuning value
+        double minControlSpeed = 85.0D;    // m/s
+        double cornerAoALimit = 15.5D;     // deg, max stable commanded AoA near corner speed
+        double minAoALimit = 8.0D;         // deg, minimum commanded limit at bad speeds
+
+        double stableAoALimit;
+
+        if (speed < cornerSpeed) {
+            double lowSpeedFactor = (speed - minControlSpeed) / (cornerSpeed - minControlSpeed);
+
+            if (lowSpeedFactor < 0.0D) {
+                lowSpeedFactor = 0.0D;
+            }
+
+            if (lowSpeedFactor > 1.0D) {
+                lowSpeedFactor = 1.0D;
+            }
+
+            stableAoALimit = minAoALimit + (cornerAoALimit - minAoALimit) * lowSpeedFactor;
+        } else {
+            double highSpeedFactor = Math.pow(cornerSpeed / speed, 0.45D);
+
+            if (highSpeedFactor < 0.55D) {
+                highSpeedFactor = 0.55D;
+            }
+
+            if (highSpeedFactor > 1.0D) {
+                highSpeedFactor = 1.0D;
+            }
+
+            stableAoALimit = cornerAoALimit * highSpeedFactor;
+        }
+
+        if (stableAoALimit < minAoALimit) {
+            stableAoALimit = minAoALimit;
+        }
+
+        plane.advancedStableAoALimit = stableAoALimit;
+        plane.advancedAoAControlMargin = stableAoALimit - absAoA;
+
         double targetCL = clLinear * stallFactor;
 
         // Final CL clamp.
@@ -239,8 +287,8 @@ public class MCP_AdvancedPlanePhysics {
         }
 
         double cdHighAoA =
-                0.05D * highAoAFactor
-                        + 0.40D * highAoAFactor * highAoAFactor;
+                0.035D * highAoAFactor
+                        + 0.22D * highAoAFactor * highAoAFactor;
 
         highAoADragN = qDrag * wingArea * cdHighAoA;
         dragN += highAoADragN;
@@ -494,7 +542,7 @@ public class MCP_AdvancedPlanePhysics {
 
             double pitchRateError = desiredPitchRate - plane.advancedPitchRate;
 
-// Convert pitch-rate error into elevator command.
+            // Convert pitch-rate error into elevator command.
             double pitchRateKp = 0.018D;
 
             double targetPitchInput = pitchRateError * pitchRateKp;
@@ -706,16 +754,87 @@ public class MCP_AdvancedPlanePhysics {
         if (plane.advancedYawRate < -45.0D) plane.advancedYawRate = -45.0D;
 
         // =============================
-// PHASE 2B: LIVE QUATERNION PITCH + ROLL
-// =============================
-// Pitch rotates around the aircraft local right / wing-to-wing axis.
-// Roll rotates around the aircraft local forward axis.
-// Yaw remains simple for now because yaw control is not active yet.
+        // FINAL ALPHA / CORNER-SPEED GOVERNOR
+        // =============================
+        // This is the hard safety layer.
+        // It limits the final pitch rate before attitude integration.
+        // That makes it robust against any upstream controller/input path.
+        //
+        // Observed convention in the current logs:
+        //   positive AoA + positive pitchRate => AoA increases
+        //   negative AoA + negative pitchRate => AoA magnitude increases
+        //
+        // Therefore, pitchRate with the same sign as AoA is "worsening" AoA.
 
-// Keep yaw on the stable Euler path for now.
-        plane.setRotYaw((float)(plane.getRotYaw() + plane.advancedYawRate * DT));
+        double alphaNow = plane.advancedSmoothedAoA;
+        double absAlphaNow = Math.abs(alphaNow);
 
-// Start from current visible attitude.
+        double alphaLimit = plane.advancedStableAoALimit;
+
+        // Fallback if field has not initialized yet.
+        if (Double.isNaN(alphaLimit) || Double.isInfinite(alphaLimit) || alphaLimit < 5.0D) {
+            alphaLimit = 14.0D;
+        }
+
+        double alphaSign = alphaNow >= 0.0D ? 1.0D : -1.0D;
+
+        // Positive worseningRate means current pitchRate is driving deeper into alpha.
+        double worseningRate = plane.advancedPitchRate * alphaSign;
+
+        // Start fading worsening pitch rate before the limit.
+        double softZone = 5.0D;
+        double alphaMargin = alphaLimit - absAlphaNow;
+
+        if (alphaMargin < softZone && worseningRate > 0.0D) {
+            double scale = alphaMargin / softZone;
+
+            if (scale < 0.0D) {
+                scale = 0.0D;
+            }
+
+            if (scale > 1.0D) {
+                scale = 1.0D;
+            }
+
+            // Near the alpha limit, allow almost no pitch rate that increases AoA.
+            double allowedWorseningRate = 8.0D * scale;
+
+            if (worseningRate > allowedWorseningRate) {
+                plane.advancedPitchRate = alphaSign * allowedWorseningRate;
+            }
+        }
+
+        // If already past the stable alpha limit, command unloading.
+        // This prevents the 90-degree flat-plate drift state.
+        if (absAlphaNow > alphaLimit) {
+            double exceed = absAlphaNow - alphaLimit;
+
+            double unloadRate = 6.0D + exceed * 2.0D;
+
+            if (unloadRate > 35.0D) {
+                unloadRate = 35.0D;
+            }
+
+            // Opposite sign reduces AoA magnitude.
+            double commandedUnloadRate = -alphaSign * unloadRate;
+
+            // Only override if current rate is not unloading hard enough.
+            if (plane.advancedPitchRate * alphaSign > commandedUnloadRate * alphaSign) {
+                plane.advancedPitchRate = commandedUnloadRate;
+            }
+        }
+
+        // =============================
+        // PHASE 2B: LIVE QUATERNION PITCH + ROLL
+        // =============================
+        // Pitch rotates around the aircraft local right / wing-to-wing axis.
+        // Roll rotates around the aircraft local forward axis.
+        // Yaw remains simple for now because yaw control is not active yet.
+
+        // Keep yaw on the stable Euler path for now.
+            plane.setRotYaw((float)(plane.getRotYaw() + plane.advancedYawRate * DT));
+
+        // Start from current visible attitude.
         syncQuatFromEuler(plane);
 
         double pitchStepRad = Math.toRadians(plane.advancedPitchRate * DT);
@@ -825,11 +944,13 @@ public class MCP_AdvancedPlanePhysics {
         plane.moveEntity(plane.motionX, plane.motionY, plane.motionZ);
 
         if (!plane.worldObj.isRemote && info.advancedFlightDebug && plane.ticksExisted % 20 == 0) {
-            MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f Beta=%.1f Sep=%.1f CL=%.2f Lift/W=%.2f Drag=%.0f StallDrag=%.0f RevFlow=%.2f Auth=%.2f pitchRate=%.1f rotYaw=%.1f rotPitch=%.1f rotRoll=%.1f",
+            MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f AoALim=%.1f AoAMargin=%.1f Beta=%.1f Sep=%.1f CL=%.2f Lift/W=%.2f Drag=%.0f StallDrag=%.0f RevFlow=%.2f Auth=%.2f pitchRate=%.1f rotYaw=%.1f rotPitch=%.1f rotRoll=%.1f",
                     info.name,
                     speed,
                     horizontalSpeed,
                     plane.advancedSmoothedAoA,
+                    plane.advancedStableAoALimit,
+                    plane.advancedStableAoALimit - Math.abs(plane.advancedSmoothedAoA),
                     rawBeta,
                     flowSeparationAngle,
                     cl,
