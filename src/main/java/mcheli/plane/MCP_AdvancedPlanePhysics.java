@@ -824,22 +824,25 @@ public class MCP_AdvancedPlanePhysics {
 
         plane.moveEntity(plane.motionX, plane.motionY, plane.motionZ);
 
-        MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f Beta=%.1f Sep=%.1f CL=%.2f Lift/W=%.2f Drag=%.0f StallDrag=%.0f RevFlow=%.2f Auth=%.2f pitchRate=%.1f rotPitch=%.1f rotRoll=%.1f",
-                info.name,
-                speed,
-                horizontalSpeed,
-                plane.advancedSmoothedAoA,
-                rawBeta,
-                flowSeparationAngle,
-                cl,
-                liftN / weightN,
-                dragN,
-                highAoADragN,
-                reverseFlowFactor,
-                aeroAuthority,
-                plane.advancedPitchRate,
-                plane.getRotPitch(),
-                plane.getRotRoll());
+        if (!plane.worldObj.isRemote && info.advancedFlightDebug && plane.ticksExisted % 20 == 0) {
+            MCH_Lib.Log("[AdvPhys] %s speed=%.1f m/s hs=%.1f m/s AoA=%.1f Beta=%.1f Sep=%.1f CL=%.2f Lift/W=%.2f Drag=%.0f StallDrag=%.0f RevFlow=%.2f Auth=%.2f pitchRate=%.1f rotYaw=%.1f rotPitch=%.1f rotRoll=%.1f",
+                    info.name,
+                    speed,
+                    horizontalSpeed,
+                    plane.advancedSmoothedAoA,
+                    rawBeta,
+                    flowSeparationAngle,
+                    cl,
+                    liftN / weightN,
+                    dragN,
+                    highAoADragN,
+                    reverseFlowFactor,
+                    aeroAuthority,
+                    plane.advancedPitchRate,
+                    plane.getRotYaw(),
+                    plane.getRotPitch(),
+                    plane.getRotRoll());
+        }
     }
 
     private static void normalizeAircraftQuat(MCP_EntityPlane plane) {

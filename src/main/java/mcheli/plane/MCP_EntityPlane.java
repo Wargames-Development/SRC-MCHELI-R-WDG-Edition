@@ -393,19 +393,19 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             effectiveSpeed = 90.0D;
         }
 
-        double maxNormalAccel = 8.0D * 9.81D;
+        double maxNormalAccel = 9.5D * 9.81D;
         double maxPitchRateDegPerSec = Math.toDegrees(maxNormalAccel / effectiveSpeed);
 
-        // Gameplay allowance: let nose authority be stronger than pure sustained turn rate,
-        // but still far below instant MCHeli snapping.
-        maxPitchRateDegPerSec *= 2.0D;
+        // Gameplay allowance: stronger than sustained turn rate,
+        // but still controlled enough to prevent instant 180-degree nose flips.
+        maxPitchRateDegPerSec *= 2.6D;
 
-        if (maxPitchRateDegPerSec > 55.0D) {
-            maxPitchRateDegPerSec = 55.0D;
+        if (maxPitchRateDegPerSec > 75.0D) {
+            maxPitchRateDegPerSec = 75.0D;
         }
 
-        if (maxPitchRateDegPerSec < 12.0D) {
-            maxPitchRateDegPerSec = 12.0D;
+        if (maxPitchRateDegPerSec < 18.0D) {
+            maxPitchRateDegPerSec = 18.0D;
         }
 
         // Stall / separated flow reduces pitch authority hard.
@@ -419,8 +419,18 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             maxPitchRateDegPerSec = 10.0D;
         }
 
-        // Convert deg/sec to approximate per-tick rotation command.
-        float maxPitchCmd = (float)(maxPitchRateDegPerSec * 0.05D);
+        // Convert desired deg/sec into MCHeli mouse-command units.
+        // MCHeli applies additional pitch scaling later, so 0.05 was too restrictive.
+        float maxPitchCmd = (float)(maxPitchRateDegPerSec * 0.99D);
+
+        // Keep clean-air command usable, but still bounded.
+        if (maxPitchCmd > 14.0F) {
+            maxPitchCmd = 14.0F;
+        }
+
+        if (maxPitchCmd < 3.0F) {
+            maxPitchCmd = 3.0F;
+        }
 
         if (pitchCmd > maxPitchCmd) {
             pitchCmd = maxPitchCmd;
