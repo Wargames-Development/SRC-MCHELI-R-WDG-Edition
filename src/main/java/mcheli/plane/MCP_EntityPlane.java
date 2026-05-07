@@ -195,7 +195,10 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             super.prevPosX = super.posX;
             super.prevPosY = super.posY;
             super.prevPosZ = super.posZ;
-            if (!this.isDestroyed() && this.isHovering() && MathHelper.abs(this.getRotPitch()) < 70.0F) {
+            if (!this.isAdvancedFlightModel()
+                    && !this.isDestroyed()
+                    && this.isHovering()
+                    && MathHelper.abs(this.getRotPitch()) < 70.0F) {
                 this.setRotPitch(this.getRotPitch() * 0.95F, "isHovering()");
             }
 
@@ -288,17 +291,111 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
 
     public float getYawFactor() {
         float yaw = this.getVtolMode() > 0 ? this.getPlaneInfo().vtolYaw : super.getYawFactor();
+
+        if (this.isAdvancedFlightModel()) {
+            yaw *= this.getAdvancedAeroRotationLimiter();
+        }
+
         return yaw * 0.8F;
     }
 
     public float getPitchFactor() {
         float pitch = this.getVtolMode() > 0 ? this.getPlaneInfo().vtolPitch : super.getPitchFactor();
+
+        if (this.isAdvancedFlightModel()) {
+            pitch *= this.getAdvancedAeroRotationLimiter();
+        }
+
         return pitch * 0.8F;
     }
 
     public float getRollFactor() {
         float roll = this.getVtolMode() > 0 ? this.getPlaneInfo().vtolYaw : super.getRollFactor();
         return roll * 0.8F;
+    }
+
+    private float getAdvancedAeroRotationLimiter() {
+        if (!this.isAdvancedFlightModel()) {
+            return 1.0F;
+        }
+
+        double speedMps = Math.sqrt(
+                super.motionX * super.motionX
+                        + super.motionY * super.motionY
+                        + super.motionZ * super.motionZ
+        ) * 60.0D; // 20 ticks/sec * 3 meters/block
+
+        // Below useful airflow speed, pitch/yaw authority should be weak.
+        double speedScale = (speedMps - 65.0D) / 130.0D;
+
+        if (speedScale < 0.20D) {
+            speedScale = 0.20D;
+        }
+
+        if (speedScale > 1.0D) {
+            speedScale = 1.0D;
+        }
+
+        // High AoA reduces effective pitch/yaw authority.
+        // This prevents instant 180-degree nose pointing while airflow still moves the old direction.
+        double aoa = Math.abs(this.advancedSmoothedAoA);
+        double aoaScale = 1.0D;
+
+        if (aoa > 10.0D) {
+            aoaScale = 1.0D - ((aoa - 10.0D) / 25.0D);
+
+            if (aoaScale < 0.18D) {
+                aoaScale = 0.18D;
+            }
+
+            if (aoaScale > 1.0D) {
+                aoaScale = 1.0D;
+            }
+        }
+
+        return (float)(speedScale * aoaScale);
+    }
+
+    private float getAdvancedAeroRotationLimiter() {
+        if (!this.isAdvancedFlightModel()) {
+            return 1.0F;
+        }
+
+        double speedMps = Math.sqrt(
+                super.motionX * super.motionX
+                        + super.motionY * super.motionY
+                        + super.motionZ * super.motionZ
+        ) * 60.0D; // 20 ticks/sec * 3 meters/block
+
+        // Below flying speed, do not allow huge pitch/yaw authority.
+        double speedScale = (speedMps - 45.0D) / 120.0D;
+
+        if (speedScale < 0.25D) {
+            speedScale = 0.25D;
+        }
+
+        if (speedScale > 1.0D) {
+            speedScale = 1.0D;
+        }
+
+        // At high AoA, reduce pitch/yaw response so the aircraft cannot
+        // instantly flip 180 degrees while the velocity vector is still old.
+        double aoa = Math.abs(this.advancedSmoothedAoA);
+        double aoaScale = 1.0D;
+
+        if (aoa > 12.0D) {
+            aoaScale = 1.0D - ((aoa - 12.0D) / 28.0D);
+
+            if (aoaScale < 0.35D) {
+                aoaScale = 0.35D;
+            }
+
+            if (aoaScale > 1.0D) {
+                aoaScale = 1.0D;
+            }
+        }
+
+        return (float)(speedScale * aoaScale);
     }
 
     public boolean isOverridePlayerPitch() {
@@ -323,7 +420,9 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public float getControlRotRoll(float mouseX, float mouseY, float tick) {
-        return MCH_Config.MouseControlFlightSimMode.prmBool ? mouseX * 2.0F : (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX);
+        return MCH_Config.MouseControlFlightSimMode.prmBool
+                ? mouseX * 2.0F
+                : (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX);
     }
 
     private void rotationByKey(float partialTicks) {
@@ -381,7 +480,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             }
 
             this.addkeyRotValue = (float) ((double) this.addkeyRotValue * (1.0D - (double) (0.1F * partialTicks)));
-            if (!isFly && MathHelper.abs(this.getRotPitch()) < 40.0F) {
+            if (!this.isAdvancedFlightModel() && !isFly && MathHelper.abs(this.getRotPitch()) < 40.0F) {
                 this.applyOnGroundPitch(0.97F);
             }
 
