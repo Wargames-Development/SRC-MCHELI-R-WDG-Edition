@@ -296,7 +296,82 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
 
     public float getPitchFactor() {
         float pitch = this.getVtolMode() > 0 ? this.getPlaneInfo().vtolPitch : super.getPitchFactor();
-        return pitch * 0.8F;
+
+        if (!this.isAdvancedFlightModel()) {
+            return pitch * 0.8F;
+        }
+
+        double speedMps = Math.sqrt(
+                super.motionX * super.motionX
+                        + super.motionY * super.motionY
+                        + super.motionZ * super.motionZ
+        ) * 60.0D;
+
+        // F-16-ish corner speed.
+        // Best pitch authority near this speed.
+        double cornerSpeed = 260.0D;
+        double minControlSpeed = 90.0D;
+
+        double speedAuthority;
+
+        if (speedMps < cornerSpeed) {
+            speedAuthority = (speedMps - minControlSpeed) / (cornerSpeed - minControlSpeed);
+
+            if (speedAuthority < 0.25D) {
+                speedAuthority = 0.25D;
+            }
+
+            if (speedAuthority > 1.0D) {
+                speedAuthority = 1.0D;
+            }
+        } else {
+            // Above corner speed, pitch rate should fall with speed.
+            speedAuthority = cornerSpeed / speedMps;
+
+            // Slightly stronger falloff than linear.
+            speedAuthority = Math.pow(speedAuthority, 1.25D);
+
+            if (speedAuthority < 0.45D) {
+                speedAuthority = 0.45D;
+            }
+
+            if (speedAuthority > 1.0D) {
+                speedAuthority = 1.0D;
+            }
+        }
+
+        // Separation/stall authority.
+        // This represents the aircraft fighting excessive pitch / control surfaces losing authority.
+        double sep = this.advancedFlowSeparationAngle;
+        double flowAuthority = 1.0D;
+
+        if (sep > 10.0D) {
+            flowAuthority = 1.0D - ((sep - 10.0D) / 14.0D);
+
+            if (flowAuthority < 0.0D) {
+                flowAuthority = 0.0D;
+            }
+
+            if (flowAuthority > 1.0D) {
+                flowAuthority = 1.0D;
+            }
+        }
+
+        // Clean flight: responsive.
+        // Deep stall: pitch authority nearly disappears.
+        double multiplier =
+                0.08D
+                        + 1.22D * speedAuthority * flowAuthority;
+
+        if (multiplier < 0.08D) {
+            multiplier = 0.08D;
+        }
+
+        if (multiplier > 1.30D) {
+            multiplier = 1.30D;
+        }
+
+        return pitch * (float)multiplier;
     }
 
     public float getRollFactor() {
@@ -411,12 +486,16 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         // Stall / separated flow reduces pitch authority hard.
         maxPitchRateDegPerSec *= (0.20D + 0.80D * authority);
 
-        if (this.advancedFlowSeparationAngle > 25.0D && maxPitchRateDegPerSec > 18.0D) {
+        if (this.advancedFlowSeparationAngle > 18.0D && maxPitchRateDegPerSec > 18.0D) {
             maxPitchRateDegPerSec = 18.0D;
         }
 
-        if (this.advancedFlowSeparationAngle > 40.0D && maxPitchRateDegPerSec > 10.0D) {
+        if (this.advancedFlowSeparationAngle > 25.0D && maxPitchRateDegPerSec > 10.0D) {
             maxPitchRateDegPerSec = 10.0D;
+        }
+
+        if (this.advancedFlowSeparationAngle > 40.0D && maxPitchRateDegPerSec > 5.0D) {
+            maxPitchRateDegPerSec = 5.0D;
         }
 
         // Convert desired deg/sec into MCHeli mouse-command units.
@@ -428,8 +507,18 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             maxPitchCmd = 14.0F;
         }
 
-        if (maxPitchCmd < 3.0F) {
-            maxPitchCmd = 3.0F;
+        float minPitchCmd = 3.0F;
+
+        if (this.advancedFlowSeparationAngle > 18.0D) {
+            minPitchCmd = 1.0F;
+        }
+
+        if (this.advancedFlowSeparationAngle > 30.0D) {
+            minPitchCmd = 0.4F;
+        }
+
+        if (maxPitchCmd < minPitchCmd) {
+            maxPitchCmd = minPitchCmd;
         }
 
         if (pitchCmd > maxPitchCmd) {

@@ -211,7 +211,7 @@ public class MCP_AdvancedPlanePhysics {
         // =============================
 
         // Use total airspeed for dynamic pressure.
-// horizontalSpeed was hiding vertical/deep-stall energy.
+        // horizontalSpeed was hiding vertical/deep-stall energy.
         double qLift = 0.5D * rho * speed * speed;
         double qDrag = 0.5D * rho * speed * speed;
 
@@ -228,8 +228,8 @@ public class MCP_AdvancedPlanePhysics {
         double highAoADragN = 0.0D;
         double highAoAFactor = 0.0D;
 
-        double highAoAStart = 10.0D;
-        double highAoAFull = 35.0D;
+        double highAoAStart = 14.0D;
+        double highAoAFull = 45.0D;
 
         if (flowSeparationAngle > highAoAStart) {
             highAoAFactor = (flowSeparationAngle - highAoAStart) / (highAoAFull - highAoAStart);
@@ -239,8 +239,8 @@ public class MCP_AdvancedPlanePhysics {
         }
 
         double cdHighAoA =
-                0.10D * highAoAFactor
-                        + 0.85D * highAoAFactor * highAoAFactor;
+                0.05D * highAoAFactor
+                        + 0.40D * highAoAFactor * highAoAFactor;
 
         highAoADragN = qDrag * wingArea * cdHighAoA;
         dragN += highAoADragN;
