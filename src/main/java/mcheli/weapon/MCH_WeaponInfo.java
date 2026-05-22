@@ -56,6 +56,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int modeNum;
     public int fixMode;
     public int piercing;
+    public boolean isBunkerBuster;
     public int heatCount;
     public int maxHeatCount;
     public boolean isFAE;
@@ -450,6 +451,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.modeNum = 0;
         this.fixMode = 0;
         this.piercing = 0;
+        this.isBunkerBuster = false;
         this.heatCount = 0;
         this.maxHeatCount = 0;
         this.bulletModelName = "";
@@ -712,6 +714,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.explosionThroughWall = this.toBool(data);
             } else if (item.equalsIgnoreCase("DisableDestroyBlock")) {
                 this.disableDestroyBlock = this.toBool(data);
+            } else if (item.equalsIgnoreCase("IsBunkerBuster")) {
+                this.isBunkerBuster = this.toBool(data);
             } else if (item.equalsIgnoreCase("RailgunSound")) {
                 this.railgunSound = data.toLowerCase().trim();
             } else if (item.equalsIgnoreCase("CanBeIntercepted")) {
@@ -889,6 +893,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     this.fixMode = this.toInt(data, 0, 10);
                 } else if (item.compareTo("piercing") == 0) {
                     this.piercing = this.toInt(data, 0, 100000);
+                } else if (item.equalsIgnoreCase("IsBunkerBuster")) {
+                    this.isBunkerBuster = this.toBool(data);
                 } else if (item.compareTo("heatcount") == 0) {
                     this.heatCount = this.toInt(data, 0, 100000);
                 } else if (item.compareTo("maxheatcount") == 0) {

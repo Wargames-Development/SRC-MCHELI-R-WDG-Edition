@@ -48,6 +48,9 @@ import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
 public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChunkLoader {
 
+    private static final double CONCRETE_CRACKER_PENETRATION = 1000.0D;
+    private static final int CONCRETE_CRACKER_ARM_DISTANCE = 50;
+    private static final double CONCRETE_CRACKER_TRACE_DISTANCE = 512.0D;
     public static final int DATAWT_RESERVE1 = 26;
     public static final int DATAWT_TARGET_ENTITY = 27;
     public static final int DATAWT_MARKER_STAT = 28;
@@ -1110,6 +1113,100 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     }
 
+    private Vec3 getConcreteCrackerImpactPosition(MovingObjectPosition firstHit, java.util.UUID ownerParty) {
+        Vec3 direction = Vec3.createVectorHelper(
+            super.motionX * this.accelerationFactor,
+            super.motionY * this.accelerationFactor,
+            super.motionZ * this.accelerationFactor
+        );
+
+        if (direction.lengthVector() < 1.0E-6D) {
+            direction = Vec3.createVectorHelper(0.0D, -1.0D, 0.0D);
+        } else {
+            direction = direction.normalize();
+        }
+
+        Vec3 start = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
+        Vec3 end = Vec3.createVectorHelper(
+            firstHit.hitVec.xCoord + direction.xCoord * CONCRETE_CRACKER_TRACE_DISTANCE,
+            firstHit.hitVec.yCoord + direction.yCoord * CONCRETE_CRACKER_TRACE_DISTANCE,
+            firstHit.hitVec.zCoord + direction.zCoord * CONCRETE_CRACKER_TRACE_DISTANCE
+        );
+
+        MovingObjectPosition mop = firstHit;
+        Vec3 detonationPos = firstHit.hitVec;
+        List<Vec3> penetrationExplosions = new ArrayList<Vec3>();
+        double penetration = CONCRETE_CRACKER_PENETRATION;
+        int hitHeight = firstHit.blockY;
+        int safety = 0;
+
+        while (mop != null && safety++ < 512) {
+            if (mop.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
+                break;
+            }
+
+            int x = mop.blockX;
+            int y = mop.blockY;
+            int z = mop.blockZ;
+            Block block = super.worldObj.getBlock(x, y, z);
+
+            if (block == Blocks.portal) {
+                this.setInPortal();
+                break;
+            }
+
+            if (block == Blocks.air || block.isAir(super.worldObj, x, y, z)) {
+                mop = super.worldObj.func_147447_a(start, end, false, true, false);
+                continue;
+            }
+
+            if (!MCH_HBMUtil.canTargetChunkWGC(ownerParty, super.worldObj, new ChunkCoordIntPair(x >> 4, z >> 4))) {
+                detonationPos = mop.hitVec;
+                break;
+            }
+
+            penetration -= getConcreteCrackerPenetrationCost(block, x, y, z);
+            detonationPos = mop.hitVec;
+
+            if (penetration <= 0.0D || y <= hitHeight - CONCRETE_CRACKER_ARM_DISTANCE) {
+                break;
+            }
+
+            penetrationExplosions.add(Vec3.createVectorHelper(x, y, z));
+            super.worldObj.setBlock(x, y, z, Blocks.air, 0, 3);
+            mop = super.worldObj.func_147447_a(start, end, false, true, false);
+        }
+
+        for (Vec3 pos : penetrationExplosions) {
+            super.worldObj.createExplosion(this, pos.xCoord, pos.yCoord, pos.zCoord, 3.0F, true);
+        }
+
+        return detonationPos;
+    }
+
+    private float getConcreteCrackerPenetrationCost(Block block, int x, int y, int z) {
+        if (block == Blocks.sandstone) {
+            return Blocks.stone.getExplosionResistance(null);
+        }
+
+        if (block == Blocks.obsidian) {
+            return Blocks.stone.getExplosionResistance(null) * 3.0F;
+        }
+
+        float resistance = block.getExplosionResistance(
+            this,
+            super.worldObj,
+            x,
+            y,
+            z,
+            super.posX,
+            super.posY,
+            super.posZ
+        );
+
+        return Math.max(0.1F, resistance);
+    }
+
     protected void onImpact(MovingObjectPosition m, float damageFactor) {
         float p;
         double hitX = 0;
@@ -1185,6 +1282,31 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 hitX = m.hitVec.xCoord + dx;
                 hitY = m.hitVec.yCoord + dy;
                 hitZ = m.hitVec.zCoord + dz;
+
+                if (this.getInfo().isBunkerBuster) {
+                    Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+                    java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+                    Vec3 detonationPos = getConcreteCrackerImpactPosition(m, ownerParty);
+
+                    MCH_HBMUtil.spawnConcreteCrackerExplosion(
+                        super.worldObj,
+                        detonationPos.xCoord,
+                        detonationPos.yCoord,
+                        detonationPos.zCoord,
+                        ownerParty
+                    );
+
+                    if (getInfo() != null && getInfo().enableChunkLoader) {
+                        clearChunkLoaders();
+                    }
+
+                    if (getInfo() != null) {
+                        PacketPlaySound.sendSoundPacket(posX, posY, posZ, getInfo().hitSoundRange, dimension, getInfo().hitSound, true);
+                    }
+
+                    this.setDead();
+                    return;
+                }
             }
             p = (float) this.explosionPower * damageFactor;
             float i = (float) this.explosionPowerInWater * damageFactor;
