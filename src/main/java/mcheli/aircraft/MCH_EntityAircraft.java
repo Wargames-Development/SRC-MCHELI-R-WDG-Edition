@@ -1,5 +1,6 @@
 package mcheli.aircraft;
 
+import com.wdg.wgcore.integration.api.WGCoreIntegrationAccess;
 import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -4253,6 +4254,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void mountMobToSeats() {
+        if (this.getFirstMountPlayer() != null) {
+            return;
+        }
+
         List list = super.worldObj.getEntitiesWithinAABB(W_Lib.getEntityLivingBaseClass(), super.boundingBox.expand(3.0D, 2.0D, 3.0D));
 
         for (int i = 0; i < list.size(); ++i) {
@@ -4637,13 +4642,32 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             Entity entity = this.getEntityBySeatId(i);
             if (entity instanceof EntityPlayer) {
                 EntityPlayer riddenPlayer = (EntityPlayer) entity;
-                if (riddenPlayer.getTeam() != null && !riddenPlayer.isOnSameTeam(player)) {
+                if (!this.canShareVehicleAccess(riddenPlayer, player)) {
                     return false;
                 }
             }
         }
 
         return true;
+    }
+
+    private boolean canShareVehicleAccess(EntityPlayer riddenPlayer, EntityPlayer player) {
+        if (riddenPlayer == null || player == null) {
+            return false;
+        }
+
+        if (riddenPlayer == player) {
+            return true;
+        }
+
+        UUID riddenFactionId = WGCoreIntegrationAccess.getPlayerFaction(this.worldObj, riddenPlayer.getUniqueID());
+        UUID playerFactionId = WGCoreIntegrationAccess.getPlayerFaction(this.worldObj, player.getUniqueID());
+
+        if (riddenFactionId != null && riddenFactionId.equals(playerFactionId)) {
+            return true;
+        }
+
+        return riddenPlayer.getTeam() == null || riddenPlayer.isOnSameTeam(player);
     }
 
     public boolean interactFirst(EntityPlayer player, boolean ss) {

@@ -4,6 +4,7 @@ import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.*;
+import mcheli.wgc.Integrations;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntityHitBox;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -47,6 +48,9 @@ import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
 public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChunkLoader {
 
+    private static final double CONCRETE_CRACKER_PENETRATION = 1000.0D;
+    private static final int CONCRETE_CRACKER_ARM_DISTANCE = 50;
+    private static final double CONCRETE_CRACKER_TRACE_DISTANCE = 512.0D;
     public static final int DATAWT_RESERVE1 = 26;
     public static final int DATAWT_TARGET_ENTITY = 27;
     public static final int DATAWT_MARKER_STAT = 28;
@@ -1109,6 +1113,100 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     }
 
+    private Vec3 getConcreteCrackerImpactPosition(MovingObjectPosition firstHit, java.util.UUID ownerParty) {
+        Vec3 direction = Vec3.createVectorHelper(
+            super.motionX * this.accelerationFactor,
+            super.motionY * this.accelerationFactor,
+            super.motionZ * this.accelerationFactor
+        );
+
+        if (direction.lengthVector() < 1.0E-6D) {
+            direction = Vec3.createVectorHelper(0.0D, -1.0D, 0.0D);
+        } else {
+            direction = direction.normalize();
+        }
+
+        Vec3 start = W_WorldFunc.getWorldVec3(super.worldObj, super.posX, super.posY, super.posZ);
+        Vec3 end = Vec3.createVectorHelper(
+            firstHit.hitVec.xCoord + direction.xCoord * CONCRETE_CRACKER_TRACE_DISTANCE,
+            firstHit.hitVec.yCoord + direction.yCoord * CONCRETE_CRACKER_TRACE_DISTANCE,
+            firstHit.hitVec.zCoord + direction.zCoord * CONCRETE_CRACKER_TRACE_DISTANCE
+        );
+
+        MovingObjectPosition mop = firstHit;
+        Vec3 detonationPos = firstHit.hitVec;
+        List<Vec3> penetrationExplosions = new ArrayList<Vec3>();
+        double penetration = CONCRETE_CRACKER_PENETRATION;
+        int hitHeight = firstHit.blockY;
+        int safety = 0;
+
+        while (mop != null && safety++ < 512) {
+            if (mop.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
+                break;
+            }
+
+            int x = mop.blockX;
+            int y = mop.blockY;
+            int z = mop.blockZ;
+            Block block = super.worldObj.getBlock(x, y, z);
+
+            if (block == Blocks.portal) {
+                this.setInPortal();
+                break;
+            }
+
+            if (block == Blocks.air || block.isAir(super.worldObj, x, y, z)) {
+                mop = super.worldObj.func_147447_a(start, end, false, true, false);
+                continue;
+            }
+
+            if (!MCH_HBMUtil.canTargetChunkWGC(ownerParty, super.worldObj, new ChunkCoordIntPair(x >> 4, z >> 4))) {
+                detonationPos = mop.hitVec;
+                break;
+            }
+
+            penetration -= getConcreteCrackerPenetrationCost(block, x, y, z);
+            detonationPos = mop.hitVec;
+
+            if (penetration <= 0.0D || y <= hitHeight - CONCRETE_CRACKER_ARM_DISTANCE) {
+                break;
+            }
+
+            penetrationExplosions.add(Vec3.createVectorHelper(x, y, z));
+            super.worldObj.setBlock(x, y, z, Blocks.air, 0, 3);
+            mop = super.worldObj.func_147447_a(start, end, false, true, false);
+        }
+
+        for (Vec3 pos : penetrationExplosions) {
+            super.worldObj.createExplosion(this, pos.xCoord, pos.yCoord, pos.zCoord, 3.0F, true);
+        }
+
+        return detonationPos;
+    }
+
+    private float getConcreteCrackerPenetrationCost(Block block, int x, int y, int z) {
+        if (block == Blocks.sandstone) {
+            return Blocks.stone.getExplosionResistance(null);
+        }
+
+        if (block == Blocks.obsidian) {
+            return Blocks.stone.getExplosionResistance(null) * 3.0F;
+        }
+
+        float resistance = block.getExplosionResistance(
+            this,
+            super.worldObj,
+            x,
+            y,
+            z,
+            super.posX,
+            super.posY,
+            super.posZ
+        );
+
+        return Math.max(0.1F, resistance);
+    }
+
     protected void onImpact(MovingObjectPosition m, float damageFactor) {
         float p;
         double hitX = 0;
@@ -1184,6 +1282,31 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 hitX = m.hitVec.xCoord + dx;
                 hitY = m.hitVec.yCoord + dy;
                 hitZ = m.hitVec.zCoord + dz;
+
+                if (this.getInfo().isBunkerBuster) {
+                    Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+                    java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+                    Vec3 detonationPos = getConcreteCrackerImpactPosition(m, ownerParty);
+
+                    MCH_HBMUtil.spawnConcreteCrackerExplosion(
+                        super.worldObj,
+                        detonationPos.xCoord,
+                        detonationPos.yCoord,
+                        detonationPos.zCoord,
+                        ownerParty
+                    );
+
+                    if (getInfo() != null && getInfo().enableChunkLoader) {
+                        clearChunkLoaders();
+                    }
+
+                    if (getInfo() != null) {
+                        PacketPlaySound.sendSoundPacket(posX, posY, posZ, getInfo().hitSoundRange, dimension, getInfo().hitSound, true);
+                    }
+
+                    this.setDead();
+                    return;
+                }
             }
             p = (float) this.explosionPower * damageFactor;
             float i = (float) this.explosionPowerInWater * damageFactor;
@@ -1348,16 +1471,24 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void onImpactEntity(Entity entity, float damageFactor, Vec3 hitVec) {
+        boolean allowDamage = true;
+
         if (!entity.isDead) {
-            MCH_Lib.DbgLog(super.worldObj, "MCH_EntityBaseBullet.onImpactEntity:Damage=%d:" + entity.getClass(), this.getPower());
-            MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
-            DamageSource ds = DamageSource.causeThrownDamage(this, this.shootingEntity);
-            ds = MCH_IndicatedDamageSource.build(ds, hitVec, Vec3.createVectorHelper(motionX, motionY, motionZ));
-            float damage = MCH_Config.applyDamageVsEntity(entity, ds, (float) this.getPower() * damageFactor);
-            damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
-            entity.attackEntityFrom(ds, damage);
-            if (this instanceof MCH_EntityBullet && entity instanceof EntityVillager && this.shootingEntity != null && this.shootingEntity.ridingEntity instanceof MCH_EntitySeat) {
-                MCH_Achievement.addStat(this.shootingEntity, MCH_Achievement.aintWarHell, 1);
+            if (entity instanceof EntityPlayer && !Integrations.canHarmPlayerWGC(this.shootingEntity, entity, this.worldObj)) {
+                allowDamage = false;
+            }
+
+            if (allowDamage) {
+                MCH_Lib.DbgLog(super.worldObj, "MCH_EntityBaseBullet.onImpactEntity:Damage=%d:" + entity.getClass(), this.getPower());
+                MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
+                DamageSource ds = DamageSource.causeThrownDamage(this, this.shootingEntity);
+                ds = MCH_IndicatedDamageSource.build(ds, hitVec, Vec3.createVectorHelper(motionX, motionY, motionZ));
+                float damage = MCH_Config.applyDamageVsEntity(entity, ds, (float) this.getPower() * damageFactor);
+                damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
+                entity.attackEntityFrom(ds, damage);
+                if (this instanceof MCH_EntityBullet && entity instanceof EntityVillager && this.shootingEntity != null && this.shootingEntity.ridingEntity instanceof MCH_EntitySeat) {
+                    MCH_Achievement.addStat(this.shootingEntity, MCH_Achievement.aintWarHell, 1);
+                }
             }
         }
 
@@ -1405,16 +1536,23 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         if (!inWater) {
             //HBM爆炸效果
             if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
-                Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, null, x, y, z, getInfo().effectYield);
+                Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+                java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+
+                Object explosionNTInstance = MCH_HBMUtil.ExplosionNT_instance_init(super.worldObj, explosionSource, x, y, z, getInfo().effectYield);
+                MCH_HBMUtil.ExplosionNT_instance_setOwnerParty(explosionNTInstance, ownerParty);
+
                 if (explosionNTInstance != null && !this.getInfo().disableDestroyBlock) {
                     MCH_HBMUtil.ExplosionNT_instance_addAttrib(explosionNTInstance, "NOHURT");
                     MCH_HBMUtil.ExplosionNT_instance_overrideResolutionAndExplode(explosionNTInstance, 64);
                 }
+
                 if (this.getInfo().explosionType.equals("hbmNT_Bomb")) {
                     MCH_HBMUtil.ExplosionCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
                 } else if (this.getInfo().explosionType.equals("hbmNT_Shell")) {
                     MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
                 }
+
                 MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                     .exploder(this)
                     .player(creditedPlayer)
@@ -1490,15 +1628,51 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         if (this.getInfo().nukeYield > 0 && MCH_HBMUtil.isHBMLoaded) {
+            Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+            java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+
             if (!this.getInfo().nukeEffectOnly) {
-                worldObj.spawnEntityInWorld((Entity) MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5));
+                Object nukeEntity = MCH_HBMUtil.EntityNukeExplosionMK5_statFac(
+                        super.worldObj,
+                        this.getInfo().nukeYield,
+                        this.posX + 0.5,
+                        this.posY + 0.5,
+                        this.posZ + 0.5,
+                        ownerParty
+                );
+
+                if (nukeEntity instanceof Entity) {
+                    worldObj.spawnEntityInWorld((Entity) nukeEntity);
+                }
             }
-            //EntityNukeTorex.statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, 0);
-            MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, getInfo().effectYield);
+
+            MCH_HBMUtil.EntityNukeTorex_statFac(
+                    super.worldObj,
+                    this.posX + 0.5,
+                    this.posY + 0.5,
+                    this.posZ + 0.5,
+                    (float) this.getInfo().nukeYield,
+                    getInfo().effectYield
+            );
         }
 
         if (this.getInfo().chemYield > 0 && MCH_HBMUtil.isHBMLoaded) {
-            MCH_HBMUtil.ExplosionChaos_spawnClorine(super.worldObj, posX, posY + 0.5, posZ, this.getInfo().chemYield);
+            Entity explosionSource = this.shootingEntity != null ? this.shootingEntity : this;
+            java.util.UUID ownerParty = explosionSource != null ? explosionSource.getUniqueID() : null;
+
+            int contamRadius = Math.max(16, this.getInfo().chemYield + 16);
+            java.util.Set<net.minecraft.world.ChunkCoordIntPair> protectedChunks =
+                    MCH_HBMUtil.getContamProtectedChunksWGC(
+                            ownerParty,
+                            super.worldObj,
+                            (int)Math.floor(this.posX),
+                            (int)Math.floor(this.posZ),
+                            contamRadius
+                    );
+
+            if (protectedChunks == null || protectedChunks.isEmpty()) {
+                MCH_HBMUtil.ExplosionChaos_spawnClorine(super.worldObj, posX, posY + 0.5, posZ, this.getInfo().chemYield);
+            }
         }
 
 
@@ -1859,13 +2033,15 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         }
 
                         if (!entity.isDead) {
-                            MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
-                            DamageSource ds = DamageSource.setExplosionSource(result == null ? null : result.explosion);
-                            float damage = MCH_Config.applyDamageVsEntity(entity, ds, this.getInfo().proximityFuseDamage);
-                            damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
-                            entity.attackEntityFrom(ds, damage);
-                            if(damage > 0) {
-                                this.notifyHitBullet();
+                            if (!(entity instanceof EntityPlayer) || Integrations.canHarmPlayerWGC(this.shootingEntity, entity, this.worldObj)) {
+                                MCH_Lib.applyEntityHurtResistantTimeConfig(entity);
+                                DamageSource ds = DamageSource.setExplosionSource(result == null ? null : result.explosion);
+                                float damage = MCH_Config.applyDamageVsEntity(entity, ds, this.getInfo().proximityFuseDamage);
+                                damage *= this.getInfo() != null ? this.getInfo().getDamageFactor(entity) : 1.0F;
+                                entity.attackEntityFrom(ds, damage);
+                                if (damage > 0) {
+                                    this.notifyHitBullet();
+                                }
                             }
                         }
                         this.setDead();

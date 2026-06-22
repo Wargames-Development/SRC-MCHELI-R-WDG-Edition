@@ -7,10 +7,12 @@ import mcheli.MCH_PlayerViewHandler;
 import mcheli.MCH_RayTracer;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.tank.MCH_EntityTank;
+import mcheli.wrapper.W_EntityPlayer;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
@@ -221,6 +223,51 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         return true;
     }
 
+    private MCH_GPSPosition getGpsPositionForShot(Entity user) {
+        if (user == null) {
+            return null;
+        }
+
+        if (this.worldObj.isRemote) {
+            MCH_GPSPosition gpsPosition = MCH_GPSPosition.currentClientGPSPosition;
+            return gpsPosition != null && gpsPosition.isActive ? gpsPosition : null;
+        }
+
+        return MCH_GPSPosition.get(user);
+    }
+
+    private boolean canReachGpsTarget(MCH_WeaponParam prm, MCH_GPSPosition gpsPosition) {
+        if (gpsPosition == null || !gpsPosition.isActive) {
+            return true;
+        }
+
+        Entity rangeOrigin = prm.entity != null ? prm.entity : prm.user;
+        if (rangeOrigin == null || this.getInfo() == null) {
+            return true;
+        }
+
+        double dx = gpsPosition.x - rangeOrigin.posX;
+        double dz = gpsPosition.z - rangeOrigin.posZ;
+        double horizontalRange = MathHelper.sqrt_double(dx * dx + dz * dz);
+        int maxRange = this.getInfo().maxLockOnRange;
+
+        if (horizontalRange <= (double) maxRange) {
+            return true;
+        }
+
+        if (prm.user instanceof EntityPlayer) {
+            W_EntityPlayer.addChatMessage(
+                (EntityPlayer) prm.user,
+                String.format(
+                    "GPS weapon is not in range and will not drop. Weapon range: %d m. Calculated range: %.1f m.",
+                    maxRange,
+                    horizontalRange
+                )
+            );
+        }
+
+        return false;
+    }
 
     public void update(int countWait) {
         super.update(countWait);
@@ -236,6 +283,11 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
     @Override
     public boolean shot(MCH_WeaponParam prm) {
         if (getInfo().isGPSMissile) {
+            MCH_GPSPosition gpsPosition = getGpsPositionForShot(prm.user);
+            if (!canReachGpsTarget(prm, gpsPosition)) {
+                return false;
+            }
+
             if (!super.worldObj.isRemote) {
                 this.playSound(prm.entity);
                 float yaw, pitch;
@@ -269,8 +321,7 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 missile.setInfoByName(this.name);
                 missile.setParameterFromWeapon(this, prm.entity, prm.user);
 
-                MCH_GPSPosition gpsPosition;
-                if ((gpsPosition = MCH_GPSPosition.get(prm.user)) != null) {
+                if (gpsPosition != null) {
                     if (gpsPosition.isActive) {
                         missile.targetPosX = gpsPosition.x;
                         missile.targetPosY = gpsPosition.y;

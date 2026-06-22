@@ -18,19 +18,114 @@ Further changes are being made in the act of connection with our Wargames Editio
 
 ## Features
 
-<!-- Write about the features of the mod and include some gifs or images to help document major features. Below is an example of image/gif addition -->
-<!-- ![Weapon Showcase](https://raw.githubusercontent.com/Cubed-Development/Modern-Warfare-Cubed/main/assets/showcase/Weapon%20Showcase.gif) -->
+### Core Systems Integration
 
-### New Features:
+- Integrated with WGCore for external territory and protection handling
+  - Explosion block damage is conditionally blocked based on territory rules
+  - Explosion entity damage can be filtered or denied
+  - Player damage is restricted in protected zones (e.g. safezones)
+  - Vehicle collision damage respects protection logic
+- Full attribution support for all damage sources
+  - Tracks player, projectile, and indirect sources
+  - Enables accurate permission checks and filtering
 
-- Added to the api section a new explosions manager to link with yRadar,
-  - Updated the explosion manager to always pass through the gate to fully block any block damage when it shouldn't be allowed.
-- Updated IR and Radar (Active & Passive) to ignore animals, players and non-mcheli vehicles from being locked onto.
-- Adjusted versioning system and mod to FML reject based on mcmod.info mismatches + Updated versioning and mcmod.info's contents to properly reference the up to date mod.
+---
 
-### Coming Soon:
+### Radar & Missile Systems
 
--
+- Custom beyond-visual-range (BVR) missile system
+  - Extended targeting range beyond default MCHELI limits
+  - Semi-active radar homing (SARH) improvements
+  - Persistent missile tracking with server-authoritative updates
+- Improved target selection logic
+  - Prioritises optimal targets instead of nearest-only
+- Custom lock box overlay for targeting UI
+
+---
+
+### Aircraft Radar Model
+
+- Per-aircraft radar configuration:
+  - Air radar range
+  - Ground radar range
+  - Stealth factor (affects detectability)
+  - Radar emitter flag (used for anti-radiation behaviour)
+- Improved radar display logic
+- Reduced ghost and flickering contacts
+- Cleaner contact tracking and updates
+
+---
+
+### GPS Missile Integration
+
+- GPS / air-to-surface missiles can use JourneyMap waypoints
+  - Reads waypoint coordinates directly
+  - Enables navigation-based targeting workflows
+
+---
+
+### Combat & Weapon Handling
+
+- Weapon reload system fixes:
+  - Reload state persists per weapon slot
+  - Cannot bypass reload by switching weapons
+  - Resupply correctly triggers reload timing
+- Prevents duplication and exploit-style behaviour
+
+---
+
+### Aircraft Ground Handling
+
+- Improved taxi and ground movement behaviour:
+  - Detects obstacles in front of aircraft
+  - Reduces throttle when blocked
+  - Prevents unrealistic launch behaviour from collisions
+  - Improves stability during ground movement
+
+---
+
+### HUD, Radar & RWR Improvements
+
+- Expanded RWR detection range
+- Reduced radar clutter:
+  - Mortar radar ignores players and irrelevant entities
+- Additional aircraft and radar stats exposed:
+  - Tooltips
+  - HUD overlays
+- ECM / jammer information exposed to HUD systems
+
+---
+
+### Camera & Vision Systems
+
+- Improved thermal and night vision handling
+- More consistent shader application
+- Stable camera behaviour across vehicles
+
+---
+
+### Client Stability & Tracking
+
+- Improved entity tracking persistence:
+  - Handles world reloads correctly
+  - Handles player join/leave events more reliably
+- Reduces radar and HUD desync issues
+
+---
+
+### Gameplay Restrictions
+
+- Mounted tool restrictions:
+  - Wrench and similar tools cannot be used while mounted
+  - Prevents unintended interactions and exploits
+
+---
+
+### Multiplayer & Versioning
+
+- Rebranded as **Mcheli-R Wargames Edition**
+- Enforced client/server version matching via mcmod.info
+- Adjusted entity tracking ranges for improved multiplayer sync
 
 ## Documentation
 

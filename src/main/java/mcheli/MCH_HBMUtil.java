@@ -1,8 +1,13 @@
 package mcheli;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
@@ -15,8 +20,9 @@ public class MCH_HBMUtil {
     private static Class<?> explosionChaosClass;
     private static Class<?> explosionCreatorClass;
     private static Class<?> explosionSmallCreatorClass;
+    private static Class<?> explosionLargeClass;
     private static Class<?> explosionNTClass;
-
+    private static Class<?> integrationsClass;
 
     static {
         try {
@@ -25,7 +31,9 @@ public class MCH_HBMUtil {
             explosionChaosClass = Class.forName("com.hbm.explosion.ExplosionChaos");
             explosionCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionCreator");
             explosionSmallCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionSmallCreator");
+            explosionLargeClass = Class.forName("com.hbm.explosion.ExplosionLarge");
             explosionNTClass = Class.forName("com.hbm.explosion.ExplosionNT");
+            integrationsClass = Class.forName("api.hbm.wgc.Integrations");
             isHBMLoaded = true;
         } catch (ClassNotFoundException e) {
             isHBMLoaded = false;
@@ -33,14 +41,14 @@ public class MCH_HBMUtil {
         }
     }
 
-    public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ) {
+    public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ, UUID ownerParty) {
         if (!isHBMLoaded) {
             return null;
         }
         try {
             if (nukeExplosionMK5Class != null) {
-                Method statFacMethod = nukeExplosionMK5Class.getMethod("statFac", World.class, int.class, double.class, double.class, double.class);
-                return statFacMethod.invoke(null, world, r, posX, posY, posZ);
+                Method statFacMethod = nukeExplosionMK5Class.getMethod("statFac", World.class, int.class, double.class, double.class, double.class, UUID.class);
+                return statFacMethod.invoke(null, world, r, posX, posY, posZ, ownerParty);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -76,6 +84,60 @@ public class MCH_HBMUtil {
         }
     }
 
+    public static Set<ChunkCoordIntPair> getContamProtectedChunksWGC(UUID ownerParty, World world, int x, int z, int radius) {
+        if (!isHBMLoaded) {
+            return Collections.emptySet();
+        }
+        try {
+            if (integrationsClass != null) {
+                Method method = integrationsClass.getMethod("getContamProtectedChunksWGC", UUID.class, World.class, int.class, int.class, int.class);
+                Object result = method.invoke(null, ownerParty, world, x, z, radius);
+                if (result instanceof Set) {
+                    return (Set<ChunkCoordIntPair>) result;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Collections.emptySet();
+    }
+
+    public static boolean canDetonateWGC(UUID ownerParty, World world, int x, int y, int z) {
+        if (!isHBMLoaded) {
+            return false;
+        }
+        try {
+            if (integrationsClass != null) {
+                Method method = integrationsClass.getMethod("canDetonateWGC", UUID.class, World.class, int.class, int.class, int.class);
+                Object result = method.invoke(null, ownerParty, world, x, y, z);
+                if (result instanceof Boolean) {
+                    return (Boolean) result;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    public static boolean canTargetChunkWGC(UUID ownerParty, World world, ChunkCoordIntPair chunk) {
+        if (!isHBMLoaded) {
+            return false;
+        }
+        try {
+            if (integrationsClass != null) {
+                Method method = integrationsClass.getMethod("canTargetChunkWGC", UUID.class, World.class, ChunkCoordIntPair.class);
+                Object result = method.invoke(null, ownerParty, world, chunk);
+                if (result instanceof Boolean) {
+                    return (Boolean) result;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
     public static void ExplosionCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
         if (!isHBMLoaded) {
             return;
@@ -103,8 +165,7 @@ public class MCH_HBMUtil {
         }
         try {
             if (explosionSmallCreatorClass != null) {
-                Method composeEffectMethod;
-                composeEffectMethod = explosionSmallCreatorClass.getMethod("composeEffect", World.class, double.class, double.class, double.class, int.class, float.class, float.class);
+                Method composeEffectMethod = explosionSmallCreatorClass.getMethod("composeEffect", World.class, double.class, double.class, double.class, int.class, float.class, float.class);
                 if (explosionBlockSize < 3) {
                     composeEffectMethod.invoke(null, world, posX, posY, posZ, 5, 1F, 0.5F);
                 } else if (explosionBlockSize < 10) {
@@ -164,5 +225,50 @@ public class MCH_HBMUtil {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void ExplosionNT_instance_setOwnerParty(Object explosionNTInstance, UUID ownerParty) {
+        if (!isHBMLoaded) {
+            return;
+        }
+        try {
+            if (explosionNTInstance != null) {
+                Method setOwnerPartyMethod = explosionNTInstance.getClass().getMethod("setOwnerParty", UUID.class);
+                setOwnerPartyMethod.invoke(explosionNTInstance, ownerParty);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean spawnConcreteCrackerExplosion(World world, double posX, double posY, double posZ, UUID ownerParty) {
+        if (!isHBMLoaded) {
+            return false;
+        }
+        try {
+            if (nukeExplosionMK5Class != null) {
+                Method statFacNoRadMethod = nukeExplosionMK5Class.getMethod("statFacNoRad", World.class, int.class, double.class, double.class, double.class, UUID.class);
+                Object explosion = statFacNoRadMethod.invoke(null, world, 45, posX, posY, posZ, ownerParty);
+                if (explosion instanceof Entity) {
+                    world.spawnEntityInWorld((Entity) explosion);
+                }
+            }
+
+            if (explosionLargeClass != null) {
+                explosionLargeClass.getMethod("spawnParticles", World.class, double.class, double.class, double.class, int.class)
+                    .invoke(null, world, posX, posY, posZ, 8);
+                explosionLargeClass.getMethod("spawnShrapnels", World.class, double.class, double.class, double.class, int.class, UUID.class)
+                    .invoke(null, world, posX, posY, posZ, 8, ownerParty);
+                explosionLargeClass.getMethod("spawnRubble", World.class, double.class, double.class, double.class, int.class)
+                    .invoke(null, world, posX, posY, posZ, 8);
+                explosionLargeClass.getMethod("jolt", World.class, double.class, double.class, double.class, double.class, int.class, double.class)
+                    .invoke(null, world, posX, posY, posZ, 10.0D, 50, 1.0D);
+            }
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
