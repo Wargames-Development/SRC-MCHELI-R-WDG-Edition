@@ -1,12 +1,22 @@
 package mcheli.aircraft;
 
 import mcheli.*;
+import mcheli.gui.MCH_GuiGPSInput;
+import mcheli.network.packets.PacketAirburstDistReset;
+import mcheli.network.packets.PacketRadarSwitchState;
 import mcheli.network.packets.PacketUseWeapon;
+import mcheli.render.MCH_RenderLeadCircle;
+import mcheli.render.MCH_RenderRWR;
+import mcheli.weapon.MCH_WeaponBase;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_Network;
 import mcheli.wrapper.W_PacketBase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.Vec3;
 import org.lwjgl.input.Keyboard;
 
 public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandlerBase {
@@ -47,6 +57,9 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
      */
     public MCH_Key KeyECMJammer;
     public MCH_Key KeyAirburstDistReset;
+    public MCH_Key KeyOpenGPSPanel;
+    public MCH_Key KeyFireControlLock;
+    public MCH_Key KeyRadarSwitch;
     protected boolean isRiding = false;
     protected boolean isBeforeRiding = false;
 
@@ -81,6 +94,9 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         this.KeyAPS = new MCH_Key(MCH_Config.KeyAPS.prmInt);
         this.KeyECMJammer = new MCH_Key(MCH_Config.KeyECMJammer.prmInt);
         this.KeyAirburstDistReset = new MCH_Key(MCH_Config.KeyAirburstDistReset.prmInt);
+        this.KeyOpenGPSPanel = new MCH_Key(MCH_Config.KeyOpenGPSPanel.prmInt);
+        this.KeyFireControlLock = new MCH_Key(MCH_Config.KeyFireControlLock.prmInt);
+        this.KeyRadarSwitch = new MCH_Key(MCH_Config.KeyRadarSwitch.prmInt);
     }
 
     protected void commonPlayerControlInGUI(EntityPlayer player, MCH_EntityAircraft ac, boolean isPilot, MCH_PacketPlayerControlBase pc) {
@@ -208,7 +224,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
         }
         if (!ac.isDestroyed() && this.KeyFlare.isKeyDown()) {
-            if (ac.getSeatIdByEntity((Entity) player) <= 1)
+            if (ac.getSeatIdByEntity(player) <= 1)
                 if (ac.canUseFlare() && ac.useFlare(ac.getCurrentFlareType())) {
                     pc.useFlareType = (byte) ac.getCurrentFlareType();
                     ac.nextFlareType();
@@ -239,7 +255,11 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         }
         if (!ac.isDestroyed() && this.KeyAPS.isKeyDown()) {
             if (ac.getSeatIdByEntity(player) <= 1) {
-                if (ac.canUseAPS() && ac.useAPS(player)) {
+                if (ac.getAcInfo() != null && ac.getAcInfo().haveAPS()
+                    && ac.getAcInfo().enableRadar && !ac.isRadarEnabledRuntime()) {
+                    player.addChatMessage(new ChatComponentText(MCH_I18n.format("key.mcheli.aps.radar_off")));
+                    playSoundNG();
+                } else if (ac.canUseAPS() && ac.useAPS(player)) {
                     pc.useAPS = true;
                     send = true;
                 } else {
@@ -258,13 +278,93 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             }
         }
         if (!ac.isDestroyed() && !ac.isPilotReloading()) {
-
-            if (this.KeyCurrentWeaponLock.isKeyPress()) {
-                ac.currentWeaponLock(player);
-                send = true;
-            } else {
-                ac.currentWeaponUnlock(player);
+            if (ac.getSeatIdByEntity(player) <= 1) {
+                if (this.KeyRadarSwitch.isKeyDown()) {
+                    if (ac.isMortarRadarEnabledRuntime()) {
+                        ac.setMortarRadarEnabledRuntime(false);
+                        playSoundOK();
+                    } else {
+                        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+                        MCH_WeaponInfo wi = ws != null ? ws.getInfo() : null;
+                        if (wi != null && wi.hasMortarRadar) {
+                            ac.setMortarRadarEnabledRuntime(true);
+                            playSoundOK();
+                        } else if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar) {
+                            boolean newRadarEnabled = !ac.isRadarEnabledRuntime();
+                            ac.setRadarEnabledRuntime(newRadarEnabled, true);
+                            MCH_RenderRWR.handleRadarPowerStateChanged(ac, newRadarEnabled);
+                            MCH_MOD.getPacketHandler().sendToServer(new PacketRadarSwitchState(ac.getEntityId(), newRadarEnabled));
+                            playSoundOK();
+                        }
+                    }
+                }
+                boolean armCurrentWeapon = MCH_RenderRWR.isArmCurrentWeapon(ac, player);
+                boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
+                int fireControlToggle;
+                if (armNarrowBandMode) {
+                    fireControlToggle = MCH_RenderRWR.handleArmSelectKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                } else if (armCurrentWeapon) {
+                    fireControlToggle = 0;
+                } else if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar && ac.isRadarEnabledRuntime()) {
+                    fireControlToggle = MCH_RenderRWR.handleRadarSelectKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                } else {
+                    fireControlToggle = MCH_RenderLeadCircle.handleFireControlLockKey(this.KeyFireControlLock.isKeyDown(), player, ac);
+                }
+                if (fireControlToggle == 1 || fireControlToggle == -1) {
+                    playSoundOK();
+                } else if (fireControlToggle == 2) {
+                    playSoundNG();
+                }
             }
+            if (this.KeyOpenGPSPanel.isKeyDown()) {
+                this.mc.displayGuiScreen(new MCH_GuiGPSInput(player));
+            }
+
+            boolean lockKeyPress = this.KeyCurrentWeaponLock.isKeyPress();
+            boolean armCurrentWeapon = MCH_RenderRWR.isArmCurrentWeapon(ac, player);
+            boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
+            if (armCurrentWeapon) {
+                // ARM窄频使用RWR目标层锁定，不走常规武器锁定与雷达STT上报
+                ac.currentWeaponUnlock(player);
+                MCH_RenderRWR.clearRadarTrackForArmMode(ac);
+                if (armNarrowBandMode) {
+                    int armTrackToggle = MCH_RenderRWR.handleArmTrackToggleKey(lockKeyPress, player, ac);
+                    if (armTrackToggle == 1 || armTrackToggle == -1) {
+                        playSoundOK();
+                    } else if (armTrackToggle == 2) {
+                        playSoundNG();
+                    }
+                }
+            } else {
+                if (lockKeyPress) {
+                    ac.currentWeaponLock(player);
+                    send = true;
+                } else {
+                    ac.currentWeaponUnlock(player);
+                }
+            }
+            boolean radarEnabled = ac.getAcInfo() != null && ac.getAcInfo().enableRadar && ac.isRadarEnabledRuntime();
+            if (radarEnabled) {
+                int acmToggle = MCH_RenderRWR.handleRadarAcmToggleKey(MCH_Key.isKeyDown(-98), player, ac);
+                if (acmToggle == 1 || acmToggle == -1) {
+                    playSoundOK();
+                } else if (acmToggle == 2) {
+                    playSoundNG();
+                }
+                boolean weaponNeedsRightLock = shouldKeepWeaponRightLock(ac, player);
+                boolean hasRadarTracking = MCH_RenderRWR.getRadarTrackingTargetId(ac) > 0;
+                boolean allowRadarToggle = !weaponNeedsRightLock || !hasRadarTracking;
+                if (allowRadarToggle && !armCurrentWeapon) {
+                    int trackToggle = MCH_RenderRWR.handleRadarTrackToggleKey(lockKeyPress, player, ac);
+                    if (trackToggle == 1 || trackToggle == -1) {
+                        playSoundOK();
+                    } else if (trackToggle == 2) {
+                        playSoundNG();
+                    }
+                }
+            }
+
+            updateAheadPreSolve(player, ac);
 
             if (this.KeySwitchWeapon1.isKeyDown() || this.KeySwitchWeapon2.isKeyDown() || getMouseWheel() != 0) {
                 if (getMouseWheel() > 0) {
@@ -276,7 +376,19 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 ac.switchWeapon((Entity) player, pc.switchWeapon);
                 send = true;
             } else if (this.KeySwWeaponMode.isKeyDown()) {
-                ac.switchCurrentWeaponMode(player);
+                MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+                MCH_WeaponInfo info = ws != null ? ws.getInfo() : null;
+                boolean canDataLinkToggle = info != null && info.enableDataLink && !info.onlyDataLink && (
+                    (info.activeRadar || info.passiveRadar || info.semiActiveRadar)
+                    || (("aamissile".equals(info.type) || "atmissile".equals(info.type))
+                        && info.isHeatSeekerMissile && !info.activeRadar && !info.passiveRadar && !info.semiActiveRadar)
+                ) && !info.antiRadiationMissile;
+                if (canDataLinkToggle) {
+                    ws.toggleDataLinkMode();
+                    playSoundOK();
+                } else {
+                    ac.switchCurrentWeaponMode(player);
+                }
             } else if (this.KeyUseWeapon.isKeyPress()) {
                 if (ac.useCurrentWeapon(player)) {
                     MCH_MOD.getPacketHandler().sendToServer(new PacketUseWeapon(
@@ -291,5 +403,122 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
 
         }
         return (send || player.ticksExisted % 100 == 0);
+    }
+
+    private boolean shouldKeepWeaponRightLock(MCH_EntityAircraft ac, EntityPlayer player) {
+        if (ac == null || player == null) {
+            return false;
+        }
+        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+        if (ws == null || ws.getCurrentWeapon() == null || ws.getCurrentWeapon().getInfo() == null) {
+            return false;
+        }
+        MCH_WeaponInfo info = ws.getCurrentWeapon().getInfo();
+        String type = info.type != null ? info.type.toLowerCase() : "";
+        if (info.enableDataLink && info.onlyDataLink) {
+            ws.setDataLinkMode(true);
+        }
+        // These weapon modes rely on right-click guidance/lock and should keep their original behavior.
+        return info.passiveRadar || info.isGPSMissile || info.laserGuidance || "tvmissile".equals(type);
+    }
+
+    private void updateAheadPreSolve(EntityPlayer player, MCH_EntityAircraft ac) {
+        if (ac.getSeatIdByEntity(player) > 1) {
+            return;
+        }
+        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+        if (ws == null || ws.getInfo() == null || ws.getCurrentWeapon() == null) {
+            return;
+        }
+        MCH_WeaponInfo info = ws.getInfo();
+        MCH_WeaponBase wb = ws.getCurrentWeapon();
+        if (!info.ahead) {
+            return;
+        }
+        if (info.spawnBulletInAir) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        int lockTargetId = MCH_RenderLeadCircle.getLeadLockedTargetId(ac);
+        if (lockTargetId <= 0) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        int interval = Math.max(1, info.aheadSolveIntervalTick);
+        if (player.ticksExisted % interval != 0) {
+            return;
+        }
+        MCH_EntityInfo target = MCH_EntityInfoClientTracker.getEntityInfo(lockTargetId);
+        if (target == null) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        Vec3 shotPos = wb.getShotPos(ac);
+        double sx = ac.posX + shotPos.xCoord;
+        double sy = ac.posY + shotPos.yCoord;
+        double sz = ac.posZ + shotPos.zCoord;
+        double tx = target.posX;
+        double ty = target.posY + 1.0D;
+        double tz = target.posZ;
+        double tvx = target.posX - target.lastTickPosX;
+        double tvy = target.posY - target.lastTickPosY;
+        double tvz = target.posZ - target.lastTickPosZ;
+        double speed = wb.acceleration;
+        if (info.speedDependsAircraft) {
+            speed += Math.sqrt(ac.motionX * ac.motionX + ac.motionY * ac.motionY + ac.motionZ * ac.motionZ);
+        }
+        if (speed <= 1.0E-6D) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        double rx = tx - sx;
+        double ry = ty - sy;
+        double rz = tz - sz;
+        double a = tvx * tvx + tvy * tvy + tvz * tvz - speed * speed;
+        double b = 2.0D * (rx * tvx + ry * tvy + rz * tvz);
+        double c = rx * rx + ry * ry + rz * rz;
+        double t = -1.0D;
+        if (Math.abs(a) < 1.0E-6D) {
+            if (Math.abs(b) > 1.0E-6D) {
+                t = -c / b;
+            }
+        } else {
+            double d = b * b - 4.0D * a * c;
+            if (d < 0.0D) {
+                syncAirburstDistance(ac, wb, 0);
+                return;
+            }
+            double sqrtD = Math.sqrt(d);
+            double t1 = (-b - sqrtD) / (2.0D * a);
+            double t2 = (-b + sqrtD) / (2.0D * a);
+            if (t1 > 0.0D && t2 > 0.0D) {
+                t = Math.min(t1, t2);
+            } else if (t1 > 0.0D) {
+                t = t1;
+            } else if (t2 > 0.0D) {
+                t = t2;
+            }
+        }
+        if (t <= 0.0D || t > 600.0D) {
+            syncAirburstDistance(ac, wb, 0);
+            return;
+        }
+        double px = tx + tvx * t;
+        double py = ty + tvy * t;
+        double pz = tz + tvz * t;
+        double impactDist = Math.sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy) + (pz - sz) * (pz - sz));
+        int triggerDist = (int) Math.floor(impactDist - info.proximityFuseDist);
+        if (triggerDist <= 5 || triggerDist >= 3000) {
+            triggerDist = 0;
+        }
+        syncAirburstDistance(ac, wb, triggerDist);
+    }
+
+    private void syncAirburstDistance(MCH_EntityAircraft ac, MCH_WeaponBase wb, int dist) {
+        if (wb.airburstDist == dist) {
+            return;
+        }
+        wb.setAirburstDist(dist);
+        MCH_MOD.getPacketHandler().sendToServer(new PacketAirburstDistReset(ac.getEntityId(), dist));
     }
 }

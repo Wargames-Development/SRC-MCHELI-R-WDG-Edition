@@ -125,9 +125,13 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
         registerPacket(PacketGPSPositionReset.class);
         registerPacket(PacketIronCurtainUse.class);
         registerPacket(PacketLaserGuidanceTargeting.class);
+        registerPacket(PacketLaserStateSync.class);
         registerPacket(PacketLockTarget.class);
         registerPacket(PacketLockTargetBVR.class);
         registerPacket(PacketMissileLockType.class);
+        registerPacket(PacketRadarLockState.class);
+        registerPacket(PacketRadarSwitchState.class);
+        registerPacket(PacketRWRThreatSync.class);
         registerPacket(PacketPlaySound.class);
         registerPacket(PacketUseWeapon.class);
         registerPacket(PacketWeaponLaserShooting.class);

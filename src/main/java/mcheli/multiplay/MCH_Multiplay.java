@@ -316,15 +316,15 @@ public class MCH_Multiplay {
         ve = vs.addVector(ve.xCoord * 300.0D, ve.yCoord * 300.0D, ve.zCoord * 300.0D);
         MovingObjectPosition mop = player.worldObj.rayTraceBlocks(vs, ve, true);
         if (mop != null && mop.typeOfHit == MovingObjectType.BLOCK) {
-            sendMarkPointToSameTeam((EntityPlayer) player, mop.blockX, mop.blockY + 2, mop.blockZ);
+            sendMarkPointToSameTeam(player, mop.blockX, mop.blockY + 2, mop.blockZ);
             return true;
         } else {
-            sendMarkPointToSameTeam((EntityPlayer) player, 0, 1000, 0);
+            sendMarkPointToSameTeam(player, 0, 1000, 0);
             return false;
         }
     }
 
-    public static void sendMarkPointToSameTeam(EntityPlayer player, int x, int y, int z) {
+    public static void sendMarkPointToSameTeam(EntityLivingBase player, int x, int y, int z) {
         ServerConfigurationManager svCnf = MinecraftServer.getServer().getConfigurationManager();
         for (Object o : svCnf.playerEntityList) {
             EntityPlayerMP notifyPlayer = (EntityPlayerMP) o;

@@ -1,0 +1,17 @@
+DisplayName=HVM-II
+AddDisplayName=zh_CN,HVM-II 星痕 激光制导防空导弹
+ItemID=289213
+WeaponInfoName=hvm2
+AmmoItemName=HVM-II_bullet
+MaxDurability=10
+ReloadTick=60
+LockRangeOverride=260
+HudType=fim192
+ModelName=fim92
+TextureName=fim92
+ScopeTexture=stinger
+SoundReload=fim92_reload
+SoundFire=fim92_snd
+EnableNightVision=true
+ZoomLevels=1.0,6.0
+AddRecipe="G  ","III","RI ",G,glass,I,iron_ingot,R,redstone

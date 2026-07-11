@@ -4,9 +4,16 @@ import mcheli.*;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.flare.MCH_EntityFlare;
 import mcheli.gui.MCH_Gui;
+import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.multiplay.MCH_GuiTargetMarker;
+import mcheli.plane.MCP_EntityPlane;
+import mcheli.render.MCH_RadarDisplayTextureManager;
+import mcheli.render.MCH_RWRDisplayTextureManager;
+import mcheli.render.MCH_TextureRenderUtil;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
+import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_EntityGuidanceSystem;
 import mcheli.weapon.MCH_IGuidanceSystem;
@@ -17,6 +24,7 @@ import mcheli.wrapper.modelloader.W_ModelCustom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -24,17 +32,25 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.*;
 import net.minecraftforge.client.model.IModelCustom;
 import org.lwjgl.opengl.GL11;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 public abstract class MCH_RenderAircraft extends W_Render {
 
     public static boolean renderingEntity = false;
     public static IModelCustom debugModel = null;
+    private static final Map<String, ResourceLocation> ADD_SIGN_TEXTURES = new HashMap<String, ResourceLocation>();
+    private static final float ADD_SIGN_BASE_SIZE = 0.7F;
 
     public static Random rand = new Random();
 
@@ -224,6 +240,30 @@ public abstract class MCH_RenderAircraft extends W_Render {
         }
     }
 
+    public static void renderTurretRotPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        if (ac.haveTurretRotPart()) {
+            for (int i = 0; i < ac.turretRotPartRotation.length; ++i) {
+                float rot = ac.turretRotPartRotation[i];
+                float prevRot = ac.prevTurretRotPartRotation[i];
+                if (prevRot > rot) {
+                    rot += 360.0F;
+                }
+                rot = MCH_Lib.smooth(rot, prevRot, tickTime);
+                MCH_AircraftInfo.TurretRotPart trp = (MCH_AircraftInfo.TurretRotPart) info.partTurretRotPart.get(i);
+                GL11.glPushMatrix();
+                GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
+                float turretYaw = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+                GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
+                GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
+                GL11.glTranslated(trp.pos.xCoord, trp.pos.yCoord, trp.pos.zCoord);
+                GL11.glRotatef(rot, (float) trp.rot.xCoord, (float) trp.rot.yCoord, (float) trp.rot.zCoord);
+                GL11.glTranslated(-trp.pos.xCoord, -trp.pos.yCoord, -trp.pos.zCoord);
+                renderPart(trp.model, info.model, trp.modelName);
+                GL11.glPopMatrix();
+            }
+        }
+    }
+
     public static void renderWeapon(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         MCH_WeaponSet beforeWs = null;
         Entity e = ac.getRiddenByEntity();
@@ -358,7 +398,12 @@ public abstract class MCH_RenderAircraft extends W_Render {
             }
 
             GL11.glTranslated(-w.pos.xCoord, -w.pos.yCoord, -w.pos.zCoord);
-            if (!w.isMissile || !ac.isWeaponNotCooldown(ws, weaponIndex)) {
+            boolean hideByCooldown = w.isMissile && ac.isWeaponNotCooldown(ws, weaponIndex);
+            boolean hideByAmmo = false;
+            if (w.isMissile && ws != null) {
+                hideByAmmo = weaponIndex >= ws.getAmmoNum();
+            }
+            if (!hideByCooldown && !hideByAmmo) {
                 renderPart(w.model, info.model, w.modelName);
                 for (Object object : w.child) {
                     MCH_AircraftInfo.PartWeaponChild var28 = (MCH_AircraftInfo.PartWeaponChild) object;
@@ -372,6 +417,26 @@ public abstract class MCH_RenderAircraft extends W_Render {
             ++weaponIndex;
         }
 
+    }
+
+    public static void renderERA(MCH_EntityAircraft ac, MCH_AircraftInfo info) {
+        if (!(info.model instanceof W_ModelCustom)) {
+            return;
+        }
+        W_ModelCustom bodyModel = (W_ModelCustom) info.model;
+        int eraIndex = 0;
+        for (MCH_BoundingBox bb : ac.extraBoundingBox) {
+            if (!bb.isERA) {
+                continue;
+            }
+            if (bb.eraActive) {
+                String partName = "$ERA" + eraIndex;
+                if (bodyModel.containsPart(partName)) {
+                    bodyModel.renderPart(partName);
+                }
+            }
+            eraIndex++;
+        }
     }
 
     public static void renderWeaponChild(MCH_EntityAircraft ac, MCH_AircraftInfo info, MCH_AircraftInfo.PartWeaponChild w, MCH_WeaponSet ws, Entity e, float tickTime) {
@@ -600,6 +665,31 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     }
 
+    public static void renderTurretWeaponBay(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        for (int i = 0; i < info.partTurretWeaponBay.size(); ++i) {
+            MCH_AircraftInfo.WeaponBay w = (MCH_AircraftInfo.WeaponBay) info.partTurretWeaponBay.get(i);
+            MCH_EntityAircraft.WeaponBay ws = ac.turretWeaponBays[i];
+            GL11.glPushMatrix();
+            GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
+            float riderYaw = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+            GL11.glRotatef(riderYaw, 0.0F, -1.0F, 0.0F);
+            GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
+            if (w.isSlide) {
+                float r = ws.rot / 90.0F;
+                float pr = ws.prevRot / 90.0F;
+                float f = pr + (r - pr) * tickTime;
+                GL11.glTranslated(w.pos.xCoord * (double) f, w.pos.yCoord * (double) f, w.pos.zCoord * (double) f);
+            } else {
+                GL11.glTranslated(w.pos.xCoord, w.pos.yCoord, w.pos.zCoord);
+                GL11.glRotatef((ws.prevRot + (ws.rot - ws.prevRot) * tickTime) * w.maxRotFactor, (float) w.rot.xCoord, (float) w.rot.yCoord, (float) w.rot.zCoord);
+                GL11.glTranslated(-w.pos.xCoord, -w.pos.yCoord, -w.pos.zCoord);
+            }
+
+            renderPart(w.model, info.model, w.modelName);
+            GL11.glPopMatrix();
+        }
+    }
+
     public static void renderCamera(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         if (info.havePartCamera()) {
             float rotYaw = ac.camera.partRotationYaw;
@@ -730,7 +820,14 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                 // 计算目标实体与玩家之间的平方距离
                                 double dist = entity.getDistanceSqToEntity(rm.livingPlayer);
                                 double distance = Math.sqrt(dist);
-                                if (wi != null && wi.enableBVR && distance > wi.minRangeBVR) {
+                                if (wi != null && ac.getAcInfo() != null && ac.getAcInfo().enableBVR) {
+                                    return;
+                                }
+                                double bvrDisplayMaxRange = 4096.0D;
+                                if (ac.getAcInfo() != null && ac.getAcInfo().radarMaxTargetRange > 0.0F) {
+                                    bvrDisplayMaxRange = Math.min(4096.0D, ac.getAcInfo().radarMaxTargetRange);
+                                }
+                                if (distance > bvrDisplayMaxRange) {
                                     return;
                                 }
 //                     if(entity instanceof MCH_EntityFlare) {
@@ -754,8 +851,8 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                 double y = entity.posY - RenderManager.renderPosY;
                                 double z = entity.posZ - RenderManager.renderPosZ;
 
-                                // 如果目标实体与玩家的距离小于1000，则进行渲染
-                                if (dist < 1000000.0D) {
+                                // 与BVR框保持同一显示距离上限（min(4096, radarMaxTargetRange)）
+                                if (dist < bvrDisplayMaxRange * bvrDisplayMaxRange) {
                                     float scl = 0.02666667F; // 缩放因子
                                     GL11.glPushMatrix();
                                     // 进行位置变换，将目标实体渲染到玩家视角中
@@ -992,10 +1089,99 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
             GL11.glPopMatrix();
             MCH_GuiTargetMarker.addMarkEntityPos(1, entity, posX, posY + (double) info.markerHeight, posZ);
+            this.addMountedGunnerMarkers(ac, tickTime);
             MCH_ClientLightWeaponTickHandler.markEntity(entity, posX, posY, posZ);
             renderEntityMarker(ac);
+            this.renderAddSigns(ac, info, posX, posY, posZ, tickTime);
         }
 
+    }
+
+    private void renderAddSigns(MCH_EntityAircraft ac, MCH_AircraftInfo info, double posX, double posY, double posZ, float tickTime) {
+        if (info.signMarkers == null || info.signMarkers.isEmpty())
+            return;
+        float yaw = this.calcRot(ac.getRotYaw(), ac.prevRotationYaw, tickTime);
+        float pitch = ac.calcRotPitch(tickTime);
+        float roll = this.calcRot(ac.getRotRoll(), ac.prevRotationRoll, tickTime);
+        float hpRatio = ac.getMaxHP() > 0 ? MathHelper.clamp_float((float)ac.getHP() / (float)ac.getMaxHP(), 0.0F, 1.0F) : 1.0F;
+        float lostRatio = 1.0F - hpRatio;
+        Tessellator tessellator = Tessellator.instance;
+        for (Object o : info.signMarkers) {
+            MCH_AircraftInfo.SignMarker sign = (MCH_AircraftInfo.SignMarker)o;
+            Vec3 rotated = MCH_Lib.RotVec3(sign.pos, -yaw, -pitch, -roll);
+            GL11.glPushMatrix();
+            GL11.glTranslated(posX + rotated.xCoord, posY + rotated.yCoord, posZ + rotated.zCoord);
+            GL11.glRotatef(-RenderManager.instance.playerViewY, 0.0F, 1.0F, 0.0F);
+            GL11.glRotatef(RenderManager.instance.playerViewX, 1.0F, 0.0F, 0.0F);
+            float drawSize = ADD_SIGN_BASE_SIZE * sign.size;
+            if (!sign.perspectiveScale) {
+                double dx = posX + rotated.xCoord;
+                double dy = posY + rotated.yCoord;
+                double dz = posZ + rotated.zCoord;
+                double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                ScaledResolution sc = new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
+                double fovRad = Math.toRadians(Minecraft.getMinecraft().gameSettings.fovSetting);
+                float unitPerPixel = (float)((2.0D * Math.max(dist, 1.0D) * Math.tan(fovRad * 0.5D)) / sc.getScaledHeight_double());
+                float targetPixels = 64.0F * drawSize;
+                drawSize = unitPerPixel * targetPixels;
+            }
+            GL11.glScalef(-drawSize, -drawSize, drawSize);
+            boolean cullEnabled = GL11.glIsEnabled(GL11.GL_CULL_FACE);
+            if (cullEnabled) {
+                GL11.glDisable(GL11.GL_CULL_FACE);
+            }
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthMask(false);
+            this.bindTexture(getAddSignTexture(sign.signName));
+            double startDeg = -90.0D;
+            double lostSweepDeg = 360.0D * lostRatio;
+            double hpSweepDeg = 360.0D - lostSweepDeg;
+            if (hpSweepDeg > 0.001D) {
+                GL11.glColor4f(1.0F, 0.0F, 0.0F, 1.0F);
+                drawSignSector(tessellator, startDeg + lostSweepDeg, hpSweepDeg, 0.0D);
+            }
+            if (lostSweepDeg > 0.001D) {
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 0.55F);
+                drawSignSector(tessellator, startDeg, lostSweepDeg, 0.01D);
+            }
+            GL11.glDepthMask(true);
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_LIGHTING);
+            if (cullEnabled) {
+                GL11.glEnable(GL11.GL_CULL_FACE);
+            }
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glPopMatrix();
+        }
+    }
+
+    private void drawSignSector(Tessellator tessellator, double startDeg, double sweepDeg, double z) {
+        int segments = Math.max(8, (int)(Math.abs(sweepDeg) / 5.0D));
+        tessellator.startDrawing(6);
+        tessellator.addVertexWithUV(0.0D, 0.0D, z, 0.5D, 0.5D);
+        for (int i = 0; i <= segments; ++i) {
+            double a = Math.toRadians(startDeg + sweepDeg * (double)i / (double)segments);
+            double px = Math.cos(a) * 0.5D;
+            double py = Math.sin(a) * 0.5D;
+            tessellator.addVertexWithUV(px, py, z, px + 0.5D, py + 0.5D);
+        }
+        tessellator.draw();
+    }
+
+    private ResourceLocation getAddSignTexture(String signName) {
+        String key = signName == null ? "" : signName.trim().toLowerCase();
+        if (key.isEmpty())
+            key = "gpsposition";
+        ResourceLocation location = ADD_SIGN_TEXTURES.get(key);
+        if (location == null) {
+            location = new ResourceLocation(W_MOD.DOMAIN, "textures/sign/" + key + ".png");
+            ADD_SIGN_TEXTURES.put(key, location);
+        }
+        return location;
     }
 
     public void doRenderShadowAndFire(Entity entity, double p_76979_2_, double p_76979_4_, double p_76979_6_, float p_76979_8_, float p_76979_9_) {
@@ -1092,6 +1278,53 @@ public abstract class MCH_RenderAircraft extends W_Render {
         MCH_ClientEventHook.setCancelRender(true);
     }
 
+    private void addMountedGunnerMarkers(MCH_EntityAircraft ac, float tickTime) {
+        Set<Integer> marked = new HashSet<Integer>();
+        this.addMountedGunnerMarkerEntity(ac.riddenByEntity, tickTime, marked);
+        MCH_EntitySeat[] arr$ = ac.getSeats();
+        for (MCH_EntitySeat s : arr$) {
+            if (s != null) {
+                this.addMountedGunnerMarkerEntity(s.riddenByEntity, tickTime, marked);
+            }
+        }
+        List<mcheli.mob.MCH_EntityGunner> gunners = ac.worldObj.getEntitiesWithinAABB(mcheli.mob.MCH_EntityGunner.class, ac.boundingBox.expand(2.5D, 2.5D, 2.5D));
+        for (int i = 0; i < gunners.size(); i++) {
+            mcheli.mob.MCH_EntityGunner gunner = gunners.get(i);
+            if (gunner == null || gunner.isDead) {
+                continue;
+            }
+            Entity riding = gunner.ridingEntity;
+            boolean mounted = riding == ac;
+            if (!mounted && riding instanceof MCH_EntitySeat) {
+                mounted = (((MCH_EntitySeat)riding).getParent() == ac);
+            }
+            if (mounted) {
+                this.addMountedGunnerMarkerEntity((Entity)gunner, tickTime, marked);
+            }
+        }
+    }
+
+    private void addMountedGunnerMarkerEntity(Entity entity, float tickTime, Set<Integer> marked) {
+        if (!(entity instanceof mcheli.mob.MCH_EntityGunner) || entity.isDead) {
+            return;
+        }
+        if (marked != null && !marked.add(Integer.valueOf(entity.getEntityId()))) {
+            return;
+        }
+        if (entity.ticksExisted == 0) {
+            entity.lastTickPosX = entity.posX;
+            entity.lastTickPosY = entity.posY;
+            entity.lastTickPosZ = entity.posZ;
+        }
+        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double)tickTime;
+        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double)tickTime;
+        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double)tickTime;
+        double rx = x - RenderManager.renderPosX;
+        double ry = y - RenderManager.renderPosY;
+        double rz = z - RenderManager.renderPosZ;
+        MCH_GuiTargetMarker.addMarkEntityPos(2, entity, rx, ry + (double)entity.height + 0.5D, rz);
+    }
+
     public void renderEntitySimple(MCH_EntityAircraft ac, Entity entity, float tickTime, float yaw, float pitch, float roll, float width, float height) {
         if (entity != null) {
             boolean isPilot = ac.isPilot(entity);
@@ -1151,7 +1384,6 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 }
 
                 W_EntityRenderer.renderEntityWithPosYaw(super.renderManager, entity, dx, dy, dz, f1, tickTime, false);
-
                 if (isPilot && entityLiving != null && ac.getCameraId() > 0) {
                     entityLiving.rotationPitch = bkPitch;
                     entityLiving.prevRotationPitch = bkPrevPitch;
@@ -1205,18 +1437,26 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 float pAngle = bb.rotationPitch;
                 float rAngle = bb.rotationRoll;
                 if (bb.boundingBoxType == EnumBoundingBoxType.TURRET) {
-                    yAngle += bb.localRotYaw;
-                    pAngle += bb.localRotPitch;
-                    rAngle += bb.localRotRoll;
+                    GL11.glRotatef(-yAngle, 0.0F, 1.0F, 0.0F);
+                    GL11.glRotatef(pAngle, 1.0F, 0.0F, 0.0F);
+                    GL11.glRotatef(rAngle, 0.0F, 0.0F, 1.0F);
+                    GL11.glRotatef(-bb.localRotYaw, 0.0F, 1.0F, 0.0F);
+                    GL11.glRotatef(bb.localRotPitch, 1.0F, 0.0F, 0.0F);
+                    GL11.glRotatef(bb.localRotRoll, 0.0F, 0.0F, 1.0F);
+                } else {
+                    GL11.glRotatef(-yAngle, 0.0F, 1.0F, 0.0F);
+                    GL11.glRotatef(pAngle, 1.0F, 0.0F, 0.0F);
+                    GL11.glRotatef(rAngle, 0.0F, 0.0F, 1.0F);
                 }
-                GL11.glRotatef(-yAngle, 0.0F, 1.0F, 0.0F);
-                GL11.glRotatef(pAngle, 1.0F, 0.0F, 0.0F);
-                GL11.glRotatef(rAngle, 0.0F, 0.0F, 1.0F);
 
                 // 缩放到包围盒的实际大小
                 GL11.glScalef(bb.width, bb.height, bb.widthZ);
                 // 绘制包围盒模型
-                bindTexture("textures/bounding_box.png");
+                String texture = "textures/bounding_box.png";
+                if (bb.isERA) {
+                    texture = bb.eraActive ? "textures/bounding_era_active.png" : "textures/bounding_era_negative.png";
+                }
+                bindTexture(texture);
                 debugModel.renderAll();
 
                 GL11.glPopMatrix();
@@ -1284,8 +1524,12 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public void renderCommonPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, double x, double y, double z, float tickTime) {
         renderRope(ac, info, x, y, z, tickTime);
+        this.renderRadarDisplayPart(ac, info, tickTime);
+        this.renderRWRDisplayPart(ac, info, tickTime);
+        renderERA(ac, info);
         renderWeapon(ac, info, tickTime);
         renderRotPart(ac, info, tickTime);
+        renderTurretRotPart(ac, info, tickTime);
         renderHatch(ac, info, tickTime);
         renderTrackRoller(ac, info, tickTime);
         renderCrawlerTrack(ac, info, tickTime);
@@ -1296,7 +1540,129 @@ public abstract class MCH_RenderAircraft extends W_Render {
         renderCamera(ac, info, tickTime);
         renderLandingGear(ac, info, tickTime);
         renderWeaponBay(ac, info, tickTime);
+        renderTurretWeaponBay(ac, info, tickTime);
         renderCanopy(ac, info, tickTime);
+    }
+
+    private void renderRadarDisplayPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        if (ac == null || info == null || info.model == null || !(info.model instanceof W_ModelCustom)) {
+            return;
+        }
+        if (!info.enableRadar || !ac.isRadarEnabledRuntime()) {
+            return;
+        }
+        W_ModelCustom bodyModel = (W_ModelCustom)info.model;
+        String partName = "$radardisplay";
+        if (!bodyModel.containsPart(partName)) {
+            return;
+        }
+        GL11.glPushMatrix();
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_POLYGON_BIT | GL11.GL_TEXTURE_BIT);
+        try {
+            GL11.glDisable(GL11.GL_LIGHTING);
+
+            // Pass 1: true opaque black base (ignore source texture alpha completely).
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+            GL11.glPolygonOffset(1.0F, 1.0F);
+            GL11.glColor4f(0.0F, 0.0F, 0.0F, 1.0F);
+            bodyModel.renderPart(partName);
+            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+
+            // Pass 2: overlay radar dynamic sweep/contacts from enableRadar data source.
+            EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+            boolean isJammed = ac.jammingTick > 0;
+            ResourceLocation radarDynamicTex;
+            if (isJammed) {
+                long worldTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
+                radarDynamicTex = MCH_TextureRenderUtil.getSharedJamTexture(worldTick);
+            } else {
+                radarDynamicTex = MCH_RadarDisplayTextureManager.getTexture(ac, player, tickTime);
+            }
+            if (radarDynamicTex != null) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glEnable(GL11.GL_BLEND);
+                GL11.glDisable(GL11.GL_ALPHA_TEST);
+                GL11.glDepthMask(false);
+                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                this.bindTexture(radarDynamicTex);
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+                bodyModel.renderPart(partName);
+            }
+        } finally {
+            GL11.glPopAttrib();
+            this.bindAircraftTexture(ac);
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glPopMatrix();
+        }
+    }
+
+    private void renderRWRDisplayPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
+        if (ac == null || info == null || info.model == null || !(info.model instanceof W_ModelCustom)) {
+            return;
+        }
+        if (!info.hasRWR) {
+            return;
+        }
+        W_ModelCustom bodyModel = (W_ModelCustom) info.model;
+        String partName = "$rwrdisplay";
+        if (!bodyModel.containsPart(partName)) {
+            return;
+        }
+        GL11.glPushMatrix();
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_POLYGON_BIT | GL11.GL_TEXTURE_BIT);
+        try {
+            GL11.glDisable(GL11.GL_LIGHTING);
+
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+            GL11.glPolygonOffset(1.0F, 1.0F);
+            GL11.glColor4f(0.0F, 0.0F, 0.0F, 1.0F);
+            bodyModel.renderPart(partName);
+            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+
+            EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+            boolean isJammed = ac.jammingTick > 0;
+            ResourceLocation rwrDynamicTex;
+            if (isJammed) {
+                long worldTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
+                rwrDynamicTex = MCH_TextureRenderUtil.getSharedJamTexture(worldTick);
+            } else {
+                rwrDynamicTex = MCH_RWRDisplayTextureManager.getTexture(ac, player, tickTime);
+            }
+            if (rwrDynamicTex != null) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glEnable(GL11.GL_BLEND);
+                GL11.glDisable(GL11.GL_ALPHA_TEST);
+                GL11.glDepthMask(false);
+                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                this.bindTexture(rwrDynamicTex);
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+                bodyModel.renderPart(partName);
+            }
+        } finally {
+            GL11.glPopAttrib();
+            this.bindAircraftTexture(ac);
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glPopMatrix();
+        }
+    }
+
+    private void bindAircraftTexture(MCH_EntityAircraft ac) {
+        if (ac == null) {
+            return;
+        }
+        if (ac instanceof MCP_EntityPlane) {
+            this.bindTexture("textures/planes/" + ac.getTextureName() + ".png", ac);
+        } else if (ac instanceof MCH_EntityHeli) {
+            this.bindTexture("textures/helicopters/" + ac.getTextureName() + ".png", ac);
+        } else if (ac instanceof MCH_EntityTank) {
+            this.bindTexture("textures/tanks/" + ac.getTextureName() + ".png", ac);
+        } else if (ac instanceof MCH_EntityVehicle) {
+            this.bindTexture("textures/vehicles/" + ac.getTextureName() + ".png", ac);
+        }
     }
 
 }

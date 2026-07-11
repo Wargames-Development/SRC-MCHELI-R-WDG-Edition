@@ -1,7 +1,6 @@
 package mcheli;
 
 import mcheli.wrapper.W_Entity;
-import mcheli.wrapper.W_EntityRenderer;
 import mcheli.wrapper.W_Lib;
 import net.minecraft.entity.Entity;
 import net.minecraft.potion.Potion;
@@ -61,25 +60,9 @@ public class MCH_Camera {
     /*
     public void setMode(int uid, int m) {
         if (this.isValidUid(uid)) {
-            this.mode[uid] = m < 0 ? 0 : m % this.getModeNum(uid);
-            switch (this.mode[uid]) {
-                case 0:
-                    if (this.worldObj.isRemote) {
-                        W_EntityRenderer.deactivateShader();
-                    }
-                    break;
-                case 1:
-                    if (this.worldObj.isRemote) {
-                        W_EntityRenderer.activateShader("nightvision");
-                    }
-                    break;
-                case 2:
-                    if (this.worldObj.isRemote) {
-                        W_EntityRenderer.activateShader("thermal");
-                    }
-                    break;
+            if (this.worldObj.isRemote) {
+                this.mode[uid] = m < 0 ? 0 : m % this.getModeNum(uid);
             }
-            currentCameraMode = mode[uid];
         }
     }
      */
@@ -91,8 +74,11 @@ public class MCH_Camera {
 
     public void setShaderSupport(int uid, Boolean b) {
         if (this.isValidUid(uid)) {
-            this.setMode(uid, 0);
-            this.canUseShader[uid] = b;
+            this.canUseShader[uid] = b != null && b;
+            int modeNum = this.getModeNum(uid);
+            if (this.mode[uid] >= modeNum) {
+                this.mode[uid] = 0;
+            }
         }
 
     }

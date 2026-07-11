@@ -15,6 +15,8 @@ public class MCH_PacketNotifyServerSettings extends MCH_Packet {
     public boolean enablePVP = true;
     public double stingerLockRange = 120.0D;
     public boolean enableDebugBoundingBox = true;
+    public boolean enableDebugGunnerTeam = false;
+    public boolean enableDebugWaypointLabel = false;
 
     public static void send(EntityPlayerMP player) {
         MCH_PacketNotifyServerSettings s = new MCH_PacketNotifyServerSettings();
@@ -27,6 +29,8 @@ public class MCH_PacketNotifyServerSettings extends MCH_Packet {
         s.stingerLockRange = MCH_Config.StingerLockRange.prmDouble;
         var10001 = MCH_MOD.config;
         s.enableDebugBoundingBox = MCH_Config.EnableDebugBoundingBox.prmBool;
+        s.enableDebugGunnerTeam = MCH_ServerSettings.enableDebugGunnerTeam;
+        s.enableDebugWaypointLabel = MCH_ServerSettings.enableDebugWaypointLabel;
         if (player != null) {
             W_Network.sendToPlayer(s, player);
         } else {
@@ -51,6 +55,8 @@ public class MCH_PacketNotifyServerSettings extends MCH_Packet {
             this.enablePVP = this.getBit(e, 2);
             this.stingerLockRange = (double) data.readFloat();
             this.enableDebugBoundingBox = this.getBit(e, 3);
+            this.enableDebugGunnerTeam = this.getBit(e, 4);
+            this.enableDebugWaypointLabel = this.getBit(e, 5);
         } catch (Exception var3) {
             var3.printStackTrace();
         }
@@ -64,6 +70,8 @@ public class MCH_PacketNotifyServerSettings extends MCH_Packet {
             e1 = this.setBit(e1, 1, this.enableEntityMarker);
             e1 = this.setBit(e1, 2, this.enablePVP);
             e1 = this.setBit(e1, 3, this.enableDebugBoundingBox);
+            e1 = this.setBit(e1, 4, this.enableDebugGunnerTeam);
+            e1 = this.setBit(e1, 5, this.enableDebugWaypointLabel);
             dos.writeByte(e1);
             dos.writeFloat((float) this.stingerLockRange);
         } catch (IOException var3) {

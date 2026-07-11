@@ -25,6 +25,9 @@ public abstract class MCH_Packet extends W_PacketBase {
     public static final int MSGID_EFFECT_EXPLOSION = 268437520;
     public static final int MSGID_IND_OPEN_SCREEN = 536872992;
     public static final int MSGID_NOTIFY_SERVER_SETTINGS = 268437568;
+    public static final int MSGID_NOTIFY_ECONOMY_SYNC = 268437569;
+    public static final int MSGID_NOTIFY_ECONOMY_TECH_RESULT = 268437570;
+    public static final int MSGID_NOTIFY_ECONOMY_GAIN_TOAST = 268437571;
     public static final int MSGID_IND_MULTIPLAY_COMMAND = 536873088;
     public static final int MSGID_IND_SPOT_ENTITY = 536873216;
     public static final int MSGID_NOTIFY_SPOTED_ENTITY = 268437761;
@@ -35,6 +38,7 @@ public abstract class MCH_Packet extends W_PacketBase {
     public static final int MSGID_COMMAND_TITLE = 268438272;
     public static final int MSGID_COMMAND_SAVE = 536873729;
     public static final int MSGID_NOTIFY_LOCK = 536873984;
+    public static final int MSGID_IND_ECONOMY_TECH_ACTION = 536873985;
     public static final int MSGID_SEAT_LIST_REQUEST = 536875024;
     public static final int MSGID_SEAT_LIST_RESPONSE = 268439569;
     public static final int MSGID_SEAT_PLAYER_CONTROL = 536875040;
@@ -60,6 +64,7 @@ public abstract class MCH_Packet extends W_PacketBase {
     public static final int MSGID_VEHICLE_PLAYER_CONTROL = 537002000;
     public static final int MSGID_UAV_STATUS = 537133072;
     public static final int MSGID_DTABLE_CREATE = 537395216;
+    public static final int MSGID_EFFECT_NUKE_FLASH = 268437521;
 
 
     public MCH_Packet() {

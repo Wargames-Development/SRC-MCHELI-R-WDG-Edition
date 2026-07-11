@@ -9,6 +9,7 @@ import mcheli.MCH_ServerSettings;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.gui.MCH_Gui;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.particles.MCH_ParticlesUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
@@ -124,6 +125,14 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
 
                 if (clientPlayer.getTeam() != null && clientPlayer.isOnSameTeam((EntityLivingBase) entity)) {
                     spotType = MCH_TargetType.SAME_TEAM_PLAYER;
+                }
+            } else if (entity instanceof MCH_EntityGunner) {
+                MCH_EntityGunner gunner = (MCH_EntityGunner) entity;
+                int targetType = gunner.getTargetType();
+                if (targetType == MCH_EntityGunner.TARGET_MONSTER) {
+                    spotType = MCH_TargetType.SAME_TEAM_PLAYER;
+                } else if (targetType == MCH_EntityGunner.TARGET_ENEMY) {
+                    spotType = MCH_TargetType.OTHER_TEAM_PLAYER;
                 }
             }
 

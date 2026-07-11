@@ -1,0 +1,81 @@
+; =========================
+; 文件2：spawner_nato_enemy.txt
+; =========================
+
+; 方块显示名
+DisplayName=PVE TANK Spawner Enemy
+; 中文显示名
+AddDisplayName=zh_CN,PVE 敌方坦克生成器
+; 方块ID（请确保不冲突）
+BlockID=3391
+; 材质
+Material=iron
+; 硬度
+Hardness=4.0
+; 抗爆
+Resistance=20.0
+; 脚步声
+StepSound=metal
+; 创造页
+CreativeTab=block
+
+; 启用生成器
+EnableSpawner=true
+; 检测半径（米）
+CheckRadius=10.0
+; 检测间隔（tick）
+CheckIntervalTick=20
+; 生成模式（周期）
+SpawnMode=interval
+; 冷却间隔（tick）
+CooldownTick=600
+; 生成高度偏移
+SpawnYOffset=1.0
+; 生成朝向
+SpawnYawMode=random
+
+; 载具池（随机抽1）
+VehiclePool=tank:nato_tank_t2_m1a2|tank:nato_tank_t1_m1a1|tank:nato_tank_t2_l2rev
+; 权重（等概率）
+VehicleWeight=1|1|1
+; 单次生成载具数量
+SpawnVehicleCount=1
+
+; 单次生成载具数量
+SpawnVehicleCount=1
+
+; 生成gunner
+SpawnGunner=true
+; gunner模式（普通）
+GunnerMode=normal
+; 座位（0自动）
+GunnerSeatIndex=0
+; 目标类型（3敌对）
+GunnerTargetType=3
+; 初始朝向
+GunnerYaw=0.0
+; 初始俯仰
+GunnerPitch=0.0
+
+; 激活贴图
+TextureActive=active
+; 休眠贴图
+TextureSleep=sleep
+; 错误贴图
+TextureError=Error
+; 状态同步tick
+StateSyncTick=5
+
+
+; 启用航路点导航
+EnableWaypointPatrol=false
+; 初始导航点
+InitialWaypointId=usmc_a
+; 同ID多点取最近
+WaypointSelectPolicy=nearest
+; NAVIGATE阶段运动策略
+NavigateSuppressLargeTurn=true
+HoldAsFreeState=true
+HoldCountdownTick=200
+NavigateTimeoutTick=2400
+NavigateDrivePriority=avoid>navigate>combat

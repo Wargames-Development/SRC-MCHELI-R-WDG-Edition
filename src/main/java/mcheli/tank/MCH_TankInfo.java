@@ -18,6 +18,8 @@ public class MCH_TankInfo extends MCH_AircraftInfo {
 
     public MCH_TankInfo(String name) {
         super(name);
+        this.setImpactAngleCoefficientDefault(true);
+        this.radarFollowTurretYaw = true;
     }
 
     public Item getItem() {

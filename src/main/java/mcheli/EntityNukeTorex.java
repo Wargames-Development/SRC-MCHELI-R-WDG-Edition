@@ -34,6 +34,8 @@ public class EntityNukeTorex extends Entity {
         super(world);
         this.preventEntitySpawning = true;
         this.setSize(1.0F, 50.0F);
+        // 蘑菇云尺寸远超实体包围盒，必须跳过视锥裁剪，否则在窄 FOV/大俯仰角下会整片消失。
+        this.ignoreFrustumCheck = true;
     }
 
     @Override
@@ -66,22 +68,20 @@ public class EntityNukeTorex extends Entity {
             }
 
             if (this.lastSpawnY == -1.0D) {
-                this.lastSpawnY = this.posY - 3.0D;
+                this.lastSpawnY = this.posY + 1.0D;
             }
 
             if (this.ticksExisted < 100) {
                 this.worldObj.skylightSubtracted = 2;
             }
 
+            // 纯空间上升基准：不依赖地形高度，避免在超平坦/基岩层附近被“压住”。
             int spawnTarget = Math.max(
-                this.worldObj.getTopSolidOrLiquidBlock(
-                    (int) Math.floor(this.posX),
-                    (int) Math.floor(this.posZ)
-                ) - 3,
+                (int) Math.floor(this.posY + 0.5D + Math.min(this.ticksExisted * 0.08D, 6.0D)),
                 1
             );
 
-            double moveSpeed = 0.5D;
+            double moveSpeed = 0.45D;
             if (Math.abs(spawnTarget - this.lastSpawnY) < moveSpeed) {
                 this.lastSpawnY = spawnTarget;
             } else {
@@ -90,19 +90,25 @@ public class EntityNukeTorex extends Entity {
 
             double range = (this.torusWidth - this.rollerSize) * 0.25D;
             double simSpeed = getSimulationSpeed();
-            int toSpawn = (int) Math.ceil(10.0D * simSpeed * simSpeed);
+            int hardLimit = getCloudletHardLimit();
+            double spawnLoadFactor = getSpawnLoadFactor(hardLimit);
+            // 主体蘑菇云增强：主体云柱粒子密度提高
+            int toSpawn = (int) Math.ceil(20.0D * simSpeed * simSpeed * spawnLoadFactor);
             int lifetime = Math.min(
                 this.ticksExisted * this.ticksExisted + 200,
                 maxAge - this.ticksExisted + 200
             );
+            double columnRange = Math.max(0.25D, range * 0.65D);
+            double stemRange = Math.max(0.18D, range * 0.38D);
 
             // 主体云柱随机 cloudlets
             for (int i = 0; i < toSpawn; i++) {
-                double x = this.posX + this.rand.nextGaussian() * range;
-                double z = this.posZ + this.rand.nextGaussian() * range;
+                double x = this.posX + this.rand.nextGaussian() * columnRange;
+                double y = this.lastSpawnY + this.rand.nextGaussian() * 0.75D;
+                double z = this.posZ + this.rand.nextGaussian() * columnRange;
                 Cloudlet cloud = new Cloudlet(
                     x,
-                    this.lastSpawnY,
+                    y,
                     z,
                     (float) (this.rand.nextDouble() * 2.0D * Math.PI),
                     0,
@@ -112,45 +118,35 @@ public class EntityNukeTorex extends Entity {
                     1.0F + this.ticksExisted * 0.005F * (float) cs,
                     5.0F * (float) cs
                 );
-                this.cloudlets.add(cloud);
+                addCloudletCapped(cloud, hardLimit);
             }
 
-            // 冲击波云环（SHOCK）
-            if (this.ticksExisted < 150) {
-                int cloudCount = this.ticksExisted * 5;
-                int shockLife = Math.max(300 - this.ticksExisted * 20, 50);
-
-                for (int j = 0; j < cloudCount; j++) {
-                    Vec3 vec = Vec3.createVectorHelper(
-                        (this.ticksExisted * 1.5D + this.rand.nextDouble()) * 1.5D,
-                        0.0D,
-                        0.0D
-                    );
-                    float rot = (float) (2.0D * Math.PI * this.rand.nextDouble());
-                    vec.rotateAroundY(rot);
-
-                    Cloudlet cloud = new Cloudlet(
-                        vec.xCoord + this.posX,
-                        this.worldObj.getTopSolidOrLiquidBlock(
-                            (int) (vec.xCoord + this.posX) + 1,
-                            (int) (vec.zCoord + this.posZ)
-                        ),
-                        vec.zCoord + this.posZ,
-                        rot,
-                        0,
-                        shockLife,
-                        TorexType.SHOCK
-                    ).setScale(7.0F, 2.0F)
-                        .setMotion((this.ticksExisted > 15) ? 0.75D : 0.0D);
-
-                    this.cloudlets.add(cloud);
-                }
+            // 额外中心柱：补强“伞柱”体积与连续上升感。
+            int stemSpawn = Math.max(2, (int) Math.ceil(toSpawn * 0.75D));
+            for (int i = 0; i < stemSpawn; i++) {
+                Cloudlet stem = new Cloudlet(
+                    this.posX + this.rand.nextGaussian() * stemRange,
+                    this.lastSpawnY - 0.25D + this.rand.nextGaussian() * 0.4D,
+                    this.posZ + this.rand.nextGaussian() * stemRange,
+                    (float) (this.rand.nextDouble() * 2.0D * Math.PI),
+                    0,
+                    lifetime
+                );
+                stem.setScale(
+                        0.95F + this.ticksExisted * 0.004F * (float) cs,
+                        4.6F * (float) cs
+                    )
+                    .setMotion(1.15D);
+                addCloudletCapped(stem, hardLimit);
             }
+
+            // 冲击波云环（SHOCK）已按需求禁用：去除黑色冲击波粒子。
 
             // 上升中间的 RING 云环
-            if (this.ticksExisted < 130.0D * s) {
+            if (this.ticksExisted > 20 && this.ticksExisted < 130.0D * s) {
                 lifetime = (int) (lifetime * s);
-                for (int i = 0; i < 2; i++) {
+                int ringSpawn = Math.max(1, (int) Math.round(4.0D * spawnLoadFactor));
+                for (int i = 0; i < ringSpawn; i++) {
                     Cloudlet cloud = new Cloudlet(
                         this.posX,
                         this.posY + this.coreHeight,
@@ -164,14 +160,17 @@ public class EntityNukeTorex extends Entity {
                         1.0F + this.ticksExisted * 0.0025F * (float) (cs * cs),
                         3.0F * (float) (cs * cs)
                     );
-                    this.cloudlets.add(cloud);
+                    addCloudletCapped(cloud, hardLimit);
                 }
             }
 
             // 高空冷凝云（第一层）
             if (this.ticksExisted > 130.0D * s && this.ticksExisted < 600.0D * s) {
-                for (int i = 0; i < 20; i++) {
-                    for (int j = 0; j < 4; j++) {
+                // 核粉尘（冷凝层）减量：减少外围粉尘感，保留主体体积感
+                int ringSamples = Math.max(2, (int) Math.round(10.0D * spawnLoadFactor));
+                int verticalSamples = spawnLoadFactor > 0.55D ? 2 : 1;
+                for (int i = 0; i < ringSamples; i++) {
+                    for (int j = 0; j < verticalSamples; j++) {
                         float angle = (float) (2.0D * Math.PI * this.rand.nextDouble());
                         Vec3 vec = Vec3.createVectorHelper(
                             this.torusWidth + this.rollerSize * (5.0D + this.rand.nextDouble()),
@@ -192,15 +191,17 @@ public class EntityNukeTorex extends Entity {
                             TorexType.CONDENSATION
                         );
                         cloud.setScale(0.125F * (float) cs, 3.0F * (float) cs);
-                        this.cloudlets.add(cloud);
+                        addCloudletCapped(cloud, hardLimit);
                     }
                 }
             }
 
             // 高空冷凝云（第二层）
             if (this.ticksExisted > 200.0D * s && this.ticksExisted < 600.0D * s) {
-                for (int i = 0; i < 20; i++) {
-                    for (int j = 0; j < 4; j++) {
+                int ringSamples = Math.max(2, (int) Math.round(10.0D * spawnLoadFactor));
+                int verticalSamples = spawnLoadFactor > 0.55D ? 2 : 1;
+                for (int i = 0; i < ringSamples; i++) {
+                    for (int j = 0; j < verticalSamples; j++) {
                         float angle = (float) (2.0D * Math.PI * this.rand.nextDouble());
                         Vec3 vec = Vec3.createVectorHelper(
                             this.torusWidth + this.rollerSize * (3.0D + this.rand.nextDouble() * 0.5D),
@@ -221,14 +222,15 @@ public class EntityNukeTorex extends Entity {
                             TorexType.CONDENSATION
                         );
                         cloud.setScale(0.125F * (float) cs, 3.0F * (float) cs);
-                        this.cloudlets.add(cloud);
+                        addCloudletCapped(cloud, hardLimit);
                     }
                 }
             }
 
             // 更新所有 cloudlet
-            for (Cloudlet cloud : this.cloudlets) {
-                cloud.update();
+            int cloudletCount = this.cloudlets.size();
+            for (int i = 0; i < cloudletCount; i++) {
+                this.cloudlets.get(i).update();
             }
 
             this.coreHeight += 0.15D / s;
@@ -280,6 +282,25 @@ public class EntityNukeTorex extends Entity {
 
     public double getScale() {
         return this.dataWatcher.getWatchableObjectFloat(10);
+    }
+
+    private int getCloudletHardLimit() {
+        int limit = (int) (2600 + getScale() * 1100.0D);
+        if (this.ticksExisted < 120) {
+            limit += 1200;
+        }
+        return MathHelper.clamp_int(limit, 2200, 9000);
+    }
+
+    private double getSpawnLoadFactor(int hardLimit) {
+        double ratio = this.cloudlets.size() / (double) Math.max(1, hardLimit);
+        return MathHelper.clamp_double(1.0D - ratio, 0.1D, 1.0D);
+    }
+
+    private void addCloudletCapped(Cloudlet cloudlet, int hardLimit) {
+        if (this.cloudlets.size() < hardLimit) {
+            this.cloudlets.add(cloudlet);
+        }
     }
 
     public double getSaturation() {

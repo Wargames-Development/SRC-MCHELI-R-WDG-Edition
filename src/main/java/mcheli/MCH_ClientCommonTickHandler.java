@@ -6,6 +6,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.aircraft.*;
 import mcheli.command.MCH_GuiTitle;
+import mcheli.economy.MCH_EconomyClientData;
 import mcheli.gltd.MCH_ClientGLTDTickHandler;
 import mcheli.gltd.MCH_EntityGLTD;
 import mcheli.gltd.MCH_GuiGLTD;
@@ -15,6 +16,8 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.helicopter.MCH_GuiHeli;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.lweapon.MCH_GuiLightWeapon;
+import mcheli.lweapon.MCH_ItemLightWeaponBase;
+import mcheli.mob.MCH_GuiSpawnGunner;
 import mcheli.multiplay.MCH_GuiScoreboard;
 import mcheli.multiplay.MCH_GuiTargetMarker;
 import mcheli.multiplay.MCH_MultiplayClient;
@@ -33,28 +36,37 @@ import mcheli.vehicle.MCH_ClientVehicleTickHandler;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vehicle.MCH_GuiVehicle;
 import mcheli.weapon.MCH_GPSPosition;
+import mcheli.weapon.MCH_LaserStateStore;
 import mcheli.weapon.MCH_RenderLaser;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.client.gui.inventory.GuiContainerCreative;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
+import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,6 +81,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static final float hitTotalDamageScaleOrigin = 2.0f;
     private static final ResourceLocation cross3rd = new ResourceLocation(W_MOD.DOMAIN, "textures/3rdCross.png");
+    private static final ResourceLocation TEX_ICON_SL = new ResourceLocation("mcheli", "textures/gui/economy/coin_sl.png");
+    private static final ResourceLocation TEX_ICON_GE = new ResourceLocation("mcheli", "textures/gui/economy/coin_ge.png");
+    private static final ResourceLocation TEX_ICON_RP = new ResourceLocation("mcheli", "textures/gui/economy/coin_rp.png");
     public static MCH_ClientCommonTickHandler instance;
     public static int cameraMode = 0;
     public static MCH_EntityAircraft ridingAircraft = null;
@@ -81,6 +96,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public static int hitTotalDamageClearCountdown;
     public static float hitTotalDamageScale = 2.0f;
     public static List<HitMessage> hitList = new ArrayList<>();
+    public static int nukeFlashElapsedTick = -1;
+    public static int nukeFlashDurationTick = 0;
+    public static float nukeFlashPeakAlpha = 0.0F;
+    public static float nukeFlashPow01 = 0.0F;
     public static boolean enableNew3rdCamera = true;
     public static boolean showVehicleCrossHair = false;
     @SideOnly(Side.CLIENT)
@@ -93,6 +112,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private static double mouseRollDeltaY = 0.0D;
     private static boolean isRideAircraft = false;
     private static float prevTick = 0.0F;
+    private final RenderItem economyHudItemRenderer = new RenderItem();
     public MCH_GuiCommon gui_Common;
     public MCH_Gui gui_Heli;
     public MCH_Gui gui_Plane;
@@ -101,6 +121,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public MCH_Gui gui_Vehicle;
     public MCH_Gui gui_LWeapon;
     public MCH_Gui gui_Wrench;
+    public MCH_Gui gui_SwnGnr;
     public MCH_Gui gui_EMarker;
     public MCH_Gui gui_RngFndr;
     public MCH_Gui gui_Title;
@@ -183,11 +204,12 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         this.gui_Vehicle = new MCH_GuiVehicle(minecraft);
         this.gui_LWeapon = new MCH_GuiLightWeapon(minecraft);
         this.gui_Wrench = new MCH_GuiWrench(minecraft);
+        this.gui_SwnGnr = new MCH_GuiSpawnGunner(minecraft);
         this.gui_RngFndr = new MCH_GuiRangeFinder(minecraft);
         this.gui_EMarker = new MCH_GuiTargetMarker(minecraft);
         this.gui_Title = new MCH_GuiTitle(minecraft);
         this.guis = new MCH_Gui[]{this.gui_RngFndr, this.gui_LWeapon, this.gui_Heli, this.gui_Plane, this.gui_Tank, this.gui_GLTD, this.gui_Vehicle};
-        this.guiTicks = new MCH_Gui[]{this.gui_Common, this.gui_Heli, this.gui_Plane, this.gui_Tank, this.gui_GLTD, this.gui_Vehicle, this.gui_LWeapon, this.gui_Wrench, this.gui_RngFndr, this.gui_EMarker, this.gui_Title};
+        this.guiTicks = new MCH_Gui[]{this.gui_Common, this.gui_Heli, this.gui_Plane, this.gui_Tank, this.gui_GLTD, this.gui_Vehicle, this.gui_LWeapon, this.gui_Wrench, this.gui_SwnGnr, this.gui_RngFndr, this.gui_EMarker, this.gui_Title};
         this.ticks = new MCH_ClientTickHandlerBase[]{new MCH_ClientHeliTickHandler(minecraft, config), new MCP_ClientPlaneTickHandler(minecraft, config), new MCH_ClientTankTickHandler(minecraft, config), new MCH_ClientGLTDTickHandler(minecraft, config), new MCH_ClientVehicleTickHandler(minecraft, config), new MCH_ClientLightWeaponTickHandler(minecraft, config), new MCH_ClientSeatTickHandler(minecraft, config), new MCH_ClientToolTickHandler(minecraft, config)};
         this.updatekeybind(config);
         FMLCommonHandler.instance().bus().register(this);
@@ -409,10 +431,16 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             hitTotalDamageScale *= 0.95f;
             hitTotalDamageScale = Math.max(hitTotalDamageScale, hitTotalDamageScaleOrigin);
         }
+        tickNukeFlashEffect();
 
-        if (var7 != null && var7.ridingEntity == null) {
-            //MCH_Camera.currentCameraMode = 0;
-            applyLocalCameraMode(0);
+        if (var7 != null) {
+            this.ensureCameraShaderState(var7);
+        } else {
+            cameraMode = 0;
+            MCH_Camera.currentCameraMode = 0;
+            if (W_EntityRenderer.hasActiveShader()) {
+                W_EntityRenderer.deactivateShader();
+            }
         }
 
         //第三人称摄像机视角
@@ -433,11 +461,19 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             showVehicleCrossHair = false;
         }
 
-        //GPS
-        if (minecraft.thePlayer.ridingEntity == null) {
+        // GPS cleanup: avoid one-tick flicker around shot/reload transitions for handheld laser guidance.
+        boolean holdingLightWeapon = minecraft.thePlayer.getHeldItem() != null
+            && minecraft.thePlayer.getHeldItem().getItem() instanceof MCH_ItemLightWeaponBase;
+        boolean usingLightWeapon = MCH_ItemLightWeaponBase.isHeld(minecraft.thePlayer);
+        boolean ownGpsActive = MCH_GPSPosition.currentClientGPSPosition != null
+            && MCH_GPSPosition.currentClientGPSPosition.isActive
+            && MCH_GPSPosition.currentClientGPSPosition.owner != null
+            && MCH_GPSPosition.currentClientGPSPosition.owner.getEntityId() == minecraft.thePlayer.getEntityId();
+        if (minecraft.thePlayer.ridingEntity == null && !usingLightWeapon && !(holdingLightWeapon && ownGpsActive)) {
             MCH_GPSPosition.currentClientGPSPosition.isActive = false;
         }
 
+        MCH_LaserStateStore.expireClientStates(minecraft.theWorld.getTotalWorldTime(), MCH_LaserStateStore.DEFAULT_TTL_TICKS);
         MCH_RenderLaser.tickBeams();
     }
 
@@ -446,6 +482,52 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             this.onTick();
         }
 
+    }
+
+    private int getExpectedCameraMode(EntityPlayer player) {
+        if (player == null) {
+            return 0;
+        }
+        ridingAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        if (ridingAircraft != null) {
+            return ridingAircraft.getCameraMode(player);
+        }
+        if (player.ridingEntity instanceof MCH_EntityGLTD) {
+            MCH_EntityGLTD gltd = (MCH_EntityGLTD) player.ridingEntity;
+            return gltd.camera.getMode(0);
+        }
+        return 0;
+    }
+
+    private void ensureCameraShaderState(EntityPlayer player) {
+        int expectedMode = this.getExpectedCameraMode(player);
+        cameraMode = expectedMode;
+        MCH_Camera.currentCameraMode = expectedMode;
+
+        if (!W_EntityRenderer.isShaderSupport()) {
+            if (W_EntityRenderer.hasActiveShader()) {
+                W_EntityRenderer.deactivateShader();
+            }
+            return;
+        }
+
+        String expectedShader = "";
+        if (expectedMode == MCH_Camera.MODE_NIGHTVISION) {
+            expectedShader = "nightvision";
+        } else if (expectedMode == MCH_Camera.MODE_THERMALVISION) {
+            expectedShader = "thermal";
+        }
+
+        if (expectedShader.isEmpty()) {
+            if (W_EntityRenderer.hasActiveShader()) {
+                W_EntityRenderer.deactivateShader();
+            }
+            return;
+        }
+
+        if (!W_EntityRenderer.isShaderActive(expectedShader)) {
+            W_EntityRenderer.activateShader(expectedShader);
+        }
     }
 
     public void onTickPost() {
@@ -535,20 +617,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     W_Reflection.setItemRendererProgress(1.0F);
                 }
 
-                ridingAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(var17);
-                int localMode;
-
-                if (ridingAircraft != null) {
-                    //cameraMode = ridingAircraft.getCameraMode(var17);
-                    localMode = ridingAircraft.getCameraMode(var17);
-                } else if (var17.ridingEntity instanceof MCH_EntityGLTD) {
-                    MCH_EntityGLTD ac = (MCH_EntityGLTD) var17.ridingEntity;
-                    //cameraMode = ac.camera.getMode(0);
-                    localMode = ac.camera.getMode(0);
-                } else {
-                    //cameraMode = 0;
-                    localMode = 0;
-                }
+                this.ensureCameraShaderState(var17);
 
                 applyLocalCameraMode(localMode);
 
@@ -784,6 +853,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HELMET) {
             Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
+            renderNukeFlashOverlay(i, j, partialTicks);
 
             //渲染失明效果
             if (player != null && player.isPotionActive(Potion.blindness)
@@ -859,8 +929,17 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         //渲染命中信息
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
+            drawEconomyGainToast(i, j);
+            int mortarRadarShift = 0;
+            if (player != null && player.ridingEntity instanceof MCH_EntitySeat && ((MCH_EntitySeat) player.ridingEntity).getParent().isMortarRadarEnabledRuntime()) {
+                double scale = j / 500.0;
+                mortarRadarShift = (int) (480.0 * scale / 2.0 + 480.0 * scale * 0.03);
+            } else if (player != null && player.ridingEntity instanceof MCH_EntityAircraft && ((MCH_EntityAircraft) player.ridingEntity).isMortarRadarEnabledRuntime()) {
+                double scale = j / 500.0;
+                mortarRadarShift = (int) (480.0 * scale / 2.0 + 480.0 * scale * 0.03);
+            }
             if (!hitList.isEmpty() && hitTotalDamage > 0) {
-                int x = (int) (i * 0.6f);
+                int x = (int) (i * 0.6f) + mortarRadarShift;
                 int y = (int) (j * 0.4f);
                 GL11.glPushMatrix();
                 float scale = hitTotalDamageScale;
@@ -868,17 +947,18 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 mc.fontRenderer.drawString(-(int) hitTotalDamage + "", (int) (x / scale), (int) (y / scale), 0xffffff, true);
                 GL11.glPopMatrix();
             }
-            int baseX = (int) (i * 0.6f);
+            int baseX = (int) (i * 0.6f) + mortarRadarShift;
             for (int idx = hitList.size() - 1, pos = 0; idx >= 0; idx--, pos++) {
                 HitMessage message = hitList.get(idx);
-                if (message.hitDisplay != null && message.hitDamage > 0) {
+                if (message.hitDisplay != null && (message.hitDamage > 0 || message.hitDamageType == 2)) {
                     float yOffset = 0.45f + pos * 0.025f;
                     int y = (int) (j * yOffset);
                     float alpha = Math.max(0.0f, 1.0f - pos * 0.15f);
                     int a = ((int) (alpha * 255)) << 24;
                     int color = a | 0x00FFFFFF;
+                    String display = message.hitDamageType == 2 ? message.hitDisplay : String.format("%.1f %s", -message.hitDamage, message.hitDisplay);
                     mc.fontRenderer.drawString(
-                        String.format("%.1f %s", -message.hitDamage, message.hitDisplay),
+                        display,
                         baseX,
                         y,
                         color,
@@ -886,6 +966,127 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     );
                 }
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void onGuiScreenDrawPost(GuiScreenEvent.DrawScreenEvent.Post event) {
+        if (event == null || this.mc == null) {
+            return;
+        }
+        boolean isVanillaInventory = event.gui instanceof GuiInventory;
+        boolean isCreativeInventory = event.gui instanceof GuiContainerCreative;
+        if (!isVanillaInventory && !isCreativeInventory) {
+            return;
+        }
+        ScaledResolution scaled = new ScaledResolution(this.mc, this.mc.displayWidth, this.mc.displayHeight);
+        drawEconomyBar(scaled.getScaledWidth(), scaled.getScaledHeight());
+    }
+
+    private void drawEconomyBar(int screenW, int screenH) {
+        int x = 8;
+        int y = screenH - 48;
+        int w = 170;
+        int h = 40;
+        Gui.drawRect(x, y, x + w, y + h, 0x90101010);
+        Gui.drawRect(x, y, x + w, y + 1, 0xB0908050);
+        Gui.drawRect(x, y + h - 1, x + w, y + h, 0xB0606060);
+        this.mc.fontRenderer.drawStringWithShadow("Economy", x + 6, y + 4, 0xF0F0F0);
+        drawEconomyIconAndText(x + 6, y + 16, TEX_ICON_SL, new ItemStack(Items.gold_ingot), "SL " + MCH_EconomyClientData.getSL(), 0xFFE07A);
+        drawEconomyIconAndText(x + 62, y + 16, TEX_ICON_GE, new ItemStack(Items.emerald), "GE " + MCH_EconomyClientData.getGE(), 0xFFD050);
+        drawEconomyIconAndText(x + 118, y + 16, TEX_ICON_RP, new ItemStack(Items.enchanted_book), "RP " + MCH_EconomyClientData.getRP(), 0xA0D0FF);
+    }
+
+    private void drawEconomyIconAndText(int x, int y, ResourceLocation iconTex, ItemStack fallback, String text, int color) {
+        drawEconomyInlineIcon(x, y, iconTex, fallback, 12);
+        this.mc.fontRenderer.drawString(text, x + 14, y + 1, color);
+    }
+
+    private void drawEconomyGainToast(int screenW, int screenH) {
+        if (!MCH_EconomyClientData.hasGainToast()) {
+            return;
+        }
+        byte type = MCH_EconomyClientData.getGainToastType();
+        int sl = MCH_EconomyClientData.getGainToastSL();
+        int ge = MCH_EconomyClientData.getGainToastGE();
+        int rp = MCH_EconomyClientData.getGainToastRP();
+        if (sl <= 0 && ge <= 0 && rp <= 0) {
+            return;
+        }
+
+        String title = type == 2 ? "摧毁载具" : "击杀目标";
+        int gap = 18;
+        int iconSize = 10;
+        int xCursor = 0;
+        int titleWidth = this.mc.fontRenderer.getStringWidth(title);
+        xCursor += titleWidth;
+
+        int slWidth = rewardPieceWidth("+" + sl, sl > 0, iconSize, gap);
+        int geWidth = rewardPieceWidth("+" + ge, ge > 0, iconSize, gap);
+        int rpWidth = rewardPieceWidth("+" + rp, rp > 0, iconSize, gap);
+        int totalWidth = xCursor + slWidth + geWidth + rpWidth;
+
+        int x = (screenW - totalWidth) / 2;
+        int y = Math.max(18, (int) (screenH * 0.12f));
+
+        int drawX = x;
+        this.mc.fontRenderer.drawStringWithShadow(title, drawX, y, 0xFF5050);
+        drawX += titleWidth;
+        if (sl > 0) {
+            drawX += gap;
+            drawGainPiece(drawX, y, TEX_ICON_SL, new ItemStack(Items.gold_ingot), "+" + sl, iconSize);
+            drawX += iconSize + 4 + this.mc.fontRenderer.getStringWidth("+" + sl);
+        }
+        if (ge > 0) {
+            drawX += gap;
+            drawGainPiece(drawX, y, TEX_ICON_GE, new ItemStack(Items.emerald), "+" + ge, iconSize);
+            drawX += iconSize + 4 + this.mc.fontRenderer.getStringWidth("+" + ge);
+        }
+        if (rp > 0) {
+            drawX += gap;
+            drawGainPiece(drawX, y, TEX_ICON_RP, new ItemStack(Items.enchanted_book), "+" + rp, iconSize);
+        }
+    }
+
+    private int rewardPieceWidth(String text, boolean draw, int iconSize, int gap) {
+        if (!draw) {
+            return 0;
+        }
+        return gap + iconSize + 4 + this.mc.fontRenderer.getStringWidth(text);
+    }
+
+    private void drawGainPiece(int x, int y, ResourceLocation iconTex, ItemStack fallback, String text, int iconSize) {
+        drawEconomyInlineIcon(x, y, iconTex, fallback, iconSize);
+        this.mc.fontRenderer.drawStringWithShadow(text, x + iconSize + 4, y + 1, 0xFFFFFF);
+    }
+
+    private void drawEconomyInlineIcon(int x, int y, ResourceLocation iconTex, ItemStack fallback, int iconSize) {
+        if (bindTextureSafely(iconTex)) {
+            GL11.glColor4f(1, 1, 1, 1);
+            Tessellator t = Tessellator.instance;
+            t.startDrawingQuads();
+            t.addVertexWithUV((double) x, (double) (y + iconSize), 0.0D, 0.0D, 1.0D);
+            t.addVertexWithUV((double) (x + iconSize), (double) (y + iconSize), 0.0D, 1.0D, 1.0D);
+            t.addVertexWithUV((double) (x + iconSize), (double) y, 0.0D, 1.0D, 0.0D);
+            t.addVertexWithUV((double) x, (double) y, 0.0D, 0.0D, 0.0D);
+            t.draw();
+            return;
+        }
+        RenderHelper.enableGUIStandardItemLighting();
+        this.economyHudItemRenderer.renderItemAndEffectIntoGUI(this.mc.fontRenderer, this.mc.getTextureManager(), fallback, x - 3, y - 3);
+        RenderHelper.disableStandardItemLighting();
+    }
+
+    private boolean bindTextureSafely(ResourceLocation texture) {
+        if (texture == null) {
+            return false;
+        }
+        try {
+            this.mc.getResourceManager().getResource(texture);
+            this.mc.getTextureManager().bindTexture(texture);
+            return true;
+        } catch (IOException ignored) {
+            return false;
         }
     }
 
@@ -929,34 +1130,90 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         public byte hitDamageType;
     }
 
-    private void applyLocalCameraMode(int mode) {
-        if (mode < 0 || mode > 2) mode = 0;
-
-        if (mode != MCH_Camera.MODE_NORMAL && !W_EntityRenderer.isShaderSupport()) {
-            mode = MCH_Camera.MODE_NORMAL;
+    public static void startNukeFlashEffect(double x, double y, double z, float explosion, float radiusFactor, int minDurationTick, int maxDurationTick) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) {
+            return;
+        }
+        float flashRadius = Math.max(1.0F, explosion * radiusFactor);
+        double dist = mc.thePlayer.getDistance(x, y, z);
+        if ((float) dist > flashRadius) {
+            return;
         }
 
-        cameraMode = mode;
-        MCH_Camera.currentCameraMode = mode;
+        float dist01 = MathHelper.clamp_float((float) dist / flashRadius, 0.0F, 1.0F);
+        float pow01 = MathHelper.clamp_float(explosion / 40.0F, 0.0F, 1.0F);
+        int minTick = Math.max(1, minDurationTick);
+        int maxTick = Math.max(minTick, maxDurationTick);
+        int duration = Math.round(minTick + (maxTick - minTick) * (0.65F * pow01 + 0.35F * (1.0F - dist01) * (1.0F - dist01)));
+        duration = MathHelper.clamp_int(duration, minTick, maxTick);
 
-        boolean modeChanged = (lastAppliedCameraMode != mode);
-        boolean shaderMissing = (mode != MCH_Camera.MODE_NORMAL)
-                && (Minecraft.getMinecraft().entityRenderer.theShaderGroup == null);
-
-        if (!modeChanged && !shaderMissing) return;
-
-        lastAppliedCameraMode = mode;
-
-        switch (mode) {
-            case MCH_Camera.MODE_NIGHTVISION:
-                W_EntityRenderer.activateShader("nightvision");
-                break;
-            case MCH_Camera.MODE_THERMALVISION:
-                W_EntityRenderer.activateShader("thermal");
-                break;
-            default:
-                W_EntityRenderer.deactivateShader();
-                break;
+        float peakAlpha = MathHelper.clamp_float(0.55F + 0.40F * (0.70F * pow01 + 0.30F * (1.0F - dist01)), 0.55F, 0.95F);
+        int currentRemain = nukeFlashDurationTick - nukeFlashElapsedTick;
+        if (nukeFlashDurationTick <= 0 || duration > currentRemain || peakAlpha > nukeFlashPeakAlpha) {
+            nukeFlashDurationTick = duration;
+            nukeFlashElapsedTick = 0;
+            nukeFlashPeakAlpha = peakAlpha;
+            nukeFlashPow01 = pow01;
         }
+    }
+
+    private static void tickNukeFlashEffect() {
+        if (nukeFlashDurationTick <= 0) {
+            return;
+        }
+        ++nukeFlashElapsedTick;
+        if (nukeFlashElapsedTick >= nukeFlashDurationTick) {
+            nukeFlashElapsedTick = -1;
+            nukeFlashDurationTick = 0;
+            nukeFlashPeakAlpha = 0.0F;
+            nukeFlashPow01 = 0.0F;
+        }
+    }
+
+    private static void renderNukeFlashOverlay(int screenW, int screenH, float partialTicks) {
+        if (nukeFlashDurationTick <= 0 || nukeFlashElapsedTick < 0) {
+            return;
+        }
+        float t = ((float) nukeFlashElapsedTick + partialTicks) / (float) nukeFlashDurationTick;
+        t = MathHelper.clamp_float(t, 0.0F, 1.0F);
+        float pulse = MathHelper.clamp_float((float) Math.sin(Math.PI * t), 0.0F, 1.0F);
+
+        float baseAlpha = 0.22F;
+        float alpha = baseAlpha + (nukeFlashPeakAlpha - baseAlpha) * pulse;
+
+        float startR = 1.00F;
+        float startG = 0.98F;
+        float startB = 0.86F;
+        float peakR = 1.00F;
+        float peakG = 1.00F;
+        float peakB = 0.94F;
+        float colorBoost = 0.08F * nukeFlashPow01;
+
+        float r = MathHelper.clamp_float(startR + (peakR - startR) * pulse + colorBoost, 0.0F, 1.0F);
+        float g = MathHelper.clamp_float(startG + (peakG - startG) * pulse + colorBoost, 0.0F, 1.0F);
+        float b = MathHelper.clamp_float(startB + (peakB - startB) * pulse, 0.0F, 1.0F);
+
+        GL11.glPushMatrix();
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthMask(false);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+
+        Tessellator tess = Tessellator.instance;
+        tess.startDrawingQuads();
+        tess.setColorRGBA((int) (r * 255.0F), (int) (g * 255.0F), (int) (b * 255.0F), (int) (MathHelper.clamp_float(alpha, 0.0F, 1.0F) * 255.0F));
+        tess.addVertex(0, screenH, 0);
+        tess.addVertex(screenW, screenH, 0);
+        tess.addVertex(screenW, 0, 0);
+        tess.addVertex(0, 0, 0);
+        tess.draw();
+
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glDepthMask(true);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glPopMatrix();
     }
 }

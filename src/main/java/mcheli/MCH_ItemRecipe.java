@@ -3,8 +3,14 @@ package mcheli;
 import cpw.mods.fml.common.registry.GameRegistry;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_AircraftInfoManager;
+import mcheli.block.MCH_BlockInfo;
+import mcheli.block.MCH_BlockInfoManager;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
+import mcheli.lweapon.MCH_LightWeaponAmmoInfo;
+import mcheli.lweapon.MCH_LightWeaponAmmoInfoManager;
+import mcheli.lweapon.MCH_LightWeaponInfo;
+import mcheli.lweapon.MCH_LightWeaponInfoManager;
 import mcheli.lweapon.MCH_ItemLightWeaponBullet;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.plane.MCP_PlaneInfoManager;
@@ -70,25 +76,69 @@ public class MCH_ItemRecipe implements MCH_IRecipeList {
         var10001 = MCH_MOD.config;
         addRecipeList(addRecipe(MCH_MOD.itemRangeFinder, MCH_Config.ItemRecipe_RangeFinder.prmString));
         GameRegistry.addRecipe(new MCH_RecipeReloadRangeFinder());
-        var10001 = MCH_MOD.config;
-        addRecipeList(addRecipe(MCH_MOD.itemStinger, MCH_Config.ItemRecipe_Stinger.prmString));
-        MCH_ItemLightWeaponBullet var1 = MCH_MOD.itemStingerBullet;
-        StringBuilder var3 = (new StringBuilder()).append("2,");
-        MCH_Config var10002 = MCH_MOD.config;
-        addRecipeList(addRecipe(var1, var3.append(MCH_Config.ItemRecipe_StingerMissile.prmString).toString()));
-        var10001 = MCH_MOD.config;
-        addRecipeList(addRecipe(MCH_MOD.itemJavelin, MCH_Config.ItemRecipe_Javelin.prmString));
-        var1 = MCH_MOD.itemJavelinBullet;
-        var3 = (new StringBuilder()).append("2,");
-        var10002 = MCH_MOD.config;
-        addRecipeList(addRecipe(var1, var3.append(MCH_Config.ItemRecipe_JavelinMissile.prmString).toString()));
+        boolean hasLightWeaponConfigs = !MCH_LightWeaponInfoManager.getValues().isEmpty();
+        boolean hasLightAmmoConfigs = !MCH_LightWeaponAmmoInfoManager.getValues().isEmpty();
+        if (hasLightWeaponConfigs) {
+            for (MCH_LightWeaponInfo info : MCH_LightWeaponInfoManager.getValues()) {
+                if (info.item != null && info.recipeString != null) {
+                    for (String s : info.recipeString) {
+                        if (s.length() >= 3) {
+                            IRecipe recipe = addRecipe(info.item, s, info.isShapedRecipe);
+                            info.recipe.add(recipe);
+                            addRecipeList(recipe);
+                        }
+                    }
+                }
+            }
+        } else {
+            var10001 = MCH_MOD.config;
+            addRecipeList(addRecipe(MCH_MOD.itemStinger, MCH_Config.ItemRecipe_Stinger.prmString));
+            MCH_ItemLightWeaponBullet var1 = MCH_MOD.itemStingerBullet;
+            StringBuilder var3 = (new StringBuilder()).append("2,");
+            MCH_Config var10002 = MCH_MOD.config;
+            addRecipeList(addRecipe(var1, var3.append(MCH_Config.ItemRecipe_StingerMissile.prmString).toString()));
+            var10001 = MCH_MOD.config;
+            addRecipeList(addRecipe(MCH_MOD.itemJavelin, MCH_Config.ItemRecipe_Javelin.prmString));
+            var1 = MCH_MOD.itemJavelinBullet;
+            var3 = (new StringBuilder()).append("2,");
+            var10002 = MCH_MOD.config;
+            addRecipeList(addRecipe(var1, var3.append(MCH_Config.ItemRecipe_JavelinMissile.prmString).toString()));
+        }
+        if (hasLightAmmoConfigs) {
+            for (MCH_LightWeaponAmmoInfo info : MCH_LightWeaponAmmoInfoManager.getValues()) {
+                if (info.item != null && info.recipeString != null) {
+                    for (String s : info.recipeString) {
+                        if (s.length() >= 3) {
+                            IRecipe recipe = addRecipe(info.item, s, info.isShapedRecipe);
+                            info.recipe.add(recipe);
+                            addRecipeList(recipe);
+                        }
+                    }
+                }
+            }
+        }
         Item var2 = W_Item.getItemFromBlock(MCH_MOD.blockDraftingTable);
         addRecipeList(addRecipe(MCH_MOD.itemRpg, MCH_Config.ItemRecipe_Rpg.prmString));
-        var1 = MCH_MOD.itemRpgBullet;
-        var3 = (new StringBuilder()).append("2,");
+        MCH_ItemLightWeaponBullet var1 = MCH_MOD.itemRpgBullet;
+        StringBuilder var3 = (new StringBuilder()).append("2,");
         addRecipeList(addRecipe(var1, var3.append(MCH_Config.ItemRecipe_RpgMissile.prmString).toString()));
         var10001 = MCH_MOD.config;
         addRecipeList(addRecipe(var2, MCH_Config.ItemRecipe_DraftingTable.prmString));
+        for (MCH_BlockInfo info : MCH_BlockInfoManager.getValues()) {
+            if (info.block != null && info.recipeString != null) {
+                Item blockItem = W_Item.getItemFromBlock(info.block);
+                if (blockItem == null) {
+                    continue;
+                }
+                for (String s : info.recipeString) {
+                    if (s.length() >= 3) {
+                        IRecipe recipe = addRecipe(blockItem, s, info.isShapedRecipe);
+                        info.recipe.add(recipe);
+                        addRecipeList(recipe);
+                    }
+                }
+            }
+        }
     }
 
     public static void registerItemRecipe() {

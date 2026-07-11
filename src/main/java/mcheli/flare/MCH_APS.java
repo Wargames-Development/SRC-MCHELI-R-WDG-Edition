@@ -6,6 +6,8 @@ import mcheli.MCH_FMURUtil;
 import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.packets.PacketIronCurtainUse;
+import mcheli.particles.MCH_ParticleParam;
+import mcheli.particles.MCH_ParticlesUtil;
 import mcheli.weapon.*;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
@@ -15,6 +17,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 
 import java.util.List;
+import java.util.Random;
 
 public class MCH_APS {
 
@@ -34,6 +37,7 @@ public class MCH_APS {
     public int range;
 
     public Entity user;
+    private final Random rand = new Random();
 
     public MCH_APS(World w, MCH_EntityAircraft ac) {
         this.worldObj = w;
@@ -93,24 +97,61 @@ public class MCH_APS {
         }
     }
 
-    private void onUsing() {
-        if (worldObj.isRemote) {
-        } else {
-            if (range == 100) {
-                return;
-            }
-            List list = worldObj.getEntitiesWithinAABBExcludingEntity(aircraft, aircraft.boundingBox.expand(range, range, range));
-            for (Object obj : list) {
-                Entity entity = (Entity) obj;
+    private void spawnFlameLine(double ax, double ay, double az, double bx, double by, double bz) {
+        if (!worldObj.isRemote) return;
 
-                if (entity.getClass().getName().contains("EntityBullet")) {
-                    if (MCH_FMURUtil.bulletDestructedByAPS(entity, (EntityLivingBase) user)) {
+        double dx = bx - ax;
+        double dy = by - ay;
+        double dz = bz - az;
+        int numParticles = 8 + rand.nextInt(6);
+
+        for (int i = 0; i < numParticles; ++i) {
+            double t = rand.nextDouble();
+            double px = ax + dx * t + (rand.nextDouble() - 0.5D) * 0.6D;
+            double py = ay + dy * t + (rand.nextDouble() - 0.5D) * 0.6D;
+            double pz = az + dz * t + (rand.nextDouble() - 0.5D) * 0.6D;
+
+            MCH_ParticleParam prm = new MCH_ParticleParam(worldObj, "smoke", px, py, pz);
+            prm.setColor(0.9F, 1.0F, 0.6F + rand.nextFloat() * 0.3F, rand.nextFloat() * 0.15F);
+            prm.size = 0.6F + rand.nextFloat() * 0.8F;
+            prm.age = 8 + rand.nextInt(12);
+            prm.gravity = -0.008F;
+            MCH_ParticlesUtil.spawnParticle(prm);
+        }
+    }
+
+    private void onUsing() {
+        if (range == 100) {
+            return;
+        }
+        List list = worldObj.getEntitiesWithinAABBExcludingEntity(aircraft, aircraft.boundingBox.expand(range, range, range));
+        for (Object obj : list) {
+            Entity entity = (Entity) obj;
+
+            boolean isBullet = entity.getClass().getName().contains("EntityBullet");
+            boolean isGrenade = entity.getClass().getName().contains("EntityGrenade");
+            boolean isMissile = entity instanceof MCH_EntityAAMissile
+                || entity instanceof MCH_EntityRocket
+                || entity instanceof MCH_EntityATMissile
+                || entity instanceof MCH_EntityASMissile
+                || entity instanceof MCH_EntityTvMissile;
+
+            if (!isBullet && !isGrenade && !isMissile) continue;
+
+            if (isBullet) {
+                if (MCH_FMURUtil.bulletDestructedByAPS(entity, (EntityLivingBase) user)) {
+                    spawnFlameLine(aircraft.posX, aircraft.posY, aircraft.posZ, entity.posX, entity.posY, entity.posZ);
+                    if (!worldObj.isRemote) {
                         W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
                     }
                 }
+                continue;
+            }
 
-                if (entity.getClass().getName().contains("EntityGrenade")) {
-                    if (MCH_FMURUtil.grenadeDestructedByAPS(entity, (EntityLivingBase) user)) {
+            if (isGrenade) {
+                if (MCH_FMURUtil.grenadeDestructedByAPS(entity, (EntityLivingBase) user)) {
+                    spawnFlameLine(aircraft.posX, aircraft.posY, aircraft.posZ, entity.posX, entity.posY, entity.posZ);
+                    if (!worldObj.isRemote) {
                         W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
                         MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                             .exploder(user)
@@ -128,18 +169,19 @@ public class MCH_APS {
                         MCH_Explosion.newExplosion(worldObj, param);
                     }
                 }
+                continue;
+            }
 
-                if (entity instanceof MCH_EntityAAMissile
-                    || entity instanceof MCH_EntityRocket
-                    || entity instanceof MCH_EntityATMissile
-                    || entity instanceof MCH_EntityASMissile
-                    || entity instanceof MCH_EntityTvMissile
-                ) {
-                    MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) entity;
-                    if (bullet.shootingEntity instanceof EntityPlayer && !((EntityPlayer) user).isOnSameTeam((EntityLivingBase) bullet.shootingEntity)) {
+            if (isMissile) {
+                MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) entity;
+                if (bullet.shootingEntity instanceof EntityLivingBase && user instanceof EntityLivingBase && !((EntityLivingBase) user).isOnSameTeam((EntityLivingBase) bullet.shootingEntity)) {
+                    spawnFlameLine(aircraft.posX, aircraft.posY, aircraft.posZ, entity.posX, entity.posY, entity.posZ);
+                    if (!worldObj.isRemote) {
                         bullet.setDead();
                         W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
-                        MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
+                        if (bullet.shootingEntity instanceof EntityPlayerMP) {
+                            MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
+                        }
                         MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                             .exploder(user)
                             .player(user instanceof EntityPlayer ? (EntityPlayer) user : null)
@@ -156,7 +198,6 @@ public class MCH_APS {
                         MCH_Explosion.newExplosion(worldObj, param);
                     }
                 }
-
             }
         }
     }

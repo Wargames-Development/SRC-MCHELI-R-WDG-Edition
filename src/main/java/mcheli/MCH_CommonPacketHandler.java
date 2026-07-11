@@ -31,16 +31,47 @@ public class MCH_CommonPacketHandler {
         }
     }
 
+    public static void onPacketEffectNukeFlash(EntityPlayer player, ByteArrayDataInput data) {
+        if (player.worldObj.isRemote) {
+            MCH_PacketEffectNukeFlash pkt = new MCH_PacketEffectNukeFlash();
+            pkt.readData(data);
+            MCH_ClientCommonTickHandler.startNukeFlashEffect(
+                pkt.posX,
+                pkt.posY,
+                pkt.posZ,
+                pkt.explosionSize,
+                pkt.radiusFactor,
+                pkt.minDurationTick,
+                pkt.maxDurationTick
+            );
+        }
+    }
+
     public static void onPacketIndOpenScreen(EntityPlayer player, ByteArrayDataInput data) {
         if (!player.worldObj.isRemote) {
             MCH_PacketIndOpenScreen pkt = new MCH_PacketIndOpenScreen();
             pkt.readData(data);
+            MCH_Lib.DbgTrace(
+                player.worldObj,
+                "event=packet_open_screen guiId=%d player=%s pos=%.2f,%.2f,%.2f",
+                pkt.guiID,
+                player.getCommandSenderName(),
+                player.posX,
+                player.posY,
+                player.posZ
+            );
             if (pkt.guiID == 3) {
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
                 if (ac != null) {
                     ac.openInventory(player);
                 }
             } else {
+                if (pkt.guiID == 6) {
+                    if (MCH_MOD.config == null || !MCH_Config.EnableTechTreeGameplay.prmBool) {
+                        return;
+                    }
+                }
+                MCH_Lib.DbgTrace(player.worldObj, "event=server_open_gui guiId=%d player=%s", pkt.guiID, player.getCommandSenderName());
                 player.openGui(MCH_MOD.instance, pkt.guiID, player.worldObj, (int) player.posX, (int) player.posY, (int) player.posZ);
             }
 
@@ -61,6 +92,8 @@ public class MCH_CommonPacketHandler {
             MCH_ServerSettings.enablePVP = pkt.enablePVP;
             MCH_ServerSettings.stingerLockRange = pkt.stingerLockRange;
             MCH_ServerSettings.enableDebugBoundingBox = pkt.enableDebugBoundingBox;
+            MCH_ServerSettings.enableDebugGunnerTeam = pkt.enableDebugGunnerTeam;
+            MCH_ServerSettings.enableDebugWaypointLabel = pkt.enableDebugWaypointLabel;
             MCH_ClientLightWeaponTickHandler.lockRange = MCH_ServerSettings.stingerLockRange;
         }
     }

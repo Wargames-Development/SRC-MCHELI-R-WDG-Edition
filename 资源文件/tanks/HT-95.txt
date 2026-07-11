@@ -1,0 +1,117 @@
+﻿DisplayName = HT-95 LEVKOV
+AddDisplayName = zh_CN, HT-95 列夫科夫
+AddDisplayName = en_US, HT-95 LEVKOV
+ItemID = 334014
+MaxHp = 1000
+Speed = 1.0
+Sound = ht95_idle
+ThrottleUpDown = 30.0
+MobilityYawOnGround = 6.0
+
+MobilityRoll = 0
+MinRotationPitch = -20
+MaxRotationPitch = 8
+OnGroundPitchFactor = 2.0
+Gravity = -0.1
+GravityInWater = 0.3
+DamageFactor = 0.0
+CameraZoom = 3
+
+CameraPosition = 0.00,  3.65, -0.50, true
+
+EnableNightVision = true
+CameraRotationSpeed = 30
+DefaultFreelook = true
+Float  = true
+StepHeight = 2
+
+
+
+SubmergedDamageHeight = 2
+
+HideEntity = true
+FlareType = 10
+
+; Tank or Car or Unknown
+WeightType = Car
+
+; 重心Z座標設定
+WeightedCenterZ = 0.2
+
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+SetWheelPos =  2.70,  -0.09,  5.85, 3.02, 1.44, -1.54, -3.91
+
+AddPartThrottle = 0, 0.0, 0.0,  0, 0, 0,  0,  0, -0.5779, 0.0
+
+
+HUD = MBT, MBT_GUNNER
+
+AddGunnerSeat =  1.00,  1.27,  0.50,    0.00, 2.9, 2.25,  false, -20,5, true
+AddGunnerSeat =  1.00,  1.27,  0.50,    -0.8, 4.4, -1.29,  false, -70, 10, false
+AddGunnerSeat =  1.00,  1.27,  0.50,    0.8, 3.5, -2,  false, -70, 10, false
+
+MotionFactor = 0.9
+
+
+ArmorMinDamage = 16
+
+EnableBack = true
+
+
+OnGroundPitchFactor = 3.0
+OnGroundRollFactor  = 2.3
+
+throttledownfactor=10
+hasaps=true
+apsUseTime=120
+apsWaitTime=400
+apsRange =100
+
+
+AddPartWeapon =mbt_t90m_he/IFV_2S25M_APFSDS, false, true, false,   0.00, 2.56, 2.0, 0
+AddPartWeaponChild = false, true, 0.00, 2.11, 1.78, 0.5
+AddPartWeaponChild = false, true, 0.00, 2.11, 1.78, 0.5
+AddWeapon = IFV_2S25M_APFSDS,  0.00, 2.56, 2.0,  0.0, 0.0, true,1, 0,-15,15, -20, 5
+AddWeapon = mbt_t90m_he,  0.00, 2.56, 2.0,  0.0, 0.0, true,1, 0,-15,15, -20, 5
+
+
+AddPartWeapon = MG_127, false, true, false, -0.8, 3.83, -1.29
+AddPartWeaponChild   = false, true,  -0.9,4.00, -1.21
+AddTurretWeapon = MG_127, -0.8, 4.08, -1.29, 0.0, 0.0, TRUE, 2, 0, -360,360, -70,10
+
+
+BoundingBox = 0.0, 1.547, 2.804,  4.982, 2.592, 3.825, 0.4, DEFAULT, 高硬度正面装甲
+BoundingBox = 0.0, 1.547, -1.01,  4.982, 2.592, 3.825, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 1.547, -4.123,  4.982, 2.592, 2.394, 1.3, DEFAULT, 动力舱
+BoundingBox = 0.0, 2.879, -0.695,  4.982, 0.151, 3.102, 0.5, DEFAULT, 顶部强化装甲
+
+hasMaintenance=true
+MaintenceUsetime=60
+MaintenceWaittime=300
+BoundingBox =  0, 2.55, -0.5,   3.5, 1, 0.6
+
+
+engineShutdownThreshold = 30
+throttledownfactor=3
+explosionsizebycrash=10
+
+;cross_type0-11:0MG,1AP,2ARM,3CANISTER,4HE,5HEAT,6IRM,7LOSM,8SARH,9STAFF,10TVM,11AP_FAST
+
+;weapon_group_type:0AP/HEAT;1AP/CANSITER;2AP/HE;3AP/ARM;4AP/AP_FAST
+;5HEAT/HE;6HEAT/CANISTER;
+;7HE/STAFF;8HE/SACLOS
+;9 M1A2T 10KF51 11 AP/STAFF
+weapongrouptype=2
+
+;hudtype=1美国2中国3俄罗斯
+;美国坦克准星准星
+hudtype=3
+
+NameOnAdvancedAARadar = ?
+NameOnModernAARadar = ?
+NameOnEarlyAARadar =
+NameOnModernASRadar = MBT
+NameOnEarlyASRadar = ?
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

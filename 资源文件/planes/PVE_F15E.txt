@@ -1,0 +1,227 @@
+DisplayName = PVE F15E
+AddDisplayName = ja_JP, PVE F15E
+ItemID = 28740
+MaxHp = 500
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+Speed = 1.6
+FlareType = 3
+ParticlesScale = 0.7
+EnableSeaSurfaceParticle = true
+MaxFuel         = 1200
+FuelConsumption = 1.0
+CameraPosition = 0.0, 0.70, 1.6
+EnableGunnerMode = true
+AutoPilotRot = 0
+ThirdPersonDist = 20
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+Category = M.A
+
+
+HUD = plane, plane_gnr
+
+AddSeat       = 0.00,  2.43,  0.00
+AddGunnerSeat = 0.00,  2.51, -1.76, 0.0, 0.70, 1.6, true
+
+AddPartCanopy =  0.00, 3.57, -2.87,  -1,0,0,  50
+
+;AddPartNozzle =  0.73, 2.06, -13.29, -1,0,0
+;AddPartNozzle = -0.73, 2.06, -13.29, -1,0,0
+
+AddPartThrottle = 0.00, 2.93, -3.08,  1,0,0, -15
+
+;Front
+AddPartLG    =  0.00, 1.66, -1.80,  -1,0,0,  101
+;Right
+AddPartLG    = -1.24, 1.87, -8.09,      1,0,0, -70,   0,1,0,  95
+;Left
+AddPartLG    =  1.24, 1.87, -8.09,      1,0,0, -70,   0,1,0, -95
+
+;前席がAIM-9、ガンポッド（M61 20mmバルカン）
+
+; 使用直後は非表示
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,    false,  false,  false,    3.49, 2.16, -4.95
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,    false,  false,  false,   -3.49, 2.16, -4.95
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,    false,  false,  false,    2.86, 2.16, -4.95
+AddPartWeaponMissile = ATKJET_F15E_AAM_ARM,    false,  false,  false,   -2.86, 2.16, -4.95
+
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,  false,  false,  false,    2.53, 1.43, -6.84
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,  false,  false,  false,   -2.53, 1.43, -6.84
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,  false,  false,  false,    2.53, 1.43, -9.64
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,  false,  false,  false,   -2.53, 1.43, -9.64
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,  false,  false,  false,    2.53, 1.43,-12.41
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_IRBOMB,  false,  false,  false,   -2.53, 1.43,-12.41
+
+AddPartWeaponMissile = ATKJET_F15E_GPSBOMB,  false,  false,  false,    2.18, 0.87, -3.56
+AddPartWeaponMissile = ATKJET_F15E_GPSBOMB,  false,  false,  false,   -2.18, 0.87, -3.56
+AddPartWeaponMissile = ATKJET_F15E_GPSBOMB,  false,  false,  false,    2.18, 0.87, -6.36
+AddPartWeaponMissile = ATKJET_F15E_GPSBOMB,  false,  false,  false,   -2.18, 0.87, -6.36
+
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_TVM,  false,  false,  false,    3.18, 1.66, -5.04
+AddPartWeaponMissile = ATKJET_F15E_GUNNER_TVM,  false,  false,  false,   -3.18, 1.66, -5.04
+
+
+AddWeapon = ATKJET_F15E_20MM, -2.07, 2.70, -3.00,   0.0, 0.0
+AddWeapon = ATKJET_F15E_AAM_ARM,     3.49, 2.16, -4.95,   0.0, 0.0
+AddWeapon = ATKJET_F15E_AAM_ARM,    -3.49, 2.16, -4.95,   0.0, 0.0
+AddWeapon = ATKJET_F15E_AAM_ARM,     2.86, 2.16, -4.95,   0.0, 0.0
+AddWeapon = ATKJET_F15E_AAM_ARM,    -2.86, 2.16, -4.95,   0.0, 0.0
+
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,   2.53, 1.43, -6.84,   0.0, 0.0
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,  -2.53, 1.43, -6.84,   0.0, 0.0
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,   2.53, 1.43, -9.64,   0.0, 0.0
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,  -2.53, 1.43, -9.64,   0.0, 0.0
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,   2.53, 1.43,-12.41,   0.0, 0.0
+AddWeapon = ATKJET_F15E_GUNNER_IRBOMB,  -2.53, 1.43,-12.41,   0.0, 0.0
+
+AddWeapon = ATKJET_F15E_GPSBOMB,   2.18, 0.87, -3.56,   0.0, 0.0 , false, 2
+AddWeapon = ATKJET_F15E_GPSBOMB,  -2.18, 0.87, -3.56,   0.0, 0.0 , false, 2
+AddWeapon = ATKJET_F15E_GPSBOMB,   2.18, 0.87, -6.36,   0.0, 0.0 , false, 2
+AddWeapon = ATKJET_F15E_GPSBOMB,  -2.18, 0.87, -6.36,   0.0, 0.0 , false, 2
+
+AddWeapon = ATKJET_F15E_GUNNER_TVM,   3.18, 1.66, -5.04,   0.0, 0.0 , true,  2
+AddWeapon = ATKJET_F15E_GUNNER_TVM,  -3.18, 1.66, -5.04,   0.0, 0.0 , true,  2
+
+
+AddWeapon = targeting_pod_ph50s,   0.0, 3.4, 0.0,    0.0, 0.0, true,  2
+
+AddPartHatch =   0.0,  3.20,  -4.86,  1,0, 0, 45
+AddPartHatch =   0.0,  3.00,  -7.05, -1,0, 0, 45
+SweepWingSpeed = 0.7
+
+AddRecipe = " Y ",  "TAT",  "XDX",  X, iron_block, Y, glass, A, anvil, D, diamond, T, tnt
+
+
+BoundingBox =  0.00, 2.40, 1.5,  3.0, 3.5
+BoundingBox =  0.00, 1.90, -3.0,  4.9, 3.2
+BoundingBox =  0.00, 1.90, -7.80, 5.0, 3.2
+BoundingBox =  0.00, 1.90, -12.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox =  4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox =  0.00, 2.20, -14.3,  3.5, 2.0,1.5
+EntityWidth  = 0.65
+EntityHeight = 0.65
+
+NameOnAdvancedAARadar = F15
+NameOnModernAARadar = F15
+NameOnEarlyAARadar = F15
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+RadarType = ADVANCED_AA
+
+hasMaintenance=true
+
+
+
+
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 250
+
+AddTurretWeapon = AESA,   -0.846, 3.68,  0.373,   0.0, 0.0, false, 2, 0, -360,360, -70,10
+
+motionfactor=0.96
+
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 200
+
+hasMaintenance=true
+
+
+
+engineShutdownThreshold = 0
+
+explosionsizebycrash=10
+enableRWR=true
+Gravity = -0.038
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+weapongrouptype=13
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+enablerwr=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+
+
+
+
+MobilityPitch = 0.85
+MobilityRoll  = 1.8
+MobilityYaw   = 0.55
+MotionFactor = 0.96
+
+
+
+
+
+MobilityPitch = 0.85
+MobilityRoll  = 1.8
+MobilityYaw   = 0.55
+MotionFactor = 0.96
+
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 0.8783, 2.3, -13.22, -1, 0, 0, 0, 1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -0.8783, 2.3, -13.22, -1, 0, 0, 0, 1
+
+
+enableRadar=true
+RadarScanElevationDeg =140
+;俯仰扫描扇区总角度
+;范围=0~180（0=不扫描，180=上下全域）
+;默认值=40
+
+RadarFollowTurretYaw = false
+;是否让雷达水平正方向跟随坦克炮塔转向（仅坦克生效）
+;可选值=true|false
+;默认值：坦克=true，其它载具=false
+
+RadarElevationReference = AIRCRAFT
+;俯仰扫描参考系
+;可选值=HORIZON|AIRCRAFT
+;HORIZON=按平飞水平面计算（推荐地面载具）
+;AIRCRAFT=按机体当前姿态计算（推荐战斗机）
+;默认值=HORIZON
+
+RadarPanelFillAlpha=0.075
+
+RadarElevationCoverage = FULL
+;俯仰扫描覆盖模式
+;可选值=UP_ONLY|FULL
+;UP_ONLY=仅上视扫描（不下视）
+;FULL=全域扫描（上+下）
+;默认值=UP_ONLY
+RadarScanAzimuthDeg=140
+;水平扫描范围
+RadarScanTick=10
+;每多少 tick 扫一次
+RadarDetectChanceBase=0.9
+;基础命中概率
+RadarContactHoldTick=80
+;命中后显示保持时长
+RadarMaxTargetRange =1600
+;最大显示距离
+
+RadarTrackAzimuthDeg=140
+;雷达跟踪最大水平角度
+;建议不超过RadarScanAzimuthDeg
+;默认值=90
+RadarTrackElevationDeg=140
+;雷达跟踪最大俯仰角度
+RadarSearchType=MULTI_TWS
+enableBVR=true
+
+RadarMinScanAltitude=10
+RadarMaxScanAltitude=25
+
+RadarGainFactor=1.5,0.5
+NameOnRWR=F15

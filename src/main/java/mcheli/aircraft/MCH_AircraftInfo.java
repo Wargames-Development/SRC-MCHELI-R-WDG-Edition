@@ -1,6 +1,7 @@
 package mcheli.aircraft;
 
 import mcheli.MCH_BaseInfo;
+import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
 import mcheli.hud.MCH_Hud;
 import mcheli.hud.MCH_HudManager;
@@ -127,15 +128,23 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public float soundRange;
     public float soundVolume;
     public float soundPitch;
+    public int destroyRewardSLMin;
+    public int destroyRewardSLMax;
+    public int destroyRewardGEMin;
+    public int destroyRewardGEMax;
+    public int destroyRewardRPMin;
+    public int destroyRewardRPMax;
     public IModelCustom model;
     public List hatchList;
     public List cameraList;
     public List partWeapon;
     public List partWeaponBay;
+    public List partTurretWeaponBay;
     public List canopyList;
     public List landingGear;
     public List partThrottle;
     public List partRotPart;
+    public List partTurretRotPart;
     public List partCrawlerTrack;
     public List partTrackRoller;
     public List partWheel;
@@ -150,9 +159,109 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      */
     public EnumRWRType rwrType = EnumRWRType.DIGITAL;
     /**
+     * 是否启用新雷达扫描动画面板
+     */
+    public boolean enableRadar = false;
+    /**
+     * 水平扫描扇区总角度
+     */
+    public float radarScanAzimuthDeg = 120.0F;
+    /**
+     * 雷达面板填充透明度(0~1)
+     */
+    public float radarPanelFillAlpha = 0.30F;
+    /**
+     * 是否让雷达水平主方向跟随坦克炮塔偏航（仅坦克生效）
+     */
+    public boolean radarFollowTurretYaw = false;
+    /**
+     * 俯仰扫描扇区总角度(0~180)
+     */
+    public float radarScanElevationDeg = 40.0F;
+    /**
+     * 雷达扫描周期(tick)
+     */
+    public int radarScanTick = 12;
+    /**
+     * 扫描命中基础概率(0~1)
+     */
+    public float radarDetectChanceBase = 0.75F;
+    /**
+     * 距离增益近端系数（0米）
+     */
+    public float radarGainNearFactor = 1.5F;
+    /**
+     * 距离增益远端系数（最大探测距离）
+     */
+    public float radarGainFarFactor = 0.5F;
+    /**
+     * 载具RCS前向系数（0.01~10）
+     */
+    public float radarRcsFrontFactor = 1.0F;
+    /**
+     * 载具RCS侧向系数（0.01~10）
+     */
+    public float radarRcsSideFactor = 1.0F;
+    /**
+     * 载具RCS后向系数（0.01~10）
+     */
+    public float radarRcsRearFactor = 1.0F;
+    /**
+     * 载具RCS接触保持时间系数（0.01~10）
+     */
+    public float radarRcsTimeFactor = 1.0F;
+    /**
+     * 目标接触显示保持时长(tick)
+     */
+    public int radarContactHoldTick = 40;
+    /**
+     * 俯仰扫描参考系：HORIZON | AIRCRAFT
+     */
+    public String radarElevationReference = "HORIZON";
+    /**
+     * 俯仰扫描覆盖模式：UP_ONLY | FULL
+     */
+    public String radarElevationCoverage = "UP_ONLY";
+    /**
+     * 是否允许该载机启用BVR索敌/火控显示
+     */
+    public boolean enableBVR = false;
+    /**
+     * 该载机雷达最大索敌显示距离(米)，超过该距离不显示目标
+     */
+    public float radarMaxTargetRange = 3000.0F;
+    /**
+     * 雷达最小扫描高度(AGL)，低于该高度不参与扫描（SRC/TWS）
+     */
+    public float radarMinScanAltitude = 10.0F;
+    /**
+     * 雷达最大扫描高度(AGL)，高于该高度不参与扫描（GMTI模式）
+     */
+    public float radarMaxScanAltitude = 25.0F;
+    /**
+     * 雷达搜索模式：SRC | TWS | GMTI_SRC | GMTI_TWS | MULTI_SRC | MULTI_TWS
+     */
+    public String radarSearchType = "SRC";
+    /**
+     * 雷达跟踪最大水平角度
+     */
+    public float radarTrackAzimuthDeg = 90.0F;
+    /**
+     * 雷达跟踪最大俯仰角度
+     */
+    public float radarTrackElevationDeg = 45.0F;
+    /**
+     * 手动切换放弃目标后，禁止重选冷却tick
+     */
+    public int radarRetargetCooldownTick = 40;
+    /**
      * 当前载具在现代对空雷达中显示的名字
      */
     public String nameOnModernAARadar = "";
+    /**
+     * 当前载具在高级对空雷达中显示的名字
+     */
+    public String nameOnAdvancedAARadar = "";
     /**
      * 当前载具在早期对空雷达中显示的名字
      */
@@ -179,6 +288,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 1.0 = normal, < 1 = stealthier (detected closer), > 1 = louder (detected farther)
      */
     public float stealthFactor = 1.0F;
+    /**
+     * 载具在RWR上的名称
+     */
+    public String nameOnRWR = "?";
     /**
      * 载具被摧毁时爆炸范围
      */
@@ -255,6 +368,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 载具爆炸倍率，最终的爆炸伤害=爆炸伤害*爆炸倍率
      */
     public float armorExplosionDamageMultiplier = 1.0f;
+    public List<Float> impactAngleThresholds;
+    public List<Float> impactAngleCoefficients;
+    public float impactRicochetStartAngle;
+    public List<SignMarker> signMarkers;
 
     /**
      * 是否有光电干扰机，永远不会被激光弹锁定
@@ -281,6 +398,31 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.isEnableNightVision = false;
         this.isEnableEntityRadar = false;
         this.hasAARadar = false;
+        this.enableRadar = false;
+        this.radarScanAzimuthDeg = 120.0F;
+        this.radarPanelFillAlpha = 0.30F;
+        this.radarFollowTurretYaw = false;
+        this.radarScanElevationDeg = 40.0F;
+        this.radarScanTick = 12;
+        this.radarDetectChanceBase = 0.75F;
+        this.radarGainNearFactor = 1.5F;
+        this.radarGainFarFactor = 0.5F;
+        this.radarRcsFrontFactor = 1.0F;
+        this.radarRcsSideFactor = 1.0F;
+        this.radarRcsRearFactor = 1.0F;
+        this.radarRcsTimeFactor = 1.0F;
+        this.radarContactHoldTick = 40;
+        this.radarElevationReference = "HORIZON";
+        this.radarElevationCoverage = "UP_ONLY";
+        this.enableBVR = false;
+        this.radarMaxTargetRange = 3000.0F;
+        this.radarMinScanAltitude = 10.0F;
+        this.radarMaxScanAltitude = 25.0F;
+        this.radarSearchType = "SRC";
+        this.radarTrackAzimuthDeg = 90.0F;
+        this.radarTrackElevationDeg = 45.0F;
+        this.radarRetargetCooldownTick = 40;
+        this.nameOnRWR = "?";
         this.isEnableEjectionSeat = false;
         this.isEnableParachuting = false;
         this.flare = new MCH_AircraftInfo.Flare();
@@ -376,21 +518,86 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.soundPitch = 1.0F;
         this.soundVolume = 1.0F;
         this.soundRange = this.getDefaultSoundRange();
+        this.destroyRewardSLMin = -1;
+        this.destroyRewardSLMax = -1;
+        this.destroyRewardGEMin = -1;
+        this.destroyRewardGEMax = -1;
+        this.destroyRewardRPMin = -1;
+        this.destroyRewardRPMax = -1;
         this.model = null;
         this.hatchList = new ArrayList();
         this.cameraList = new ArrayList();
         this.partWeapon = new ArrayList();
         this.lastWeaponPart = null;
         this.partWeaponBay = new ArrayList();
+        this.partTurretWeaponBay = new ArrayList();
         this.canopyList = new ArrayList();
         this.landingGear = new ArrayList();
         this.partThrottle = new ArrayList();
         this.partRotPart = new ArrayList();
+        this.partTurretRotPart = new ArrayList();
         this.partCrawlerTrack = new ArrayList();
         this.partTrackRoller = new ArrayList();
         this.partWheel = new ArrayList();
         this.partSteeringWheel = new ArrayList();
         this.lightHatchList = new ArrayList();
+        this.impactAngleThresholds = new ArrayList<Float>();
+        this.impactAngleCoefficients = new ArrayList<Float>();
+        this.impactRicochetStartAngle = 89.0F;
+        this.signMarkers = new ArrayList<SignMarker>();
+        setImpactAngleCoefficientDefault(false);
+    }
+
+    public void setImpactAngleCoefficientDefault(boolean tankType) {
+        if (tankType) {
+            setImpactAngleCoefficient("0,1,60,0.8,67,0.7,72,0.6,78,0.4,81,-1");
+        } else {
+            setImpactAngleCoefficient("0,1,89,-1");
+        }
+    }
+
+    public void setImpactAngleCoefficient(String data) {
+        this.impactAngleThresholds.clear();
+        this.impactAngleCoefficients.clear();
+        this.impactRicochetStartAngle = 181.0F;
+        if (data == null || data.trim().isEmpty()) {
+            return;
+        }
+        String[] s = data.split("\\s*,\\s*");
+        for (int i = 0; i + 1 < s.length; i += 2) {
+            float angle = this.toFloat(s[i], 0.0F, 180.0F);
+            float coeff = this.toFloat(s[i + 1], -1.0F, 1000.0F);
+            if (coeff < 0.0F) {
+                this.impactRicochetStartAngle = angle;
+                break;
+            }
+            this.impactAngleThresholds.add(Float.valueOf(angle));
+            this.impactAngleCoefficients.add(Float.valueOf(coeff));
+        }
+        if (this.impactAngleThresholds.isEmpty()) {
+            this.impactAngleThresholds.add(Float.valueOf(0.0F));
+            this.impactAngleCoefficients.add(Float.valueOf(1.0F));
+        } else if (this.impactAngleThresholds.get(0).floatValue() > 0.0F) {
+            this.impactAngleThresholds.add(0, Float.valueOf(0.0F));
+            this.impactAngleCoefficients.add(0, this.impactAngleCoefficients.get(0));
+        }
+    }
+
+    public float getImpactAngleCoefficientValue(float angleDeg) {
+        float absAngle = Math.abs(angleDeg);
+        float coeff = this.impactAngleCoefficients.isEmpty() ? 1.0F : this.impactAngleCoefficients.get(0).floatValue();
+        for (int i = 1; i < this.impactAngleThresholds.size() && i < this.impactAngleCoefficients.size(); i++) {
+            if (absAngle >= this.impactAngleThresholds.get(i).floatValue()) {
+                coeff = this.impactAngleCoefficients.get(i).floatValue();
+            } else {
+                break;
+            }
+        }
+        return coeff;
+    }
+
+    public boolean isImpactRicochet(float angleDeg) {
+        return Math.abs(angleDeg) >= this.impactRicochetStartAngle;
     }
 
     public static String[] getCannotReloadItem() {
@@ -441,7 +648,78 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
 
     public abstract String getDefaultHudName(int var1);
 
+    private int parseRewardValueOrFallback(String value, int fallback, String keyName) {
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return Math.max(0, parsed);
+        } catch (Exception e) {
+            MCH_Lib.Log("[" + this.name + "] Invalid " + keyName + " value: " + value + ". fallback=" + fallback);
+            return fallback;
+        }
+    }
+
+    private int[] parseDestroyRewardRange(String data, int currentMin, int currentMax, String keyName) {
+        String[] values = this.splitParam(data);
+        if (values.length < 2) {
+            MCH_Lib.Log("[" + this.name + "] Invalid " + keyName + " format: " + data + ". expected min,max");
+            return new int[]{currentMin, currentMax};
+        }
+        int min = parseRewardValueOrFallback(values[0], currentMin, keyName + ".min");
+        int max = parseRewardValueOrFallback(values[1], currentMax, keyName + ".max");
+        if (min >= 0 && max >= 0 && min > max) {
+            int t = min;
+            min = max;
+            max = t;
+        }
+        return new int[]{min, max};
+    }
+
+    private int parseDestroyRewardSingle(String data, int currentValue, String keyName) {
+        return parseRewardValueOrFallback(data, currentValue, keyName);
+    }
+
+    private void normalizeDestroyRewardRanges() {
+        if (this.destroyRewardSLMin >= 0 && this.destroyRewardSLMax >= 0 && this.destroyRewardSLMin > this.destroyRewardSLMax) {
+            int t = this.destroyRewardSLMin;
+            this.destroyRewardSLMin = this.destroyRewardSLMax;
+            this.destroyRewardSLMax = t;
+        }
+        if (this.destroyRewardGEMin >= 0 && this.destroyRewardGEMax >= 0 && this.destroyRewardGEMin > this.destroyRewardGEMax) {
+            int t = this.destroyRewardGEMin;
+            this.destroyRewardGEMin = this.destroyRewardGEMax;
+            this.destroyRewardGEMax = t;
+        }
+        if (this.destroyRewardRPMin >= 0 && this.destroyRewardRPMax >= 0 && this.destroyRewardRPMin > this.destroyRewardRPMax) {
+            int t = this.destroyRewardRPMin;
+            this.destroyRewardRPMin = this.destroyRewardRPMax;
+            this.destroyRewardRPMax = t;
+        }
+    }
+
+    private void applyApsRadarDefaults() {
+        if (this.aps == null) return;
+
+        this.enableBVR = true;
+        this.enableRadar = true;
+
+        if (Math.abs(this.radarScanElevationDeg - 40.0F) < 0.01F) this.radarScanElevationDeg = 80.0F;
+        if (!this.radarFollowTurretYaw) this.radarFollowTurretYaw = true;
+        if (Math.abs(this.radarPanelFillAlpha - 0.30F) < 0.01F) this.radarPanelFillAlpha = 0.15F;
+        if (Math.abs(this.radarScanAzimuthDeg - 120.0F) < 0.01F) this.radarScanAzimuthDeg = 360.0F;
+        if (this.radarScanTick == 12) this.radarScanTick = 10;
+        if (Math.abs(this.radarDetectChanceBase - 0.75F) < 0.01F) this.radarDetectChanceBase = 0.6F;
+        if (this.radarContactHoldTick == 40) this.radarContactHoldTick = 80;
+        if (Math.abs(this.radarMaxTargetRange - 3000.0F) < 0.01F) this.radarMaxTargetRange = 128.0F;
+        if (Math.abs(this.radarTrackElevationDeg - 45.0F) < 0.01F) this.radarTrackElevationDeg = 75.0F;
+        if (this.radarSearchType.equals("SRC")) this.radarSearchType = "TWS";
+        if (this.radarMinScanAltitude == 10.0F) this.radarMinScanAltitude = 0.0F;
+        if (this.radarMaxScanAltitude == 25.0F) this.radarMaxScanAltitude = 10.0F;
+        if (this.nameOnRWR.equals("?")) this.nameOnRWR = "APS";
+    }
+
     public boolean isValidData() throws Exception {
+        normalizeDestroyRewardRanges();
+        applyApsRadarDefaults();
         if (this.cameraPosition.size() <= 0) {
             this.cameraPosition.add(new MCH_AircraftInfo.CameraPosition());
         }
@@ -524,6 +802,32 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                     }
                 }
 
+                for (var10 = 0; var10 < this.partTurretWeaponBay.size(); ++var10) {
+                    MCH_AircraftInfo.WeaponBay var12 = (MCH_AircraftInfo.WeaponBay) this.partTurretWeaponBay.get(var10);
+                    String[] weaponNames = var12.weaponName.split("\\s*/\\s*");
+                    if (weaponNames.length <= 0) {
+                        this.partTurretWeaponBay.remove(var10);
+                    } else {
+                        ArrayList list = new ArrayList();
+                        String[] arr$ = weaponNames;
+                        int len$ = weaponNames.length;
+
+                        for (int i$ = 0; i$ < len$; ++i$) {
+                            String s = arr$[i$];
+                            int id = this.getWeaponIdByName(s);
+                            if (id >= 0) {
+                                list.add(Integer.valueOf(id));
+                            }
+                        }
+
+                        if (list.size() <= 0) {
+                            this.partTurretWeaponBay.remove(var10);
+                        } else {
+                            ((MCH_AircraftInfo.WeaponBay) this.partTurretWeaponBay.get(var10)).weaponIds = (Integer[]) list.toArray(new Integer[0]);
+                        }
+                    }
+                }
+
                 return true;
             }
         }
@@ -575,6 +879,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
 
     public boolean haveHatch() {
         return this.hatchList.size() > 0;
+    }
+
+    public boolean haveTurretWeaponBay() {
+        return this.partTurretWeaponBay.size() > 0;
     }
 
     public boolean havePartCamera() {
@@ -652,6 +960,30 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                         this.repairOtherVehiclesValue = this.toInt(s[1], 0, 10000000);
                     }
                 }
+            } else if (item.equalsIgnoreCase("DestroyRewardSL")) {
+                int[] range = parseDestroyRewardRange(data, this.destroyRewardSLMin, this.destroyRewardSLMax, "DestroyRewardSL");
+                this.destroyRewardSLMin = range[0];
+                this.destroyRewardSLMax = range[1];
+            } else if (item.equalsIgnoreCase("DestroyRewardGE")) {
+                int[] range = parseDestroyRewardRange(data, this.destroyRewardGEMin, this.destroyRewardGEMax, "DestroyRewardGE");
+                this.destroyRewardGEMin = range[0];
+                this.destroyRewardGEMax = range[1];
+            } else if (item.equalsIgnoreCase("DestroyRewardRP") || item.equalsIgnoreCase("DestroyRewardRL")) {
+                int[] range = parseDestroyRewardRange(data, this.destroyRewardRPMin, this.destroyRewardRPMax, item);
+                this.destroyRewardRPMin = range[0];
+                this.destroyRewardRPMax = range[1];
+            } else if (item.equalsIgnoreCase("DestroyRewardSLMin")) {
+                this.destroyRewardSLMin = parseDestroyRewardSingle(data, this.destroyRewardSLMin, "DestroyRewardSLMin");
+            } else if (item.equalsIgnoreCase("DestroyRewardSLMax")) {
+                this.destroyRewardSLMax = parseDestroyRewardSingle(data, this.destroyRewardSLMax, "DestroyRewardSLMax");
+            } else if (item.equalsIgnoreCase("DestroyRewardGEMin")) {
+                this.destroyRewardGEMin = parseDestroyRewardSingle(data, this.destroyRewardGEMin, "DestroyRewardGEMin");
+            } else if (item.equalsIgnoreCase("DestroyRewardGEMax")) {
+                this.destroyRewardGEMax = parseDestroyRewardSingle(data, this.destroyRewardGEMax, "DestroyRewardGEMax");
+            } else if (item.equalsIgnoreCase("DestroyRewardRPMin") || item.equalsIgnoreCase("DestroyRewardRLMin")) {
+                this.destroyRewardRPMin = parseDestroyRewardSingle(data, this.destroyRewardRPMin, item);
+            } else if (item.equalsIgnoreCase("DestroyRewardRPMax") || item.equalsIgnoreCase("DestroyRewardRLMax")) {
+                this.destroyRewardRPMax = parseDestroyRewardSingle(data, this.destroyRewardRPMax, item);
             } else if (item.equalsIgnoreCase("RadarType")) {
                 try {
                     this.radarType = EnumRadarType.valueOf(data);
@@ -660,8 +992,85 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 }
             } else if (item.equalsIgnoreCase("EnableRWR")) {
                 hasRWR = this.toBool(data);
-            } else if (item.equalsIgnoreCase("HasAARadar")) {
-                hasAARadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableRadar")) {
+                this.enableRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableBVR")) {
+                this.enableBVR = this.toBool(data);
+            } else if (item.equalsIgnoreCase("RadarMaxTargetRange")) {
+                this.radarMaxTargetRange = this.toFloat(data, 50.0F, 20000.0F);
+            } else if (item.equalsIgnoreCase("RadarMinScanAltitude")) {
+                this.radarMinScanAltitude = this.toFloat(data, -256.0F, 4096.0F);
+            } else if (item.equalsIgnoreCase("RadarMaxScanAltitude")) {
+                this.radarMaxScanAltitude = this.toFloat(data, -256.0F, 4096.0F);
+            } else if (item.equalsIgnoreCase("RadarSearchType")) {
+                String mode = data.trim().toUpperCase(Locale.ROOT);
+                mode = mode.replace(" ", "_");
+                if (mode.equals("TWS") || mode.equals("GMTI_SRC") || mode.equals("GMTI_TWS")
+                    || mode.equals("MULTI_SRC") || mode.equals("MULTI_TWS")) {
+                    this.radarSearchType = mode;
+                } else {
+                    this.radarSearchType = "SRC";
+                }
+            } else if (item.equalsIgnoreCase("RadarTrackAzimuthDeg")) {
+                this.radarTrackAzimuthDeg = this.toFloat(data, 0.0F, 360.0F);
+            } else if (item.equalsIgnoreCase("RadarTrackElevationDeg")) {
+                this.radarTrackElevationDeg = this.toFloat(data, 0.0F, 180.0F);
+            } else if (item.equalsIgnoreCase("RadarRetargetCooldownTick")) {
+                this.radarRetargetCooldownTick = this.toInt(data, 0, 12000);
+            } else if (item.equalsIgnoreCase("RadarScanAzimuthDeg")) {
+                this.radarScanAzimuthDeg = this.toFloat(data, 0.0F, 360.0F);
+            } else if (item.equalsIgnoreCase("RadarPanelFillAlpha")) {
+                this.radarPanelFillAlpha = this.toFloat(data, 0.0F, 1.0F);
+            } else if (item.equalsIgnoreCase("RadarFollowTurretYaw")) {
+                this.radarFollowTurretYaw = this.toBool(data);
+            } else if (item.equalsIgnoreCase("RadarScanElevationDeg")) {
+                this.radarScanElevationDeg = this.toFloat(data, 0.0F, 180.0F);
+            } else if (item.equalsIgnoreCase("RadarScanTick")) {
+                this.radarScanTick = this.toInt(data, 1, 1200);
+            } else if (item.equalsIgnoreCase("RadarDetectChanceBase")) {
+                this.radarDetectChanceBase = this.toFloat(data, 0.0F, 1.0F);
+            } else if (item.equalsIgnoreCase("RadarGainFactor") || item.equalsIgnoreCase("GainFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 1) {
+                    this.radarGainNearFactor = this.toFloat(s[0], 0.01F, 10.0F);
+                }
+                if (s.length >= 2) {
+                    this.radarGainFarFactor = this.toFloat(s[1], 0.01F, 10.0F);
+                }
+            } else if (item.equalsIgnoreCase("RadarRCSFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 1) {
+                    this.radarRcsFrontFactor = this.toFloat(s[0], 0.01F, 10.0F);
+                }
+                if (s.length >= 2) {
+                    this.radarRcsSideFactor = this.toFloat(s[1], 0.01F, 10.0F);
+                }
+                if (s.length >= 3) {
+                    this.radarRcsRearFactor = this.toFloat(s[2], 0.01F, 10.0F);
+                }
+                if (s.length >= 4) {
+                    this.radarRcsTimeFactor = this.toFloat(s[3], 0.01F, 10.0F);
+                }
+            } else if (item.equalsIgnoreCase("RadarRCSFrontFactor")) {
+                this.radarRcsFrontFactor = this.toFloat(data, 0.01F, 10.0F);
+            } else if (item.equalsIgnoreCase("RadarRCSSideFactor")) {
+                this.radarRcsSideFactor = this.toFloat(data, 0.01F, 10.0F);
+            } else if (item.equalsIgnoreCase("RadarRCSRearFactor")) {
+                this.radarRcsRearFactor = this.toFloat(data, 0.01F, 10.0F);
+            } else if (item.equalsIgnoreCase("RadarRCSTimeFactor")) {
+                this.radarRcsTimeFactor = this.toFloat(data, 0.01F, 10.0F);
+            } else if (item.equalsIgnoreCase("RadarContactHoldTick")) {
+                this.radarContactHoldTick = this.toInt(data, 1, 1200);
+            } else if (item.equalsIgnoreCase("RadarElevationReference")) {
+                String mode = data.trim().toUpperCase(Locale.ROOT);
+                this.radarElevationReference = mode.equals("AIRCRAFT") ? "AIRCRAFT" : "HORIZON";
+            } else if (item.equalsIgnoreCase("RadarElevationCoverage")) {
+                String mode = data.trim().toUpperCase(Locale.ROOT);
+                if (mode.equals("FULL") || mode.equals("DOWN_ONLY")) {
+                    this.radarElevationCoverage = mode;
+                } else {
+                    this.radarElevationCoverage = "UP_ONLY";
+                }
             } else if (item.equalsIgnoreCase("HUDType")) {
                 hudType = this.toInt(data);
             } else if (item.equalsIgnoreCase("WeaponGroupType")) {
@@ -671,28 +1080,20 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
             } else if (item.equalsIgnoreCase("HasPhotoelectricJammer")) {
                 hasPhotoelectricJammer = this.toBool(data);
             } else if (item.equalsIgnoreCase("RWRType")) {
-                try {
-                    this.rwrType = EnumRWRType.valueOf(data);
-                } catch (Exception e) {
-                    this.rwrType = EnumRWRType.DIGITAL;
-                }
+                // Stage policy: force DIGITAL only for current RWR implementation phase.
+                this.rwrType = EnumRWRType.DIGITAL;
+            } else if (item.equalsIgnoreCase("NameOnRWR")) {
+                this.nameOnRWR = data.trim();
             } else if (item.equalsIgnoreCase("NameOnModernAARadar")) {
-                nameOnModernAARadar = data;
+                nameOnModernAARadar = data.trim();
+            } else if (item.equalsIgnoreCase("NameOnAdvancedAARadar")) {
+                nameOnAdvancedAARadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnEarlyAARadar")) {
-                nameOnEarlyAARadar = data;
+                nameOnEarlyAARadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnModernASRadar")) {
-                nameOnModernASRadar = data;
+                nameOnModernASRadar = data.trim();
             } else if (item.equalsIgnoreCase("NameOnEarlyASRadar")) {
-                nameOnEarlyASRadar = data;
-            } else if (item.equalsIgnoreCase("AirRadarRange")) {
-            this.airRadarRange = this.toFloat(data, 0.0F, 100000.0F);
-
-        } else if (item.equalsIgnoreCase("GroundRadarRange")) {
-            this.groundRadarRange = this.toFloat(data, 0.0F, 100000.0F);
-
-        } else if (item.equalsIgnoreCase("StealthFactor")) {
-                this.stealthFactor = this.toFloat(data, 0.05F, 5.0F);
-
+                nameOnEarlyASRadar = data.trim();
             } else if (item.equalsIgnoreCase("ExplosionSizeByCrash")) {
                 explosionSizeByCrash = this.toInt(data, 0, 100);
             } else if (item.equalsIgnoreCase("ThrottleDownFactor")) {
@@ -1013,7 +1414,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             this.isEnableConcurrentGunnerMode = this.toBool(data);
                                                         } else {
                                                             boolean var32;
-                                                            if (!item.equalsIgnoreCase("AddPartWeaponBay") && !item.equalsIgnoreCase("AddPartSlideWeaponBay")) {
+                                                            if (!item.equalsIgnoreCase("AddPartWeaponBay") && !item.equalsIgnoreCase("AddPartSlideWeaponBay") && !item.equalsIgnoreCase("AddPartTurretWeaponBay")) {
                                                                 if (item.compareTo("addparthatch") != 0 && item.compareTo("addpartslidehatch") != 0) {
                                                                     if (item.compareTo("addpartcanopy") != 0 && item.compareTo("addpartslidecanopy") != 0) {
                                                                         if (!item.equalsIgnoreCase("AddPartLG") && !item.equalsIgnoreCase("AddPartSlideRotLG") && !item.equalsIgnoreCase("AddPartLGRev") && !item.equalsIgnoreCase("AddPartLGHatch")) {
@@ -1032,6 +1433,13 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                                     var28 = s.length >= 8 ? this.toBool(s[7]) : true;
                                                                                     MCH_AircraftInfo.RotPart var46 = new MCH_AircraftInfo.RotPart(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]), var28, "rotpart" + this.partThrottle.size());
                                                                                     this.partRotPart.add(var46);
+                                                                                }
+                                                                            } else if (item.equalsIgnoreCase("AddPartTurretRotation")) {
+                                                                                s = data.split("\\s*,\\s*");
+                                                                                if (s.length >= 6) {
+                                                                                    var28 = s.length >= 7 ? this.toBool(s[6]) : true;
+                                                                                    MCH_AircraftInfo.TurretRotPart var46 = new MCH_AircraftInfo.TurretRotPart(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), var28, "weaponrotpart" + this.partTurretRotPart.size());
+                                                                                    this.partTurretRotPart.add(var46);
                                                                                 }
                                                                             } else if (item.compareTo("addpartcamera") == 0) {
                                                                                 s = data.split("\\s*,\\s*");
@@ -1118,6 +1526,28 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                                     this.bbZmin = (float) Math.min(this.bbZmin, bb.boundingBox.minZ);
                                                                                     this.bbZmax = (float) Math.min(this.bbZmax, bb.boundingBox.maxZ);
                                                                                 }
+                                                                            } else if (item.equalsIgnoreCase("BoundingERABox")) {
+                                                                                s = data.split("\\s*,\\s*");
+                                                                                if (s.length >= 11) {
+                                                                                    MCH_BoundingBox bb = new MCH_BoundingBox(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]),
+                                                                                        this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]));
+                                                                                    bb.isERA = true;
+                                                                                    bb.eraExplosion = this.toFloat(s[7], 0.0F, 100000.0F);
+                                                                                    bb.setBoundingBoxType(EnumBoundingBoxType.valueOf(s[8].toUpperCase()));
+                                                                                    bb.setBoundingBoxName(s[9]);
+                                                                                    bb.eraMinDamage = this.toFloat(s[10], 0.0F, 100000.0F);
+                                                                                    bb.eraActive = true;
+                                                                                    this.extraBoundingBox.add(bb);
+                                                                                    if (bb.boundingBox.maxY > (double) this.markerHeight) {
+                                                                                        this.markerHeight = (float) bb.boundingBox.maxY;
+                                                                                    }
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.maxX) / 2.0D);
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.minX) / 2.0D);
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.maxZ) / 2.0D);
+                                                                                    this.markerWidth = (float) Math.max(this.markerWidth, Math.abs(bb.boundingBox.minZ) / 2.0D);
+                                                                                    this.bbZmin = (float) Math.min(this.bbZmin, bb.boundingBox.minZ);
+                                                                                    this.bbZmax = (float) Math.min(this.bbZmax, bb.boundingBox.maxZ);
+                                                                                }
                                                                             } else if (item.equalsIgnoreCase("RotorSpeed")) {
                                                                                 this.rotorSpeed = this.toFloat(data, -10000.0F, 10000.0F);
                                                                                 if ((double) this.rotorSpeed > 0.01D) {
@@ -1131,6 +1561,19 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                                 this.onGroundPitchFactor = this.toFloat(data, 0.0F, 180.0F);
                                                                             } else if (item.equalsIgnoreCase("OnGroundRollFactor")) {
                                                                                 this.onGroundRollFactor = this.toFloat(data, 0.0F, 180.0F);
+                                                                            } else if (item.equalsIgnoreCase("ImpactAngleCoefficient")) {
+                                                                                this.setImpactAngleCoefficient(data);
+                                                                            } else if (item.equalsIgnoreCase("AddSign")) {
+                                                                                s = this.splitParam(data);
+                                                                                if (s.length >= 5) {
+                                                                                    float sx = this.toFloat(s[0]);
+                                                                                    float sy = this.toFloat(s[1]);
+                                                                                    float sz = this.toFloat(s[2]);
+                                                                                    String signName = s[3].trim();
+                                                                                    float signSize = this.toFloat(s[4], 0.1F, 1000.0F);
+                                                                                    boolean perspectiveScale = s.length < 6 || this.toBool(s[5], true);
+                                                                                    this.signMarkers.add(new MCH_AircraftInfo.SignMarker(sx, sy, sz, signName, signSize, perspectiveScale));
+                                                                                }
                                                                             }
                                                                         } else {
                                                                             s = data.split("\\s*,\\s*");
@@ -1203,19 +1646,22 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                     }
                                                                 }
                                                             } else {
-                                                                var32 = item.equalsIgnoreCase("AddPartSlideWeaponBay");
+                                                                boolean isTurretBay = item.equalsIgnoreCase("AddPartTurretWeaponBay");
+                                                                var32 = !isTurretBay && item.equalsIgnoreCase("AddPartSlideWeaponBay");
                                                                 var17 = data.split("\\s*,\\s*");
                                                                 var20 = null;
                                                                 MCH_AircraftInfo.WeaponBay var33;
+                                                                String modelPrefix = isTurretBay ? "weaponwb" : "wb";
+                                                                List targetList = isTurretBay ? this.partTurretWeaponBay : this.partWeaponBay;
                                                                 if (var32) {
                                                                     if (var17.length >= 4) {
-                                                                        var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), 0.0F, 0.0F, 0.0F, 90.0F, "wb" + this.partWeaponBay.size(), var32);
-                                                                        this.partWeaponBay.add(var33);
+                                                                        var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), 0.0F, 0.0F, 0.0F, 90.0F, modelPrefix + targetList.size(), var32);
+                                                                        targetList.add(var33);
                                                                     }
                                                                 } else if (var17.length >= 7) {
                                                                     ry = var17.length >= 8 ? this.toFloat(var17[7], -180.0F, 180.0F) : 90.0F;
-                                                                    var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), this.toFloat(var17[4]), this.toFloat(var17[5]), this.toFloat(var17[6]), ry / 90.0F, "wb" + this.partWeaponBay.size(), var32);
-                                                                    this.partWeaponBay.add(var33);
+                                                                    var33 = new MCH_AircraftInfo.WeaponBay(var17[0].trim().toLowerCase(), this.toFloat(var17[1]), this.toFloat(var17[2]), this.toFloat(var17[3]), this.toFloat(var17[4]), this.toFloat(var17[5]), this.toFloat(var17[6]), ry / 90.0F, modelPrefix + targetList.size(), var32);
+                                                                    targetList.add(var33);
                                                                 }
                                                             }
                                                         }
@@ -1250,6 +1696,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                 s = data.split("\\s*,\\s*");
                                                 String var29 = s[0].toLowerCase();
                                                 if (s.length >= 4 && MCH_WeaponInfoManager.contains(var29)) {
+                                                    float x = this.toFloat(s[1]);
+                                                    float y = this.toFloat(s[2]);
+                                                    float z = this.toFloat(s[3]);
                                                     var18 = s.length >= 5 ? this.toFloat(s[4]) : 0.0F;
                                                     ry = s.length >= 6 ? this.toFloat(s[5]) : 0.0F;
                                                     var25 = s.length >= 7 ? this.toBool(s[6]) : true;
@@ -1264,7 +1713,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                     w = s.length >= 11 ? this.toFloat(s[10]) : 0.0F;
                                                     float var44 = s.length >= 12 ? this.toFloat(s[11]) : 0.0F;
                                                     float var47 = s.length >= 13 ? this.toFloat(s[12]) : 0.0F;
-                                                    MCH_AircraftInfo.Weapon e = new MCH_AircraftInfo.Weapon(this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), var18, ry, var25, px, py, pz, w, var44, var47, item.equalsIgnoreCase("AddTurretWeapon"));
+                                                    float mx = s.length >= 14 ? this.toFloat(s[13]) : x;
+                                                    float my = s.length >= 15 ? this.toFloat(s[14]) : y;
+                                                    float mz = s.length >= 16 ? this.toFloat(s[15]) : z;
+                                                    MCH_AircraftInfo.Weapon e = new MCH_AircraftInfo.Weapon(x, y, z, mx, my, mz, var18, ry, var25, px, py, pz, w, var44, var47, item.equalsIgnoreCase("AddTurretWeapon"));
                                                     if (var29.compareTo(this.lastWeaponType) != 0) {
                                                         this.weaponSetList.add(new MCH_AircraftInfo.WeaponSet(var29));
                                                         ++this.lastWeaponIndex;
@@ -1452,6 +1904,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.lightHatchList.clear();
         this.partWeapon.clear();
         this.partWeaponBay.clear();
+        this.partTurretWeaponBay.clear();
         this.repellingHooks.clear();
         this.rideRacks.clear();
         this.seatList.clear();
@@ -1464,7 +1917,24 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.lastWeaponPart = null;
         this.wheels.clear();
         this.unmountPosition = null;
+        this.signMarkers.clear();
 
+    }
+
+    public class SignMarker {
+
+        public final Vec3 pos;
+        public final String signName;
+        public final float size;
+        public final boolean perspectiveScale;
+
+
+        public SignMarker(float px, float py, float pz, String signName, float size, boolean perspectiveScale) {
+            this.pos = Vec3.createVectorHelper((double)px, (double)py, (double)pz);
+            this.signName = signName;
+            this.size = size;
+            this.perspectiveScale = perspectiveScale;
+        }
     }
 
     public boolean canReloadItem(String item) {
@@ -1507,6 +1977,17 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         public RotPart(float px, float py, float pz, float rx, float ry, float rz, float mr, boolean a, String name) {
             super(px, py, pz, rx, ry, rz, name);
             this.rotSpeed = mr;
+            this.rotAlways = a;
+        }
+    }
+
+    public class TurretRotPart extends MCH_AircraftInfo.DrawnPart {
+
+        public final boolean rotAlways;
+
+
+        public TurretRotPart(float px, float py, float pz, float rx, float ry, float rz, boolean a, String name) {
+            super(px, py, pz, rx, ry, rz, name);
             this.rotAlways = a;
         }
     }
@@ -1718,6 +2199,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public class Weapon {
 
         public final Vec3 pos;
+        public final Vec3 muzzleFlashPos;
         public final float yaw;
         public final float pitch;
         public final boolean canUsePilot;
@@ -1730,8 +2212,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         public final boolean turret;
 
 
-        public Weapon(float x, float y, float z, float yaw, float pitch, boolean canPirot, int seatId, float defy, float mny, float mxy, float mnp, float mxp, boolean turret) {
-            this.pos = Vec3.createVectorHelper((double) x, (double) y, (double) z);
+        public Weapon(double x, double y, double z, double mx, double my, double mz, float yaw, float pitch, boolean canPirot, int seatId, float defy, float mny, float mxy, float mnp, float mxp, boolean turret) {
+            this.pos = Vec3.createVectorHelper(x, y, z);
+            this.muzzleFlashPos = Vec3.createVectorHelper(mx, my, mz);
             this.yaw = yaw;
             this.pitch = pitch;
             this.canUsePilot = canPirot;

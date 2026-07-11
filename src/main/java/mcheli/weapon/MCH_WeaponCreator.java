@@ -179,7 +179,7 @@ public class MCH_WeaponCreator {
                 weapon.interval = info.delay;
                 weapon.setLockCountMax(info.lockTime);
                 weapon.setLockChecker(lockChecker);
-                weapon.numMode = info.modeNum;
+                weapon.numMode = info.modeNum > 0 ? info.modeNum : (info.antiRadiationMissile ? 2 : 0);
                 weapon.piercing = info.piercing;
                 weapon.heatCount = info.heatCount;
                 weapon.onTurret = onTurret;

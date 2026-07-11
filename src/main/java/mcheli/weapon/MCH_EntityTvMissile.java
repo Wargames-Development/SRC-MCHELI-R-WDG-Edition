@@ -1,6 +1,7 @@
 package mcheli.weapon;
 
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.mob.MCH_EntityGunner;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
@@ -36,7 +37,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
     public void onUpdate() {
         super.onUpdate();
         this.onUpdateBomblet();
-        if (this.isSpawnParticle && this.getInfo() != null && !this.getInfo().disableSmoke) {
+        if (this.isSpawnParticle && this.getInfo() != null && !this.getInfo().disableSmoke && this.isWithinTrajectoryParticleEndTick()) {
             this.spawnExplosionParticle(this.getInfo().trajectoryParticleName, 3, 5.0F * this.getInfo().smokeSize * 0.5F);
         }
 
@@ -62,8 +63,12 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
         if(!targeting) return;
 
-        //拖线制导
-        if (!getInfo().laserGuidance) {
+        // Mode split by runtime missile mode:
+        // - isTVMissile=true  -> TV guidance (follow launcher view)
+        // - isTVMissile=false -> laser guidance/terminal attack (GPS/laser point)
+        // Do not fall back to TV by weapon info flag here, otherwise fixed laser mode can be misrouted.
+        boolean treatAsTvGuidance = e instanceof MCH_EntityGunner || this.isTVMissile;
+        if (treatAsTvGuidance) {
             if (e != null && !e.isDead) {
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
                 if (ac != null) {
@@ -79,31 +84,26 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 }
 
             }
-        }
-
-        //激光制导
-        else {
-            double x, y, z;
+        } else {
+            // Command-line fallback:
+            // mode=1 with laserGuidance=false keeps manual line command without TV camera follow.
+            if (e != null && !e.isDead && this.getInfo() != null && !this.getInfo().laserGuidance) {
+                float yaw = e.rotationYaw;
+                float pitch = e.rotationPitch;
+                double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+                double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+                double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
+                this.setMotion(tX, tY, tZ);
+                this.setRotation(yaw, pitch);
+                return;
+            }
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
-            if (ac != null && ac.getCurrentWeapon(e).getCurrentWeapon() instanceof MCH_WeaponTvMissile) {
-                MCH_WeaponTvMissile weaponTvMissile = (MCH_WeaponTvMissile) ac.getCurrentWeapon(e).getCurrentWeapon();
-                if (weaponTvMissile.guidanceSystem != null && weaponTvMissile.guidanceSystem.targeting) {
-                    x = weaponTvMissile.guidanceSystem.targetPosX;
-                    y = weaponTvMissile.guidanceSystem.targetPosY;
-                    z = weaponTvMissile.guidanceSystem.targetPosZ;
-                    boolean jammed = false;
-                    double r = 5.0D;
-                    AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(x - r, y - r, z - r, x + r, y + r, z + r);
-                    List list = ac.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
-                    for (Object o : list) {
-                        MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
-                        if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isECMJammerUsing())) {
-                            jammed = true;
-                            break;
-                        }
-                    }
-                    if (!jammed) {
-                        onLaserGuide(x, y, z);
+            if (e != null) {
+                int sourceType = ac != null ? MCH_LaserStateStore.SOURCE_AIRCRAFT : MCH_LaserStateStore.SOURCE_HANDHELD;
+                MCH_LaserStateStore.LaserState laser = MCH_LaserStateStore.getServerState(e.getEntityId(), sourceType);
+                if (laser != null && laser.active) {
+                    if (!this.isLaserPointJammed(laser.x, laser.y, laser.z)) {
+                        onLaserGuide(laser.x, laser.y, laser.z);
                     }
                 }
             }
@@ -111,8 +111,25 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
     }
 
+    private boolean isLaserPointJammed(double x, double y, double z) {
+        double r = 5.0D;
+        AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(x - r, y - r, z - r, x + r, y + r, z + r);
+        List list = super.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, aabb);
+        for (Object o : list) {
+            MCH_EntityAircraft veh = (MCH_EntityAircraft) o;
+            if (veh != null && veh.getAcInfo() != null && (veh.getAcInfo().hasPhotoelectricJammer || veh.isUsingFlareType(10))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void onLaserGuide(double x, double y, double z) {
-        guidanceToPos(x, y, z);
+        if (this.getInfo() != null && this.getInfo().armCruiseEnable) {
+            guidanceToPosWithCruise(x, y, z);
+        } else {
+            guidanceToPos(x, y, z);
+        }
     }
 
 

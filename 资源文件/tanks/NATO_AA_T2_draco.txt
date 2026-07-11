@@ -1,0 +1,133 @@
+DisplayName = DRACO SPAA
+AddDisplayName = zh_CN, 天龙座 自行高炮
+AddDisplayName = en_US, DRACO SPAA
+ItemID = 91129
+MaxHp = 700
+Speed = 0.7
+ThrottleUpDown = 2
+Gravity = -0.1
+GravityInWater = -0.4
+DamageFactor = 0.00
+EnableNightVision = true
+EnableEntityRadar = false
+Sound = vehicle_run
+
+
+
+WeightType = Tank
+DefaultFreelook = true
+FlareType = 10
+CameraZoom = 4
+
+Float = true
+ThrottleUpDown = 2.0
+
+
+
+MobilityRoll = 0
+
+ArmorMaxDamage = 700
+
+ArmorDamageFactor = 1
+
+EnableBack = true
+SetWheelPos =  1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+SubmergedDamageHeight = 2
+WeightedCenterZ = 0.1
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor  = 3.5
+
+MobilityYawOnGround = 4
+PivotTurnThrottle = 0.0
+
+AddGunnerSeat =  0.00, 1.58, 0,    -0.0, 1.78, -3.44,  false, -90, 90, true
+
+Entitywidth=0
+Entityheight=0
+
+HideEntity = true
+
+CameraPosition = -0.8,  4.09, 0.9447, true
+CameraRotationSpeed = 80
+
+StepHeight = 4
+HideEntity = true
+
+
+MotionFactor = 0.9
+
+MaxFuel         = 1500
+FuelConsumption = 1.0
+
+TrackRollerRot = 50
+
+SetWheelPos =  1.25,  -0.24,  3.75, 1.71, -0.15, -2.01
+AddPartWheel =    -1.25,  0.51, 4.1774, 20
+AddPartWheel =    -1.25,  0.51, 2.1066, 10
+AddPartWheel =    -0.00,  0.51,0.1842
+AddPartWheel =    -0.00,  0.51,-1.7281
+AddPartWheel =    1.25,  0.51, 4.1774, 20
+AddPartWheel =    1.25,  0.51, 2.1066, 10
+AddPartWheel =    0.00,  0.51,0.1842
+AddPartWheel =    0.00,  0.51,-1.7281
+
+MinRotationPitch = -75
+MaxRotationPitch =  10
+
+
+
+AddPartWeapon = AA_DRACO_HE_VT/AA_DRACO_PRM/AA_DRACO_APFSDS, false, true, false,  0.00, 1.50, 0.00, 0
+AddPartWeaponChild = false, true, 0.00, 2.8, 1.1, 0.0
+AddPartWeaponChild = false, true, 0.00, 2.8, 1.1, 0.5
+
+AddTurretWeapon = AA_DRACO_HE_VT,         -0.8,  4.09, 0.9447,  0.0, 0.0, true,1, 0,-360,360, -75, 10,0.00, 2.8, 1.16,
+AddTurretWeapon = AA_DRACO_PRM,         -0.8,  4.09, 0.9447,  0.0, 0.0, true,1, 0,-360,360, -75, 10,0.00, 2.8, 1.16,
+AddTurretWeapon = AA_DRACO_APFSDS,         -0.8,  4.09, 0.9447,  0.0, 0.0, true,1, 0,-360,360, -75, 10,0.00, 2.8, 1.16,
+
+NameOnAdvancedAARadar = AAA
+NameOnModernAARadar = AAA
+NameOnEarlyAARadar = AAA
+NameOnModernASRadar = DRCO
+NameOnEarlyASRadar = IFV
+
+engineShutdownThreshold = 15
+throttledownfactor=3
+explosionsizebycrash=10
+
+
+
+BoundingBox = 0.0, 0.971, 1.051,  4.312, 2.346, 4.577, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.0, 0.971, -2.321,  4.312, 2.346, 2.134, 0.5, DEFAULT, 首上
+BoundingBox = 0.0, 1.63, 4.736,  4.312, 1.025, 2.725, 1.3, DEFAULT, 乘员/弹药舱
+BoundingBox = 0.0, 0.465, 4.736,  4.312, 1.245, 2.725, 0.7, DEFAULT, 首下
+
+
+BoundingBox = 1.926, 2.914, -1.749,  0.228, 1.04, 3.567, 1.0, TURRET, 炮塔侧面
+BoundingBox = -1.926, 2.914, -1.749,  0.228, 1.04, 3.567, 1.0, TURRET, 炮塔侧面
+BoundingBox = 0.0, 2.914, -3.479,  3.844, 1.04, 0.115, 1.3, TURRET, 炮塔后面
+BoundingBox = 0.0, 2.843, -0.532,  3.786, 1.388, 5.616, 0.6, TURRET, 炮塔正面
+BoundingBox = 0.0, 3.575, -0.532,  3.408, 0.112, 5.054, 1.0, TURRET, 炮塔顶部
+
+
+hudtype=1
+
+weapongrouptype=1
+;weapon_group_type: 0:25MM/IRM/RADAR;1:25MM/IRM/ROCKET;2:30MM/SARH/RADAR;3:35MM/SARH/RADAR;4:CANISTERR/ARM/RADAR;5:40MM/ARM/RADAR;6:SARH/LOSM/RADAR
+HUD = SPAA, MBT_GUNNER
+
+
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+armorExplosionDamageMultiplier = 1.2
+ArmorMinDamage=10
+
+enableRWR=true
+
+ecmJammerType = 2
+ecmJammerUseTime = 75
+ecmJammerWaitTime = 350
+hasecmJammer=true

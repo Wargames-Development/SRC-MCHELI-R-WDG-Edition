@@ -7,6 +7,7 @@ import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.aircraft.MCH_RenderAircraft;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.multiplay.MCH_GuiTargetMarker;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.particles.MCH_ParticlesUtil;
 import mcheli.tool.rangefinder.MCH_ItemRangeFinder;
 import mcheli.wrapper.W_ClientEventHook;
@@ -115,6 +116,9 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
 
         MCH_Config var10000 = MCH_MOD.config;
         if (MCH_Config.EnableModEntityRender.prmBool && cancelRender && (event.entity.ridingEntity instanceof MCH_EntityAircraft || event.entity.ridingEntity instanceof MCH_EntitySeat)) {
+            if (event.entity instanceof MCH_EntityGunner) {
+                MCH_GuiTargetMarker.addMarkEntityPos(2, event.entity, event.x, event.y + (double) event.entity.height + 0.5D, event.z);
+            }
             event.setCanceled(true);
         } else {
             var10000 = MCH_MOD.config;

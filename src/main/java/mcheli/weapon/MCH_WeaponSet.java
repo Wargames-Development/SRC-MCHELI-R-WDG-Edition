@@ -1,9 +1,11 @@
 package mcheli.weapon;
 
 import mcheli.MCH_Lib;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.wrapper.W_McClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 
@@ -40,11 +42,13 @@ public class MCH_WeaponSet {
     private int currentWeaponIndex;
     private int lastUsedOptionParameter1;
     private int lastUsedOptionParameter2;
+    private boolean dataLinkMode;
 
 
     public MCH_WeaponSet(MCH_WeaponBase[] weapon) {
         this.lastUsedOptionParameter1 = 0;
         this.lastUsedOptionParameter2 = 0;
+        this.dataLinkMode = false;
         this.name = weapon[0].name;
         this.weapons = weapon;
         this.currentWeaponIndex = 0;
@@ -453,7 +457,7 @@ public class MCH_WeaponSet {
 
     public boolean use(MCH_WeaponParam prm) {
         MCH_WeaponBase crtWpn = this.getCurrentWeapon();
-        if (crtWpn != null && crtWpn.getInfo() != null) {
+        if (crtWpn != null && crtWpn.getInfo() != null && prm.entity != null) {
             MCH_WeaponInfo info = crtWpn.getInfo();
             if ((this.getAmmoNumMax() <= 0 || this.getAmmoNum() > 0) && (info.maxHeatCount <= 0 || this.currentHeat < info.maxHeatCount)) {
                 crtWpn.canPlaySound = this.soundWait == 0;
@@ -473,42 +477,56 @@ public class MCH_WeaponSet {
                 prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
                 prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
                 if (crtWpn.use(prm)) {
-                    if (info.maxHeatCount > 0) {
-                        this.cooldownSpeed = 1;
-                        this.currentHeat += crtWpn.heatCount;
-                        if (this.currentHeat >= info.maxHeatCount) {
-                            this.currentHeat += 30;
-                        }
-                    }
-
-                    if (info.soundDelay > 0 && this.soundWait == 0) {
-                        this.soundWait = info.soundDelay;
-                    }
-
-                    this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
-                    this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
-                    this.lastUsedCount[this.currentWeaponIndex] = crtWpn.interval > 0 ? crtWpn.interval : -crtWpn.interval;
-                    if (crtWpn.isCooldownCountReloadTime() && crtWpn.getReloadCount() - 10 > this.lastUsedCount[this.currentWeaponIndex]) {
-                        this.lastUsedCount[this.currentWeaponIndex] = crtWpn.getReloadCount() - 10;
-                    }
-
-                    this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
-                    this.countWait = crtWpn.interval;
-                    this.countReloadWait = 0;
-                    if (this.getAmmoNum() > 0) {
-                        this.setAmmoNum(this.getAmmoNum() - 1);
-                    }
-
-                    if (this.getAmmoNum() <= 0) {
-                        if (prm.isInfinity && this.getRestAllAmmoNum() < this.getAmmoNumMax()) {
-                            this.setRestAllAmmoNum(this.getAmmoNumMax());
+                    boolean applyShotState = prm.entity.worldObj.isRemote || prm.user instanceof MCH_EntityGunner;
+                    if (applyShotState) {
+                        if (info.maxHeatCount > 0) {
+                            this.cooldownSpeed = 1;
+                            this.currentHeat += crtWpn.heatCount;
+                            if (this.currentHeat >= info.maxHeatCount) {
+                                this.currentHeat += 30;
+                            }
                         }
 
-                        this.reload();
-                        prm.reload = true;
-                    }
+                        if (info.soundDelay > 0 && this.soundWait == 0) {
+                            this.soundWait = info.soundDelay;
+                        }
 
-                    prm.result = true;
+                        this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
+                        this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
+                        this.lastUsedCount[this.currentWeaponIndex] = crtWpn.interval > 0 ? crtWpn.interval : -crtWpn.interval;
+                        if (crtWpn.isCooldownCountReloadTime() && crtWpn.getReloadCount() - 10 > this.lastUsedCount[this.currentWeaponIndex]) {
+                            this.lastUsedCount[this.currentWeaponIndex] = crtWpn.getReloadCount() - 10;
+                        }
+
+                        this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
+                        this.countWait = crtWpn.interval;
+                        this.countReloadWait = 0;
+                        if (this.getAmmoNum() > 0) {
+                            this.setAmmoNum(this.getAmmoNum() - 1);
+                        }
+
+                        if (this.getAmmoNum() <= 0) {
+                            if (prm.isInfinity && this.getRestAllAmmoNum() < this.getAmmoNumMax()) {
+                                this.setRestAllAmmoNum(this.getAmmoNumMax());
+                            }
+
+                            this.reload();
+                            prm.reload = true;
+                        }
+
+                        prm.result = true;
+                    } else {
+                        if (prm.user instanceof EntityPlayer) {
+                            this.lastUsedCount[this.currentWeaponIndex] = crtWpn.interval > 0 ? crtWpn.interval : -crtWpn.interval;
+                            if (crtWpn.isCooldownCountReloadTime() && crtWpn.getReloadCount() - 10 > this.lastUsedCount[this.currentWeaponIndex]) {
+                                this.lastUsedCount[this.currentWeaponIndex] = crtWpn.getReloadCount() - 10;
+                            }
+                        }
+                        this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
+                        this.lastUsedOptionParameter1 = crtWpn.optionParameter1;
+                        this.lastUsedOptionParameter2 = crtWpn.optionParameter2;
+                        prm.result = true;
+                    }
                 }
             }
         }
@@ -540,6 +558,18 @@ public class MCH_WeaponSet {
 
     public int getLastUsedOptionParameter2() {
         return this.lastUsedOptionParameter2;
+    }
+
+    public boolean isDataLinkMode() {
+        return this.dataLinkMode;
+    }
+
+    public void setDataLinkMode(boolean value) {
+        this.dataLinkMode = value;
+    }
+
+    public void toggleDataLinkMode() {
+        this.dataLinkMode = !this.dataLinkMode;
     }
 
     public MCH_WeaponBase getFirstWeapon() {
@@ -580,6 +610,26 @@ public class MCH_WeaponSet {
             return crtWpn.getLandInDistance(prm);
         } else {
             return ret;
+        }
+    }
+
+    public Vec3 getPredictedImpactPoint(MCH_WeaponParam prm) {
+        MCH_WeaponBase crtWpn = this.getCurrentWeapon();
+        if (crtWpn != null && crtWpn.getInfo() != null) {
+            prm.rotYaw = prm.entity != null ? prm.entity.rotationYaw : 0.0F;
+            prm.rotPitch = prm.entity != null ? prm.entity.rotationPitch : 0.0F;
+            prm.rotRoll = prm.entity instanceof mcheli.aircraft.MCH_EntityAircraft ? ((mcheli.aircraft.MCH_EntityAircraft)prm.entity).getRotRoll() : 0.0F;
+            prm.rotYaw += this.rotationYaw + crtWpn.fixRotationYaw;
+            prm.rotPitch += this.rotationPitch + crtWpn.fixRotationPitch;
+            prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
+            prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
+            Vec3 shotPos = crtWpn.getShotPos(prm.entity);
+            prm.posX += shotPos.xCoord;
+            prm.posY += shotPos.yCoord;
+            prm.posZ += shotPos.zCoord;
+            return crtWpn.getPredictedImpactPoint(prm);
+        } else {
+            return null;
         }
     }
 

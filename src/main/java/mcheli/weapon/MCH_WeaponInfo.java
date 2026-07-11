@@ -19,6 +19,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int chemYield = 0;
     public int effectYield = 0;
     public boolean nukeEffectOnly;
+    public boolean enableNuke;
+    public float nukeEffectScale;
+    public boolean enableNukeFlash;
+    public float nukeFlashRadiusFactor;
+    public int nukeFlashDurationMin;
+    public int nukeFlashDurationMax;
     public String displayName;
     public String type;
     public int power;
@@ -67,6 +73,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public boolean destruct;
     public String trajectoryParticleName;
     public int trajectoryParticleStartTick;
+    public int trajectoryParticleEndTick;
     public boolean disableSmoke;
     public MCH_Cartridge cartridge;
     public MCH_Color color;
@@ -91,6 +98,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float recoil;
     public String bulletModelName;
     public MCH_BulletModel bulletModel;
+    public int bulletModelEndTick;
+    public String bulletModelNameEnd;
+    public MCH_BulletModel bulletModelEnd;
     public String bombletModelName;
     public MCH_BulletModel bombletModel;
     public MCH_DamageFactor damageFactor;
@@ -126,6 +136,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 弹药导引头最大导引角度
      */
     public int maxDegreeOfMissile = 60;
+    /**
+     * 初始导引头角度阶段持续时长（tick），0=禁用
+     */
+    public int initMaxDegreeTick = 0;
+    /**
+     * 初始导引头角度阶段使用的导引角度
+     */
+    public int initMaxDegreeOfMissile = 60;
     /**
      * 脱锁延时，-1为永远锁定
      */
@@ -183,6 +201,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 导弹机动参数，越小越平滑，值设为1时为原版导弹机动，推荐值为0.1
      */
     public double turningFactor = 0.5;
+    /**
+     * 初始机动增强阶段持续时长（tick），0=禁用
+     */
+    public int initTurningFactorTick = 0;
+    /**
+     * 初始机动增强阶段使用的机动参数
+     */
+    public double initTurningFactor = 0.5;
 
     /**
      * 启用区块加载器(试验功能)
@@ -193,6 +219,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 主动雷达弹 BVR 发射后自动追踪目标
      */
     public boolean activeRadar = false;
+    /**
+     * 半主动雷达弹（在数据链模式下可关闭其自身搜跟，仅保留运动学）
+     */
+    public boolean semiActiveRadar = false;
 
     /**
      * 主动雷达弹 扫描间隔
@@ -247,6 +277,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      */
     public boolean speedDependsAircraft = false;
     /**
+     * 是否启用CCIP投弹圈
+     */
+    public boolean ccip = false;
+    public String ccipTexture = "CCIP";
+    public float ccipFactor = 1.0F;
+    /**
      * 是否可以锁定导弹实体
      */
     public boolean canLockMissile = false;
@@ -279,6 +315,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float explosionDamageVsHeli = 1f;
     public float explosionDamageVsShip = 1f;
     public boolean explosionThroughWall;
+    public float explosionThroughWallFactor = 1.0f;
+    public boolean isNewExplosionBreak = true;
     /**
      * HBM特效阻止破坏方块
      */
@@ -330,6 +368,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int spawnBulletPerNum = 1;
     public boolean spawnBulletInheritSpeed;
     public boolean destructAfterSpawnBullet;
+    public boolean ahead;
+    public int aheadSolveIntervalTick = 2;
 
     /**
      * 子弹伤害衰减
@@ -346,6 +386,25 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 是否为GPS导弹
      */
     public boolean isGPSMissile = false;
+    /**
+     * GPS导弹弹道模式
+     */
+    public boolean ballisticMissile = false;
+    public double ballisticArcFactor = 0.20D;
+    public double ballisticArcMinHeight = 20.0D;
+    public double ballisticArcMaxHeight = 400.0D;
+    public double ballisticMinDistance = 80.0D;
+    /**
+     * 中段横向正弦机动
+     */
+    public boolean ballisticLateralSine = false;
+    public double ballisticLateralAmplitude = 12.0D;
+    public double ballisticLateralWaves = 1.5D;
+    public double ballisticLateralPhaseDeg = 0.0D;
+    public double ballisticLateralStartRatio = 0.20D;
+    public double ballisticLateralEndRatio = 0.85D;
+    public double ballisticTerminalNoWeaveDist = 80.0D;
+    public double ballisticTerminalCylinderRadius = 40.0D;
 
     /**
      * 霰弹数量
@@ -379,11 +438,42 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 反辐射导弹
      */
     public boolean antiRadiationMissile = false;
+    /**
+     * ARM 丢失辐射源宽限时间（tick）
+     */
+    public int armEmitterLostGraceTick = 10;
+    /**
+     * ARM 记忆导引持续时间（tick）
+     */
+    public int armMemoryTimeTick = 100;
+    /**
+     * ARM 巡航弹道开关
+     */
+    public boolean armCruiseEnable = false;
+    /**
+     * ARM 进入巡航段的最小距离（米）
+     */
+    public double armCruiseStartDistance = 150.0D;
+    /**
+     * ARM 终端段圆柱半径（米）
+     */
+    public double armCruiseTerminalRadius = 50.0D;
+    /**
+     * ARM 终端段圆柱高度（米）
+     */
+    public double armCruiseTerminalHeight = 1024.0D;
 
     /**
      * 半主动弹，需要载机引导才能命中
      */
-    public boolean semiActiveRadar = false;
+    /**
+     * 启用数据链模式（雷达导弹默认开启）
+     */
+    public boolean enableDataLink = false;
+    /**
+     * 仅数据链模式
+     */
+    public boolean onlyDataLink = false;
     /**
      * 是否允许头瞄
      */
@@ -392,7 +482,23 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     /**
      * 弹药在RWR上面显示什么
      */
-    public String nameOnRWR = "*";
+    public String nameOnRWR = "MSL";
+    /**
+     * 武器RCS前向系数（0.01~10）
+     */
+    public float rcsFrontFactor = 1.0F;
+    /**
+     * 武器RCS侧向系数（0.01~10）
+     */
+    public float rcsSideFactor = 1.0F;
+    /**
+     * 武器RCS后向系数（0.01~10）
+     */
+    public float rcsRearFactor = 1.0F;
+    /**
+     * 武器RCS接触保持时间系数（0.01~10）
+     */
+    public float rcsTimeFactor = 1.0F;
 
     /**
      * 多久启用近炸引信，-1永不启用
@@ -408,6 +514,18 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * 近炸高度
      */
     public int proximityFuseHeight = 20;
+    private boolean hasProximityFuseDistSet = false;
+    private boolean hasProximityFuseTickSet = false;
+    private boolean hasProximityFuseHeightSet = false;
+    private boolean hasBombletDiffSet = false;
+    private boolean hasSpawnBulletMaxNumSet = false;
+    private boolean hasSpawnBulletIntervalTickSet = false;
+    private boolean hasSpawnBulletPerNumSet = false;
+    private boolean hasSpawnBulletInheritSpeedSet = false;
+    private boolean hasDestructAfterSpawnBulletSet = false;
+    private boolean hasAheadSolveIntervalTickSet = false;
+    private boolean hasExplosionThroughWallFactorSet = false;
+    private boolean hasEnableDataLinkSet = false;
 
     public boolean isSemiActiveLikePassive() {
         return this.semiActiveRadar || this.passiveRadar;
@@ -455,9 +573,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.heatCount = 0;
         this.maxHeatCount = 0;
         this.bulletModelName = "";
+        this.bulletModelNameEnd = "";
         this.bombletModelName = "";
         this.bulletModel = null;
+        this.bulletModelEnd = null;
         this.bombletModel = null;
+        this.bulletModelEndTick = -1;
         this.isFAE = false;
         this.isGuidedTorpedo = false;
         this.gravity = 0.0F;
@@ -466,6 +587,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.destruct = false;
         this.trajectoryParticleName = "explode";
         this.trajectoryParticleStartTick = 0;
+        this.trajectoryParticleEndTick = -1;
         this.cartridge = null;
         this.disableSmoke = false;
         this.color = new MCH_Color();
@@ -492,14 +614,50 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.cameraRotationSpeedPitch = 1.0F;
         this.nukeYield = 0;
         this.explosionType = "";
+        this.enableNuke = false;
+        this.nukeEffectScale = 1.0F;
+        this.enableNukeFlash = true;
+        this.nukeFlashRadiusFactor = 14.0F;
+        this.nukeFlashDurationMin = 20;
+        this.nukeFlashDurationMax = 80;
+        this.rcsFrontFactor = 1.0F;
+        this.rcsSideFactor = 1.0F;
+        this.rcsRearFactor = 1.0F;
+        this.rcsTimeFactor = 1.0F;
     }
 
     public void checkData() {
         if (this.explosionBlock < 0) {
             this.explosionBlock = this.explosion;
         }
+        if (this.nukeEffectScale < 0.1F) {
+            this.nukeEffectScale = 0.1F;
+        }
+        if (this.nukeFlashRadiusFactor < 1.0F) {
+            this.nukeFlashRadiusFactor = 1.0F;
+        }
+        if (this.nukeFlashDurationMin < 1) {
+            this.nukeFlashDurationMin = 1;
+        }
+        if (this.nukeFlashDurationMax < this.nukeFlashDurationMin) {
+            this.nukeFlashDurationMax = this.nukeFlashDurationMin;
+        }
+        if (!this.hasEnableDataLinkSet && !this.antiRadiationMissile) {
+            if (this.activeRadar || this.passiveRadar || this.semiActiveRadar) {
+                this.enableDataLink = true;
+            } else if ("aamissile".equals(this.type) || "atmissile".equals(this.type)) {
+                if (this.isHeatSeekerMissile && !this.activeRadar && !this.passiveRadar && !this.semiActiveRadar) {
+                    this.enableDataLink = true;
+                }
+            }
+        }
+        if (!this.enableDataLink) {
+            this.onlyDataLink = false;
+        }
 
-        if (this.fixMode >= this.modeNum) {
+        // Only validate against modeNum when modeNum is explicitly configured (>0).
+        // Some weapons (e.g. TV missile) provide mode count in weapon class and may leave modeNum at 0.
+        if (this.modeNum > 0 && this.fixMode >= this.modeNum) {
             this.fixMode = 0;
         }
 
@@ -523,12 +681,111 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.explosionInWater = 0;
         }
 
+        if (this.explosionThroughWall && !this.hasExplosionThroughWallFactorSet) {
+            // Requirement: default through-wall damage factor is 0.5 when through-wall mode is enabled.
+            this.explosionThroughWallFactor = 0.5f;
+        }
+
+        if (this.explosionThroughWallFactor < 0.0f) {
+            this.explosionThroughWallFactor = 0.0f;
+        }
+
         if (this.bomblet > 0 && this.bombletSTime < 1) {
             this.bombletSTime = 1;
         }
 
         if (this.destruct) {
             this.delay = 1000000;
+        }
+
+        if (this.ahead && this.spawnBulletInAir) {
+            this.ahead = false;
+        } else if (this.ahead) {
+            if (!this.hasProximityFuseDistSet) {
+                this.proximityFuseDist = 15.0F;
+            }
+            if (!this.hasProximityFuseTickSet) {
+                this.proximityFuseTick = 5;
+            }
+            if (!this.hasProximityFuseHeightSet) {
+                this.proximityFuseHeight = 30;
+            }
+            if (!this.hasDestructAfterSpawnBulletSet) {
+                this.destructAfterSpawnBullet = true;
+            }
+            if (!this.hasBombletDiffSet) {
+                this.bombletDiff = 1.0F;
+            }
+            if (!this.hasSpawnBulletMaxNumSet) {
+                this.spawnBulletMaxNum = 1;
+            }
+            if (!this.hasSpawnBulletIntervalTickSet) {
+                this.spawnBulletIntervalTick = 1;
+            }
+            if (!this.hasSpawnBulletPerNumSet) {
+                this.spawnBulletPerNum = 10;
+            }
+            if (!this.hasSpawnBulletInheritSpeedSet) {
+                this.spawnBulletInheritSpeed = true;
+            }
+            if (!this.hasAheadSolveIntervalTickSet) {
+                this.aheadSolveIntervalTick = 2;
+            }
+        }
+
+        if (this.spawnBulletIntervalTick < 1) {
+            this.spawnBulletIntervalTick = 1;
+        }
+        if (this.aheadSolveIntervalTick < 1) {
+            this.aheadSolveIntervalTick = 1;
+        }
+        if (this.trajectoryParticleEndTick >= 0 && this.trajectoryParticleEndTick < this.trajectoryParticleStartTick) {
+            this.trajectoryParticleEndTick = this.trajectoryParticleStartTick;
+        }
+        if (this.bulletModelEndTick < -1) {
+            this.bulletModelEndTick = -1;
+        }
+        if (this.ballisticArcFactor < 0.0D) {
+            this.ballisticArcFactor = 0.0D;
+        }
+        if (this.ballisticArcMinHeight < 0.0D) {
+            this.ballisticArcMinHeight = 0.0D;
+        }
+        if (this.ballisticArcMaxHeight < this.ballisticArcMinHeight) {
+            this.ballisticArcMaxHeight = this.ballisticArcMinHeight;
+        }
+        if (this.ballisticMinDistance < 0.0D) {
+            this.ballisticMinDistance = 0.0D;
+        }
+        if (this.ballisticLateralAmplitude < 0.0D) {
+            this.ballisticLateralAmplitude = 0.0D;
+        }
+        if (this.ballisticLateralWaves < 0.0D) {
+            this.ballisticLateralWaves = 0.0D;
+        }
+        this.ballisticLateralStartRatio = Math.max(0.0D, Math.min(1.0D, this.ballisticLateralStartRatio));
+        this.ballisticLateralEndRatio = Math.max(0.0D, Math.min(1.0D, this.ballisticLateralEndRatio));
+        if (this.ballisticLateralEndRatio < this.ballisticLateralStartRatio) {
+            this.ballisticLateralEndRatio = this.ballisticLateralStartRatio;
+        }
+        if (this.ballisticTerminalNoWeaveDist < 0.0D) {
+            this.ballisticTerminalNoWeaveDist = 0.0D;
+        }
+        if (this.ballisticTerminalCylinderRadius < 0.0D) {
+            this.ballisticTerminalCylinderRadius = 0.0D;
+        }
+        if (this.armCruiseStartDistance < 0.0D) {
+            this.armCruiseStartDistance = 0.0D;
+        }
+        if (this.armCruiseTerminalRadius < 0.0D) {
+            this.armCruiseTerminalRadius = 0.0D;
+        }
+        if (this.armCruiseTerminalHeight < 0.0D) {
+            this.armCruiseTerminalHeight = 0.0D;
+        }
+
+        if (!isCCIPSupportedType(this.type)) {
+            this.ccip = false;
         }
 
         this.angle = (float) (Math.atan2(this.radius, this.length) * 180.0D / 3.141592653589793D);
@@ -560,9 +817,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         } else if (item.equalsIgnoreCase("VelocityInWater")) {
             this.velocityInWater = this.toFloat(data);
         } else if (item.equalsIgnoreCase("explosion")) {
-            this.explosion = this.toInt(data, 0, 50);
+            this.explosion = this.toInt(data, 0, 200);
         } else if (item.equalsIgnoreCase("explosionBlock")) {
-            this.explosionBlock = this.toInt(data, 0, 100);
+            this.explosionBlock = this.toInt(data, 0, 200);
         } else if (item.equalsIgnoreCase("explosioninwater")) {
             this.explosionInWater = this.toInt(data, 0, 50);
         } else if (item.equalsIgnoreCase("ExplosionAltitude")) {
@@ -614,8 +871,29 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.effectYield = this.toInt(data, 0, 100000);
             } else if (item.equalsIgnoreCase("NukeEffectOnly")) {
                 this.nukeEffectOnly = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableNuke")) {
+                this.enableNuke = this.toBool(data);
+            } else if (item.equalsIgnoreCase("NukeEffectScale")) {
+                this.nukeEffectScale = this.toFloat(data, 0.1F, 10.0F);
+            } else if (item.equalsIgnoreCase("EnableNukeFlash")) {
+                this.enableNukeFlash = this.toBool(data);
+            } else if (item.equalsIgnoreCase("NukeFlashRadiusFactor")) {
+                this.nukeFlashRadiusFactor = this.toFloat(data, 1.0F, 100.0F);
+            } else if (item.equalsIgnoreCase("NukeFlashDurationMin")) {
+                this.nukeFlashDurationMin = this.toInt(data, 1, 400);
+            } else if (item.equalsIgnoreCase("NukeFlashDurationMax")) {
+                this.nukeFlashDurationMax = this.toInt(data, 1, 400);
             } else if (item.equalsIgnoreCase("MaxDegreeOfMissile")) {
                 this.maxDegreeOfMissile = this.toInt(data, 0, 100000);
+            } else if (item.equalsIgnoreCase("InitMaxDegreeOfMissile")) {
+                s = this.splitParam(data);
+                if (s.length >= 2) {
+                    this.initMaxDegreeTick = this.toInt(s[0], 0, 100000);
+                    this.initMaxDegreeOfMissile = this.toInt(s[1], 0, 100000);
+                } else {
+                    this.initMaxDegreeTick = 0;
+                    this.initMaxDegreeOfMissile = this.maxDegreeOfMissile;
+                }
             } else if (item.equalsIgnoreCase("TickEndHoming")) {
                 this.tickEndHoming = this.toInt(data, -1, 100000);
             } else if (item.equalsIgnoreCase("FlakParticlesCrack")) {
@@ -654,6 +932,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.enableOffAxis = this.toBool(data);
             } else if (item.equalsIgnoreCase("TurningFactor") || item.equalsIgnoreCase("LaserStartDistance")) {
                 this.turningFactor = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("InitTurningFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 2) {
+                    this.initTurningFactorTick = this.toInt(s[0], 0, 100000);
+                    this.initTurningFactor = this.toDouble(s[1]);
+                } else {
+                    this.initTurningFactorTick = 0;
+                    this.initTurningFactor = this.turningFactor;
+                }
             } else if (item.equalsIgnoreCase("EnableChunkLoader")) {
                 this.enableChunkLoader = this.toBool(data);
             } else if (item.equalsIgnoreCase("ScanInterval")) {
@@ -680,6 +967,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.speedFactorEndTick = this.toInt(data);
             } else if (item.equalsIgnoreCase("SpeedDependsAircraft")) {
                 this.speedDependsAircraft = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CCIP")) {
+                this.ccip = this.toBool(data);
+            } else if (item.equalsIgnoreCase("CCIPtexture")) {
+                this.ccipTexture = data.trim();
+            } else if (item.equalsIgnoreCase("CCIPFactor")) {
+                this.ccipFactor = this.toFloat(data, 0.1F, 10.0F);
             } else if (item.equalsIgnoreCase("CanLockMissile")) {
                 this.canLockMissile = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableBVR")) {
@@ -712,6 +1005,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.explosionDamageVsShip = this.toFloat(data);
             } else if (item.equalsIgnoreCase("ExplosionThroughWall")) {
                 this.explosionThroughWall = this.toBool(data);
+            } else if (item.equalsIgnoreCase("ExplosionThroughWallFactor")) {
+                this.explosionThroughWallFactor = this.toFloat(data, 0.0F, 1.0F);
+                this.hasExplosionThroughWallFactorSet = true;
+            } else if (item.equalsIgnoreCase("IsNewExplosionBreak")) {
+                this.isNewExplosionBreak = this.toBool(data);
             } else if (item.equalsIgnoreCase("DisableDestroyBlock")) {
                 this.disableDestroyBlock = this.toBool(data);
             } else if (item.equalsIgnoreCase("IsBunkerBuster")) {
@@ -744,14 +1042,24 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.spawnBulletInAir = this.toBool(data);
             } else if (item.equalsIgnoreCase("SpawnBulletMaxNum")) {
                 this.spawnBulletMaxNum = this.toInt(data);
+                this.hasSpawnBulletMaxNumSet = true;
             } else if (item.equalsIgnoreCase("SpawnBulletIntervalTick")) {
                 this.spawnBulletIntervalTick = this.toInt(data);
+                this.hasSpawnBulletIntervalTickSet = true;
             } else if (item.equalsIgnoreCase("SpawnBulletPerNum")) {
                 this.spawnBulletPerNum = this.toInt(data);
+                this.hasSpawnBulletPerNumSet = true;
             } else if (item.equalsIgnoreCase("SpawnBulletInheritSpeed")) {
                 this.spawnBulletInheritSpeed = this.toBool(data);
+                this.hasSpawnBulletInheritSpeedSet = true;
             } else if (item.equalsIgnoreCase("DestructAfterSpawnBullet")) {
                 this.destructAfterSpawnBullet = this.toBool(data);
+                this.hasDestructAfterSpawnBulletSet = true;
+            } else if (item.equalsIgnoreCase("AHEAD")) {
+                this.ahead = this.toBool(data);
+            } else if (item.equalsIgnoreCase("AheadSolveIntervalTick")) {
+                this.aheadSolveIntervalTick = this.toInt(data);
+                this.hasAheadSolveIntervalTickSet = true;
             } else if (item.equalsIgnoreCase("AddPotionEffect")) {
                 String[] split = data.split("\\s*,\\s*");
                 int potionID = Integer.parseInt(split[0]);
@@ -773,6 +1081,32 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.enableBulletDecay = true;
             } else if (item.equalsIgnoreCase("IsGPSMissile")) {
                 this.isGPSMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticMissile")) {
+                this.ballisticMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticArcFactor")) {
+                this.ballisticArcFactor = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticArcMinHeight")) {
+                this.ballisticArcMinHeight = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticArcMaxHeight")) {
+                this.ballisticArcMaxHeight = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticMinDistance")) {
+                this.ballisticMinDistance = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralSine")) {
+                this.ballisticLateralSine = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralAmplitude")) {
+                this.ballisticLateralAmplitude = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralWaves")) {
+                this.ballisticLateralWaves = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralPhaseDeg")) {
+                this.ballisticLateralPhaseDeg = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralStartRatio")) {
+                this.ballisticLateralStartRatio = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticLateralEndRatio")) {
+                this.ballisticLateralEndRatio = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticTerminalNoWeaveDist")) {
+                this.ballisticTerminalNoWeaveDist = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("BallisticTerminalCylinderRadius")) {
+                this.ballisticTerminalCylinderRadius = this.toDouble(data);
             } else if (item.equalsIgnoreCase("Canister")) {
                 this.canister = this.toInt(data);
             } else if (item.equalsIgnoreCase("CanisterType")) {
@@ -787,19 +1121,54 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.cameraFollowStrength = this.toFloat(data);
             } else if (item.equalsIgnoreCase("AntiRadiationMissile")) {
                 this.antiRadiationMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("ArmEmitterLostGraceTick")) {
+                this.armEmitterLostGraceTick = this.toInt(data, 0, 10000);
+            } else if (item.equalsIgnoreCase("ArmMemoryTimeTick")) {
+                this.armMemoryTimeTick = this.toInt(data, 0, 10000);
+            } else if (item.equalsIgnoreCase("ArmCruiseEnable")) {
+                this.armCruiseEnable = this.toBool(data);
+            } else if (item.equalsIgnoreCase("ArmCruiseStartDistance")) {
+                this.armCruiseStartDistance = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("ArmCruiseTerminalRadius")) {
+                this.armCruiseTerminalRadius = this.toDouble(data);
+            } else if (item.equalsIgnoreCase("ArmCruiseTerminalHeight")) {
+                this.armCruiseTerminalHeight = this.toDouble(data);
             } else if (item.equalsIgnoreCase("SemiActiveRadar")) {
                 this.semiActiveRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableDataLink")) {
+                this.enableDataLink = this.toBool(data);
+                this.hasEnableDataLinkSet = true;
+            } else if (item.equalsIgnoreCase("OnlyDataLink")) {
+                this.onlyDataLink = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableHMS")) {
                 this.enableHMS = this.toBool(data);
             } else if (item.equalsIgnoreCase("NameOnRWR")) {
                 String name = data.trim();
                 this.nameOnRWR = "NULL".equals(name) ? "" : name;
+            } else if (item.equalsIgnoreCase("RCSFactor")) {
+                s = this.splitParam(data);
+                if (s.length >= 1) {
+                    this.rcsFrontFactor = this.toFloat(s[0], 0.01F, 10.0F);
+                }
+                if (s.length >= 2) {
+                    this.rcsSideFactor = this.toFloat(s[1], 0.01F, 10.0F);
+                }
+                if (s.length >= 3) {
+                    this.rcsRearFactor = this.toFloat(s[2], 0.01F, 10.0F);
+                }
+                if (s.length >= 4) {
+                    this.rcsTimeFactor = this.toFloat(s[3], 0.01F, 10.0F);
+                }
+            } else if (item.equalsIgnoreCase("RCSTimeFactor")) {
+                this.rcsTimeFactor = this.toFloat(data, 0.01F, 10.0F);
             } else if (item.equalsIgnoreCase("ProximityFuseTick")) {
                 this.proximityFuseTick = this.toInt(data);
+                this.hasProximityFuseTickSet = true;
             } else if (item.equalsIgnoreCase("ProximityFuseDamage")) {
                 this.proximityFuseDamage = this.toFloat(data);
             } else if (item.equalsIgnoreCase("ProximityFuseHeight")) {
                 this.proximityFuseHeight = this.toInt(data);
+                this.hasProximityFuseHeightSet = true;
             } else if (item.equalsIgnoreCase("DamageFactor")) {
                 s = this.splitParam(data);
                 if (s.length >= 2) {
@@ -865,6 +1234,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     this.ridableOnly = this.toBool(data);
                 } else if (item.compareTo("proximityfusedist") == 0) {
                     this.proximityFuseDist = this.toFloat(data, 0.0F, 2000.0F);
+                    this.hasProximityFuseDistSet = true;
                 } else if (item.equalsIgnoreCase("RigidityTime")) {
                     this.rigidityTime = this.toInt(data, 0, 1000000);
                 } else if (item.compareTo("accuracy") == 0) {
@@ -875,6 +1245,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     this.bombletSTime = this.toInt(data, 0, 1000);
                 } else if (item.equalsIgnoreCase("BombletDiff")) {
                     this.bombletDiff = this.toFloat(data, 0.0F, 1000.0F);
+                    this.hasBombletDiffSet = true;
                 } else if (item.equalsIgnoreCase("RecoilBufCount")) {
                     s = this.splitParam(data);
                     if (s.length >= 1) {
@@ -934,6 +1305,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     }
                 } else if (item.equalsIgnoreCase("TrajectoryParticleStartTick")) {
                     this.trajectoryParticleStartTick = this.toInt(data, 0, 10000);
+                } else if (item.equalsIgnoreCase("TrajectoryParticleEndTick")) {
+                    this.trajectoryParticleEndTick = this.toInt(data, -1, 10000);
                 } else if (item.equalsIgnoreCase("DisableSmoke")) {
                     this.disableSmoke = this.toBool(data);
                 } else {
@@ -948,6 +1321,12 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                             float gr = s.length >= 6 ? this.toFloat(s[5]) : -0.04F;
                             float bo = s.length >= 7 ? this.toFloat(s[6]) : 0.5F;
                             this.cartridge = new MCH_Cartridge(s[0].toLowerCase(), var10, var11, pt, bo, gr, sc);
+                        }
+                    } else if (item.equalsIgnoreCase("ModelBulletEndTick")) {
+                        s = this.splitParam(data);
+                        if (s.length >= 2) {
+                            this.bulletModelEndTick = this.toInt(s[0], -1, 1000000);
+                            this.bulletModelNameEnd = s[1].toLowerCase().trim();
                         }
                     } else if (!item.equalsIgnoreCase("BulletColorInWater") && !item.equalsIgnoreCase("BulletColor") && !item.equalsIgnoreCase("SmokeColor")) {
                         if (item.equalsIgnoreCase("SmokeSize")) {
@@ -1010,6 +1389,27 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         return this.damageFactor != null ? this.damageFactor.getDamageFactor(e) : 1.0F;
     }
 
+    public double getEffectiveMaxDegreeOfMissile(int missileTick) {
+        if (this.initMaxDegreeTick > 0 && missileTick >= 0 && missileTick <= this.initMaxDegreeTick) {
+            return this.initMaxDegreeOfMissile;
+        }
+        return this.maxDegreeOfMissile;
+    }
+
+    public double getEffectiveTurningFactor(int missileTick) {
+        if (this.initTurningFactorTick > 0 && missileTick >= 0 && missileTick <= this.initTurningFactorTick) {
+            return this.initTurningFactor;
+        }
+        return this.turningFactor;
+    }
+
+    public double getHudPreferredMissileFovDeg() {
+        if (this.initMaxDegreeTick > 0) {
+            return this.initMaxDegreeOfMissile;
+        }
+        return this.maxDegreeOfMissile;
+    }
+
     public String getWeaponTypeName() {
         switch (this.type.toLowerCase()) {
             case "machinegun1":
@@ -1055,6 +1455,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
 
     public float getRecoilYaw() {
         return this.recoilYaw + ((rand.nextFloat() - 0.5F) * this.recoilYawRange);
+    }
+
+    private boolean isCCIPSupportedType(String type) {
+        if (type == null) {
+            return false;
+        }
+        return type.equalsIgnoreCase("rocket")
+            || type.equalsIgnoreCase("atmissile")
+            || type.equalsIgnoreCase("tvmissile");
     }
 
     public class RoundItem {

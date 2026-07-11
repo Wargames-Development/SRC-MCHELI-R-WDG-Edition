@@ -9,6 +9,7 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.network.packets.PacketEntityInfoSync;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.weapon.MCH_IEntityLockChecker;
+import mcheli.weapon.MCH_IMissile;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
 import net.minecraft.entity.player.EntityPlayer;
@@ -49,7 +50,7 @@ public class MCH_EntityInfoManager {
             List<Entity> loaded = world.loadedEntityList;
             for (Entity entity : loaded) {
                 if (shouldTrack(world, entity)) {
-                    serverEntities.put(entity.getEntityId(), MCH_EntityInfo.createInfo(entity));
+                    serverEntities.put(entity.getEntityId(), MCH_EntityInfo.createInfo(entity, world.getTotalWorldTime()));
                 }
             }
         }
@@ -90,12 +91,10 @@ public class MCH_EntityInfoManager {
         if (entity.isDead) {
             return false;
         }
-        if (MCH_FMURUtil.isSoldier(entity) || entity instanceof EntityPlayer || entity instanceof MCH_IEntityLockChecker) {
+        // Track missiles explicitly to keep radar contacts synced even if lock-checker paths change.
+        if (MCH_FMURUtil.isSoldier(entity) || entity instanceof EntityPlayer || entity instanceof MCH_IEntityLockChecker || entity instanceof MCH_IMissile) {
             if (entity instanceof MCP_EntityPlane || entity instanceof MCH_EntityHeli || entity instanceof MCH_EntityChaff) {
-                if (!isShip(entity) && entity.posY - w.getHeightValue((int) entity.posX, (int) entity.posZ) < 30) {
-                    return false;
-                }
-                if (!isShip(entity) && entity.motionX * entity.motionX + entity.motionY * entity.motionY + entity.motionZ * entity.motionZ < 0.5 * 0.5) {
+                if (!isShip(entity) && entity.posY - w.getHeightValue((int) entity.posX, (int) entity.posZ) < 0) {
                     return false;
                 }
             }

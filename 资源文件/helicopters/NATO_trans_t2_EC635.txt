@@ -1,0 +1,100 @@
+﻿DisplayName = EC635
+AddDisplayName = zh_CN,EC635
+AddDisplayName = en_US,EC635
+ItemID = 28801
+MaxHp = 350
+EnableNightVision = true
+Speed = 2
+ThrottleUpDown = 5
+FlareType = 3
+MaxFuel         = 1200
+FuelConsumption = 1.0
+ThirdPersonDist = 12
+damagefactor =0.0
+CameraPosition = 0.0, 0.0, 0.0
+
+; M = Military(軍用機).  A = Attacker(攻撃機)
+Category = M.A
+
+HUD = HELI, HELI_GUNNER,TRANS_PASSENGER,TRANS_PASSENGER,TRANS_PASSENGER,TRANS_PASSENGER
+
+
+Gravity = -0.038
+
+DamageFactor = 0.00
+
+MinRotationPitch = -85
+MaxRotationPitch =  90
+
+
+ArmorMinDamage = 12
+
+
+AddRotor = 1,0,  -0.0000486,  4.358,  0.9234,  0.0, 1.0, 0.0
+AddRotor = 1,0,  0,  2.388, -6.761,  1.0, 0.0, 0.0
+
+
+AddPartSteeringWheel =  0.4721,1.04,3.322, 0, 0, 1,   -20
+AddPartSteeringWheel =  -0.4721,1.04,3.322, 0, 0, 1,   -20
+
+
+
+
+AddSeat =0.4580,  1.245,  2.979
+AddGunnerSeat = -0.4580,  1.245,  2.979,1.17, 0.2783, 3.395,  true
+AddSeat =1.85,  1.028,  0.5719
+AddSeat =-1.85,  1.028,  0.5719
+
+
+
+AddPartWeapon = Heli_MissileStrike    true,  true, false,   1.17, 0.4850, 3.395
+
+AddWeapon = HELI_EC635_2X30MM, -1.858, 0.50, 1.7,   -0.3, 0.0
+AddWeapon = HELI_EC635_2X30MM,  1.858, 0.50, 1.7,  0.3, 0.0
+AddWeapon = HELI_EC635_AAM_IRM, -2.6, 0.6631, 1.15,   -0.5, 0.0
+AddWeapon = HELI_EC635_AAM_IRM, -2.6, 0.6631, 1.15,   -0.5, 0.0
+
+
+NameOnAdvancedAARadar = 635
+NameOnModernAARadar = 635
+NameOnEarlyAARadar = HELI
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+RadarType = EARLY_AA
+
+
+AddWeapon = GUNNER_MARK,          0.00,150.00, -0.00,  0.0, -80.0, false,2, 0,-360,360, -180, 180
+AddWeapon = Heli_EC635_GUNNER_MissileStrike,          0.00,150.00, 0,  0.0, -80.0, false,2, 0,-360,360, -180, 180
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 250
+
+hasMaintenance=true
+
+
+
+engineShutdownThreshold = 0
+
+explosionsizebycrash=10
+
+ ;AddRecipe = " Y ",  "YXY",  " Y ",  X, iron_block, Y, iron_ingot
+
+BoundingBox =  0.0, 1.65, 1.93,  3, 3
+BoundingBox =  0.0, 1.65, -1.06,  3, 3
+BoundingBox =  0.0, 2.08, -4.04,  3, 1
+BoundingBox =  0.0, 2.08, -8.0,  1.5, 2, 1.2
+BoundingBox =  0.0, 4.31, 0.00665,  7, 0.2, 1.2
+
+enablerwr=true
+
+EnableParachuting = true
+; 启用跳伞功能（仅限第3席及之后玩家按空格跳伞）
+MobDropOption  = 2.0, 0.0, -2.5,  10
+; 乘员投放设置 = 投放点X,Y,Z, 投放间隔（1/20秒）
+
+
+;驾驶位cross_type0_9:rocket，zuni，rocket_arm，aam_irm，irm，arm，laserm，losm，bomb，connon，AAM_sarh
+;weapon_group_type: 0:connon/losm;1:connon/laserm;2:rocket/aam_IRM;3:connon/bomb;4:ZUNI/IRM;5:ZUNI/ARM;6:ROCKET_ARM/AAM_IRM;7:ROCKET_ARM/LOSM;8,CONNON/IRM;9,CONNON/AAM_IRM;10,ROCKET/AAM_SARH
+weapongrouptype=9
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

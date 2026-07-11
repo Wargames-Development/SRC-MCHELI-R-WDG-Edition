@@ -2,11 +2,17 @@ package mcheli;
 
 import com.flansmod.common.guns.EntityDamageSourceFlans;
 import com.flansmod.common.mob.EntitySoldier;
+import com.flansmod.common.mob.EnumFaction;
+import com.flansmod.common.mob.SoldierType;
+import com.flansmod.common.mob.api.SoldierAPI;
+import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.aircraft.MCH_EntitySeat;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.DamageSource;
+import net.minecraft.world.World;
 
 import java.lang.reflect.Method;
 
@@ -15,6 +21,10 @@ public class MCH_FMURUtil {
     private static boolean isFMURLoaded;
     private static Class<?> FMUR_APIClass;
     private static Class<?> FMUR_SoldierAPIClass;
+
+    public static boolean isFMURLoaded() {
+        return isFMURLoaded;
+    }
 
     static {
         try {
@@ -131,5 +141,59 @@ public class MCH_FMURUtil {
         return false;
     }
 
+    public static void spawnAiSoldierOnAircraft(World world, Entity aircraft, Team team) {
+        if (!isFMURLoaded) return;
+        if (world == null || world.isRemote) return;
+        if (aircraft == null || aircraft.isDead) return;
+        if (!(aircraft instanceof MCH_EntityAircraft)) return;
+
+        MCH_EntityAircraft ac = (MCH_EntityAircraft) aircraft;
+        MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] called for aircraft id=%d", ac.getEntityId());
+
+        MCH_EntitySeat targetSeat = null;
+        MCH_EntitySeat[] seats = ac.getSeats();
+        MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] seats=%s length=%d", seats != null ? "non-null" : "null", seats != null ? seats.length : -1);
+        if (seats != null) {
+            for (int i = 0; i < seats.length; i++) {
+                MCH_EntitySeat seat = seats[i];
+                if (seat == null) {
+                    MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] seat[%d] is null", i);
+                    continue;
+                }
+                MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] seat[%d]: seatID=%d isDead=%s ridden=%s", i, seat.seatID,
+                    String.valueOf(seat.isDead), seat.riddenByEntity != null ? seat.riddenByEntity.getClass().getSimpleName() : "null");
+                if (!seat.isDead && seat.riddenByEntity == null) {
+                    targetSeat = seat;
+                    break;
+                }
+            }
+        }
+        if (targetSeat == null) {
+            MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] No empty seat found, aborting");
+            return;
+        }
+
+        MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] Spawning AI soldier on seat[%d](seatEntityId=%d)", targetSeat.seatID, targetSeat.getEntityId());
+        EntitySoldier soldier = new EntitySoldier(
+            world,
+            targetSeat.posX, targetSeat.posY, targetSeat.posZ,
+            null,
+            team,
+            EnumFaction.ASS,
+            SoldierType.randomType(),
+            null,
+            null,
+            null,
+            "APC_Gunner_AI"
+        );
+        soldier.setInvisible(true);
+        world.spawnEntityInWorld(soldier);
+        MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] EntitySoldier spawned id=%d", soldier.getEntityId());
+        soldier.mountEntity(targetSeat);
+        MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] Soldier mounted on seat, seat.riddenByEntity=%s",
+            targetSeat.riddenByEntity != null ? targetSeat.riddenByEntity.getClass().getSimpleName() : "null");
+        SoldierAPI.soldierMap.put(soldier.getEntityId(), soldier);
+        MCH_FmurDebug.log(aircraft, "[spawnAiSoldierOnAircraft] Done, soldierMap.size=%d", SoldierAPI.soldierMap.size());
+    }
 
 }

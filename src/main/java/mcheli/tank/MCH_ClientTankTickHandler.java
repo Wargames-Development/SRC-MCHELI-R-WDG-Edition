@@ -32,7 +32,7 @@ public class MCH_ClientTankTickHandler extends MCH_AircraftClientTickHandler {
         super.updateKeybind(config);
         this.KeySwitchMode = new MCH_Key(MCH_Config.KeySwitchMode.prmInt);
         this.KeyZoom = new MCH_Key(MCH_Config.KeyZoom.prmInt);
-        this.Keys = new MCH_Key[]{super.KeyUp, super.KeyDown, super.KeyRight, super.KeyLeft, this.KeySwitchMode, super.KeyUseWeapon, super.KeyCurrentWeaponLock, super.KeySwWeaponMode, super.KeySwitchWeapon1, super.KeySwitchWeapon2, this.KeyZoom, super.KeyCameraMode, super.KeyUnmount, super.KeyUnmountForce, super.KeyFlare, super.KeyChaff, super.KeyMaintenance, super.KeyAPS, super.KeyECMJammer, super.KeyAirburstDistReset, super.KeyExtra, super.KeyFreeLook, super.KeyGUI, super.KeyGearUpDown, super.KeyBrake, super.KeyPutToRack, super.KeyDownFromRack};
+        this.Keys = new MCH_Key[]{super.KeyUp, super.KeyDown, super.KeyRight, super.KeyLeft, this.KeySwitchMode, super.KeyUseWeapon, super.KeyCurrentWeaponLock, super.KeySwWeaponMode, super.KeySwitchWeapon1, super.KeySwitchWeapon2, this.KeyZoom, super.KeyCameraMode, super.KeyUnmount, super.KeyUnmountForce, super.KeyFlare, super.KeyChaff, super.KeyMaintenance, super.KeyAPS, super.KeyECMJammer, super.KeyAirburstDistReset, super.KeyOpenGPSPanel, super.KeyFireControlLock, super.KeyRadarSwitch, super.KeyExtra, super.KeyFreeLook, super.KeyGUI, super.KeyGearUpDown, super.KeyBrake, super.KeyPutToRack, super.KeyDownFromRack};
     }
 
     protected void update(EntityPlayer player, MCH_EntityTank tank) {
@@ -90,7 +90,16 @@ public class MCH_ClientTankTickHandler extends MCH_AircraftClientTickHandler {
             }
 
             boolean hideHand = true;
-            if ((!var9 || !var8.isAlwaysCameraView()) && !var8.getIsGunnerMode(var7) && var8.getCameraId() <= 0) {
+            boolean ridingTankBody = var7.ridingEntity instanceof MCH_EntityTank;
+            boolean ridingTankSeatAsPilot = false;
+            if (var7.ridingEntity instanceof MCH_EntitySeat) {
+                MCH_EntitySeat seat = (MCH_EntitySeat)var7.ridingEntity;
+                ridingTankSeatAsPilot = seat.getParent() == var8 && (seat.seatID == 0 || var8.getSeatIdByEntity(var7) == 0);
+            }
+            boolean useBodyFollowCamera = (ridingTankBody || ridingTankSeatAsPilot) && !var8.getIsGunnerMode(var7);
+            if (useBodyFollowCamera) {
+                MCH_Lib.setRenderViewEntity(var12);
+            } else if ((!var9 || !var8.isAlwaysCameraView()) && !var8.getIsGunnerMode(var7) && var8.getCameraId() <= 0) {
                 MCH_Lib.setRenderViewEntity(var7);
                 if (!var9 && var8.getCurrentWeaponID(var7) < 0) {
                     hideHand = false;

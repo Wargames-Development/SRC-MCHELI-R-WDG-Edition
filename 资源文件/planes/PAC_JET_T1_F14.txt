@@ -1,0 +1,214 @@
+DisplayName = F-14A IRIAF
+AddDisplayName = zh_CN,F-14A (伊朗空军)
+AddDisplayName = en_US,F-14A IRIAF
+MaxHp = 400
+ArmorMinDamage = 12
+
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+
+AddPartWing =   0, 1.999, -7.922,  1, 0,0, 40
+AddPartWing =   0, 1.647, -7.715,  1, 0,0, -40
+
+Speed = 3.0
+
+FlareType = 4
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+EnableGunnerMode = true
+MaxFuel         = 28000
+FuelConsumption = 20
+; M = Military(軍用機).  F = Fighter(戦闘機)
+Category = M.F
+DamageFactor = 0.0
+HUD = JET, su34_gnr
+ThrottleUpDown = 0.9
+ThirdPersonDist = 25
+
+MobilityYaw = 0.93
+
+MobilityRoll = 1.5
+MobilityPitch = 0.93
+
+CameraPosition = 0.0, 0.0, 0
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+
+AddSeat 	=  0.04,  2.00,  5.531
+
+
+
+;AddPartNozzle =  0.6871, 2.268, -12.16, -1,0,0
+;AddPartNozzle = -0.6871, 2.268, -12.16, -1,0,0
+
+AddPartWeaponMissile = JET_F14IRIAF_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F14IRIAF_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F14IRIAF_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F14IRIAF_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+
+AddPartWeaponMissile = US_AIM9P,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile =US_AIM9P,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = JET_F14IRIAF_AAM_SARH,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile =JET_F14IRIAF_AAM_SARH,   false, false, false,  -0.297,  0.518, -8.699
+
+
+;前起落架
+AddPartLG =  0, 1.945, 4.818,  0,0,0,90
+AddPartLGRev = 0.3629, 1.27, 5.332,  0,0,1,95
+AddPartLGRev = -0.3629, 1.27, 5.332,  0,0,1,-95
+AddPartLGRev =  0, 1.328, 3.385,  1,0,0,-35
+
+AddPartLG =  1.9, 2.3, -3.13,  0,0,0,90
+AddPartLGRev = 2.925, 2.22, -0.3719,  0,0,1,45
+
+AddPartLG =  -1.9, 2.3, -3.13,  0,0,0,90
+AddPartLGRev = -2.925, 2.22, -0.3719,  0,0,1,-45
+
+
+AddPartSteeringWheel =  0.03789,2.327,6.004, 0, 0, 1,   -20
+AddPartSteeringWheel =  1.563, 2.385, -8.613, 0.0, -1.0, 0.337, 15
+AddPartSteeringWheel =  -1.599, 2.397, -8.602, 0.0, -1.0, 0.337, 15
+
+AddPartSteeringWheel =  2.9, 1.756,-7.951, 1, 0, 0.0,   -15
+AddPartSteeringWheel =  -2.9, 1.756,-7.951,  -1, 0, 0.0,   -15
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.25
+AddPartThrottle = 3.371, 2.579, -1.692,  0, 1, 0, 45
+AddPartThrottle = -3.353, 2.604, -1.668,  0, -1, 0, 45
+
+
+
+
+AddWeapon = JET_F14_20MM_AA,  0.7,  1.58,  7.74,  0.0,  0.0
+AddWeapon = JET_F14IRIAF_AAM_SARH,     4.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F14IRIAF_AAM_SARH,     -4.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F14IRIAF_AAM_ARM,     2.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F14IRIAF_AAM_ARM,     -2.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F14IRIAF_AAM_ARM,     2.232,  1.758, -7.699,  0,-0.0
+AddWeapon = JET_F14IRIAF_AAM_ARM,     -2.232,  1.758, -7.699,  0,-0.0
+
+
+
+
+
+AddPartCanopy =  0.00, 3.292, 2.149,  -1,0,0,  40
+AddPartCanopy =  0.00, 3.903, -2.891,  -1,0,0,  0
+
+BoundingBox =  0.00, 2.40, 7.5,  3.0, 3.5
+BoundingBox =  0.00, 1.90, 3.0,  4.9, 3.2
+BoundingBox =  0.00, 1.90, -1.80, 5.0, 3.2
+BoundingBox =  0.00, 1.90, -5.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -3.50,  5.0, 1.4
+BoundingBox =  4.2, 2.20, -3.50,  5.0, 1.4
+BoundingBox =  0.00, 2.20, -7.3,  3.5, 2.0,1.5
+EntityWidth  = 0.70
+EntityHeight = 0.70
+
+
+AddTurretWeapon = AESA,   -0.846, 3.68,  0.373,   0.0, 0.0, false, 2, 0, -360,360, -70,10
+
+NameOnAdvancedAARadar = F14A
+NameOnModernAARadar = F14A
+NameOnEarlyAARadar = F14
+NameOnModernASRadar = AI
+NameOnEarlyASRadar = ?
+RadarType = EARLY_AA
+
+motionfactor=0.955
+
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 250
+
+hasMaintenance=true
+
+
+
+engineShutdownThreshold = 0
+
+explosionsizebycrash=10
+Gravity = -0.038
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+weapongrouptype=2
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+enablerwr=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+
+
+
+
+MobilityPitch = 1.00
+MobilityRoll  = 2.39
+MobilityYaw   = 0.60
+MotionFactor = 0.968
+
+
+
+
+
+MobilityPitch = 1.00
+MobilityRoll  = 2.39
+MobilityYaw   = 0.60
+MotionFactor = 0.968
+
+AddExhaustFlame = BIG_Exhaustflame, Exhaustflame_red, 1.576, 1.584, -8, -1, 0, 0, 0, 1
+AddExhaustFlame = BIG_Exhaustflame, Exhaustflame_red, -1.576, 1.584, -8, -1, 0, 0, 0, 1
+
+
+enableRadar=true
+RadarScanElevationDeg =120
+;俯仰扫描扇区总角度
+;范围=0~180（0=不扫描，180=上下全域）
+;默认值=40
+
+RadarFollowTurretYaw = false
+;是否让雷达水平正方向跟随坦克炮塔转向（仅坦克生效）
+;可选值=true|false
+;默认值：坦克=true，其它载具=false
+
+RadarElevationReference = AIRCRAFT
+;俯仰扫描参考系
+;可选值=HORIZON|AIRCRAFT
+;HORIZON=按平飞水平面计算（推荐地面载具）
+;AIRCRAFT=按机体当前姿态计算（推荐战斗机）
+;默认值=HORIZON
+
+RadarPanelFillAlpha=0.075
+
+RadarElevationCoverage = FULL
+;俯仰扫描覆盖模式
+;可选值=UP_ONLY|FULL
+;UP_ONLY=仅上视扫描（不下视）
+;FULL=全域扫描（上+下）
+;默认值=UP_ONLY
+RadarScanAzimuthDeg=120
+;水平扫描范围
+RadarScanTick=80
+;每多少 tick 扫一次
+RadarDetectChanceBase=0.7
+;基础命中概率
+RadarContactHoldTick=90
+;命中后显示保持时长
+RadarMaxTargetRange =800
+;最大显示距离
+
+RadarTrackAzimuthDeg=120
+;雷达跟踪最大水平角度
+;建议不超过RadarScanAzimuthDeg
+;默认值=90
+RadarTrackElevationDeg=120
+;雷达跟踪最大俯仰角度
+RadarSearchType=SRC
+enableBVR=true
+
+NameOnRWR=F14

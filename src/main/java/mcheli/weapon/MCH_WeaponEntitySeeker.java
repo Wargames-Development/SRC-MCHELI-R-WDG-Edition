@@ -33,16 +33,20 @@ public abstract class MCH_WeaponEntitySeeker extends MCH_WeaponBase {
     }
 
     public static List<MCH_EntityBaseBullet> getShootBullets(World worldObj, Entity user, int range) {
+        // Expand range to at least 4000 to cover cross-chunk missiles.
+        int r = Math.max(range, 4000);
         List list = worldObj.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, AxisAlignedBB.getBoundingBox(
-            user.posX - range, user.posY - range, user.posZ - range,
-            user.posX + range, user.posY + range, user.posZ + range
+            user.posX - r, user.posY - r, user.posZ - r,
+            user.posX + r, user.posY + r, user.posZ + r
         ));
         List<MCH_EntityBaseBullet> result = new ArrayList<>();
         if (list != null) {
             for (Object o : list) {
                 if (o != null) {
                     MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
-                    if (!msl.isDead && msl.getInfo() != null && msl.getInfo().passiveRadar) {
+                    // Check if the missile belongs to this user.
+                    if (!msl.isDead && msl.getInfo() != null && msl.shootingEntity != null && msl.shootingEntity.getEntityId() == user.getEntityId()
+                        && (msl.getInfo().passiveRadar || msl.getInfo().semiActiveRadar || msl.getInfo().activeRadar)) {
                         result.add(msl);
                     }
                 }

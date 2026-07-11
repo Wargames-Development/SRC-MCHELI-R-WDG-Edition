@@ -19,11 +19,11 @@ public class MCH_EntityInfoClientTracker {
     /**
      * 可调：心跳缺席的毫秒阈值（例如 5s）
      */
-    public static long EXPIRATION_MS = 4_000L;
+    public static long EXPIRATION_MS = 3_000L;
     /**
      * 可调：心跳缺席的序号阈值（以服务器 tick 计数，20TPS 下 100≈5s）
      */
-    public static long MISSING_SEQ_THRESHOLD = 20L;
+    public static long MISSING_SEQ_THRESHOLD = 60L;
     /**
      * 可调：清理扫描的 Tick 周期（例如每 10 个客户端 Tick 扫描一次）
      */

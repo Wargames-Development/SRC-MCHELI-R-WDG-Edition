@@ -1,0 +1,167 @@
+DisplayName = M2A4E BRADLEY
+AddDisplayName = zh_CN, M2A4E 布莱德利
+AddDisplayName = en_US, M2A4E BRADLEY
+ItemID = 91129
+MaxHp = 800
+Speed = 0.75
+
+ArmorMaxDamage = 800
+
+Gravity = -0.1
+GravityInWater = -0.1
+DamageFactor = 0.00
+EnableNightVision = true
+EnableEntityRadar = false
+Sound = mbt_run
+
+
+WeightType = Tank
+DefaultFreelook = true
+FlareType = 10
+CameraZoom = 4
+
+Float = true
+ThrottleUpDown = 2.0
+
+AddGunnerSeat =  0.00, 1.58,0,    -0.0, 1.78, 0.0,  false, -90, 90, true
+AddGunnerSeat =  0.00, 2.0, 0,    -1.067, 3.727, -0.9458,  false, -70, 10, true
+
+
+
+
+
+MobilityRoll = 0
+
+NameOnAdvancedAARadar = IFV
+NameOnModernAARadar = IFV
+NameOnEarlyAARadar =
+NameOnModernASRadar = M2
+NameOnEarlyASRadar = IFV
+RadarType = EARLY_AS
+
+ArmorDamageFactor = 1
+
+EnableBack = true
+SetWheelPos =  1.79,  -0.21,  4.14, 3.01, 0.83, -1.11, -3.26
+
+SubmergedDamageHeight = 2
+WeightedCenterZ = 0.1
+
+OnGroundPitchFactor = 3.5
+OnGroundRollFactor  = 3.5
+
+MobilityYawOnGround = 4
+PivotTurnThrottle = 0.0
+
+
+Entitywidth=0
+Entityheight=0
+
+
+HideEntity = true
+
+CameraPosition = 0.5,  2.95, 0.8236, true
+CameraRotationSpeed = 50
+
+StepHeight = 4
+HideEntity = true
+
+
+MotionFactor = 0.9
+
+MaxFuel         = 1500
+FuelConsumption = 1.0
+
+TrackRollerRot = 50
+
+AddTrackRoller = -1.499,  0.4515,  3.397
+AddTrackRoller = -1.541,  0.04767,  2.524
+AddTrackRoller = -1.541,  0.04734,  1.750
+AddTrackRoller = -1.541,  0.04727,  0.9766
+AddTrackRoller = -1.541,  0.04692,  -0.1157
+AddTrackRoller = -1.541,  0.04841,  -0.8892
+AddTrackRoller = -1.541,  0.04679,  -1.663
+AddTrackRoller = -1.541,  0.4835,  -2.266
+
+
+MinRotationPitch = -45
+MaxRotationPitch =  10
+
+
+
+
+AddTurretWeapon = IFV_M2A4_AHEAD,          0.00, 2.334, 0.7172,  0.0, 0.0, true,1, 0,-360,360, -45, 10
+AddTurretWeapon = IFV_M2A4_ATGM_PRM,          -1.44, 3.21, -3.523,  0.0, 0.0, true,1, 0,-360,360, -50, 10
+AddTurretWeapon = MG_127,          -0.3, 2.334, 0.7172,  0.0, 0.0, true,1, 0,-360,360, -45, 10
+AddTurretWeapon = AI,          3.5, 0, 1,  0.0, 0.0, false,2, 0,-360,360, -65, 10
+AddTurretWeapon = AI,          -3.5, 0, 1,  0.0, 0.0, false,2, 0,-360,360, -65, 10
+AddTurretWeapon = AI,          3.5, 0, -1,  0.0, 0.0, false,2, 0,-360,360, -65, 10
+AddTurretWeapon = AI,          -3.5, 0, -1,  0.0, 0.0, false,2, 0,-360,360, -65, 10
+
+
+AddPartWeapon = IFV_M2A4_AHEAD, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild = false, true,0.00, 2.334, 0.7172
+AddPartWeaponChild = false, true,0.00, 2.334, 0.7172, 0.05
+
+
+AddPartTurretWeapon = GUNNER_MG_127, true, true, false,  -1.067, 2.927, -0.9458
+AddPartWeaponChild = false, true,-1.067, 3.374, -1.008
+
+
+
+
+AddTurretWeapon = GUNNER_MG_127,          -1.067, 3.374, -1.008,  0.0, 0.0, false,2, 0,-360,360, -70, 10
+AddTurretWeapon = GUNNER_MARK,          0.00, 2.334, 0.7172,  0.0, 0.0, false,2, 0,-360,360, -70, 10
+
+
+
+hasMaintenance=true
+
+
+
+
+
+
+
+AddCrawlerTrack = true, 0.20, -2.0,  -0.2592/1.039,-0.2585/2.585,-0.2120/2.699,0.1821/3.550,0.3216/3.678,0.5105/3.697,0.6735/3.605,0.7525/3.431,0.7566/-2.265,0.7205/-2.402,0.6207/-2.502,0.4841/-2.540,0.3473/-2.503,-0.2127/-1.836,-0.2606/-1.723
+
+
+BoundingBox = 0.177, 0.825, 0.255,  3.693, 2.323, 4.464, 1.0, DEFAULT, 车体侧面
+BoundingBox = 0.177, 0.825, -2.506,  3.693, 2.323, 1.067, 1.3, DEFAULT, 引擎
+BoundingBox = 0.177, 1.394, 3.098,  3.693, 1.203, 1.227, 0.5, DEFAULT, 首上
+BoundingBox = 0.177, 0.22, 3.153,  3.693, 1.088, 1.302, 0.7, DEFAULT, 首下
+BoundingBox = 1.224, 2.522, -1.035,  0.095, 0.966, 1.98, 1.0, TURRET, 炮塔侧面
+BoundingBox = -1.273, 2.522, -1.035,  0.095, 0.966, 1.98, 1.0, TURRET, 炮塔侧面
+BoundingBox = 0.0, 2.522, -1.963,  2.49, 0.966, 0.118, 1.3, TURRET, 炮塔后面
+BoundingBox = -0.033, 2.522, -0.297,  2.516, 1.088, 3.01, 0.6, TURRET, 炮塔正面
+BoundingBox = -0.032, 3.061, -0.297,  2.311, 0.062, 2.766, 1.0, TURRET, 炮塔顶部
+
+
+engineShutdownThreshold = 30
+throttledownfactor=3
+explosionsizebycrash=10
+armorExplosionDamageMultiplier = 1.5
+
+hasMaintenance=true
+
+
+;AddRecipe = "XXX",  " X ",  "IXI",  X, iron_block,  I, iron_ingot
+
+
+;cross_type0-13:0TRANS,1AP,2ARM,3 57MMAP,4 57MMHE,5HE,6HEAT,7IRM,8LOSM,9SARH,10STAFF,11TVM,12ZUNI,13MORTAR
+;weapon_group_type: 0:HE/IRM;1:HE/ZUNI;2:AP/LOSM;3:MORTAR/HE;4:57MMAP/57MMHE;5:AP/LOSM;6:HE/LOSM;7:AP/SARH;8:57MMAP/STAFF;9:AP/TVM
+weapongrouptype=77
+
+hudtype=1
+HUD = IFV, MBT_GUNNER
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+armorExplosionDamageMultiplier = 1.2
+ArmorMinDamage=12
+
+hasaps=true
+apsUseTime=100
+apsWaitTime=400
+apsRange = 8
+
+enableRWR=true

@@ -1,0 +1,51 @@
+CurrencyNameSL=银狮
+; SL 在界面中的显示名称
+
+CurrencyNameGE=金鹰
+; GE 在界面中的显示名称
+
+CurrencyNameRP=研发点
+; RP 在界面中的显示名称
+
+DefaultSL=0
+; 新玩家默认 SL
+
+DefaultGE=0
+; 新玩家默认 GE
+
+DefaultRP=0
+; 新玩家默认 RP
+
+MaxSL=999999999
+; SL 上限（防溢出）
+
+MaxGE=999999
+; GE 上限（防溢出）
+
+MaxRP=999999999
+; RP 上限（防溢出）
+
+Exchange_GE_to_SL=1:500
+; GE 兑换 SL 比例（格式 GE:SL）
+
+Exchange_GE_to_RP=1:250
+; GE 兑换 RP 比例（格式 GE:RP）
+
+ExchangeFeeRate=0.00
+; 兑换手续费率（0.10=10%）
+
+EnableDailyReward=false
+; 是否启用每日奖励
+
+DailyRewardSL=300
+; 每日奖励 SL（EnableDailyReward=true 时生效）
+
+DailyRewardRP=120
+; 每日奖励 RP（EnableDailyReward=true 时生效）
+
+DailyRewardGE=0
+; 每日奖励 GE（EnableDailyReward=true 时生效）
+
+ServerAuditLog=true
+; 是否记录货币变动审计日志（建议 true）
+

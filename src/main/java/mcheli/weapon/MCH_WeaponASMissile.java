@@ -6,6 +6,7 @@ import mcheli.MCH_Lib;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.MCH_RayTracer;
 import mcheli.aircraft.MCH_AircraftInfo;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_EntityPlayer;
 import mcheli.wrapper.W_WorldFunc;
@@ -213,61 +214,30 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
     }
     public MCH_WeaponASMissile(World world, Vec3 position, float yaw, float pitch, String name, MCH_WeaponInfo weaponInfo) {
         super(world, position, yaw, pitch, name, weaponInfo);
-        this.acceleration = 3.0F;  // 加速度
-        this.explosionPower = 9;   // 爆炸威力
-        this.power = 40;           // 武器威力
-        this.interval = -350;      // 射击间隔
+        this.acceleration = 3.0F;
+        this.explosionPower = 9;
+        this.power = 40;
+        this.interval = -350;
+        this.numMode = 2;
     }
 
     public boolean isCooldownCountReloadTime() {
         return true;
     }
 
-    private MCH_GPSPosition getGpsPositionForShot(Entity user) {
-        if (user == null) {
-            return null;
+    @Override
+    public String getName() {
+        if (this.numMode > 0 && getInfo() != null && getInfo().isGPSMissile) {
+            String base = super.getName();
+            if (this.getCurrentMode() == 1) {
+                return base + " [巡航]";
+            } else {
+                return base + " [常规]";
+            }
         }
-
-        if (this.worldObj.isRemote) {
-            MCH_GPSPosition gpsPosition = MCH_GPSPosition.currentClientGPSPosition;
-            return gpsPosition != null && gpsPosition.isActive ? gpsPosition : null;
-        }
-
-        return MCH_GPSPosition.get(user);
+        return super.getName();
     }
 
-    private boolean canReachGpsTarget(MCH_WeaponParam prm, MCH_GPSPosition gpsPosition) {
-        if (gpsPosition == null || !gpsPosition.isActive) {
-            return true;
-        }
-
-        Entity rangeOrigin = prm.entity != null ? prm.entity : prm.user;
-        if (rangeOrigin == null || this.getInfo() == null) {
-            return true;
-        }
-
-        double dx = gpsPosition.x - rangeOrigin.posX;
-        double dz = gpsPosition.z - rangeOrigin.posZ;
-        double horizontalRange = MathHelper.sqrt_double(dx * dx + dz * dz);
-        int maxRange = this.getInfo().maxLockOnRange;
-
-        if (horizontalRange <= (double) maxRange) {
-            return true;
-        }
-
-        if (prm.user instanceof EntityPlayer) {
-            W_EntityPlayer.addChatMessage(
-                (EntityPlayer) prm.user,
-                String.format(
-                    "GPS weapon is not in range and will not drop. Weapon range: %d m. Calculated range: %.1f m.",
-                    maxRange,
-                    horizontalRange
-                )
-            );
-        }
-
-        return false;
-    }
 
     public void update(int countWait) {
         super.update(countWait);
@@ -282,6 +252,14 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
     @Override
     public boolean shot(MCH_WeaponParam prm) {
+        float yaw, pitch;
+        if (getInfo().enableOffAxis) {
+            yaw = prm.user.rotationYaw + super.fixRotationYaw;
+            pitch = prm.user.rotationPitch + super.fixRotationPitch;
+        } else {
+            yaw = prm.entity.rotationYaw + super.fixRotationYaw;
+            pitch = prm.entity.rotationPitch + super.fixRotationPitch;
+        }
         if (getInfo().isGPSMissile) {
             MCH_GPSPosition gpsPosition = getGpsPositionForShot(prm.user);
             if (!canReachGpsTarget(prm, gpsPosition)) {
@@ -290,11 +268,8 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
             if (!super.worldObj.isRemote) {
                 this.playSound(prm.entity);
-                float yaw, pitch;
                 if (prm.entity instanceof MCH_EntityTank) {
                     MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                    yaw = prm.user.rotationYaw;
-                    pitch = prm.user.rotationPitch;
                     yaw += prm.randYaw;
                     pitch += prm.randPitch;
                     int wid = tank.getCurrentWeaponID(prm.user);
@@ -308,7 +283,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                     float yawLimit = (w == null ? 360F : w.maxYaw);
                     float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
                     yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
-                    pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+                    if(fixRotationPitch == 0) {
+                        pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+                    }
                     pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
                 } else {
                     yaw = prm.rotYaw;
@@ -320,8 +297,21 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 MCH_EntityASMissile missile = new MCH_EntityASMissile(this.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, this.acceleration);
                 missile.setInfoByName(this.name);
                 missile.setParameterFromWeapon(this, prm.entity, prm.user);
-
-                if (gpsPosition != null) {
+                missile.cruiseMode = (this.getCurrentMode() == 1) && getInfo().armCruiseEnable;
+                boolean targetAssigned = false;
+                Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
+                if (prm.user instanceof MCH_EntityGunner && tgtEnt != null && !tgtEnt.isDead) {
+                    missile.targetPosX = tgtEnt.posX;
+                    missile.targetPosY = tgtEnt.posY + tgtEnt.height / 2.0D;
+                    missile.targetPosZ = tgtEnt.posZ;
+                    missile.originTargetPosX = missile.targetPosX;
+                    missile.originTargetPosY = missile.targetPosY;
+                    missile.originTargetPosZ = missile.targetPosZ;
+                    missile.targeting = true;
+                    targetAssigned = true;
+                }
+                MCH_GPSPosition gpsPosition;
+                if (!targetAssigned && (gpsPosition = MCH_GPSPosition.get(prm.user)) != null) {
                     if (gpsPosition.isActive) {
                         missile.targetPosX = gpsPosition.x;
                         missile.targetPosY = gpsPosition.y;
@@ -330,6 +320,18 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                         missile.originTargetPosY = gpsPosition.y;
                         missile.originTargetPosZ = gpsPosition.z;
                         missile.targeting = true;
+                        targetAssigned = true;
+                    }
+                }
+                if (!targetAssigned) {
+                    if (tgtEnt != null && !tgtEnt.isDead) {
+                        missile.targetPosX = tgtEnt.posX;
+                        missile.targetPosY = tgtEnt.posY + tgtEnt.height / 2.0D;
+                        missile.targetPosZ = tgtEnt.posZ;
+                        missile.originTargetPosX = missile.targetPosX;
+                        missile.originTargetPosY = missile.targetPosY;
+                        missile.originTargetPosZ = missile.targetPosZ;
+                        missile.targeting = true;
                     }
                 }
                 this.worldObj.spawnEntityInWorld(missile);
@@ -337,11 +339,12 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             } else {
                 super.optionParameter1 = this.getCurrentMode();
                 MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
+                spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
             }
             return true;
         } else {
-            float yaw = prm.user.rotationYaw;
-            float pitch = prm.user.rotationPitch;
+            yaw = prm.user.rotationYaw;
+            pitch = prm.user.rotationPitch;
             double targetX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double targetZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);

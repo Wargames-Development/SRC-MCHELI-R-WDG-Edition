@@ -48,7 +48,11 @@ public class MCH_BaseInfo {
     }
 
     public String[] splitParam(String data) {
-        return data.split("\\s*,\\s*");
+        if (data == null) {
+            return new String[0];
+        }
+        String normalized = data.replace('，', ',').replace('、', ',');
+        return normalized.split("\\s*,\\s*");
     }
 
     public String[] splitParamSlash(String data) {

@@ -168,7 +168,7 @@ public class MCH_ConfigGui extends W_GuiContainer {
         this.listKeyBindingButtons.add(new W_GuiButton(54, x1 + 90, y + 175, 60, 20, MCH_I18n.format("gui.mcheli.reset_all")));
         boolean var13 = true;
         boolean var14 = true;
-        MCH_GuiListItemKeyBind[] listKeyBindItems = new MCH_GuiListItemKeyBind[29];
+        MCH_GuiListItemKeyBind[] listKeyBindItems = new MCH_GuiListItemKeyBind[31];
         listKeyBindItems[0] = new MCH_GuiListItemKeyBind(200, 300, x1, MCH_I18n.format("gui.mcheli.key.up"), MCH_Config.KeyUp);
         listKeyBindItems[1] = new MCH_GuiListItemKeyBind(201, 301, x1, MCH_I18n.format("gui.mcheli.key.down"), MCH_Config.KeyDown);
         listKeyBindItems[2] = new MCH_GuiListItemKeyBind(202, 302, x1, MCH_I18n.format("gui.mcheli.key.right"), MCH_Config.KeyRight);
@@ -198,6 +198,8 @@ public class MCH_ConfigGui extends W_GuiContainer {
         listKeyBindItems[26] = new MCH_GuiListItemKeyBind(226, 326, x1, MCH_I18n.format("gui.mcheli.key.aps"), MCH_Config.KeyAPS);
         listKeyBindItems[27] = new MCH_GuiListItemKeyBind(227, 327, x1, MCH_I18n.format("gui.mcheli.key.ecm_jammer"), MCH_Config.KeyECMJammer);
         listKeyBindItems[28] = new MCH_GuiListItemKeyBind(228, 328, x1, MCH_I18n.format("gui.mcheli.key.reset_airburst_dist"), MCH_Config.KeyAirburstDistReset);
+        listKeyBindItems[29] = new MCH_GuiListItemKeyBind(229, 329, x1, MCH_I18n.format("gui.mcheli.key.open_gps_panel"), MCH_Config.KeyOpenGPSPanel);
+        listKeyBindItems[30] = new MCH_GuiListItemKeyBind(230, 330, x1, "Fire Control Lock", MCH_Config.KeyFireControlLock);
         for (int i$1 = 0; i$1 < listKeyBindItems.length; ++i$1) {
             MCH_GuiListItemKeyBind item = listKeyBindItems[i$1];
             this.keyBindingList.addItem(item);

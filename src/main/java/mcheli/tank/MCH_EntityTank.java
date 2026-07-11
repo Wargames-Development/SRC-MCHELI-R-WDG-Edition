@@ -37,6 +37,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
@@ -60,6 +61,13 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
     private int currentGear = 1;  // Starting gear
     private double[] gearSpeedLimits = {5.0D, 10.0D, 20.0D, 30.0D, 40.0D};  // Speed limits for each gear
     private double[] gearAccelerationMultipliers = {1.0D, 0.8D, 0.6D, 0.4D, 0.2D};  // Acceleration dampening for higher gears
+    private static final double TANK_CAMERA_SAFETY_OFFSET = 0.18D;
+    private static final double TANK_CAMERA_PUSH_OUT_MAX = 0.65D;
+    private static final double TANK_CAMERA_SMOOTHING = 0.28D;
+    private boolean tankCameraSafeInitialized = false;
+    private double tankCameraSafeX = 0.0D;
+    private double tankCameraSafeY = 0.0D;
+    private double tankCameraSafeZ = 0.0D;
 
 
     public MCH_EntityTank(World world) {
@@ -899,6 +907,141 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
     }
 
     public void applyOnGroundPitch(float factor) {
+    }
+
+    @Override
+    public void updateCamera(double x, double y, double z) {
+        super.updateCamera(x, y, z);
+        if (!super.worldObj.isRemote || this.camera == null) {
+            return;
+        }
+        EntityPlayer player = (EntityPlayer) MCH_MOD.proxy.getClientPlayer();
+        if (player == null || !isTankPilotBodyCameraActive(player)) {
+            this.tankCameraSafeInitialized = false;
+            return;
+        }
+        Vec3 desired = Vec3.createVectorHelper(this.camera.posX, this.camera.posY, this.camera.posZ);
+        Vec3 safe = applyTankCameraAntiClip(desired);
+        double sx = safe.xCoord;
+        double sy = safe.yCoord;
+        double sz = safe.zCoord;
+        if (!this.tankCameraSafeInitialized) {
+            this.tankCameraSafeX = sx;
+            this.tankCameraSafeY = sy;
+            this.tankCameraSafeZ = sz;
+            this.tankCameraSafeInitialized = true;
+        } else {
+            double dx = sx - this.tankCameraSafeX;
+            double dy = sy - this.tankCameraSafeY;
+            double dz = sz - this.tankCameraSafeZ;
+            double err = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            double alpha = err > TANK_CAMERA_PUSH_OUT_MAX ? 0.62D : TANK_CAMERA_SMOOTHING;
+            this.tankCameraSafeX += dx * alpha;
+            this.tankCameraSafeY += dy * alpha;
+            this.tankCameraSafeZ += dz * alpha;
+        }
+        this.camera.setPosition(this.tankCameraSafeX, this.tankCameraSafeY, this.tankCameraSafeZ);
+    }
+
+    private boolean isTankPilotBodyCameraActive(EntityPlayer player) {
+        if (this.getIsGunnerMode(player)) {
+            return false;
+        }
+        if (player.ridingEntity == this) {
+            return true;
+        }
+        if (player.ridingEntity instanceof MCH_EntitySeat) {
+            MCH_EntitySeat seat = (MCH_EntitySeat)player.ridingEntity;
+            return seat.getParent() == this && (seat.seatID == 0 || this.getSeatIdByEntity(player) == 0);
+        }
+        return false;
+    }
+
+    private Vec3 applyTankCameraAntiClip(Vec3 desired) {
+        Vec3 origin = this.WheelMng != null ? this.getTransformedPosition(this.WheelMng.weightedCenter) : Vec3.createVectorHelper(super.posX, super.posY + (double)super.yOffset, super.posZ);
+        Vec3 safe = Vec3.createVectorHelper(desired.xCoord, desired.yCoord, desired.zCoord);
+        List<AxisAlignedBB> boxes = new ArrayList<AxisAlignedBB>();
+        boxes.add(super.boundingBox);
+        for (int i = 0; i < this.extraBoundingBox.length; i++) {
+            MCH_BoundingBox bb = this.extraBoundingBox[i];
+            if (bb != null && bb.boundingBox != null) {
+                boxes.add(bb.boundingBox);
+            }
+        }
+        for (int i = 0; i < boxes.size(); i++) {
+            AxisAlignedBB bb = boxes.get(i);
+            if (bb == null) {
+                continue;
+            }
+            MovingObjectPosition mop = bb.calculateIntercept(origin, safe);
+            if (mop != null && mop.hitVec != null) {
+                double vx = safe.xCoord - origin.xCoord;
+                double vy = safe.yCoord - origin.yCoord;
+                double vz = safe.zCoord - origin.zCoord;
+                double len = Math.sqrt(vx * vx + vy * vy + vz * vz);
+                if (len > 1.0E-4D) {
+                    double nx = vx / len;
+                    double ny = vy / len;
+                    double nz = vz / len;
+                    double hitDist = origin.distanceTo(mop.hitVec);
+                    double safeDist = Math.max(0.0D, hitDist - TANK_CAMERA_SAFETY_OFFSET);
+                    safe = Vec3.createVectorHelper(origin.xCoord + nx * safeDist, origin.yCoord + ny * safeDist, origin.zCoord + nz * safeDist);
+                }
+            }
+            if (bb.isVecInside(safe)) {
+                safe = pushOutFromAabb(safe, bb, TANK_CAMERA_SAFETY_OFFSET, TANK_CAMERA_PUSH_OUT_MAX);
+            }
+        }
+        return safe;
+    }
+
+    private Vec3 pushOutFromAabb(Vec3 p, AxisAlignedBB bb, double safety, double maxPush) {
+        double distMinX = p.xCoord - bb.minX;
+        double distMaxX = bb.maxX - p.xCoord;
+        double distMinY = p.yCoord - bb.minY;
+        double distMaxY = bb.maxY - p.yCoord;
+        double distMinZ = p.zCoord - bb.minZ;
+        double distMaxZ = bb.maxZ - p.zCoord;
+        double minDist = distMinX;
+        int axis = 0;
+        int dir = -1;
+        if (distMaxX < minDist) {
+            minDist = distMaxX;
+            axis = 0;
+            dir = 1;
+        }
+        if (distMinY < minDist) {
+            minDist = distMinY;
+            axis = 1;
+            dir = -1;
+        }
+        if (distMaxY < minDist) {
+            minDist = distMaxY;
+            axis = 1;
+            dir = 1;
+        }
+        if (distMinZ < minDist) {
+            minDist = distMinZ;
+            axis = 2;
+            dir = -1;
+        }
+        if (distMaxZ < minDist) {
+            minDist = distMaxZ;
+            axis = 2;
+            dir = 1;
+        }
+        double push = Math.min(maxPush, Math.max(safety, safety + (0.001D - minDist)));
+        double x = p.xCoord;
+        double y = p.yCoord;
+        double z = p.zCoord;
+        if (axis == 0) {
+            x += push * (double)dir;
+        } else if (axis == 1) {
+            y += push * (double)dir;
+        } else {
+            z += push * (double)dir;
+        }
+        return Vec3.createVectorHelper(x, y, z);
     }
 
     private void onUpdate_Server() {

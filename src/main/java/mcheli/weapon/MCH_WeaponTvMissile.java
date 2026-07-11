@@ -4,10 +4,12 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
+import mcheli.MCH_PlayerViewHandler;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_PacketNotifyTVMissileEntity;
 import mcheli.network.packets.PacketLaserGuidanceTargeting;
+import mcheli.network.packets.PacketLaserStateSync;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_Entity;
 import net.minecraft.client.Minecraft;
@@ -22,6 +24,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
     protected MCH_EntityTvMissile lastShotTvMissile;
     protected Entity lastShotEntity;
     protected boolean isTVGuided;
+    private long aircraftLaserSequence = 0L;
 
     public MCH_WeaponTvMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
@@ -42,6 +45,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             guidanceSystem.lockEntity = wi.lockEntity;
             guidanceSystem.cameraFollowLockEntity = wi.cameraFollowLockEntity;
             guidanceSystem.cameraFollowStrength = wi.cameraFollowStrength;
+            guidanceSystem.sendToServer = true;
             if (w.isRemote) {
                 initGuidanceSystemClient();
             }
@@ -64,8 +68,8 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             opt = " [TV]";
         }
 
-        if (this.getCurrentMode() == 2) {
-            opt = " [TA]";
+        if (this.getCurrentMode() == 1) {
+            opt = (this.getInfo() != null && !this.getInfo().laserGuidance) ? " [TV]" : " [TA]";
         }
 
         return super.getName() + opt;
@@ -94,17 +98,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
     }
 
     public boolean shot(MCH_WeaponParam prm) {
-        return super.worldObj.isRemote ? this.shotClient(prm.entity, prm.user) : this.shotServer(prm);
-    }
-
-    protected boolean shotClient(Entity entity, Entity user) {
-        super.optionParameter2 = 0;
-        super.optionParameter1 = this.getCurrentMode();
-        return true;
-    }
-
-    protected boolean shotServer(MCH_WeaponParam prm) {
-
         float yaw, pitch;
         if (getInfo().enableOffAxis) {
             yaw = prm.user.rotationYaw + super.fixRotationYaw;
@@ -115,8 +108,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         }
         if (prm.entity instanceof MCH_EntityTank) {
             MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-            yaw = prm.user.rotationYaw;
-            pitch = prm.user.rotationPitch;
             yaw += prm.randYaw;
             pitch += prm.randPitch;
             int wid = tank.getCurrentWeaponID(prm.user);
@@ -130,26 +121,38 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             float yawLimit = (w == null ? 360F : w.maxYaw);
             float relativeYaw = MCH_Lib.RNG(playerYawRel, -yawLimit, yawLimit);
             yaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() + relativeYaw);
-            pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            if(fixRotationPitch == 0) {
+                pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
+            }
             pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
         }
-        double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-        double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-        double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
-        this.isTVGuided = prm.option1 == 0;
-        float acr = super.acceleration;
-        if (!this.isTVGuided) {
-            acr = (float) ((double) acr * 1.5D);
-        }
+        if(!worldObj.isRemote) {
+            double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+            double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+            double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
+            // Runtime mode:
+            // mode=0 -> TV guidance
+            // mode=1 -> terminal attack path (laser or command-line fallback handled by missile)
+            this.isTVGuided = prm.option1 == 0;
+            float acr = super.acceleration;
+            if (!this.isTVGuided) {
+                acr = (float) ((double) acr * 1.5D);
+            }
 
-        MCH_EntityTvMissile e = new MCH_EntityTvMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) acr);
-        e.setInfoByName(super.name);
-        e.setTVMissile(isTVGuided);
-        e.setParameterFromWeapon(this, prm.entity, prm.user);
-        this.lastShotEntity = prm.entity;
-        this.lastShotTvMissile = e;
-        super.worldObj.spawnEntityInWorld(e);
-        this.playSound(prm.entity);
+            MCH_EntityTvMissile e = new MCH_EntityTvMissile(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, (double) acr);
+            e.setInfoByName(super.name);
+            e.setTVMissile(isTVGuided);
+            e.setParameterFromWeapon(this, prm.entity, prm.user);
+            this.lastShotEntity = prm.entity;
+            this.lastShotTvMissile = e;
+            super.worldObj.spawnEntityInWorld(e);
+            this.playSound(prm.entity);
+        } else {
+            super.optionParameter2 = 0;
+            super.optionParameter1 = this.getCurrentMode();
+            MCH_PlayerViewHandler.applyRecoil(getInfo().getRecoilPitch(), getInfo().getRecoilYaw(), getInfo().recoilRecoverFactor);
+            spawnMuzzleFlash(worldObj, prm, getInfo(), yaw, pitch, prm.muzzleFlashPosX, prm.muzzleFlashPosY, prm.muzzleFlashPosZ);
+        }
         return true;
     }
 
@@ -157,8 +160,14 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
     public boolean lock(MCH_WeaponParam prm) {
         if (super.worldObj.isRemote) {
             if (guidanceSystem != null) {
-                this.guidanceSystem.targeting = true;
+                // mode 0 = TV guide, mode 1 = laser/terminal attack
+                this.guidanceSystem.targeting = this.getCurrentMode() == 1;
                 this.guidanceSystem.update();
+                if (this.guidanceSystem.targeting && prm != null && prm.user != null) {
+                    this.publishAircraftLaserState(prm.user, true, this.guidanceSystem.targetPosX, this.guidanceSystem.targetPosY, this.guidanceSystem.targetPosZ);
+                } else if (prm != null && prm.user != null) {
+                    this.publishAircraftLaserState(prm.user, false, 0.0D, 0.0D, 0.0D);
+                }
             }
         }
         return false;
@@ -169,10 +178,26 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         if (super.worldObj.isRemote) {
             if (guidanceSystem != null) {
                 this.guidanceSystem.targeting = false;
+                if (prm != null && prm.user != null) {
+                    this.publishAircraftLaserState(prm.user, false, 0.0D, 0.0D, 0.0D);
+                }
                 if (super.tick % 3 == 0) {
                     MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
                 }
             }
         }
+    }
+
+    private void publishAircraftLaserState(Entity user, boolean active, double x, double y, double z) {
+        if (user == null || user.worldObj == null) {
+            return;
+        }
+        ++this.aircraftLaserSequence;
+        long now = user.worldObj.getTotalWorldTime();
+        int ownerId = user.getEntityId();
+        MCH_LaserStateStore.upsertClientState(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT, x, y, z, active, this.aircraftLaserSequence, now);
+        MCH_MOD.getPacketHandler().sendToServer(
+            new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_AIRCRAFT, this.aircraftLaserSequence, active, x, y, z, ownerId)
+        );
     }
 }

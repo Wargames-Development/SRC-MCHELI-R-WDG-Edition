@@ -803,7 +803,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
 
 
             if (!levelOff) {
-                super.motionY += 0.04D + (double) (!this.isInWater() ? this.getAcInfo().gravity : this.getAcInfo().gravityInWater);
+                super.motionY += 0.04D + (double) this.getEffectiveAircraftGravity(this.isInWater());
                 super.motionY += -0.047D * (1.0D - this.getCurrentThrottle());
             } else {
                 super.motionY *= 0.8D;

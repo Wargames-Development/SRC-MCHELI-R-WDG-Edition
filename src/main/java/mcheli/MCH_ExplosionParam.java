@@ -148,4 +148,10 @@ public class MCH_ExplosionParam {
     public float damageVsShip = 1.0f;
 
     public boolean explosionThroughWall;
+
+    @Builder.Default
+    public float explosionThroughWallFactor = 1.0f;
+
+    @Builder.Default
+    public boolean isNewExplosionBreak = true;
 }

@@ -109,6 +109,16 @@ public class W_Reflection {
 
     }
 
+    public static float getCameraZoom() {
+        try {
+            Minecraft e = Minecraft.getMinecraft();
+            Float zoom = ObfuscationReflectionHelper.getPrivateValue(EntityRenderer.class, e.entityRenderer, new String[]{"field_78503_V", "cameraZoom"});
+            return zoom != null ? zoom : 1.0F;
+        } catch (Exception var2) {
+            return 1.0F;
+        }
+    }
+
     public static void setCreativeDigSpeed(int n) {
         try {
             Minecraft e = Minecraft.getMinecraft();

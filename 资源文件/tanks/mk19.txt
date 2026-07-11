@@ -1,0 +1,47 @@
+DisplayName = MK19 AGL
+AddDisplayName = zh_CN, MK19 自动榴弹发射器
+AddDisplayName = en_US, MK19 AGL
+MaxHp = 50
+ThrottleUpDown = 9.0
+Speed = 0.000
+MobilityYawOnGround = 1.0
+Sound = non0
+MinRotationPitch = -80
+MaxRotationPitch =  10
+MobilityRoll     = 5
+Gravity        = -0.1
+GravityInWater = -0.1
+DamageFactor   = 0.85
+EnableNightVision = false
+CameraRotationSpeed = 40
+CameraPosition = 0.00, 0.8,-1.10, true
+MaxFuel           = 0
+FuelConsumption   = 0
+DefaultFreelook = true
+ThirdPersonDist = 3
+
+UnmountPosition = 1.0, 1.5, -2
+
+OnGroundPitchFactor = 0
+OnGroundRollFactor  = 0
+
+EnableBack = true
+Category = M.A
+
+WeightType = Unknown
+
+HUD=mbt_gunner
+hasMaintenance=true
+MaintenceUsetime=60
+MaintenceWaittime=300
+AddGunnerSeat =  0.00,-0.4,-1.00,   0, 1.0,-1.10, false, -90, 90, true
+
+PivotTurnThrottle = 0.0
+
+AddPartWeapon = mk19_he, false, true, false,  0, 0.427,0, 0
+AddPartWeaponChild = false, true, 0, 0.4667, 0, 0.0
+
+AddturretWeapon = mk19_he,0, 0.6, 0,  0.0, 0.0, true,1, 0,-360,360, -55, 15
+
+AddPartWeaponChild = false, true, 0, 0.43, 0, 0.0
+BoundingBox = 0.057, 0.214, 0.0,  0.97, 1.062, 0.86, 1.0, DEFAULT, body

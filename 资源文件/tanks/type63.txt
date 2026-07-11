@@ -1,0 +1,59 @@
+﻿DisplayName = TYPE-63 MRL
+AddDisplayName = zh_CN, 63式107MM牵引火箭炮
+AddDisplayName = en_US, TYPE-63 MRL
+ItemID = 28611
+MaxHp = 50
+HideEntity = false
+MinRotationPitch = -90
+MaxRotationPitch =  -20
+DamageFactor = 0.8
+CameraZoom = 3
+CameraPosition = 1,1, 0,true
+CameraRotationSpeed = 30.0
+ThirdPersonDist = 12
+DefaultFreelook = true
+speed=0.0
+ThrottleUpDown = 0
+MobilityRoll = 50
+
+
+; W = WWII,  A = AAGun(対空砲)
+Category = W.A
+
+HUD = m224
+
+AddGunnerSeat = 0.00,  0.0, -1, 0.00,  0.0, 0.0, false,-90,-20,true
+
+
+
+
+
+AddPartWeapon = type63_rocket, false, true, false,  0.00, 1.788, 0.00, 0
+AddPartWeaponChild=false,true,  0, 0.8868, -0.02118,   0.00
+
+AddTurretWeapon = type63_rocket, 0.0, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, 0.5, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, -0.5, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, -0.5, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, -0.5, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, 0.8, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, -0.8, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, 0.5, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, -0.5, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, 0.5, 10, 0.0,  0, 0,   true,1, 0,-360,360, -90, -20
+AddTurretWeapon = type63_rocket, -0, 10, 0.0,  0, 0,   false,1, 0,-360,360, -90, -20
+
+
+AddRecipe = "  I",  "BIG",  "TTT",  T, iron_block,  I, iron_ingot,  G, dye,2,  B, dye,3
+
+BoundingBox =  0.0, 0.8, 0.0,  2.0, 1.5
+
+NameOnAdvancedAARadar = 
+NameOnModernAARadar =
+NameOnEarlyAARadar =
+NameOnModernASRadar = ?
+NameOnEarlyASRadar = ?
+RadarType = EARLY_AS
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

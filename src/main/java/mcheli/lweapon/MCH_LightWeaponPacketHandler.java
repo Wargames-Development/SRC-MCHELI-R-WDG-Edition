@@ -38,8 +38,11 @@ public class MCH_LightWeaponPacketHandler {
                     // }
 
                     if (pc.useWeapon && is.getItemDamage() < is.getMaxDamage()) {
-                        String name = MCH_ItemLightWeaponBase.getName(player.getHeldItem());
+                        String name = lweapon.getWeaponInfoName(is);
                         MCH_WeaponBase w = MCH_WeaponCreator.createWeapon(player.worldObj, name, Vec3.createVectorHelper(0.0D, 0.0D, 0.0D), 0.0F, 0.0F, (MCH_IEntityLockChecker) null, false);
+                        if (w == null) {
+                            return;
+                        }
                         MCH_WeaponParam prm = new MCH_WeaponParam();
                         prm.entity = player;
                         prm.user = player;

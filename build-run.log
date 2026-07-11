@@ -1,0 +1,8 @@
+﻿To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+You might want to check out './gradlew :faq' if your build fails.
+Build script update from 1.0.43 to 1.0.51 available! Run ./gradlew updateBuildScript
+
+> Task :clean

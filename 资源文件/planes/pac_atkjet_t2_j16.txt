@@ -1,0 +1,358 @@
+DisplayName = J-16
+AddDisplayName = zh_CN,歼-16
+AddDisplayName = en_US,J-16
+MaxHp = 400
+ArmorMinDamage = 12
+
+AddPartwing =  0.00, 3.542, -4.496,  -1,0,0,  -20
+
+VariableSweepWing = true
+
+SweepWingSpeed = 0.9
+enablerwr=true
+
+AutoPilotRot = 0
+
+Speed = 2.0
+
+FlareType = 4
+ParticlesScale = 1.0
+EnableSeaSurfaceParticle = true
+EnableGunnerMode = true
+MaxFuel         = 28000
+FuelConsumption = 20
+; M = Military(軍用機).  F = Fighter(戦闘機)
+Category = M.F
+DamageFactor = 0.0
+HUD = JET, JET_GUNNER
+ThrottleUpDown = 0.8
+ThirdPersonDist = 25
+
+MobilityYaw = 0.9
+
+MobilityRoll = 1.5
+MobilityPitch = 0.9
+
+
+
+CameraPosition =1.128, 0.2844, -6.5
+EnableNightVision = true
+EnableEntityRadar = true
+EnableEjectionSeat = true
+
+AddSeat 	=  0.00,  2.29,  0.4146
+AddGunnerSeat = 0.00,  2.636, -0.91, 1.128, 0.2844, -6.5, true
+
+
+
+
+
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, 1.19, 1.676, -14.16, -1,0,0,0,1
+AddExhaustFlame = Exhaustflame, Exhaustflame_red, -1.19, 1.676, -14.16, -1,0,0,0, 1
+
+
+AddPartWeaponMissile = ATKJET_J16_GUNNER_TVM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_J16_GUNNER_TVM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_J16_AAM_ARM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_J16_AAM_ARM,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_J16_GUNNER_GPSBOMB,   false, false, false,   1.128, 0.2844, -6.5
+AddPartWeaponMissile = ATKJET_J16_GUNNER_GPSBOMB,   false, false, false,   1.128, 0.2844, -6.5
+AddPartWeaponMissile = ATKJET_J16_SARH,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_J16_SARH,   false, false, false,  -0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_J16_GUNNER_TVM,   false, false, false,   0.297,  0.518, -8.699
+AddPartWeaponMissile = ATKJET_J16_GUNNER_TVM,   false, false, false,  -0.297,  0.518, -8.699
+
+
+
+
+
+
+AddPartLG =  0, 2.476, -2.762,  1,0,0,-90
+AddPartLG =  -1.868,  2.057, -8.975,  0,0,0,90
+AddPartLG =  1.868,  2.057, -8.975,  0,0,0,90
+
+;AddPartLG = -1.868,  2.057, -8.975, -1,0, 0.4,  90,  0, 1,0,  90
+;AddPartLG =  1.868,  2.057, -8.975, -1,0,-0.4,  90,  0,-1,0, 90
+
+AddPartLGRev = -0.2960, 1.754, -1.422,  0,0,1,-85
+AddPartLGRev =  0.02906, 1.829, -4.497,  1,0,0,30
+
+AddPartLGRev = -2.000, 1.992, -7.002,  0,0,1,-100
+AddPartLGRev = 2.000, 1.992, -7.002,  0,0,1,100
+AddPartLGRev = -2.085, 2.008, -8.772,  0,0,1,-85
+AddPartLGRev = 2.085, 2.008, -8.772,  0,0,1,85
+
+AddPartLG =  0, 2.005, -4.495,  1,0,0,-45
+
+
+AddPartSteeringWheel =  2.217, 2.432, -13.25, 0.0, -1.0, 0.337, 30
+AddPartSteeringWheel = -2.223, 2.432, -13.25, 0.0, -1.0, 0.337, 30
+AddPartSteeringWheel =  2.10, 1.945,-14.35, 1, 0, 0.0,   -15
+AddPartSteeringWheel =  -2.081, 1.945,-14.35,  -1, 0, 0.0,   -15
+AddPartSteeringWheel =  2.383,  2.457,  -10.34,   -4.4633, -0.0758, 1.9205,  25
+AddPartSteeringWheel = -2.402,  2.458,  -10.34,    4.4633, -0.0758, 1.9205,  25
+AddPartSteeringWheel =  -0.005844,2.724,0.7424, 0, 0, 1,   -20
+AddPartThrottle = -0.3785, 2.618, 2.350,  0, 0, 0,  0,  0, 0, 0.15
+
+AddWeapon = ATKJET_J16_30MM,  -0.6850,  2.986,  -0.09,  0.0,  0.0
+AddWeapon = ATKJET_J16_SARH,     -1.52,  1.758, -1.699,  0,-0.0, false,1,  0,-360,360, 0,90
+
+AddWeapon = ATKJET_J16_AAM_ARM,     -6.232,  1.758, -7.699,  0,0.0
+AddWeapon = ATKJET_J16_AAM_ARM,     -6.232,  1.758, -7.699,  0,0.0
+AddWeapon = ATKJET_J16_GUNNER_GPSBOMB,  1.128, 0.2844, -6.5,  0, 0,false,2, 0,-360,360, 0,85
+AddWeapon = ATKJET_J16_GUNNER_GPSBOMB,  -1.128, 0.2844, -6.5,  0, 0,false,2, 0,-360,360, 0,85
+
+AddWeapon = ATKJET_J16_GUNNER_TVM,  2,  1.8, -2,  0, -0,false,2, 0,-360,360, -15,85
+AddWeapon = ATKJET_J16_GUNNER_TVM,  -2,  1.8, -2,  0, -0,false,2, 0,-360,360, -15,85
+
+
+
+AddPartCanopy =  0.00, 3.903, -2.891,  -1,0,0,  40
+AddPartCanopy =  0.00, 3.903, -2.891,  -1,0,0,  0
+
+BoundingBox =  0.00, 2.40, 1.5,  3.0, 3.5
+BoundingBox =  0.00, 1.90, -3.0,  4.9, 3.2
+BoundingBox =  0.00, 1.90, -7.80, 5.0, 3.2
+BoundingBox =  0.00, 1.90, -12.50, 4.0, 3.2
+BoundingBox = -4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox =  4.2, 2.20, -10.50,  5.0, 1.4
+BoundingBox =  0.00, 2.20, -14.3,  3.5, 2.0,1.5
+EntityWidth  = 0.65
+EntityHeight = 0.65
+
+NameOnAdvancedAARadar = J16
+NameOnModernAARadar = J16
+NameOnEarlyAARadar = S30
+NameOnModernASRadar = ATK
+NameOnEarlyASRadar = ?
+RadarType = MODERN_AA
+
+motionfactor=0.96
+HasChaff = true
+ChaffUseTime =50
+ChaffWaitTime = 250
+
+hasMaintenance=true
+
+
+
+enablerwr=true
+
+engineShutdownThreshold = 0
+
+explosionsizebycrash=10
+Gravity = -0.038
+
+
+;驾驶位cross_type0_9:0 CONNON, 1 AAM_ARM_HEAVY, 2 AAM_ARM, 3 AAM_IRM, 4 AAM_SARH, 5 AGM_ARM, 6 AGM_IRM, 7 AGM_LASERM, 8 AGM_SARH, 9 AGM_TVM
+;10 Clusterbomb ,11 GPSBOMB ,12 GPSBOMB_SAP ,13 HEAVYROCKT ,14 IRBOMB, 15 ROCKET_ARM, 16 ROCKET, 17 ZUNI,
+
+;空优攻击机weapon_group_type: 1 CONNON/AAM_IRM/AAM_SARH, 2 CONNON/AAM_SARH/AAM_ARM_HEAVY, 3 CONNON/AAM_IRM/AAM_ARM
+;4 CONNON/AAM_ARM/ROCKET_ARM, 5 CONNON/AAM_ARM/AGM_LASERM, 6 AAM_IRM/AAM_ARM, 7 CONNON/ROCKET/AGM_LASERM
+;8 CONNON/ROCKET_ARM/AGM_IRM, 9 CONNON/HEAVYROCKET/AGM_LASERM, 10 CONNON/ZUNI/AGM_IRM, 11 CONNON/AAM_ARM/AGM_SARH
+;12 CONNON/AAM_IRM/AGM_IRM, 13 CONNON/AAM_ARM/GPSBOMB, 14 EML/AGM_ARM, 15 GPSBOMB/AGM_LASERM
+weapongrouptype=11
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+enablerwr=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+
+
+
+
+
+MobilityPitch = 0.85
+MobilityRoll  = 1.8
+MobilityYaw   = 0.55
+MotionFactor = 0.96
+
+
+
+
+
+MobilityPitch = 0.85
+MobilityRoll  = 1.8
+MobilityYaw   = 0.55
+MotionFactor = 0.96
+
+
+
+
+;占位1-19
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+AddPartThrottle =  0.5545, 1.896, 2.127,  1,0,0.00, 40
+
+;涡扇13E左
+;20
+AddPartThrottle =  1.1788,2.2258,-14.5117,0.2703,-0.0785,-0.0013,5.5
+;21
+AddPartThrottle =  1.449,2.1472,-14.513,0.1998,-0.205,-0.0032,5.5
+;22
+AddPartThrottle =  1.6488,1.9422,-14.5162,0.0682,-0.2781,-0.0043,5.5
+;23
+AddPartThrottle =  1.6332,1.3842,-14.525,0.0838,0.2799,0.0044,-5.5
+;24
+AddPartThrottle =  1.4283,1.1882,-14.5281,0.2049,0.196,0.0031,-5.5
+;25
+AddPartThrottle =  1.1541,1.1202,-14.5291,0.2742,0.0679,0.0011,-5.5
+;26
+AddPartThrottle =  0.8807,1.2017,-14.5279,0.2734,-0.0814,-0.0013,-5.5
+;27
+AddPartThrottle =  0.6858,1.4098,-14.5246,0.1949,-0.2082,-0.0033,-5.5
+;28
+AddPartThrottle =  0.6197,1.6837,-14.5203,0.0661,-0.2739,-0.0043,-5.5
+;29
+AddPartThrottle =  0.6992,1.9615,-14.5159,-0.0795,-0.2777,-0.0043,-5.5
+;30
+AddPartThrottle =  0.6992,1.9615,-14.5159,0.2056,0.1979,0.0031,5.5
+;31
+AddPartThrottle =  0.9048,2.1594,-14.5128,0.2739,0.0664,0.0011,5.5
+
+;32
+AddPartThrottle =  1.0567,2.181,-14.5012,0.226,0.0,0.0,6.51
+;33
+AddPartThrottle =  1.5197,2.057,-14.5012,-0.1957,0.113,0.0,-6.51
+;34
+AddPartThrottle =  1.6628,1.8311,-14.5012,-0.113,0.1957,0.0,-6.51
+;35
+AddPartThrottle =  1.6739,1.5639,-14.5012,-0.0,0.226,0.0,-6.51
+;36
+AddPartThrottle =  1.5498,1.327,-14.5012,0.113,0.1957,0.0,-6.51
+;37
+AddPartThrottle =  1.3239,1.1838,-14.5012,0.1957,0.113,0.0,-6.51
+;38
+AddPartThrottle =  1.0567,1.1728,-14.5012,0.226,0.0,0.0,-6.51
+;39
+AddPartThrottle =  1.0155,1.1838,-14.5012,-0.1957,0.113,0.0,6.51
+;40
+AddPartThrottle =  0.7897,1.327,-14.5012,-0.113,0.1957,0.0,6.51
+;41
+AddPartThrottle =  0.6656,1.5639,-14.5012,0.0,0.226,0.0,6.51
+;42
+AddPartThrottle =  0.6766,1.8311,-14.5012,0.113,0.1957,0.0,6.51
+;43
+AddPartThrottle =   0.8198,2.057,-14.5012,0.1957,0.113,0.0,6.51
+
+
+
+;44
+AddPartThrottle =  -1.1722,2.2258,-14.5117,0.2703,-0.0785,-0.0013,5
+;45
+AddPartThrottle =  -0.9020,2.1472,-14.513,0.1998,-0.205,-0.0032,5
+;46
+AddPartThrottle =  -0.7022,1.9422,-14.5162,0.0682,-0.2781,-0.0043,5
+;47
+AddPartThrottle =  -0.7178,1.3842,-14.525,0.0838,0.2799,0.0044,-5
+;48
+AddPartThrottle =  -0.9227,1.1882,-14.5281,0.2049,0.196,0.0031,-5
+;49
+AddPartThrottle =  -1.1969,1.1202,-14.5291,0.2742,0.0679,0.0011,-5
+;50
+AddPartThrottle =  -1.4703,1.2017,-14.5279,0.2734,-0.0814,-0.0013,-5
+;51
+AddPartThrottle =  -1.6652,1.4098,-14.5246,0.1949,-0.2082,-0.0033,-5
+;52
+AddPartThrottle =  -1.7313,1.6837,-14.5203,0.0661,-0.2739,-0.0043,-5
+;53
+AddPartThrottle =  -1.6518,1.9615,-14.5159,-0.0795,-0.2777,-0.0043,-5
+;54
+AddPartThrottle =  -1.6518,1.9615,-14.5159,0.2056,0.1979,0.0031,5
+;55
+AddPartThrottle =  -1.4462,2.1594,-14.5128,0.2739,0.0664,0.0011,5
+;56
+AddPartThrottle =  -1.2943,2.181,-14.5012,0.226,0.0,0.0,6.51
+;57
+AddPartThrottle =  -0.8313,2.057,-14.5012,-0.1957,0.113,0.0,-6.51
+;58
+AddPartThrottle =  -0.6882,1.8311,-14.5012,-0.113,0.1957,0.0,-6.51
+;59
+AddPartThrottle =  -0.6771,1.5639,-14.5012,-0.0,0.226,0.0,-6.51
+;60
+AddPartThrottle =  -0.8012,1.327,-14.5012,0.113,0.1957,0.0,-6.51
+;61
+AddPartThrottle =  -1.0271,1.1838,-14.5012,0.1957,0.113,0.0,-6.51
+;62
+AddPartThrottle =  -1.2943,1.1728,-14.5012,0.226,0.0,0.0,-6.51
+;63
+AddPartThrottle =  -1.3355,1.1838,-14.5012,-0.1957,0.113,0.0,6.51
+;64
+AddPartThrottle =  -1.5613,1.327,-14.5012,-0.113,0.1957,0.0,6.51
+;65
+AddPartThrottle =  -1.6854,1.5639,-14.5012,0.0,0.226,0.0,6.51
+;66
+AddPartThrottle =  -1.6744,1.8311,-14.5012,0.113,0.1957,0.0,6.51
+;67
+AddPartThrottle =  -1.5312,2.057,-14.5012,0.1957,0.113,0.0,6.51
+
+
+
+
+enableRadar=true
+RadarScanElevationDeg =140
+;俯仰扫描扇区总角度
+;范围=0~180（0=不扫描，180=上下全域）
+;默认值=40
+
+RadarFollowTurretYaw = false
+;是否让雷达水平正方向跟随坦克炮塔转向（仅坦克生效）
+;可选值=true|false
+;默认值：坦克=true，其它载具=false
+
+RadarElevationReference = AIRCRAFT
+;俯仰扫描参考系
+;可选值=HORIZON|AIRCRAFT
+;HORIZON=按平飞水平面计算（推荐地面载具）
+;AIRCRAFT=按机体当前姿态计算（推荐战斗机）
+;默认值=HORIZON
+
+RadarPanelFillAlpha=0.075
+
+RadarElevationCoverage = FULL
+;俯仰扫描覆盖模式
+;可选值=UP_ONLY|FULL
+;UP_ONLY=仅上视扫描（不下视）
+;FULL=全域扫描（上+下）
+;默认值=UP_ONLY
+RadarScanAzimuthDeg=140
+;水平扫描范围
+RadarScanTick=10
+;每多少 tick 扫一次
+RadarDetectChanceBase=0.9
+;基础命中概率
+RadarContactHoldTick=80
+;命中后显示保持时长
+RadarMaxTargetRange =1600
+;最大显示距离
+
+RadarTrackAzimuthDeg=140
+;雷达跟踪最大水平角度
+;建议不超过RadarScanAzimuthDeg
+;默认值=90
+RadarTrackElevationDeg=140
+;雷达跟踪最大俯仰角度
+RadarSearchType=MULTI_TWS
+enableBVR=true
+
+RadarMinScanAltitude=10
+RadarMaxScanAltitude=25
+
+RadarGainFactor=1.5,0.5
+NameOnRWR=J16

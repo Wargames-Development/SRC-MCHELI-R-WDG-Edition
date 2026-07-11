@@ -343,20 +343,29 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
         // HARM should never target aircraft.
         // It should only target ground MC Heli entities explicitly marked with HasAARadar = true.
 
-        if (entity instanceof MCH_EntityTank) {
-            return ((MCH_EntityTank) entity).hasAARadar();
+    private MCH_EntityAircraft getAircraftForEcmCheck(Entity entity) {
+        if (entity == null) {
+            return null;
         }
-
-        if (entity instanceof MCH_EntityVehicle) {
-            return ((MCH_EntityVehicle) entity).hasAARadar();
-        }
-
         if (entity instanceof MCH_EntityAircraft) {
-            return false;
+            return (MCH_EntityAircraft)entity;
         }
-
-        return false;
+        if (entity instanceof MCH_EntitySeat) {
+            return ((MCH_EntitySeat)entity).getParent();
+        }
+        Entity riding = entity.ridingEntity;
+        if (riding instanceof MCH_EntityAircraft) {
+            return (MCH_EntityAircraft)riding;
+        }
+        if (riding instanceof MCH_EntitySeat) {
+            return ((MCH_EntitySeat)riding).getParent();
+        }
+        if (riding instanceof MCH_EntityUavStation) {
+            return ((MCH_EntityUavStation)riding).getControlAircract();
+        }
+        return null;
     }
+
     public boolean canLockEntity(Entity entity) {
         // 如果不允许锁定玩家，且实体为玩家，则返回false
         if (this.ridableOnly && entity instanceof EntityPlayer && entity.ridingEntity == null) {
@@ -416,6 +425,12 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             // 雷达弹可以锁定箔条
             if (this.isRadarMissile && entity instanceof MCH_EntityChaff) {
                 return true; // RADAR decoy
+            }
+            if (this.isRadarMissile) {
+                MCH_EntityAircraft targetAc = getAircraftForEcmCheck(entity);
+                if (targetAc != null && targetAc.getAcInfo() != null && targetAc.getAcInfo().ecmJammerType == 2 && targetAc.isECMJammerUsing()) {
+                    return false;
+                }
             }
             if (targetEntity instanceof MCH_EntityAircraft) {
                 if (isRadarMissile && ((MCH_EntityAircraft) targetEntity).chaffUseTime > 0) {

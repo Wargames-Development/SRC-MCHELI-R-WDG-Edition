@@ -1,6 +1,8 @@
 package mcheli.tank;
 
 import com.google.common.io.ByteArrayDataInput;
+import mcheli.MCH_FreeLookDebug;
+import mcheli.MCH_ServerSettings;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
 import net.minecraft.entity.player.EntityPlayer;
@@ -105,6 +107,10 @@ public class MCH_TankPacketHandler {
                     }
 
                     if (pc.switchFreeLook > 0) {
+                        if (MCH_ServerSettings.enableDebugFreeLook) {
+                            MCH_FreeLookDebug.trace(tank.worldObj, player, "[Packet][Tank] player=%s acId=%d switchFreeLook=%d",
+                                player.getCommandSenderName(), tank.getEntityId(), pc.switchFreeLook);
+                        }
                         tank.switchFreeLookMode(pc.switchFreeLook == 1);
                     }
 

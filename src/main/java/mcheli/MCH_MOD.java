@@ -13,13 +13,21 @@ import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import mcheli.aircraft.*;
+import mcheli.block.MCH_BlockInfo;
+import mcheli.block.MCH_BlockInfoManager;
+import mcheli.block.MCH_ConfigBlock;
+import mcheli.block.MCH_ConfigSpawnerBlock;
+import mcheli.block.MCH_ConfigSpawnerTileEntity;
 import mcheli.block.MCH_DraftingTableBlock;
 import mcheli.block.MCH_DraftingTableTileEntity;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.chain.MCH_ItemChain;
 import mcheli.command.MCH_Command;
+import mcheli.command.MCH_CommandAddGunner;
 import mcheli.container.MCH_EntityContainer;
 import mcheli.container.MCH_ItemContainer;
+import mcheli.economy.MCH_EconomyEventHandler;
+import mcheli.economy.MCH_EconomyTechRegistry;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.flare.MCH_EntityFlare;
 import mcheli.gltd.MCH_EntityGLTD;
@@ -29,8 +37,18 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.helicopter.MCH_ItemHeli;
+import mcheli.lweapon.MCH_LightWeaponAmmoInfo;
+import mcheli.lweapon.MCH_LightWeaponAmmoInfoManager;
+import mcheli.lweapon.MCH_LightWeaponInfo;
+import mcheli.lweapon.MCH_LightWeaponInfoManager;
 import mcheli.lweapon.MCH_ItemLightWeaponBase;
 import mcheli.lweapon.MCH_ItemLightWeaponBullet;
+import mcheli.mob.MCH_EntityGunner;
+import mcheli.mob.MCH_EntityNPC;
+import mcheli.mob.MCH_GunnerInfo;
+import mcheli.mob.MCH_GunnerInfoManager;
+import mcheli.mob.MCH_ItemSpawnGunner;
+import mcheli.mob.MCH_ItemSpawnNPC;
 import mcheli.network.PacketHandler;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.parachute.MCH_ItemParachute;
@@ -38,6 +56,8 @@ import mcheli.plane.MCP_EntityPlane;
 import mcheli.plane.MCP_ItemPlane;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.plane.MCP_PlaneInfoManager;
+import mcheli.structure.MCH_StructureRuleManager;
+import mcheli.structure.MCH_WorldStructureGenerator;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.tank.MCH_ItemTank;
 import mcheli.tank.MCH_TankInfo;
@@ -57,12 +77,17 @@ import mcheli.vehicle.MCH_VehicleInfoManager;
 import mcheli.weapon.*;
 import mcheli.wrapper.*;
 import net.minecraft.command.CommandHandler;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item.ToolMaterial;
+import net.minecraft.item.Item;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.MinecraftForge;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.Locale;
 
 @Mod(
     modid = "mcheli",
@@ -81,7 +106,8 @@ public class MCH_MOD {
     public static final String MOD_CH = "MCHeli_CH";
     public static final PacketHandler newPacketHandler = new PacketHandler();
     public static final MCH_EntityInfoManager entityInfoManager = new MCH_EntityInfoManager();
-    public static String VER = "@VERSION@";
+    public static final MCH_RWRThreatManager rwrThreatManager = new MCH_RWRThreatManager();
+    public static String VER = "";
     @Instance("mcheli")
     public static MCH_MOD instance;
     @SidedProxy(
@@ -107,13 +133,20 @@ public class MCH_MOD {
     public static MCH_ItemFuel itemFuel;
     public static MCH_ItemWrench itemWrench;
     public static MCH_ItemRangeFinder itemRangeFinder;
-    //public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
-    //public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerAA;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerEnemy;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonsterStupid;
+    public static MCH_ItemSpawnGunner itemSpawnGunnerEnemyStupid;
+    public static MCH_ItemSpawnNPC itemSpawnNPC;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
     public static MCH_CreativeTabs creativeTabsTank;
     public static MCH_CreativeTabs creativeTabsVehicle;
+    public static MCH_CreativeTabs creativeTabsBlock;
+    public static MCH_CreativeTabs creativeTabsGunner;
     public static MCH_DraftingTableBlock blockDraftingTable;
     public static MCH_DraftingTableBlock blockDraftingTableLit;
 
@@ -284,6 +317,8 @@ public class MCH_MOD {
         creativeTabsPlane = new MCH_CreativeTabs("MCH-Reforged Planes");
         creativeTabsTank = new MCH_CreativeTabs("MCH-Reforged Tanks");
         creativeTabsVehicle = new MCH_CreativeTabs("MCH-Reforged Vehicles");
+        creativeTabsBlock = new MCH_CreativeTabs("MCH-Reforged Blocks");
+        creativeTabsGunner = new MCH_CreativeTabs("MCH-Reforged Gunners");
         W_ItemList.init();
         config = proxy.loadConfig("config/mcheli.cfg");
         proxy.loadHUD(sourcePath + "/assets/" + "mcheli" + "/hud");
@@ -293,9 +328,18 @@ public class MCH_MOD {
         MCH_TankInfoManager.getInstance().load(sourcePath + "/assets/" + "mcheli" + "/", "tanks");
         MCH_VehicleInfoManager.getInstance().load(sourcePath + "/assets/" + "mcheli" + "/", "vehicles");
         MCH_ThrowableInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/throwable");
+        MCH_BlockInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/blocks");
+        MCH_GunnerInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/");
+        MCH_EconomyTechRegistry.ensureInitialized();
+        MCH_LightWeaponAmmoInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapon_ammo");
+        MCH_LightWeaponInfoManager.load(sourcePath + "/assets/" + "mcheli" + "/lweapons");
         MCH_SoundsJson.update(sourcePath + "/assets/" + "mcheli" + "/");
+        MCH_StructureRuleManager.load(new File("config/mcheli/structure_rules"));
         MCH_Lib.Log("Register item");
         this.registerItemRangeFinder();
+        this.registerItemSpawnGunner();
+        this.registerItemSpawnNPC();
+        this.registerConfiguredGunnerItems();
         this.registerItemWrench();
         this.registerItemFuel();
         this.registerItemGLTD();
@@ -311,18 +355,20 @@ public class MCH_MOD {
         MCH_DraftingTableBlock var10000 = new MCH_DraftingTableBlock(MCH_Config.BlockID_DraftingTableOFF.prmInt, false);
         blockDraftingTable = var10000;
         blockDraftingTable.setBlockName("drafting_table");
-        blockDraftingTable.setCreativeTab(creativeTabs);
+        blockDraftingTable.setCreativeTab(creativeTabsBlock);
         var10000 = new MCH_DraftingTableBlock(MCH_Config.BlockID_DraftingTableON.prmInt, true);
         blockDraftingTableLit = var10000;
         blockDraftingTableLit.setBlockName("lit_drafting_table");
         GameRegistry.registerBlock(blockDraftingTable, "drafting_table");
         GameRegistry.registerBlock(blockDraftingTableLit, "lit_drafting_table");
+        this.registerConfiguredBlocks();
         W_LanguageRegistry.addName(blockDraftingTable, "Drafting Table");
         W_LanguageRegistry.addNameForObject(blockDraftingTable, "zh_CN", "蓝图制作台");
         MCH_Achievement.PreInit();
         MCH_Lib.Log("Register system");
         W_NetworkRegistry.registerChannel(packetHandler, "MCHeli_CH");
         MinecraftForge.EVENT_BUS.register(new MCH_EventHook());
+        MinecraftForge.EVENT_BUS.register(new MCH_EconomyEventHandler());
 
         proxy.registerClientTick();
 
@@ -357,6 +403,8 @@ public class MCH_MOD {
     public void init(FMLInitializationEvent evt) {
         getPacketHandler().initialise();
         GameRegistry.registerTileEntity(MCH_DraftingTableTileEntity.class, "drafting_table");
+        GameRegistry.registerTileEntity(MCH_ConfigSpawnerTileEntity.class, "mcheli_config_spawner");
+        GameRegistry.registerWorldGenerator(new MCH_WorldStructureGenerator(), 20);
         proxy.registerBlockRenderer();
     }
 
@@ -368,6 +416,8 @@ public class MCH_MOD {
         creativeTabsPlane.setFixedIconItem(MCH_Config.CreativeTabIconPlane.prmString);
         creativeTabsTank.setFixedIconItem(MCH_Config.CreativeTabIconTank.prmString);
         creativeTabsVehicle.setFixedIconItem(MCH_Config.CreativeTabIconVehicle.prmString);
+        creativeTabsBlock.setFixedIconItem("drafting_table");
+        creativeTabsGunner.setFixedIconItem("gunner_aa");
         MCH_ItemRecipe.registerItemRecipe();
         MCH_WeaponInfoManager.setRoundItems();
         proxy.readClientModList();
@@ -378,26 +428,255 @@ public class MCH_MOD {
         proxy.registerServerTick();
     }
 
-    //private void registerItemSpawnGunner() {
-    //   /* 270 */     String name = "spawn_gunner_vs_monster";
-    //   /* 271 */     MCH_ItemSpawnGunner item = new MCH_ItemSpawnGunner();
-    //   /* 272 */     item.targetType = 0;
-    //   /* 273 */     item.primaryColor = 12632224;
-    //   /* 274 */     item.secondaryColor = 12582912;
-    //   /* 275 */     itemSpawnGunnerVsMonster = item;
-    //   /* 276 */     registerItem((W_Item)item, name, creativeTabs);
-    //   /* 277 */     W_LanguageRegistry.addName(item, "Gunner (vs Monster)");
-    //   /* 278 */     W_LanguageRegistry.addNameForObject(item, "ja_JP", "対モンスター 射撃手");
-    //   /* 279 */     name = "spawn_gunner_vs_player";
-    //   /* 280 */     item = new MCH_ItemSpawnGunner();
-    //   /* 281 */     item.targetType = 1;
-    //   /* 282 */     item.primaryColor = 12632224;
-    //   /* 283 */     item.secondaryColor = 49152;
-    //   /* 284 */     itemSpawnGunnerVsPlayer = item;
-    //   /* 285 */     registerItem((W_Item)item, name, creativeTabs);
-    //   /* 286 */     W_LanguageRegistry.addName(item, "Gunner (vs Player of other team)");
-    //   /* 287 */     W_LanguageRegistry.addNameForObject(item, "ja_JP", "対他チームプレイヤー 射撃手");
-    //   /*     */   }
+    private void registerItemSpawnGunner() {
+        itemSpawnGunnerVsMonster = registerLegacyOrProfileGunner(
+            "spawn_gunner_vs_monster", "gunner_friendly_default",
+            0, false, true, 12632224, 12582912,
+            "Gunner [Friendly]", "対モンスター 射撃手", "炮手[友好]"
+        );
+        itemSpawnGunnerVsPlayer = registerLegacyOrProfileGunner(
+            "spawn_gunner_vs_player", "gunner_player_default",
+            1, false, true, 12632224, 49152,
+            "Gunner [Faction]", "対他チームプレイヤー 射撃手", "炮手[阵营]"
+        );
+        itemSpawnGunnerAA = registerLegacyOrProfileGunner(
+            "gunner_aa", "gunner_aa_default",
+            2, false, true, 12632224, 32768,
+            "Gunner [Anti-Missile]", "対弾薬迎撃 射撃手", "炮手[反导]"
+        );
+        itemSpawnGunnerEnemy = registerLegacyOrProfileGunner(
+            "gunner_enemy", "gunner_enemy_default",
+            3, false, true, 12632224, 2228224,
+            "Gunner [Hostile]", "敵対 射撃手", "炮手[敌对]"
+        );
+        itemSpawnGunnerVsMonsterStupid = registerLegacyOrProfileGunner(
+            "gunner_friendly_stupid", "gunner_friendly_stupid_default",
+            0, true, false, 12632224, 12582912,
+            "Gunner [Friendly][Stupid]", "対モンスター 射撃手[愚人]", "炮手[愚人][友好]"
+        );
+        itemSpawnGunnerEnemyStupid = registerLegacyOrProfileGunner(
+            "gunner_enemy_stupid", "gunner_enemy_stupid_default",
+            3, true, false, 12632224, 2228224,
+            "Gunner [Hostile][Stupid]", "敵対 射撃手[愚人]", "炮手[愚人][敌对]"
+        );
+    }
+
+    private MCH_ItemSpawnGunner registerLegacyOrProfileGunner(String registerName, String profileKey,
+                                                               int fallbackTargetType, boolean fallbackStupid, boolean fallbackLayeredIcon,
+                                                               int fallbackPrimaryColor, int fallbackSecondaryColor,
+                                                               String fallbackDisplayName, String fallbackJa, String fallbackZh) {
+        MCH_GunnerInfo profile = MCH_GunnerInfoManager.get(profileKey);
+        MCH_ItemSpawnGunner item = new MCH_ItemSpawnGunner();
+        if (profile != null && profile.isValidData()) {
+            item.targetType = profile.targetType;
+            item.isStupid = profile.stupidGunner;
+            item.useLayeredIcon = profile.useLayeredIcon;
+            item.applyItemColorTint = profile.applyItemColorTint;
+            item.primaryColor = profile.primaryColor;
+            item.secondaryColor = profile.secondaryColor;
+            item.gunnerProfileName = profile.name;
+            registerItem(item, registerName, creativeTabsGunner);
+            W_LanguageRegistry.addName(item, profile.displayName);
+            for (String lang : profile.displayNameLang.keySet()) {
+                W_LanguageRegistry.addNameForObject(item, lang, profile.displayNameLang.get(lang));
+            }
+            MCH_Lib.Log("[mcheli] Gunner legacy item '%s' mapped to profile '%s'.", registerName, profileKey);
+            return item;
+        }
+
+        item.targetType = fallbackTargetType;
+        item.isStupid = fallbackStupid;
+        item.useLayeredIcon = fallbackLayeredIcon;
+        item.primaryColor = fallbackPrimaryColor;
+        item.secondaryColor = fallbackSecondaryColor;
+        registerItem(item, registerName, creativeTabsGunner);
+        W_LanguageRegistry.addName(item, fallbackDisplayName);
+        W_LanguageRegistry.addNameForObject(item, "ja_JP", fallbackJa);
+        W_LanguageRegistry.addNameForObject(item, "zh_CN", fallbackZh);
+        MCH_Lib.Log("[mcheli] Gunner profile '%s' missing/invalid, fallback to legacy item '%s'.", profileKey, registerName);
+        return item;
+    }
+
+    private void registerItemSpawnNPC() {
+        itemSpawnNPC = new MCH_ItemSpawnNPC();
+        registerItem(itemSpawnNPC, "spawn_npc", creativeTabsGunner);
+        W_LanguageRegistry.addName(itemSpawnNPC, "NPC Spawn Egg");
+        W_LanguageRegistry.addNameForObject(itemSpawnNPC, "ja_JP", "NPC 召喚卵");
+        W_LanguageRegistry.addNameForObject(itemSpawnNPC, "zh_CN", "NPC生成蛋");
+    }
+
+    private void registerConfiguredGunnerItems() {
+        for (MCH_GunnerInfo info : MCH_GunnerInfoManager.getValues()) {
+            if (info == null || info.itemName == null || info.itemName.trim().isEmpty()) {
+                continue;
+            }
+            String regName = info.itemName.trim().toLowerCase(Locale.ROOT);
+            if (regName.equals("spawn_gunner_vs_monster")
+                || regName.equals("spawn_gunner_vs_player")
+                || regName.equals("gunner_aa")
+                || regName.equals("gunner_enemy")
+                || regName.equals("gunner_friendly_stupid")
+                || regName.equals("gunner_enemy_stupid")) {
+                continue;
+            }
+            MCH_ItemSpawnGunner item = new MCH_ItemSpawnGunner();
+            item.targetType = info.targetType;
+            item.isStupid = info.stupidGunner;
+            item.useLayeredIcon = info.useLayeredIcon;
+            item.applyItemColorTint = info.applyItemColorTint;
+            item.primaryColor = info.primaryColor;
+            item.secondaryColor = info.secondaryColor;
+            item.gunnerProfileName = info.name;
+            registerItem(item, regName, creativeTabsGunner);
+            W_LanguageRegistry.addName(item, info.displayName);
+            for (String lang : info.displayNameLang.keySet()) {
+                W_LanguageRegistry.addNameForObject(item, lang, info.displayNameLang.get(lang));
+            }
+        }
+    }
+
+    private void registerConfiguredBlocks() {
+        int regOrder = 0;
+        for (MCH_BlockInfo info : MCH_BlockInfoManager.getValues()) {
+            regOrder++;
+            Block block;
+            if (info.enableSpawner || info.enableWaypoint) {
+                block = new MCH_ConfigSpawnerBlock(info, this.resolveMaterial(info.materialName));
+            } else {
+                block = new MCH_ConfigBlock(this.resolveMaterial(info.materialName), info.textureName);
+            }
+            block.setBlockName(info.name);
+            block.setHardness(info.hardness);
+            block.setResistance(info.resistance);
+            block.setLightLevel(info.lightLevel);
+            block.setStepSound(this.resolveStepSound(info.stepSound));
+            CreativeTabs creativeTab = this.resolveCreativeTab(info.creativeTab);
+            block.setCreativeTab(creativeTab);
+            GameRegistry.registerBlock(block, info.name);
+            MCH_Lib.Log(
+                "[mcheli][block-reg] order=%03d key=%s block=%s id=%d src=%s",
+                regOrder,
+                info.name,
+                block.getUnlocalizedName(),
+                Block.getIdFromBlock(block),
+                info.filePath != null ? info.filePath : "<unknown>"
+            );
+            info.block = block;
+            W_LanguageRegistry.addName(block, info.displayName);
+            for (String lang : info.displayNameLang.keySet()) {
+                W_LanguageRegistry.addNameForObject(block, lang, info.displayNameLang.get(lang));
+            }
+            Item item = W_Item.getItemFromBlock(block);
+            if (item != null && creativeTab instanceof MCH_CreativeTabs) {
+                ((MCH_CreativeTabs) creativeTab).addIconItem(item);
+            }
+        }
+    }
+
+    private Material resolveMaterial(String materialName) {
+        if (materialName == null) {
+            return Material.iron;
+        }
+        String key = materialName.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("rock") || key.equals("stone")) {
+            return Material.rock;
+        }
+        if (key.equals("wood")) {
+            return Material.wood;
+        }
+        if (key.equals("ground") || key.equals("dirt")) {
+            return Material.ground;
+        }
+        if (key.equals("grass")) {
+            return Material.grass;
+        }
+        if (key.equals("sand")) {
+            return Material.sand;
+        }
+        if (key.equals("glass")) {
+            return Material.glass;
+        }
+        if (key.equals("cloth")) {
+            return Material.cloth;
+        }
+        if (key.equals("clay")) {
+            return Material.clay;
+        }
+        if (key.equals("anvil")) {
+            return Material.anvil;
+        }
+        if (key.equals("water")) {
+            return Material.water;
+        }
+        if (key.equals("lava")) {
+            return Material.lava;
+        }
+        if (key.equals("ice")) {
+            return Material.ice;
+        }
+        return Material.iron;
+    }
+
+    private Block.SoundType resolveStepSound(String stepSoundName) {
+        if (stepSoundName == null) {
+            return Block.soundTypeMetal;
+        }
+        String key = stepSoundName.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("stone")) {
+            return Block.soundTypeStone;
+        }
+        if (key.equals("wood")) {
+            return Block.soundTypeWood;
+        }
+        if (key.equals("gravel")) {
+            return Block.soundTypeGravel;
+        }
+        if (key.equals("grass")) {
+            return Block.soundTypeGrass;
+        }
+        if (key.equals("cloth")) {
+            return Block.soundTypeCloth;
+        }
+        if (key.equals("sand")) {
+            return Block.soundTypeSand;
+        }
+        if (key.equals("glass")) {
+            return Block.soundTypeGlass;
+        }
+        if (key.equals("ladder")) {
+            return Block.soundTypeLadder;
+        }
+        if (key.equals("anvil")) {
+            return Block.soundTypeAnvil;
+        }
+        return Block.soundTypeMetal;
+    }
+
+    private MCH_CreativeTabs resolveCreativeTab(String tabName) {
+        if (tabName == null) {
+            return creativeTabsBlock != null ? creativeTabsBlock : creativeTabs;
+        }
+        String key = tabName.trim().toLowerCase(Locale.ROOT);
+        if (key.equals("misc") || key.equals("item")) {
+            return creativeTabs;
+        }
+        if (key.equals("heli") || key.equals("helicopter")) {
+            return creativeTabsHeli;
+        }
+        if (key.equals("plane")) {
+            return creativeTabsPlane;
+        }
+        if (key.equals("tank")) {
+            return creativeTabsTank;
+        }
+        if (key.equals("vehicle")) {
+            return creativeTabsVehicle;
+        }
+        if (key.equals("block") || key.equals("blocks")) {
+            return creativeTabsBlock != null ? creativeTabsBlock : creativeTabs;
+        }
+        return creativeTabsBlock != null ? creativeTabsBlock : creativeTabs;
+    }
 
     public void registerEntity() {
         EntityRegistry.registerModEntity(MCH_EntitySeat.class, "MCH.E.Seat", 100, this, 200, 10, true);
@@ -426,6 +705,8 @@ public class MCH_MOD {
         EntityRegistry.registerModEntity(MCH_EntityDispensedItem.class, "MCH.E.DispItem", 210, this, 530, 5, true);
         EntityRegistry.registerModEntity(MCH_EntityFlare.class, "MCH.E.Flare", 300, this, 330, 10, true);
         EntityRegistry.registerModEntity(MCH_EntityThrowable.class, "MCH.E.Throwable", 400, this, 330, 10, true);
+        EntityRegistry.registerModEntity(MCH_EntityGunner.class, "MCH.E.Gunner", 500, this, 530, 5, true);
+        EntityRegistry.registerModEntity(MCH_EntityNPC.class, "MCH.E.NPC", 501, this, 80, 3, true);
         EntityRegistry.registerModEntity(MCH_EntityLockBox.class, "MCH.E.LockBox", 401, this, 32, 20, false);
         EntityRegistry.registerModEntity(MCH_EntityChaff.class, "MCH.E.Chaff", 402, this, 330, 10, true);
         EntityRegistry.registerModEntity(EntityNukeTorex.class, "MCH.E.Nuke", 403, this, 1000, 20, false);
@@ -435,6 +716,7 @@ public class MCH_MOD {
     public void registerCommand(FMLServerStartedEvent e) {
         CommandHandler handler = (CommandHandler) FMLCommonHandler.instance().getSidedDelegate().getServer().getCommandManager();
         handler.registerCommand(new MCH_Command());
+        handler.registerCommand(new MCH_CommandAddGunner());
     }
 
     private void registerItemRangeFinder() {
@@ -489,37 +771,93 @@ public class MCH_MOD {
     }
 
     public void registerItemLightWeapon() {
-        String name = "fim92";
-        MCH_ItemLightWeaponBase var10000 = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemStingerBullet);
-        MCH_ItemLightWeaponBase item = var10000;
-        itemStinger = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FIM-92 Stringer");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 刺针飞弹");
-        name = "fgm148";
-        var10000 = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemJavelinBullet);
-        item = var10000;
-        itemJavelin = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FGM-148 Javelin");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 标枪飞弹");
+        if (!MCH_LightWeaponInfoManager.getValues().isEmpty()) {
+            for (MCH_LightWeaponInfo info : MCH_LightWeaponInfoManager.getValues()) {
+                MCH_LightWeaponAmmoInfo ammoInfo = MCH_LightWeaponAmmoInfoManager.get(info.ammoItemName);
+                MCH_ItemLightWeaponBullet ammoItem = ammoInfo != null ? ammoInfo.item : null;
+                if (ammoItem == null) {
+                    MCH_Lib.Log("Skip light weapon %s : ammo %s not found", info.name, info.ammoItemName);
+                    continue;
+                }
+                MCH_ItemLightWeaponBase item = new MCH_ItemLightWeaponBase(info.itemID, ammoItem, info);
+                info.item = item;
+                registerItem(item, info.name, creativeTabs);
+                if (!info.textureName.isEmpty()) {
+                    item.setTexture(info.textureName);
+                }
+                W_LanguageRegistry.addName(item, info.displayName);
+                for (String lang : info.displayNameLang.keySet()) {
+                    W_LanguageRegistry.addNameForObject(item, lang, info.displayNameLang.get(lang));
+                }
+                String lower = info.name.toLowerCase(Locale.ROOT);
+                if (lower.equals("fim92") || lower.equals("fim192")) {
+                    itemStinger = item;
+                } else if (lower.equals("fgm148")) {
+                    itemJavelin = item;
+                } else if (lower.equals("rpg7")) {
+                    itemRpg = item;
+                }
+            }
+        }
+
+        if (itemStinger == null && itemStingerBullet != null) {
+            String name = "fim92";
+            MCH_ItemLightWeaponBase item = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemStingerBullet);
+            itemStinger = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FIM-92 Stringer");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 刺针飞弹");
+        }
+        if (itemJavelin == null && itemJavelinBullet != null) {
+            String name = "fgm148";
+            MCH_ItemLightWeaponBase item = new MCH_ItemLightWeaponBase(MCH_Config.ItemID_Stinger.prmInt, itemJavelinBullet);
+            itemJavelin = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FGM-148 Javelin");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 标枪飞弹");
+        }
     }
 
     public void registerItemLightWeaponBullet() {
-        String name = "fim92_bullet";
-        MCH_ItemLightWeaponBullet var10000 = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
-        MCH_ItemLightWeaponBullet item = var10000;
-        itemStingerBullet = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FIM-92 Stringer Ammo");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 弹药");
-        name = "fgm148_bullet";
-        var10000 = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
-        item = var10000;
-        itemJavelinBullet = item;
-        registerItem(item, name, creativeTabs);
-        W_LanguageRegistry.addName(item, "FGM-148 Javelin Ammo");
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 弹药");
+        if (!MCH_LightWeaponAmmoInfoManager.getValues().isEmpty()) {
+            for (MCH_LightWeaponAmmoInfo info : MCH_LightWeaponAmmoInfoManager.getValues()) {
+                MCH_ItemLightWeaponBullet item = new MCH_ItemLightWeaponBullet(info.itemID, info.stackSize);
+                info.item = item;
+                registerItem(item, info.name, creativeTabs);
+                if (!info.textureName.isEmpty()) {
+                    item.setTexture(info.textureName);
+                }
+                W_LanguageRegistry.addName(item, info.displayName);
+                for (String lang : info.displayNameLang.keySet()) {
+                    W_LanguageRegistry.addNameForObject(item, lang, info.displayNameLang.get(lang));
+                }
+                String lower = info.name.toLowerCase(Locale.ROOT);
+                if (lower.equals("fim92_bullet") || lower.equals("fim192_bullet")) {
+                    itemStingerBullet = item;
+                } else if (lower.equals("fgm148_bullet")) {
+                    itemJavelinBullet = item;
+                } else if (lower.equals("rpg7_bullet") || lower.equals("rpg_bullet")) {
+                    itemRpgBullet = item;
+                }
+            }
+        }
+
+        if (itemStingerBullet == null) {
+            String name = "fim92_bullet";
+            MCH_ItemLightWeaponBullet item = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
+            itemStingerBullet = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FIM-92 Stringer Ammo");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FIM-92 弹药");
+        }
+        if (itemJavelinBullet == null) {
+            String name = "fgm148_bullet";
+            MCH_ItemLightWeaponBullet item = new MCH_ItemLightWeaponBullet(MCH_Config.ItemID_StingerMissile.prmInt);
+            itemJavelinBullet = item;
+            registerItem(item, name, creativeTabs);
+            W_LanguageRegistry.addName(item, "FGM-148 Javelin Ammo");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "FGM-148 弹药");
+        }
     }
 
     public void registerItemChain() {

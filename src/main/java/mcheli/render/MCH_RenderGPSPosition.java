@@ -1,17 +1,25 @@
 package mcheli.render;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
+import mcheli.lweapon.MCH_ItemLightWeaponBase;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_GPSPosition;
+import mcheli.weapon.MCH_LaserGuidanceSystem;
+import mcheli.weapon.MCH_LaserStateStore;
+import mcheli.weapon.MCH_WeaponBase;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
@@ -36,13 +44,34 @@ public class MCH_RenderGPSPosition {
         } else if (player.ridingEntity instanceof MCH_EntityUavStation) {
             ac = ((MCH_EntityUavStation) player.ridingEntity).getControlAircract();
         }
-        if (ac == null) return;
+        boolean renderGps = isAircraftGpsWeaponContext(player, ac);
+        boolean renderLzr = isHandheldLaserContext(player, ac);
+        if (!renderGps && !renderLzr) {
+            return;
+        }
 
-        MCH_GPSPosition gps = MCH_GPSPosition.currentClientGPSPosition;
-        if (gps == null || !gps.isActive()) return;
+        double gx;
+        double gy;
+        double gz;
+        if (renderGps) {
+            MCH_GPSPosition gps = MCH_GPSPosition.currentClientGPSPosition;
+            if (gps == null || !gps.isActive()) {
+                return;
+            }
+            gx = gps.x;
+            gy = gps.y;
+            gz = gps.z;
+        } else {
+            MCH_LaserStateStore.LaserState handheld = MCH_LaserStateStore.getClientState(player.getEntityId(), MCH_LaserStateStore.SOURCE_HANDHELD);
+            if (handheld == null || !handheld.active) {
+                return;
+            }
+            gx = handheld.x;
+            gy = handheld.y;
+            gz = handheld.z;
+        }
 
         // —— 世界/相机坐标 ——
-        final double gx = gps.x, gy = gps.y, gz = gps.z;
         RenderManager rm = RenderManager.instance;
         final double camX = rm.viewerPosX, camY = rm.viewerPosY, camZ = rm.viewerPosZ;
         final double x = gx - camX, y = gy - camY, z = gz - camZ;
@@ -61,13 +90,8 @@ public class MCH_RenderGPSPosition {
         double dot = Math.max(-1.0, Math.min(1.0, vx*look.x + vy*look.y + vz*look.z));
         double angleDeg = Math.toDegrees(Math.acos(dot));
 
-        float alpha;
-        boolean inLock = false;
-        if (angleDeg <= 1.5) { alpha = 1.0f; inLock = true; }
-        else if (angleDeg <= 3.0)  alpha = 1.0f;
-        else if (angleDeg <= 6.0)  alpha = 0.8f;
-        else if (angleDeg <= 9.0)  alpha = 0.6f;
-        else                       alpha = 0.4f; // 最小透明度 0.4
+        boolean inLock = angleDeg <= 1.5;
+        float alpha = 1.0F;
 
         // —— 基于 FOV 的恒定像素大小 ——
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
@@ -103,28 +127,46 @@ public class MCH_RenderGPSPosition {
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             GL11.glDisable(GL11.GL_LIGHTING);
 
-            // 图标
-            if (inLock) GL11.glColor4f(1.0F, 0F, 0F, 1.0F);
-            else        GL11.glColor4f(0F, 1.0F, 0F, alpha);
-
-            Minecraft.getMinecraft().getTextureManager().bindTexture(GPS_POS);
             Tessellator tess = Tessellator.instance;
             float half = ICON_SIZE_PX * 0.5f;
-            tess.startDrawingQuads();
-            tess.addVertexWithUV(-half,  half, 0, 0, 1);
-            tess.addVertexWithUV( half,  half, 0, 1, 1);
-            tess.addVertexWithUV( half, -half, 0, 1, 0);
-            tess.addVertexWithUV(-half, -half, 0, 0, 0);
-            tess.draw();
+            if (renderGps) {
+                GL11.glEnable(GL11.GL_TEXTURE_2D);
+                GL11.glColor4f(inLock ? 1.0F : 0.0F, inLock ? 0.0F : 1.0F, 0.0F, inLock ? 1.0F : alpha);
+                mc.getTextureManager().bindTexture(GPS_POS);
+                tess.startDrawingQuads();
+                tess.addVertexWithUV(-half, half, 0.0D, 0.0D, 1.0D);
+                tess.addVertexWithUV(half, half, 0.0D, 1.0D, 1.0D);
+                tess.addVertexWithUV(half, -half, 0.0D, 1.0D, 0.0D);
+                tess.addVertexWithUV(-half, -half, 0.0D, 0.0D, 0.0D);
+                tess.draw();
+            } else {
+                GL11.glDisable(GL11.GL_TEXTURE_2D);
+                GL11.glLineWidth(2.0F);
+                tess.startDrawing(2);
+                tess.setColorRGBA_F(inLock ? 1.0F : 0.0F, inLock ? 0.0F : 1.0F, 0.0F, inLock ? 1.0F : alpha);
+                tess.addVertex(-half - 1.0F, -half - 1.0F, 0.0D);
+                tess.addVertex(-half - 1.0F, half + 1.0F, 0.0D);
+                tess.addVertex(half + 1.0F, half + 1.0F, 0.0D);
+                tess.addVertex(half + 1.0F, -half - 1.0F, 0.0D);
+                tess.draw();
+                tess.startDrawing(1);
+                tess.setColorRGBA_F(inLock ? 1.0F : 0.0F, inLock ? 0.0F : 1.0F, 0.0F, inLock ? 1.0F : alpha);
+                tess.addVertex(-half, 0.0D, 0.0D);
+                tess.addVertex(half, 0.0D, 0.0D);
+                tess.addVertex(0.0D, -half, 0.0D);
+                tess.addVertex(0.0D, half, 0.0D);
+                tess.draw();
+            }
 
             // 文字（固定像素大小）
-            String text = String.format("[GPS %.1fm]", player.getDistance((float)gx, (float)gy, (float)gz));
+            String text = String.format(renderGps ? "[GPS %.1fm]" : "[LZR %.1fm]", player.getDistance((float)gx, (float)gy, (float)gz));
             int color = inLock ? 0xFF0000 : 0x00FF00;
             GL11.glTranslatef(0.0F, ICON_SIZE_PX * 0.5f + 8.0f, 0.0F);
             int fw = mc.fontRenderer.getStringWidth(text);
             mc.fontRenderer.drawString(text, -fw / 2, 0, color, false);
 
             // 还原
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_LIGHTING);
             GL11.glDisable(GL11.GL_BLEND);
             GL11.glDepthMask(true);
@@ -135,7 +177,37 @@ public class MCH_RenderGPSPosition {
     }
 
     private float getViewRollDeg(Minecraft mc, MCH_EntityAircraft ac, float partialTicks) {
-        return -ac.rotationRoll;
+        return ac != null ? -ac.rotationRoll : 0.0F;
+    }
+
+    private boolean isAircraftGpsWeaponContext(EntityPlayer player, MCH_EntityAircraft ac) {
+        if (player == null || ac == null) {
+            return false;
+        }
+        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
+        if (ws == null) {
+            return false;
+        }
+        MCH_WeaponInfo info = ws.getInfo();
+        return info != null && info.isGPSMissile;
+    }
+
+    private boolean isHandheldLaserContext(EntityPlayer player, MCH_EntityAircraft ac) {
+        if (player == null || ac != null) {
+            return false;
+        }
+        ItemStack held = player.getHeldItem();
+        if (held == null || !(held.getItem() instanceof MCH_ItemLightWeaponBase)) {
+            return false;
+        }
+        MCH_WeaponBase weapon = MCH_ClientLightWeaponTickHandler.getCurrentWeapon();
+        if (weapon == null || weapon.getInfo() == null) {
+            return false;
+        }
+        if ("tvmissile".equalsIgnoreCase(weapon.getInfo().type)) {
+            return weapon.getCurrentMode() == 1;
+        }
+        return weapon.getGuidanceSystem() instanceof MCH_LaserGuidanceSystem || weapon.getInfo().laserGuidance;
     }
 
 

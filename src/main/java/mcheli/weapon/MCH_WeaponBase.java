@@ -5,6 +5,7 @@ import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraft.util.Vec3;
@@ -19,6 +20,7 @@ public abstract class MCH_WeaponBase {
     protected static final Random rand = new Random();
     public final World worldObj;
     public final Vec3 position;
+    public Vec3 muzzleFlashPosition;
     public final float fixRotationYaw;
     public final float fixRotationPitch;
     public final String name;
@@ -180,6 +182,10 @@ public abstract class MCH_WeaponBase {
         prm.posX += v.xCoord;
         prm.posY += v.yCoord;
         prm.posZ += v.zCoord;
+        Vec3 v1 = this.getMuzzleFlashPos(prm.entity);
+        prm.muzzleFlashPosX += v1.xCoord;
+        prm.muzzleFlashPosY += v1.yCoord;
+        prm.muzzleFlashPosZ += v1.zCoord;
 
         if (this.shot(prm)) {
             this.tick = 0;
@@ -194,6 +200,20 @@ public abstract class MCH_WeaponBase {
             return ((MCH_EntityAircraft) entity).calcOnTurretPos(this.position);
         } else {
             Vec3 v = Vec3.createVectorHelper(this.position.xCoord, this.position.yCoord, this.position.zCoord);
+            float roll = entity instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft) entity).getRotRoll() : 0.0F;
+            return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);
+        }
+    }
+
+    public Vec3 getMuzzleFlashPos(Entity entity) {
+        Vec3 muzzlePos = this.muzzleFlashPosition != null ? this.muzzleFlashPosition : this.position;
+        if (muzzlePos == null) {
+            return Vec3.createVectorHelper(0.0D, 0.0D, 0.0D);
+        }
+        if (entity instanceof MCH_EntityAircraft && this.onTurret) {
+            return ((MCH_EntityAircraft) entity).calcOnTurretPos(muzzlePos);
+        } else {
+            Vec3 v = Vec3.createVectorHelper(muzzlePos.xCoord, muzzlePos.yCoord, muzzlePos.zCoord);
             float roll = entity instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft) entity).getRotRoll() : 0.0F;
             return MCH_Lib.RotVec3(v, -entity.rotationYaw, -entity.rotationPitch, -roll);
         }
@@ -282,7 +302,92 @@ public abstract class MCH_WeaponBase {
         }
     }
 
+    public Vec3 getPredictedImpactPoint(MCH_WeaponParam prm) {
+        if (this.weaponInfo == null) {
+            return null;
+        }
+        Vec3 v = MCH_Lib.RotVec3(0.0D, 0.0D, 1.0D, -prm.rotYaw, -prm.rotPitch, -prm.rotRoll);
+        double s = Math.sqrt(v.xCoord * v.xCoord + v.yCoord * v.yCoord + v.zCoord * v.zCoord);
+        if (s <= 1.0E-7D) {
+            return null;
+        }
+        double acceleration = this.acceleration;
+        if (this.weaponInfo.speedDependsAircraft && prm.entity instanceof MCH_EntityAircraft) {
+            Entity ac = prm.entity;
+            acceleration += Math.sqrt(ac.motionX * ac.motionX + ac.motionY * ac.motionY + ac.motionZ * ac.motionZ);
+        }
+        double speed = acceleration < 4.0D ? acceleration : 4.0D;
+        if (speed <= 1.0E-7D) {
+            return null;
+        }
+        double accelerationFactor = 1.0D;
+        if (this.weaponInfo.type != null && this.weaponInfo.type.equalsIgnoreCase("rocket") && acceleration > 4.0D) {
+            accelerationFactor = acceleration / 4.0D;
+        }
+        double motionX = v.xCoord * speed / s;
+        double motionY = v.yCoord * speed / s;
+        double motionZ = v.zCoord * speed / s;
+        double posX = prm.posX;
+        double posY = prm.posY;
+        double posZ = prm.posZ;
+        Vec3 from = Vec3.createVectorHelper(0.0D, 0.0D, 0.0D);
+        Vec3 to = Vec3.createVectorHelper(0.0D, 0.0D, 0.0D);
+        for (int i = 0; i < 240; ++i) {
+            double nextX = posX + motionX * accelerationFactor;
+            double nextY = posY + motionY * accelerationFactor;
+            double nextZ = posZ + motionZ * accelerationFactor;
+            from.xCoord = posX;
+            from.yCoord = posY;
+            from.zCoord = posZ;
+            to.xCoord = nextX;
+            to.yCoord = nextY;
+            to.zCoord = nextZ;
+            MovingObjectPosition mop = this.worldObj.rayTraceBlocks(from, to);
+            if (mop != null && mop.typeOfHit == MovingObjectType.BLOCK) {
+                if (mop.hitVec != null) {
+                    return Vec3.createVectorHelper(mop.hitVec.xCoord, mop.hitVec.yCoord, mop.hitVec.zCoord);
+                }
+                return Vec3.createVectorHelper(mop.blockX + 0.5D, mop.blockY + 0.5D, mop.blockZ + 0.5D);
+            }
+            double currentSpeed = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
+            if (currentSpeed > 1.0E-7D) {
+                double dirX = motionX / currentSpeed;
+                double dirY = motionY / currentSpeed;
+                double dirZ = motionZ / currentSpeed;
+                if (i > this.weaponInfo.speedFactorStartTick && i < this.weaponInfo.speedFactorEndTick) {
+                    motionX += dirX * this.weaponInfo.speedFactor;
+                    motionY += dirY * this.weaponInfo.speedFactor;
+                    motionZ += dirZ * this.weaponInfo.speedFactor;
+                }
+                motionY += this.weaponInfo.gravity;
+                motionX -= dirX * this.weaponInfo.dragInAir;
+                motionZ -= dirZ * this.weaponInfo.dragInAir;
+            } else {
+                motionY += this.weaponInfo.gravity;
+            }
+            posX = nextX;
+            posY = nextY;
+            posZ = nextZ;
+            if (posY < -4.0D) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     public void setAirburstDist(int dist) {
         this.airburstDist = dist;
+    }
+
+    public static void spawnMuzzleFlash(World w, MCH_WeaponParam prm, MCH_WeaponInfo info, float yaw, float pitch, double posX, double posY, double posZ) {
+        if (prm.entity != null && w.isRemote) {
+            double dirX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
+            double dirY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
+            double dirZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
+            Vec3 direction = Vec3.createVectorHelper(-dirX, -dirY, -dirZ);
+            if (prm.entity instanceof MCH_EntityAircraft) {
+                ((MCH_EntityAircraft)prm.entity).spawnParticleMuzzleFlash(w, info, posX, posY, posZ, direction);
+            }
+        }
     }
 }

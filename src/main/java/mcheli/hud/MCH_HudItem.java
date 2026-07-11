@@ -186,16 +186,18 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("can_aps", ac.canUseAPS() ? 1.0D : 0.0D);
         updateVarMapItem("have_ecm_jammer", ac.haveECMJammer() ? 1.0D : 0.0D);
         updateVarMapItem("can_ecm_jammer", ac.canUseECMJammer() ? 1.0D : 0.0D);
+        updateVarMapItem("ecm_jammer_type", ac.getAcInfo().ecmJammerType);
         updateVarMapItem("is_engine_shutdown", ac.getHP() * 100 / ac.getMaxHP() < ac.getAcInfo().engineShutdownThreshold ? 1.0D : 0.0D);
         updateVarMapItem("hud_type", ac.getAcInfo().hudType);
         updateVarMapItem("weapon_group_type", ac.getAcInfo().weaponGroupType);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
-        updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
+        boolean haveRwrLikeCapability = ac.getAcInfo().hasRWR || ac.getAcInfo().enableRadar || ac.getAcInfo().enableBVR;
+        updateVarMapItem("have_rwr", haveRwrLikeCapability ? 1.0D : 0.0D);
         updateVarMapItem("missile_lock_type", ac.missileDetector != null ? ac.missileDetector.missileLockType : 0.0D);
         updateVarMapItem("vehicle_lock_type", ac.missileDetector != null ? ac.missileDetector.vehicleLockType : 0.0D);
         updateVarMapItem("missile_lock_dist", ac.missileDetector != null ? ac.missileDetector.missileLockDist : 0.0D);
         updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
-        updateVarMapItem("have_rwr", ac.getAcInfo().hasRWR ? 1.0D : 0.0D);
+        updateVarMapItem("have_rwr", haveRwrLikeCapability ? 1.0D : 0.0D);
         updateVarMapItem("have_dircm", ac.getAcInfo().hasDIRCM ? 1.0D : 0.0D);
         updateVarMapItem("is_jammed", ac.jammingTick > 0 ? 1.0D : 0.0D);
         updateVarMapItem("ecm_jammer_type", ac.getAcInfo() != null ? ac.getAcInfo().ecmJammerType : 0.0D);
@@ -450,6 +452,11 @@ public abstract class MCH_HudItem extends Gui {
             if (ws != null) {
                 CurrentWeapon = ws;
                 WeaponName = ac.isPilotReloading() ? "-- Reloading --" : ws.getName();
+                if (!ac.isPilotReloading() && ws.getInfo() != null && ws.getInfo().enableDataLink && (ws.getInfo().onlyDataLink || ws.isDataLinkMode())) {
+                    String lang = (mc != null && mc.gameSettings != null && mc.gameSettings.language != null)
+                        ? mc.gameSettings.language.toLowerCase(Locale.ROOT) : "en_us";
+                    WeaponName += lang.startsWith("zh") ? " [数据链]" : " [DL]";
+                }
                 if (ws.getAmmoNumMax() > 0) {
                     WeaponAmmo = ac.isPilotReloading() ? "----" : String.format("%4d", ws.getAmmoNum());
                     WeaponAllAmmo = ac.isPilotReloading() ? "----" : String.format("%4d", ws.getRestAllAmmoNum());
@@ -484,7 +491,7 @@ public abstract class MCH_HudItem extends Gui {
                     railgunPer = ((MCH_WeaponRailgun) ws.getCurrentWeapon()).getRailgunTime() * 100 + "%";
                 }
 
-                if (ws.getCurrentWeapon().airburstDist <= 5 || ws.getCurrentWeapon().airburstDist >= 300) {
+                if (ws.getCurrentWeapon().airburstDist <= 5 || ws.getCurrentWeapon().airburstDist >= 3000) {
                     airburstDist = "---";
                 } else {
                     airburstDist = ws.getCurrentWeapon().airburstDist + "m + 3";

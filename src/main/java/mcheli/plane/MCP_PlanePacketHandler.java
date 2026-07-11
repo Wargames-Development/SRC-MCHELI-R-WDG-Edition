@@ -1,6 +1,8 @@
 package mcheli.plane;
 
 import com.google.common.io.ByteArrayDataInput;
+import mcheli.MCH_FreeLookDebug;
+import mcheli.MCH_ServerSettings;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
 import net.minecraft.entity.player.EntityPlayer;
@@ -109,6 +111,10 @@ public class MCP_PlanePacketHandler {
                     }
 
                     if (pc.switchFreeLook > 0) {
+                        if (MCH_ServerSettings.enableDebugFreeLook) {
+                            MCH_FreeLookDebug.trace(plane.worldObj, player, "[Packet][Plane] player=%s acId=%d switchFreeLook=%d",
+                                player.getCommandSenderName(), plane.getEntityId(), pc.switchFreeLook);
+                        }
                         plane.switchFreeLookMode(pc.switchFreeLook == 1);
                     }
 

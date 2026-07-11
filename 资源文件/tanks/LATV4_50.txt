@@ -1,0 +1,98 @@
+DisplayName = LATV4 RECON
+AddDisplayName = zh_CN, LATV4 轻型侦察车[50MM机炮]
+AddDisplayName = en_US, LATV4 RECON
+MaxHp = 500
+ThrottleUpDown = 80.0
+Speed = 1.2
+DefaultFreelook = false
+CameraZoom = 2
+
+
+MobilityYawOnGround = 7
+StepHeight = 1.5
+Sound = JeepMove
+MinRotationPitch = 0
+MaxRotationPitch = 0
+MobilityRoll     = 0
+Gravity        = -0.2
+GravityInWater = -0.5
+DamageFactor   = 0.8
+EnableNightVision = false
+MaxFuel           = 1200
+FuelConsumption   = 1.0
+ThirdPersonDist = 10
+DefaultFreelook = true
+OnGroundPitchFactor = 2.0
+
+OnGroundRollFactor  = 0.5
+
+CameraRotationSpeed = 60
+FlareType = 10
+
+;後退可能にする
+EnableBack = true
+; C = Civilian(民間機)
+Category = C
+ArmorMinDamage = 6
+; Tank or Car or Unknown
+WeightType = Car
+WeightedCenterZ = 0.0
+;SetWheelPos =  X座標, Y座標,  Z座標1, Z座標2, Z座標3 ...
+; X座標のマイナス側は必要なし
+SetWheelPos =  0.68,  -0.24,  1.20, -1.10
+
+HUD =  M1161ITV,mbt_gnr,none,none
+
+AddSeat =  0.5905, 0.7036, 0.3250
+AddGunnerSeat =  -0.5905, 0.7036, 0.3250, 0.00, 3.32, -1.185, false, -40,10, false
+AddSeat = -0.5905, 0.7036, -0.8081
+AddSeat = 0.5905, 0.7036, -0.8081
+
+;PivotTurnThrottle を0より大きい値にすると超信地旋回ができなくなる。デフォルトは0
+PivotTurnThrottle = 0.1
+
+; タイヤの回転スピード
+PartWheelRot = 40
+; タイヤを追加 X座標, Y座標, Z座標, 舵角(旋回時のタイヤのY軸の最大角度)
+AddPartWheel     = -0.8588,  0.3294,  1.935, 30
+AddPartWheel     = 0.8588,  0.3294,  1.935, 30
+AddPartWheel     = -0.8588,  0.3294,  -1.874
+AddPartWheel     =  0.8588,  0.3294,  -1.874
+MotionFactor = 0.94
+EnableBack = true
+InventorySize =27
+
+
+
+;以下武器为占位用，设置具体武器时请ctrl+f一键替换
+AddPartWeapon        = 50mmCannon,     false,  true,  false,   0.00,  0.649,    -1.185
+AddPartWeaponChild  =   false, true,  0.00, 2.798,  -1.408
+AddWeapon = 50mmCannon ,   0.00, 2.798,  -1.408,   0.0, 0.0, false, 2, 0, -360,360, -40,10
+
+AddRecipe = " G ",  "III",  "RIR",   G, glass, I, iron_ingot, R, redstone
+
+;ヘッドライト
+AddFixedSearchLight =  0.52, 0.90, 1.76,   0x50FFFFFF,   0x00FFFFC0,    27.0, 15.0,  -5,  0
+AddFixedSearchLight = -0.52, 0.90, 1.76,   0x50FFFFFF,   0x00FFFFC0,    27.0, 15.0,   5,  0
+
+;テールランプ
+AddFixedSearchLight =  0.36, 0.37,-1.58,   0xFFFF0000,   0x10FF0000,    0.05, 0.25,  6.0,  0
+AddFixedSearchLight = -0.36, 0.37,-1.58,   0xFFFF0000,   0x10FF0000,    0.05, 0.25, -6.0,  0
+
+EntityWidth  = 0.9
+EntityHeight = 0.9
+AddWeapon = horn, 0, 1.79, 9.8,  0.0, 0.0, true,1, 0,-360,180, -30, 7
+AddRack = container, 0.00, 1.20, -1.06,  0.0, 0.0, 0.0, 5.0
+
+BoundingBox =  0.0, 0.4,  1.3,   2.8, 1.4,  1.0
+BoundingBox =  0.0, 0.4,  -1.4,   2.8, 1.4,  1.0
+
+NameOnAdvancedAARadar = 
+NameOnModernAARadar =
+NameOnEarlyAARadar =
+NameOnModernASRadar = CAR
+NameOnEarlyASRadar = ?
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300
+throttledownfactor=0.8

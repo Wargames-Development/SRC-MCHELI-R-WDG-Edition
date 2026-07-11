@@ -29,7 +29,6 @@ public class MCH_EntityMarkerRocket extends MCH_EntityBaseBullet {
 
     protected void entityInit() {
         super.entityInit();
-        this.getDataWatcher().addObject(28, (byte) 0);
     }
 
     public int getMarkerStatus() {
@@ -40,7 +39,6 @@ public class MCH_EntityMarkerRocket extends MCH_EntityBaseBullet {
         if (!super.worldObj.isRemote) {
             this.getDataWatcher().updateObject(28, (byte) n);
         }
-
     }
 
     public boolean attackEntityFrom(DamageSource par1DamageSource, float par2) {
@@ -54,7 +52,7 @@ public class MCH_EntityMarkerRocket extends MCH_EntityBaseBullet {
                 super.onUpdate();
             }
 
-            if (this.getInfo() != null && !this.getInfo().disableSmoke && status != 0) {
+            if (this.getInfo() != null && !this.getInfo().disableSmoke && status != 0 && this.isWithinTrajectoryParticleEndTick()) {
                 if (status == 1) {
                     super.onUpdate();
                     this.spawnExplosionParticle(this.getInfo().trajectoryParticleName, 3, 5.0F * this.getInfo().smokeSize * 0.5F);

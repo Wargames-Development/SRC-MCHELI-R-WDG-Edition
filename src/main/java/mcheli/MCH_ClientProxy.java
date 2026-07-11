@@ -7,6 +7,8 @@ import mcheli.aircraft.*;
 import mcheli.block.MCH_DraftingTableItemRender;
 import mcheli.block.MCH_DraftingTableRenderer;
 import mcheli.block.MCH_DraftingTableTileEntity;
+import mcheli.block.MCH_ConfigSpawnerTileEntity;
+import mcheli.block.MCH_ConfigSpawnerWaypointRenderer;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.chain.MCH_RenderChain;
 import mcheli.command.MCH_GuiTitle;
@@ -23,6 +25,12 @@ import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.helicopter.MCH_RenderHeli;
 import mcheli.hud.MCH_HudManager;
 import mcheli.lweapon.MCH_ItemLightWeaponRender;
+import mcheli.lweapon.MCH_LightWeaponInfo;
+import mcheli.lweapon.MCH_LightWeaponInfoManager;
+import mcheli.mob.MCH_EntityGunner;
+import mcheli.mob.MCH_EntityNPC;
+import mcheli.mob.MCH_RenderGunner;
+import mcheli.mob.MCH_RenderNPC;
 import mcheli.multiplay.MCH_MultiplayClient;
 import mcheli.multithread.MultiThreadModelManager;
 import mcheli.parachute.MCH_EntityParachute;
@@ -94,6 +102,12 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
                     wi.bulletModel = new MCH_BulletModel(wi.bulletModelName, m);
                 }
             }
+            if (!wi.bulletModelNameEnd.isEmpty()) {
+                m = MCH_ModelManager.load("bullets", wi.bulletModelNameEnd);
+                if (m != null) {
+                    wi.bulletModelEnd = new MCH_BulletModel(wi.bulletModelNameEnd, m);
+                }
+            }
 
             if (!wi.bombletModelName.isEmpty()) {
                 m = MCH_ModelManager.load("bullets", wi.bombletModelName);
@@ -143,12 +157,19 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityDispensedItem.class, new MCH_RenderBullet());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityFlare.class, new MCH_RenderFlare());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityThrowable.class, new MCH_RenderThrowable());
+        RenderingRegistry.registerEntityRenderingHandler(MCH_EntityGunner.class, new MCH_RenderGunner());
+        RenderingRegistry.registerEntityRenderingHandler(MCH_EntityNPC.class, new MCH_RenderNPC());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityLockBox.class, new MCH_RenderLockBox());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityChaff.class, new MCH_RenderChaff());
         RenderingRegistry.registerEntityRenderingHandler(MCH_EntityDecoy.class, new MCH_RenderDecoy());
         RenderingRegistry.registerEntityRenderingHandler(EntityNukeTorex.class, new RenderTorex());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemJavelin, new MCH_ItemLightWeaponRender());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemStinger, new MCH_ItemLightWeaponRender());
+        for (MCH_LightWeaponInfo info : MCH_LightWeaponInfoManager.getValues()) {
+            if (info.item != null) {
+                W_MinecraftForgeClient.registerItemRenderer(info.item, new MCH_ItemLightWeaponRender());
+            }
+        }
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.invisibleItem, new MCH_InvisibleItemRender());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemGLTD, new MCH_ItemGLTDRender());
         W_MinecraftForgeClient.registerItemRenderer(MCH_MOD.itemWrench, new MCH_ItemRenderWrench());
@@ -157,6 +178,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
 
     public void registerBlockRenderer() {
         ClientRegistry.bindTileEntitySpecialRenderer(MCH_DraftingTableTileEntity.class, new MCH_DraftingTableRenderer());
+        ClientRegistry.bindTileEntitySpecialRenderer(MCH_ConfigSpawnerTileEntity.class, new MCH_ConfigSpawnerWaypointRenderer());
         W_MinecraftForgeClient.registerItemRenderer(W_Item.getItemFromBlock(MCH_MOD.blockDraftingTable), new MCH_DraftingTableItemRender());
     }
 
@@ -172,6 +194,11 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MCH_ModelManager.load("lweapons", "fim92");
         MCH_ModelManager.load("lweapons", "fgm148");
         MCH_ModelManager.load("lweapons", "rpg7");
+        for (MCH_LightWeaponInfo info : MCH_LightWeaponInfoManager.getValues()) {
+            if (info.modelName != null && !info.modelName.isEmpty()) {
+                MCH_ModelManager.load("lweapons", info.modelName);
+            }
+        }
         String[] i$ = MCH_RenderUavStation.MODEL_NAME;
         int wi = i$.length;
 
@@ -407,6 +434,10 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
             c7 = (MCH_AircraftInfo.WeaponBay) i$.next();
         }
 
+        for (i$ = info.partTurretWeaponBay.iterator(); i$.hasNext(); c7.model = this.loadPartModel(path, info.name, info.model, c7.modelName)) {
+            c7 = (MCH_AircraftInfo.WeaponBay) i$.next();
+        }
+
         MCH_AircraftInfo.CrawlerTrack c8;
         for (i$ = info.partCrawlerTrack.iterator(); i$.hasNext(); c8.model = this.loadPartModel(path, info.name, info.model, c8.modelName)) {
             c8 = (MCH_AircraftInfo.CrawlerTrack) i$.next();
@@ -479,32 +510,36 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         W_McClient.addSound("fim92_snd.ogg");
         W_McClient.addSound("fim92_reload.ogg");
         W_McClient.addSound("lockon.ogg");
-        Iterator i$ = MCH_WeaponInfoManager.getValues().iterator();
-
-        while (i$.hasNext()) {
-            MCH_WeaponInfo info = (MCH_WeaponInfo) i$.next();
+        for (Object obj : MCH_WeaponInfoManager.getValues()) {
+            MCH_WeaponInfo info = (MCH_WeaponInfo) obj;
             W_McClient.addSound(info.soundFileName + ".ogg");
         }
-
-        while (i$.hasNext()) {
-            MCH_WeaponInfo info = (MCH_WeaponInfo) i$.next();
+        for (Object obj : MCH_WeaponInfoManager.getValues()) {
+            MCH_WeaponInfo info = (MCH_WeaponInfo) obj;
             W_McClient.addSound(info.weaponSwitchSound + ".ogg");
         }
-
-        while (i$.hasNext()) {
-            MCH_WeaponInfo info = (MCH_WeaponInfo) i$.next();
+        for (Object obj : MCH_WeaponInfoManager.getValues()) {
+            MCH_WeaponInfo info = (MCH_WeaponInfo) obj;
             W_McClient.addSound(info.hitSound + ".ogg");
         }
-        while (i$.hasNext()) {
-            MCH_WeaponInfo info = (MCH_WeaponInfo) i$.next();
+        for (Object obj : MCH_WeaponInfoManager.getValues()) {
+            MCH_WeaponInfo info = (MCH_WeaponInfo) obj;
             W_McClient.addSound(info.railgunSound + ".ogg");
         }
-        while (i$.hasNext()) {
-            MCH_WeaponInfo info = (MCH_WeaponInfo) i$.next();
+        for (Object obj : MCH_WeaponInfoManager.getValues()) {
+            MCH_WeaponInfo info = (MCH_WeaponInfo) obj;
             W_McClient.addSound(info.hitSoundIron + ".ogg");
         }
+        for (MCH_LightWeaponInfo info : MCH_LightWeaponInfoManager.getValues()) {
+            if (info.soundReload != null && !info.soundReload.isEmpty()) {
+                W_McClient.addSound(info.soundReload + ".ogg");
+            }
+            if (info.soundFire != null && !info.soundFire.isEmpty()) {
+                W_McClient.addSound(info.soundFire + ".ogg");
+            }
+        }
 
-        i$ = MCP_PlaneInfoManager.map.values().iterator();
+        Iterator i$ = MCP_PlaneInfoManager.map.values().iterator();
 
         while (i$.hasNext()) {
             MCP_PlaneInfo info1 = (MCP_PlaneInfo) i$.next();
@@ -579,6 +614,8 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MinecraftForge.EVENT_BUS.register(new MCH_RenderLaser());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderDamageIndicator());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderGPSPosition());
+        MinecraftForge.EVENT_BUS.register(new MCH_RenderCCIP());
+        MinecraftForge.EVENT_BUS.register(new MCH_RenderLeadCircle());
     }
 
     public void setCreativeDigDelay(int n) {

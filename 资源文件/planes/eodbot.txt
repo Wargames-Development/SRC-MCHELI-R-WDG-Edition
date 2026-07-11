@@ -1,0 +1,43 @@
+﻿DisplayName = EOD Bot
+AddDisplayName = zh_CN ,排爆机器人
+AddDisplayName = en_US, EOD BOT
+ItemID = 28745
+MaxHp = 40
+Speed = 0.3
+Float = true
+Gravity = -0.3
+Sound = EODbot_idle
+ThrottleUpDown = 20
+EnableNightVision = true
+EnableGunnerMode = false
+CameraPosition = 0.0, 0.40, 0.34
+MaxFuel         = 120
+FuelConsumption = 0
+SmallUAV = true
+HUD = bofors
+ThirdPersonDist = 5
+StepHeight = 1.0
+CanMoveOnGround = true
+CanRotOnGround  = true
+MobilityYawOnGround = 6.0
+GravityInWater = -0.1
+; M = Military(軍用機).  Q = Drone(無人航空機)
+Category = M.Q
+MinRotationPitch = -15
+MaxRotationPitch = 15
+MinRotationRoll  = 0
+MaxRotationRoll  =  0
+AddWeapon = blowtorch,   0.0, 0.4, 0.3,  0.0, 0.0
+AddRecipe = " I ",  " I ",  " F ",  I,iron_ingot, F,furnace
+AddPartRotor =      0.00,  0.00,  0.00,   1,0,0
+AddBlade = 1, 0,  0.00,  0.00,  0.00,   0,0,-1
+
+explosionsizebycrash=2
+
+enableRWR=false
+VariableSweepWing = true
+SweepWingSpeed = 0.9
+enablerwr=true
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

@@ -1,0 +1,13 @@
+﻿DisplayName = HK416 Doll
+AddDisplayName = zh_CN, 战术人形HK416摆件
+AddDisplayName = en_US, HK416
+MaxHp = 1
+HideEntity = true
+MinRotationPitch = 0
+MaxRotationPitch = 0
+CameraPosition = 0.0, 2.00, 0.0
+CanRide = false
+ThirdPersonDist = 12
+AddSeat = 0.00,  1.0, 0.00
+EntityWidth  = 0.5
+EntityHeight = 0.5

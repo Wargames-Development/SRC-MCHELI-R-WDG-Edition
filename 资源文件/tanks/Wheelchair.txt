@@ -1,0 +1,49 @@
+﻿DisplayName = WHEELCHAIR
+AddDisplayName = zh_CN,机动轮椅
+AddDisplayName = en_US,WHEELCHAIR
+ItemID = 90160
+MaxHp = 50
+Speed = 1.5
+ThrottleUpDown = 1.0
+Gravity = -0.1
+GravityInWater = -0.5
+DamageFactor = 0.4
+EnableNightVision = false
+EnableEntityRadar = false
+WeightType = Tank
+DefaultFreelook = true
+
+EnableBack = true
+SetWheelPos =  1.7,  -0.24,  4.0, 2.5, 1.0, -1.0, -2.5, -4.0
+
+HUD =  M1161ITV
+
+SubmergedDamageHeight = 2
+WeightedCenterZ = 0.0
+
+
+MobilityYawOnGround = 10.0
+PivotTurnThrottle = 0.0
+
+AddSeat =  -0.03, 0.46, -0.140,   0.85,   2.9,  -0.534,   true, -25, 25, true
+CameraRotationSpeed = 100
+
+StepHeight = 1.0
+InventorySize = 19
+
+MotionFactor = 0.94
+
+MaxFuel         = 800
+FuelConsumption = 0.0
+
+TrackRollerRot = 30
+
+AddTrackRoller =  -0.54,  0.194,  -0.275
+
+
+
+
+BoundingBox = 0.0, 0.0675,  0.0, 1, 0.6, 1
+hasMaintenance=true
+maintenanceUseTime = 20
+maintenanceWaitTime = 300

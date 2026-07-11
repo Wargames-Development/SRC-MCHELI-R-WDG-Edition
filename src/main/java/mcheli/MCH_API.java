@@ -2,10 +2,71 @@ package mcheli;
 
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.aircraft.MCH_ItemAircraft;
 import mcheli.aircraft.MCH_SeatRackInfo;
+import mcheli.uav.MCH_EntityUavStation;
+import mcheli.wrapper.W_Item;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.MathHelper;
+import net.minecraft.world.World;
 
 public class MCH_API {
+
+    public static boolean spawnAircraftAndMountPlayer(Object world, Object p, String itemName, double x, double y, double z, float rotationYaw, boolean detectIfExists) {
+        Object ac;
+        if((ac = spawnAircraft(world, itemName, x, y, z, rotationYaw, detectIfExists)) != null) {
+            return mountPilot(p, ac);
+        }
+        return false;
+    }
+
+    public static String getAcName(Object p) {
+        if(p instanceof EntityPlayer) {
+            EntityPlayer player = (EntityPlayer) p;
+            MCH_EntityAircraft ac = null;
+            if (player.ridingEntity instanceof MCH_EntityAircraft) {
+                ac = (MCH_EntityAircraft) player.ridingEntity;
+            } else if (player.ridingEntity instanceof MCH_EntitySeat) {
+                ac = ((MCH_EntitySeat) player.ridingEntity).getParent();
+            } else if (player.ridingEntity instanceof MCH_EntityUavStation) {
+                ac = ((MCH_EntityUavStation) player.ridingEntity).getControlAircract();
+            }
+            if(ac != null && ac.getAcInfo() != null) {
+                Object o = ac.getAcInfo().displayNameLang.get("en_US");
+                return o == null ? "AIR" : o.toString();
+            }
+        }
+        return "AIR";
+    }
+
+    public static Object spawnAircraft(Object world, String itemName, double x, double y, double z, float rotationYaw, boolean detectIfExists) {
+        Item item = W_Item.getItemByName(itemName);
+        if(item instanceof MCH_ItemAircraft) {
+            boolean result = true;
+            if(detectIfExists) {
+                result = false;
+            }
+            if(result) {
+                ItemStack itemStack = new ItemStack(item);
+                MCH_ItemAircraft itemAircraft = (MCH_ItemAircraft) item;
+                MCH_EntityAircraft ac = itemAircraft.createAircraft((World) world, (float) x + 0.5F, (float) y + 1.0F, (float) z + 0.5F, itemStack);
+                if (ac == null) {
+                    return null;
+                } else {
+                    ac.initRotationYaw((float) (((MathHelper.floor_double((double) (rotationYaw * 4.0F / 360.0F) + 0.5D) & 3) - 1) * 90));
+                    if (!((World) world).isRemote) {
+                        ac.getAcDataFromItem(itemStack);
+                        ((World) world).spawnEntityInWorld(ac);
+                    }
+                    return ac;
+                }
+            }
+        }
+        return null;
+    }
+
     public static boolean mountPilot(Object p, Object ac) {
         EntityPlayer player = (EntityPlayer) p;
         MCH_EntityAircraft aircraft = (MCH_EntityAircraft) ac;
