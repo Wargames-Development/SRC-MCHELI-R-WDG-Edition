@@ -530,6 +530,12 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
     }
 
+    private void applyLocalCameraMode(int mode) {
+        cameraMode = mode;
+        MCH_Camera.currentCameraMode = mode;
+        this.lastAppliedCameraMode = mode;
+    }
+
     public void onTickPost() {
         if (super.mc.thePlayer != null && super.mc.theWorld != null) {
             MCH_GuiTargetMarker.onClientTick();
@@ -619,6 +625,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
                 this.ensureCameraShaderState(var17);
 
+                int localMode = this.getExpectedCameraMode(var17);
                 applyLocalCameraMode(localMode);
 
                 MCH_EntityAircraft var19 = null;

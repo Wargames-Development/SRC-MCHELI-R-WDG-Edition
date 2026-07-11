@@ -250,6 +250,14 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         }
     }
 
+    private MCH_GPSPosition getGpsPositionForShot(Entity user) {
+        return MCH_GPSPosition.get(user);
+    }
+
+    private boolean canReachGpsTarget(MCH_WeaponParam prm, MCH_GPSPosition gpsPosition) {
+        return gpsPosition != null && gpsPosition.isActive;
+    }
+
     @Override
     public boolean shot(MCH_WeaponParam prm) {
         float yaw, pitch;
@@ -310,15 +318,15 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                     missile.targeting = true;
                     targetAssigned = true;
                 }
-                MCH_GPSPosition gpsPosition;
-                if (!targetAssigned && (gpsPosition = MCH_GPSPosition.get(prm.user)) != null) {
-                    if (gpsPosition.isActive) {
-                        missile.targetPosX = gpsPosition.x;
-                        missile.targetPosY = gpsPosition.y;
-                        missile.targetPosZ = gpsPosition.z;
-                        missile.originTargetPosX = gpsPosition.x;
-                        missile.originTargetPosY = gpsPosition.y;
-                        missile.originTargetPosZ = gpsPosition.z;
+                MCH_GPSPosition assignedGpsPosition;
+                if (!targetAssigned && (assignedGpsPosition = MCH_GPSPosition.get(prm.user)) != null) {
+                    if (assignedGpsPosition.isActive) {
+                        missile.targetPosX = assignedGpsPosition.x;
+                        missile.targetPosY = assignedGpsPosition.y;
+                        missile.targetPosZ = assignedGpsPosition.z;
+                        missile.originTargetPosX = assignedGpsPosition.x;
+                        missile.originTargetPosY = assignedGpsPosition.y;
+                        missile.originTargetPosZ = assignedGpsPosition.z;
                         missile.targeting = true;
                         targetAssigned = true;
                     }

@@ -2,6 +2,7 @@ package mcheli.weapon;
 
 import mcheli.MCH_RadarDebug;
 import mcheli.aircraft.MCH_EntityAircraft;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
@@ -99,6 +100,11 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
     public MCH_EntityAAMissile(World par1World, double posX, double posY, double posZ, double targetX, double targetY, double targetZ, float yaw, float pitch, double acceleration) {
         super(par1World, posX, posY, posZ, targetX, targetY, targetZ, yaw, pitch, acceleration);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private static EntityPlayer tryGetClientPlayer() {
+        return Minecraft.getMinecraft().thePlayer;
     }
 
     public void onUpdate() {

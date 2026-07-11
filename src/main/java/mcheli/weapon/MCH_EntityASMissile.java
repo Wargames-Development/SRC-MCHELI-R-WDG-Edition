@@ -85,7 +85,11 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 }
                 if (getInfo().lockEntity) {
                     int range = getInfo().maxLockOnRange;
-                    for (Entity entity : super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.expand(100, 100, 100))) {
+                    for (Object obj : super.worldObj.getEntitiesWithinAABBExcludingEntity(this, super.boundingBox.expand(100, 100, 100))) {
+                        if (!(obj instanceof Entity)) {
+                            continue;
+                        }
+                        Entity entity = (Entity)obj;
                         if(entity instanceof MCH_EntityAircraft && !W_Entity.isEqual(entity, shootingAircraft)){
                             double d0 = entity.posX - originTargetPosX;
                             double d1 = entity.posY - originTargetPosY;

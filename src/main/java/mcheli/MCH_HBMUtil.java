@@ -2,6 +2,7 @@ package mcheli;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 
 import java.util.Collections;
@@ -20,9 +21,11 @@ public class MCH_HBMUtil {
     private static Class<?> explosionChaosClass;
     private static Class<?> explosionCreatorClass;
     private static Class<?> explosionSmallCreatorClass;
+    private static Class<?> explosionLargeClass;
     private static Class<?> EntityBulletBaseMK4Class;
     private static Class<?> PacketThreading;
     private static Class<?> explosionVNTClass;
+    private static Class<?> integrationsClass;
 
 
     static {
@@ -32,6 +35,7 @@ public class MCH_HBMUtil {
             explosionChaosClass = Class.forName("com.hbm.explosion.ExplosionChaos");
             explosionCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionCreator");
             explosionSmallCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionSmallCreator");
+            explosionLargeClass = Class.forName("com.hbm.particle.helper.ExplosionLarge");
             EntityBulletBaseMK4Class = Class.forName("com.hbm.entity.projectile.EntityBulletBaseMK4");
             PacketThreading = Class.forName("com.hbm.handler.threading.PacketThreading");
             explosionVNTClass = Class.forName("com.hbm.explosion.vanillant.ExplosionVNT");
@@ -39,6 +43,12 @@ public class MCH_HBMUtil {
         } catch (ClassNotFoundException e) {
             isHBMLoaded = false;
             e.printStackTrace();
+        }
+
+        try {
+            integrationsClass = Class.forName("mcheli.wgc.Integrations");
+        } catch (ClassNotFoundException e) {
+            integrationsClass = null;
         }
     }
 
@@ -53,6 +63,10 @@ public class MCH_HBMUtil {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ) {
+        return EntityNukeExplosionMK5_statFac(world, r, posX, posY, posZ, null);
     }
 
     public static void EntityNukeTorex_statFac(World world, double posX, double posY, double posZ, float nukeYield, int type) {

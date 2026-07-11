@@ -63,7 +63,9 @@ public class MCH_RenderBVRLockBox {
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
+    }
 
+    private double[] worldToScreen(Vector3f pos, float partialTicks) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityLivingBase viewer = mc.renderViewEntity instanceof EntityLivingBase
             ? (EntityLivingBase) mc.renderViewEntity
@@ -108,6 +110,11 @@ public class MCH_RenderBVRLockBox {
         U.normalise();
 
         // Apply camera roll so screen axes match what you see
+        float rollDeg = 0.0F;
+        MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(viewer);
+        if (ac != null) {
+            rollDeg = getViewRollDeg(mc, ac, partialTicks);
+        }
         float rollRad = (float)Math.toRadians(rollDeg);
         float c = (float)Math.cos(rollRad);
         float s = (float)Math.sin(rollRad);

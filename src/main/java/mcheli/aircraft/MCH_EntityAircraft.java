@@ -5006,7 +5006,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             if (entity instanceof EntityPlayer) {
                 EntityPlayer riddenPlayer = (EntityPlayer) entity;
                 if (!this.canShareVehicleAccess(riddenPlayer, player)) {
-            if (entity instanceof EntityPlayer || entity instanceof MCH_EntityGunner) {
+                    return false;
+                }
+            } else if (entity instanceof MCH_EntityGunner) {
                 EntityLivingBase riddenPlayer = (EntityLivingBase) entity;
                 if (riddenPlayer.getTeam() != null && !riddenPlayer.isOnSameTeam(player)) {
                     return false;
@@ -5034,6 +5036,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         return riddenPlayer.getTeam() == null || riddenPlayer.isOnSameTeam(player);
+    }
+
     private boolean isFriendlyPlayerAttackingGunnerPilotedVehicle(Entity attacker) {
         if (!(attacker instanceof EntityPlayer)) {
             return false;
@@ -6762,25 +6766,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public String getNameOnMyRadar(MCH_EntityAircraft other) {
-        // Prevent "self" from appearing as a radar contact (avoids 2D radar flicker)
-        if (other == this) {
+        if (other == null || other == this || other.getAcInfo() == null || this.getAcInfo() == null) {
             return "";
-        switch (getAcInfo().radarType) {
-            case ADVANCED_AA:
-                return other.getAcInfo().nameOnAdvancedAARadar;
-            case MODERN_AA:
-                return other.getAcInfo().nameOnModernAARadar;
-            case EARLY_AA:
-                return other.getAcInfo().nameOnEarlyAARadar;
-            case MODERN_AS:
-                return other.getAcInfo().nameOnModernASRadar;
-            case EARLY_AS:
-                return other.getAcInfo().nameOnEarlyASRadar;
         }
-        if (other == null || other.getAcInfo() == null || this.getAcInfo() == null) return "";
 
         String name = "";
         switch (this.getAcInfo().radarType) {
+            case ADVANCED_AA: name = other.getAcInfo().nameOnAdvancedAARadar; break;
             case MODERN_AA: name = other.getAcInfo().nameOnModernAARadar; break;
             case EARLY_AA:  name = other.getAcInfo().nameOnEarlyAARadar;  break;
             case MODERN_AS: name = other.getAcInfo().nameOnModernASRadar; break;
@@ -6817,30 +6809,20 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public String getNameOnMyRadar(MCH_EntityInfo other) {
-        MCH_AircraftInfo info = MCH_AircraftInfo.allAircraftInfo.getOrDefault(other.entityName, null);
-        if (info != null) {
-            switch (getAcInfo().radarType) {
-                case ADVANCED_AA:
-                    return info.nameOnAdvancedAARadar;
-                case MODERN_AA:
-                    return info.nameOnModernAARadar;
-                case EARLY_AA:
-                    return info.nameOnEarlyAARadar;
-                case MODERN_AS:
-                    return info.nameOnModernASRadar;
-                case EARLY_AS:
-                    return info.nameOnEarlyASRadar;
-            }
-        }
-
-        // Prevent "self" from appearing as a radar contact (fixes 2D radar flicker/ghosting)
-        if (other.entityId == this.getEntityId()) {
+        if (other == null || this.getAcInfo() == null || other.entityId == this.getEntityId()) {
             return "";
         }
 
-        // 1) Choose the *existing* name field based on my RadarType (current system)
+        MCH_AircraftInfo targetInfo = MCH_AircraftInfo.allAircraftInfo.getOrDefault(other.entityName, null);
+        if (targetInfo == null) {
+            return "";
+        }
+
         String name = "";
         switch (this.getAcInfo().radarType) {
+            case ADVANCED_AA:
+                name = targetInfo.nameOnAdvancedAARadar;
+                break;
             case MODERN_AA:
                 name = targetInfo.nameOnModernAARadar;
                 break;
@@ -6863,9 +6845,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             return "";
         }
 
-        // 2) Apply NEW range restriction (but only if configured; defaults keep old behavior)
         float baseRange = 0.0F;
         switch (this.getAcInfo().radarType) {
+            case ADVANCED_AA:
             case MODERN_AA:
             case EARLY_AA:
                 baseRange = this.getAcInfo().airRadarRange;

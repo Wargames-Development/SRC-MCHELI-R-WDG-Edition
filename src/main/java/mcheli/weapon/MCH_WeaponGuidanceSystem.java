@@ -342,6 +342,13 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
     private boolean isHarmGroundRadarTarget(Entity entity) {
         // HARM should never target aircraft.
         // It should only target ground MC Heli entities explicitly marked with HasAARadar = true.
+        MCH_EntityAircraft aircraft = getAircraftForEcmCheck(entity);
+        if (!(aircraft instanceof MCH_EntityTank) && !(aircraft instanceof MCH_EntityVehicle)) {
+            return false;
+        }
+
+        return aircraft.hasAARadar();
+    }
 
     private MCH_EntityAircraft getAircraftForEcmCheck(Entity entity) {
         if (entity == null) {
