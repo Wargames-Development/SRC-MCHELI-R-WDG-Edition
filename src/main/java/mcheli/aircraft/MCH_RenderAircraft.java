@@ -148,11 +148,11 @@ public abstract class MCH_RenderAircraft extends W_Render {
         if (model != null) {
             if (model instanceof W_ModelCustom) {
                 if (((W_ModelCustom) model).containsPart("$body")) {
-                    model.renderPart("$body");
-                } else {
+                    renderCachedPart(model, "$body");
+                } else if (!MCH_ModelDisplayListCache.renderAll(model)) {
                     model.renderAll();
                 }
-            } else {
+            } else if (!MCH_ModelDisplayListCache.renderAll(model)) {
                 model.renderAll();
             }
         }
@@ -161,11 +161,23 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public static void renderPart(IModelCustom model, IModelCustom modelBody, String partName) {
         if (model != null) {
-            model.renderAll();
+            if (!MCH_ModelDisplayListCache.renderAll(model)) {
+                model.renderAll();
+            }
         } else if (modelBody instanceof W_ModelCustom && ((W_ModelCustom) modelBody).containsPart("$" + partName)) {
-            modelBody.renderPart("$" + partName);
+            renderCachedPart(modelBody, "$" + partName);
         }
 
+    }
+
+    private static void renderCachedPart(IModelCustom model, String partName) {
+        if (!MCH_ModelDisplayListCache.renderPart(model, partName)) {
+            model.renderPart(partName);
+        }
+    }
+
+    public static void clearModelDisplayListCache() {
+        MCH_ModelDisplayListCache.clear();
     }
 
     public static void renderLightHatch(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
@@ -538,13 +550,14 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public static void renderCrawlerTrack(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         if (!info.partCrawlerTrack.isEmpty()) {
-            int prevWidth = GL11.glGetInteger(2833);
+            boolean testMode = MCH_Config.TestMode.prmBool;
+            int prevWidth = testMode ? GL11.glGetInteger(2833) : 0;
             Tessellator tessellator = Tessellator.instance;
             for (Object o : info.partCrawlerTrack) {
                 MCH_AircraftInfo.CrawlerTrack c = (MCH_AircraftInfo.CrawlerTrack) o;
-                GL11.glPointSize(c.len * 20.0F);
                 int L;
-                if (MCH_Config.TestMode.prmBool) {
+                if (testMode) {
+                    GL11.glPointSize(c.len * 20.0F);
                     GL11.glDisable(3553);
                     GL11.glDisable(3042);
                     tessellator.startDrawing(0);
@@ -598,7 +611,9 @@ public abstract class MCH_RenderAircraft extends W_Render {
             }
 
             GL11.glEnable(3042);
-            GL11.glPointSize((float) prevWidth);
+            if (testMode) {
+                GL11.glPointSize((float) prevWidth);
+            }
         }
     }
 
@@ -1567,7 +1582,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
             GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
             GL11.glPolygonOffset(1.0F, 1.0F);
             GL11.glColor4f(0.0F, 0.0F, 0.0F, 1.0F);
-            bodyModel.renderPart(partName);
+            renderCachedPart(bodyModel, partName);
             GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
 
             // Pass 2: overlay radar dynamic sweep/contacts from enableRadar data source.
@@ -1588,7 +1603,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                 this.bindTexture(radarDynamicTex);
                 GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-                bodyModel.renderPart(partName);
+                renderCachedPart(bodyModel, partName);
             }
         } finally {
             GL11.glPopAttrib();
@@ -1620,7 +1635,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
             GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
             GL11.glPolygonOffset(1.0F, 1.0F);
             GL11.glColor4f(0.0F, 0.0F, 0.0F, 1.0F);
-            bodyModel.renderPart(partName);
+            renderCachedPart(bodyModel, partName);
             GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
 
             EntityPlayer player = Minecraft.getMinecraft().thePlayer;
@@ -1640,7 +1655,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                 this.bindTexture(rwrDynamicTex);
                 GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-                bodyModel.renderPart(partName);
+                renderCachedPart(bodyModel, partName);
             }
         } finally {
             GL11.glPopAttrib();

@@ -225,20 +225,6 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         return true;
     }
 
-    @Override
-    public String getName() {
-        if (this.numMode > 0 && getInfo() != null && getInfo().isGPSMissile) {
-            String base = super.getName();
-            if (this.getCurrentMode() == 1) {
-                return base + " [巡航]";
-            } else {
-                return base + " [常规]";
-            }
-        }
-        return super.getName();
-    }
-
-
     public void update(int countWait) {
         super.update(countWait);
         if (this.worldObj != null && this.worldObj.isRemote) {

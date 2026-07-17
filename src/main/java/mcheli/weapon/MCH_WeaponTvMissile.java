@@ -62,19 +62,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         return this.guidanceSystem;
     }
 
-    public String getName() {
-        String opt = "";
-        if (this.getCurrentMode() == 0) {
-            opt = " [TV]";
-        }
-
-        if (this.getCurrentMode() == 1) {
-            opt = (this.getInfo() != null && !this.getInfo().laserGuidance) ? " [TV]" : " [TA]";
-        }
-
-        return super.getName() + opt;
-    }
-
     public void update(int countWait) {
         super.update(countWait);
 

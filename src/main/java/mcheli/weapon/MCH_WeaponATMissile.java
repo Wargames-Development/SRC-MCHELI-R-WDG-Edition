@@ -17,8 +17,6 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
-import java.util.Locale;
-
 public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
     private static final int OPTION_FLAG_DATALINK = 1 << 8;
     private static final int OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY = 1 << 9;
@@ -38,21 +36,6 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
 
     public boolean isCooldownCountReloadTime() {
         return true;
-    }
-
-    public String getName() {
-        if (getInfo().antiRadiationMissile) {
-            String suffix = isArmNarrowBandMode()
-                ? (isChineseLocale() ? " [窄频]" : " [NB]")
-                : (isChineseLocale() ? " [宽频]" : " [WB]");
-            return super.getName() + suffix;
-        }
-        String opt = "";
-        if (this.getCurrentMode() == 1) {
-            opt = " [TA]";
-        }
-
-        return super.getName() + opt;
     }
 
     public void update(int countWait) {
@@ -213,11 +196,6 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
 
     private boolean isArmNarrowBandMode() {
         return getInfo().antiRadiationMissile && this.getCurrentMode() == 1;
-    }
-
-    private boolean isChineseLocale() {
-        String lang = Locale.getDefault().toString().toLowerCase(Locale.ROOT);
-        return lang.startsWith("zh");
     }
 
     private boolean shouldBlockShotByArmBandConstraint(MCH_WeaponParam prm) {

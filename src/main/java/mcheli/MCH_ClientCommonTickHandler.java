@@ -42,10 +42,7 @@ import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiChat;
-import net.minecraft.client.gui.inventory.GuiContainerCreative;
-import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -60,7 +57,6 @@ import net.minecraft.potion.Potion;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.opengl.Display;
@@ -996,39 +992,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 }
             }
         }
-    }
-
-    @SubscribeEvent
-    public void onGuiScreenDrawPost(GuiScreenEvent.DrawScreenEvent.Post event) {
-        if (event == null || this.mc == null) {
-            return;
-        }
-        boolean isVanillaInventory = event.gui instanceof GuiInventory;
-        boolean isCreativeInventory = event.gui instanceof GuiContainerCreative;
-        if (!isVanillaInventory && !isCreativeInventory) {
-            return;
-        }
-        ScaledResolution scaled = new ScaledResolution(this.mc, this.mc.displayWidth, this.mc.displayHeight);
-        drawEconomyBar(scaled.getScaledWidth(), scaled.getScaledHeight());
-    }
-
-    private void drawEconomyBar(int screenW, int screenH) {
-        int x = 8;
-        int y = screenH - 48;
-        int w = 170;
-        int h = 40;
-        Gui.drawRect(x, y, x + w, y + h, 0x90101010);
-        Gui.drawRect(x, y, x + w, y + 1, 0xB0908050);
-        Gui.drawRect(x, y + h - 1, x + w, y + h, 0xB0606060);
-        this.mc.fontRenderer.drawStringWithShadow("Economy", x + 6, y + 4, 0xF0F0F0);
-        drawEconomyIconAndText(x + 6, y + 16, TEX_ICON_SL, new ItemStack(Items.gold_ingot), "SL " + MCH_EconomyClientData.getSL(), 0xFFE07A);
-        drawEconomyIconAndText(x + 62, y + 16, TEX_ICON_GE, new ItemStack(Items.emerald), "GE " + MCH_EconomyClientData.getGE(), 0xFFD050);
-        drawEconomyIconAndText(x + 118, y + 16, TEX_ICON_RP, new ItemStack(Items.enchanted_book), "RP " + MCH_EconomyClientData.getRP(), 0xA0D0FF);
-    }
-
-    private void drawEconomyIconAndText(int x, int y, ResourceLocation iconTex, ItemStack fallback, String text, int color) {
-        drawEconomyInlineIcon(x, y, iconTex, fallback, 12);
-        this.mc.fontRenderer.drawString(text, x + 14, y + 1, color);
     }
 
     private void drawEconomyGainToast(int screenW, int screenH) {

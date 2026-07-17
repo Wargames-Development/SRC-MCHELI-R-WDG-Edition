@@ -183,6 +183,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public void registerModels() {
+        MCH_RenderAircraft.clearModelDisplayListCache();
         MCH_ModelManager.setForceReloadMode(true);
         MCH_RenderAircraft.debugModel = MCH_ModelManager.load("box");
         MCH_ModelManager.load("a-10");
@@ -265,6 +266,9 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public void registerModelsHeli(String name, boolean reload) {
+        if (reload) {
+            MCH_RenderAircraft.clearModelDisplayListCache();
+        }
         MCH_ModelManager.setForceReloadMode(reload);
         MCH_HeliInfo info = (MCH_HeliInfo) MCH_HeliInfoManager.map.get(name);
         info.model = MCH_ModelManager.load("helicopters", info.name);
@@ -289,6 +293,9 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public void registerModelsPlane(String name, boolean reload) {
+        if (reload) {
+            MCH_RenderAircraft.clearModelDisplayListCache();
+        }
         MCH_ModelManager.setForceReloadMode(reload);
         MCP_PlaneInfo info = (MCP_PlaneInfo) MCP_PlaneInfoManager.map.get(name);
         info.model = MCH_ModelManager.load("planes", info.name);
@@ -351,6 +358,9 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public void registerModelsVehicle(String name, boolean reload) {
+        if (reload) {
+            MCH_RenderAircraft.clearModelDisplayListCache();
+        }
         MCH_ModelManager.setForceReloadMode(reload);
         MCH_VehicleInfo info = (MCH_VehicleInfo) MCH_VehicleInfoManager.map.get(name);
         info.model = MCH_ModelManager.load("vehicles", info.name);
@@ -369,6 +379,9 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public void registerModelsTank(String name, boolean reload) {
+        if (reload) {
+            MCH_RenderAircraft.clearModelDisplayListCache();
+        }
         MCH_ModelManager.setForceReloadMode(reload);
         MCH_TankInfo info = (MCH_TankInfo) MCH_TankInfoManager.map.get(name);
         info.model = MCH_ModelManager.load("tanks", info.name);
