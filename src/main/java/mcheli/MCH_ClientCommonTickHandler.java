@@ -72,14 +72,18 @@ import java.util.List;
 
 import mcheli.network.packets.PacketLockTargetBVR;
 import mcheli.render.MCH_RenderBVRLockBox;
+import mcheli.render.MCH_RWRDisplayTextureManager;
+import mcheli.render.MCH_RadarDisplayTextureManager;
 import mcheli.weapon.MCH_EntityAAMissile;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.MCH_MOD;
+import net.minecraft.world.World;
 
 @SideOnly(Side.CLIENT)
 public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static final float hitTotalDamageScaleOrigin = 2.0f;
+    private static final int DISPLAY_TEXTURE_CLEANUP_INTERVAL_TICKS = 20;
     private static final ResourceLocation cross3rd = new ResourceLocation(W_MOD.DOMAIN, "textures/3rdCross.png");
     private static final ResourceLocation TEX_ICON_SL = new ResourceLocation("mcheli", "textures/gui/economy/coin_sl.png");
     private static final ResourceLocation TEX_ICON_GE = new ResourceLocation("mcheli", "textures/gui/economy/coin_ge.png");
@@ -139,6 +143,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     //Tracks the last camera mode like normal, thermal, nigth vision
     private int lastAppliedCameraMode = -1;
+    private World displayTextureCleanupWorld;
+    private long lastDisplayTextureCleanupTick = -1L;
 
     private int[] getAndUpdateTrackedBvrMissileIds(MCH_EntityAircraft ac) {
         long now = System.currentTimeMillis();
@@ -537,6 +543,22 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onTickPost() {
+        World world = super.mc.theWorld;
+        if (world != null) {
+            long worldTick = world.getTotalWorldTime();
+            if (world != this.displayTextureCleanupWorld
+                || this.lastDisplayTextureCleanupTick < 0L
+                || worldTick < this.lastDisplayTextureCleanupTick
+                || worldTick - this.lastDisplayTextureCleanupTick >= DISPLAY_TEXTURE_CLEANUP_INTERVAL_TICKS) {
+                MCH_RadarDisplayTextureManager.cleanup(world);
+                MCH_RWRDisplayTextureManager.cleanup(world);
+                this.displayTextureCleanupWorld = world;
+                this.lastDisplayTextureCleanupTick = worldTick;
+            }
+        } else {
+            this.displayTextureCleanupWorld = null;
+            this.lastDisplayTextureCleanupTick = -1L;
+        }
         if (super.mc.thePlayer != null && super.mc.theWorld != null) {
             MCH_GuiTargetMarker.onClientTick();
             sendBvrSarhGuidancePackets(); // <-- NEW: BVR SARH guidance does NOT require RMB

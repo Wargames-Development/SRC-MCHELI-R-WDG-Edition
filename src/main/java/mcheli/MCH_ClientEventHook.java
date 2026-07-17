@@ -9,6 +9,8 @@ import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.multiplay.MCH_GuiTargetMarker;
 import mcheli.mob.MCH_EntityGunner;
 import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.render.MCH_RWRDisplayTextureManager;
+import mcheli.render.MCH_RadarDisplayTextureManager;
 import mcheli.tool.rangefinder.MCH_ItemRangeFinder;
 import mcheli.wrapper.W_ClientEventHook;
 import mcheli.wrapper.W_Reflection;
@@ -159,6 +161,10 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     }
 
     public void worldEventUnload(Unload event) {
+        if (event.world != null && event.world.isRemote) {
+            MCH_RadarDisplayTextureManager.clear();
+            MCH_RWRDisplayTextureManager.clear();
+        }
         MCH_EntityInfoClientTracker.resetTracker();
         MCH_ViewEntityDummy.onUnloadWorld();
     }

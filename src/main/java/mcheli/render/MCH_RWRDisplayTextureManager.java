@@ -8,15 +8,20 @@ import mcheli.vehicle.MCH_EntityVehicle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.IResource;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.World;
 
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 
 public final class MCH_RWRDisplayTextureManager {
 
@@ -32,6 +37,7 @@ public final class MCH_RWRDisplayTextureManager {
     private static final ResourceLocation RWR_FAC_TEX = new ResourceLocation("mcheli", "textures/RWR_FAC.png");
 
     private static final Map<Integer, RwrTexState> CACHE = new HashMap<Integer, RwrTexState>();
+    private static final int[] PIXEL_COMPARISON = new int[MCH_TextureRenderUtil.TEX_SIZE * MCH_TextureRenderUtil.TEX_SIZE];
 
     private MCH_RWRDisplayTextureManager() {
     }
@@ -40,7 +46,7 @@ public final class MCH_RWRDisplayTextureManager {
         if (ac == null || ac.getAcInfo() == null || !ac.getAcInfo().hasRWR) {
             return null;
         }
-        RwrTexState state = getOrCreate(ac.getEntityId());
+        RwrTexState state = getOrCreate(ac);
         long worldTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
 
         if (!state.ready) {
@@ -67,18 +73,16 @@ public final class MCH_RWRDisplayTextureManager {
         MCH_RenderRWR.RWRDisplayFrame frame = MCH_RenderRWR.buildRWRDisplayFrame(ac, player, partialTicks);
         boolean hasThreats = frame != null && frame.valid && !frame.points.isEmpty();
 
-        if (!hasThreats && !state.firstRealFrame) {
-            if (state.lastEmptyTick == worldTick) {
-                return state.location;
-            }
-            state.lastEmptyTick = worldTick;
+        if (!hasThreats && state.hasRenderedFrame && !state.lastFrameHadThreats) {
+            return state.location;
         }
-        state.firstRealFrame = true;
 
+        System.arraycopy(state.pixels, 0, PIXEL_COMPARISON, 0, state.pixels.length);
         renderGraphicsFrame(state.pixels, frame, state);
+        state.hasRenderedFrame = true;
         state.lastFrameHadThreats = hasThreats;
 
-        state.texture.updateDynamicTexture();
+        uploadIfChanged(state, PIXEL_COMPARISON);
         state.lastUpdateTick = worldTick;
         return state.location;
     }
@@ -98,10 +102,16 @@ public final class MCH_RWRDisplayTextureManager {
         }
     }
 
-    private static RwrTexState getOrCreate(int aircraftId) {
+    private static RwrTexState getOrCreate(MCH_EntityAircraft ac) {
+        int aircraftId = ac.getEntityId();
         RwrTexState state = CACHE.get(aircraftId);
-        if (state != null) {
+        UUID aircraftUuid = ac.getUniqueID();
+        if (state != null && state.matches(aircraftUuid, ac.worldObj)) {
             return state;
+        }
+        if (state != null) {
+            deleteTexture(state);
+            CACHE.remove(aircraftId);
         }
         Minecraft mc = Minecraft.getMinecraft();
         DynamicTexture tex = new DynamicTexture(MCH_TextureRenderUtil.TEX_SIZE, MCH_TextureRenderUtil.TEX_SIZE);
@@ -110,8 +120,47 @@ public final class MCH_RWRDisplayTextureManager {
         state.texture = tex;
         state.location = location;
         state.pixels = tex.getTextureData();
+        state.aircraftUuid = aircraftUuid;
+        state.world = ac.worldObj;
         CACHE.put(aircraftId, state);
         return state;
+    }
+
+    public static void cleanup(World world) {
+        if (world == null || CACHE.isEmpty()) {
+            return;
+        }
+        Iterator<Map.Entry<Integer, RwrTexState>> iterator = CACHE.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, RwrTexState> entry = iterator.next();
+            RwrTexState state = entry.getValue();
+            Entity entity = world.getEntityByID(entry.getKey());
+            if (!(entity instanceof MCH_EntityAircraft)
+                || entity.isDead
+                || !state.matches(entity.getUniqueID(), world)) {
+                deleteTexture(state);
+                iterator.remove();
+            }
+        }
+    }
+
+    public static void clear() {
+        for (RwrTexState state : CACHE.values()) {
+            deleteTexture(state);
+        }
+        CACHE.clear();
+    }
+
+    private static void deleteTexture(RwrTexState state) {
+        if (state != null && state.location != null) {
+            Minecraft.getMinecraft().getTextureManager().deleteTexture(state.location);
+        }
+    }
+
+    private static void uploadIfChanged(RwrTexState state, int[] previousPixels) {
+        if (!Arrays.equals(state.pixels, previousPixels)) {
+            state.texture.updateDynamicTexture();
+        }
     }
 
     private static ResourceLocation selectRWRTexture(MCH_EntityAircraft ac) {
@@ -188,14 +237,19 @@ public final class MCH_RWRDisplayTextureManager {
         public ResourceLocation location;
         public int[] pixels;
         public int[] backgroundPixels;
+        public UUID aircraftUuid;
+        public World world;
         public long lastUpdateTick = -1L;
-        public long lastEmptyTick = -1L;
         public int warmupCursor = 0;
         public boolean ready = false;
         public boolean clearUploaded = false;
         public boolean backgroundLoaded = false;
         public boolean hasArtisticBg = false;
-        public boolean firstRealFrame = false;
+        public boolean hasRenderedFrame = false;
         public boolean lastFrameHadThreats = false;
+
+        public boolean matches(UUID uuid, World world) {
+            return this.world == world && this.aircraftUuid != null && this.aircraftUuid.equals(uuid);
+        }
     }
 }

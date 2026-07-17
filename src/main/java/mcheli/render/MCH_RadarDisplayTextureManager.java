@@ -3,11 +3,16 @@ package mcheli.render;
 import mcheli.aircraft.MCH_EntityAircraft;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.World;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.UUID;
 
 public final class MCH_RadarDisplayTextureManager {
 
@@ -15,6 +20,7 @@ public final class MCH_RadarDisplayTextureManager {
     private static final int WARMUP_CHUNK_PIXELS = 8192;
     private static final int TEXT_UPDATE_INTERVAL_TICK = 5;
     private static final Map<Integer, RadarTexState> CACHE = new HashMap<Integer, RadarTexState>();
+    private static final int[] PIXEL_COMPARISON = new int[MCH_TextureRenderUtil.TEX_SIZE * MCH_TextureRenderUtil.TEX_SIZE];
 
     private MCH_RadarDisplayTextureManager() {
     }
@@ -23,7 +29,7 @@ public final class MCH_RadarDisplayTextureManager {
         if (ac == null || ac.getAcInfo() == null || !ac.getAcInfo().enableRadar) {
             return null;
         }
-        RadarTexState state = getOrCreate(ac.getEntityId());
+        RadarTexState state = getOrCreate(ac);
         long worldTick = ac.worldObj != null ? ac.worldObj.getTotalWorldTime() : 0L;
         if (!state.ready) {
             warmupTexture(state);
@@ -59,6 +65,7 @@ public final class MCH_RadarDisplayTextureManager {
             return state.location;
         }
         int radarUiColor = MCH_RenderRWR.getEnableRadarUiColor(frame.aircraft);
+        System.arraycopy(state.pixels, 0, PIXEL_COMPARISON, 0, state.pixels.length);
         renderGraphicsFrame(state.pixels, frame, radarUiColor);
         state.lastFrameHadPoints = frame != null && frame.points != null && !frame.points.isEmpty();
         if (shouldUpdateTextLayer(state, frame, radarUiColor, worldTick)) {
@@ -67,7 +74,7 @@ public final class MCH_RadarDisplayTextureManager {
             state.lastTextHash = computeTextHash(frame, radarUiColor);
         }
         MCH_TextureRenderUtil.overlayTextLayer(state.pixels, state.textPixels);
-        state.texture.updateDynamicTexture();
+        uploadIfChanged(state, PIXEL_COMPARISON);
         state.lastUpdateTick = worldTick;
         state.lastUpdatePhaseKey = phaseKey;
         return state.location;
@@ -93,10 +100,16 @@ public final class MCH_RadarDisplayTextureManager {
         }
     }
 
-    private static RadarTexState getOrCreate(int aircraftId) {
+    private static RadarTexState getOrCreate(MCH_EntityAircraft ac) {
+        int aircraftId = ac.getEntityId();
         RadarTexState state = CACHE.get(aircraftId);
-        if (state != null) {
+        UUID aircraftUuid = ac.getUniqueID();
+        if (state != null && state.matches(aircraftUuid, ac.worldObj)) {
             return state;
+        }
+        if (state != null) {
+            deleteTexture(state);
+            CACHE.remove(aircraftId);
         }
         Minecraft mc = Minecraft.getMinecraft();
         DynamicTexture tex = new DynamicTexture(MCH_TextureRenderUtil.TEX_SIZE, MCH_TextureRenderUtil.TEX_SIZE);
@@ -105,8 +118,47 @@ public final class MCH_RadarDisplayTextureManager {
         state.texture = tex;
         state.location = location;
         state.pixels = tex.getTextureData();
+        state.aircraftUuid = aircraftUuid;
+        state.world = ac.worldObj;
         CACHE.put(aircraftId, state);
         return state;
+    }
+
+    public static void cleanup(World world) {
+        if (world == null || CACHE.isEmpty()) {
+            return;
+        }
+        Iterator<Map.Entry<Integer, RadarTexState>> iterator = CACHE.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, RadarTexState> entry = iterator.next();
+            RadarTexState state = entry.getValue();
+            Entity entity = world.getEntityByID(entry.getKey());
+            if (!(entity instanceof MCH_EntityAircraft)
+                || entity.isDead
+                || !state.matches(entity.getUniqueID(), world)) {
+                deleteTexture(state);
+                iterator.remove();
+            }
+        }
+    }
+
+    public static void clear() {
+        for (RadarTexState state : CACHE.values()) {
+            deleteTexture(state);
+        }
+        CACHE.clear();
+    }
+
+    private static void deleteTexture(RadarTexState state) {
+        if (state != null && state.location != null) {
+            Minecraft.getMinecraft().getTextureManager().deleteTexture(state.location);
+        }
+    }
+
+    private static void uploadIfChanged(RadarTexState state, int[] previousPixels) {
+        if (!Arrays.equals(state.pixels, previousPixels)) {
+            state.texture.updateDynamicTexture();
+        }
     }
 
     private static boolean shouldUpdateTextLayer(RadarTexState state, MCH_RenderRWR.RadarDisplayFrame frame, int radarUiColor, long worldTick) {
@@ -259,6 +311,8 @@ public final class MCH_RadarDisplayTextureManager {
         public ResourceLocation location;
         public int[] pixels;
         public int[] textPixels = new int[MCH_TextureRenderUtil.TEX_SIZE * MCH_TextureRenderUtil.TEX_SIZE];
+        public UUID aircraftUuid;
+        public World world;
         public long lastUpdateTick = -1L;
         public long lastUpdatePhaseKey = -1L;
         public long lastTextTick = -1L;
@@ -267,5 +321,9 @@ public final class MCH_RadarDisplayTextureManager {
         public boolean ready = false;
         public boolean clearUploaded = false;
         public boolean lastFrameHadPoints = false;
+
+        public boolean matches(UUID uuid, World world) {
+            return this.world == world && this.aircraftUuid != null && this.aircraftUuid.equals(uuid);
+        }
     }
 }
