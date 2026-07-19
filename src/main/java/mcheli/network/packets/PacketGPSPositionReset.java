@@ -46,9 +46,22 @@ public class PacketGPSPositionReset extends PacketBase {
 
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
+        if (playerEntity == null || playerEntity.worldObj == null) {
+            return;
+        }
+        if (ownerId != playerEntity.getEntityId()) {
+            return;
+        }
+        if (!isActive) {
+            MCH_GPSPosition.currentGPSPositions.remove(playerEntity.getEntityId());
+            return;
+        }
         MCH_GPSPosition gpsPosition = new MCH_GPSPosition(targetPosX, targetPosY, targetPosZ);
         gpsPosition.isActive = isActive;
         gpsPosition.owner = playerEntity;
+        if (!MCH_GPSPosition.isUsableTarget(gpsPosition)) {
+            return;
+        }
         MCH_GPSPosition.currentGPSPositions.put(playerEntity.getEntityId(), gpsPosition);
     }
 

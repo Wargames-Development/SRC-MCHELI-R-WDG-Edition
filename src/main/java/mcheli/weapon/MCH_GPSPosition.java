@@ -26,14 +26,30 @@ public class MCH_GPSPosition {
     }
 
     public static void set(double x, double y, double z, boolean isActive, Entity owner) {
-        if (owner.worldObj.isRemote) {
+        if (owner != null && owner.worldObj != null && owner.worldObj.isRemote) {
             clientSet(x, y, z, isActive, owner);
             MCH_MOD.getPacketHandler().sendToServer(new PacketGPSPositionReset(x, y, z, isActive, owner.getEntityId()));
         }
     }
 
     public static MCH_GPSPosition get(Entity owner) {
-        return currentGPSPositions.get(owner.getEntityId());
+        return owner != null ? currentGPSPositions.get(owner.getEntityId()) : null;
+    }
+
+    public static boolean isUsableTarget(MCH_GPSPosition position) {
+        return position != null
+            && position.isActive
+            && isFinite(position.x)
+            && isFinite(position.y)
+            && isFinite(position.z)
+            && Math.abs(position.x) <= 30000000.0D
+            && Math.abs(position.z) <= 30000000.0D
+            && position.y >= -64.0D
+            && position.y <= 4096.0D;
+    }
+
+    public static boolean isFinite(double value) {
+        return !Double.isNaN(value) && !Double.isInfinite(value);
     }
 
     @SideOnly(Side.CLIENT)

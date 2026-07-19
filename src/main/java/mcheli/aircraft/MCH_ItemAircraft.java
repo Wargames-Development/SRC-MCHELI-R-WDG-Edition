@@ -24,6 +24,7 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 public abstract class MCH_ItemAircraft extends W_Item {
@@ -57,8 +58,8 @@ public abstract class MCH_ItemAircraft extends W_Item {
 
         lines.add("\u00a7b\u00a7o" + info.displayName);
 
-        if (!player.isSneaking()) {
-            lines.add(MCH_I18n.format("aircraft.info.hold_shift", "Sneak"));
+        if (!isTooltipShiftKeyDown()) {
+            lines.add(MCH_I18n.format("aircraft.info.hold_shift", "Shift"));
         } else {
 
             // Category directly under white name (NO blank line before)
@@ -122,6 +123,19 @@ public abstract class MCH_ItemAircraft extends W_Item {
                 lines.add("\u00a77" + MCH_I18n.format("aircraft.info.no_weapon"));
             }
 
+        }
+    }
+
+    private static boolean isTooltipShiftKeyDown() {
+        try {
+            Class<?> keyboardClass = Class.forName("org.lwjgl.input.Keyboard");
+            Method isKeyDown = keyboardClass.getMethod("isKeyDown", int.class);
+            Boolean leftShift = (Boolean)isKeyDown.invoke(null, 42);
+            Boolean rightShift = (Boolean)isKeyDown.invoke(null, 54);
+            Object result = Boolean.valueOf(leftShift.booleanValue() || rightShift.booleanValue());
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 

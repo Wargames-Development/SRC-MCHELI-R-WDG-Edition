@@ -67,7 +67,7 @@ public class MCH_WeaponCreator {
                 MCH_EntityASMissile missile = (MCH_EntityASMissile) e;
                 if(missile.getInfo().isGPSMissile) {
                     if ((gpsPosition = MCH_GPSPosition.get(user)) != null) {
-                        if (gpsPosition.isActive) {
+                        if (MCH_GPSPosition.isUsableTarget(gpsPosition)) {
                             missile.targetPosX = gpsPosition.x;
                             missile.targetPosY = gpsPosition.y;
                             missile.targetPosZ = gpsPosition.z;
@@ -89,8 +89,19 @@ public class MCH_WeaponCreator {
             }
             case "machinegun1":
             case "machinegun2":
-            case "railgun":
-            case "bomb":
+            case "railgun": {
+                break;
+            }
+            case "bomb": {
+                MCH_GPSPosition gpsPosition;
+                MCH_EntityBomb bomb = (MCH_EntityBomb) e;
+                if (bomb.getInfo().isGPSMissile && (gpsPosition = MCH_GPSPosition.get(user)) != null) {
+                    if (MCH_GPSPosition.isUsableTarget(gpsPosition)) {
+                        bomb.setGpsTarget(gpsPosition.x, gpsPosition.y, gpsPosition.z);
+                    }
+                }
+                break;
+            }
             case "rocket":
             default: {
                 break;

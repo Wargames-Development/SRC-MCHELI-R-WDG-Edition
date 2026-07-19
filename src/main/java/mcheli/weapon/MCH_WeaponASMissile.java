@@ -237,11 +237,18 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
     }
 
     private MCH_GPSPosition getGpsPositionForShot(Entity user) {
+        if (user != null && user.worldObj != null && user.worldObj.isRemote) {
+            MCH_GPSPosition clientPosition = MCH_GPSPosition.currentClientGPSPosition;
+            if (clientPosition != null && clientPosition.owner != null && clientPosition.owner.getEntityId() == user.getEntityId()) {
+                return clientPosition;
+            }
+            return null;
+        }
         return MCH_GPSPosition.get(user);
     }
 
     private boolean canReachGpsTarget(MCH_WeaponParam prm, MCH_GPSPosition gpsPosition) {
-        return gpsPosition != null && gpsPosition.isActive;
+        return MCH_GPSPosition.isUsableTarget(gpsPosition);
     }
 
     @Override
@@ -304,18 +311,16 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                     missile.targeting = true;
                     targetAssigned = true;
                 }
-                MCH_GPSPosition assignedGpsPosition;
-                if (!targetAssigned && (assignedGpsPosition = MCH_GPSPosition.get(prm.user)) != null) {
-                    if (assignedGpsPosition.isActive) {
-                        missile.targetPosX = assignedGpsPosition.x;
-                        missile.targetPosY = assignedGpsPosition.y;
-                        missile.targetPosZ = assignedGpsPosition.z;
-                        missile.originTargetPosX = assignedGpsPosition.x;
-                        missile.originTargetPosY = assignedGpsPosition.y;
-                        missile.originTargetPosZ = assignedGpsPosition.z;
-                        missile.targeting = true;
-                        targetAssigned = true;
-                    }
+                MCH_GPSPosition assignedGpsPosition = gpsPosition;
+                if (!targetAssigned && MCH_GPSPosition.isUsableTarget(assignedGpsPosition)) {
+                    missile.targetPosX = assignedGpsPosition.x;
+                    missile.targetPosY = assignedGpsPosition.y;
+                    missile.targetPosZ = assignedGpsPosition.z;
+                    missile.originTargetPosX = assignedGpsPosition.x;
+                    missile.originTargetPosY = assignedGpsPosition.y;
+                    missile.originTargetPosZ = assignedGpsPosition.z;
+                    missile.targeting = true;
+                    targetAssigned = true;
                 }
                 if (!targetAssigned) {
                     if (tgtEnt != null && !tgtEnt.isDead) {

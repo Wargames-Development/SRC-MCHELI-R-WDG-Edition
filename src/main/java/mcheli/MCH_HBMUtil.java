@@ -26,24 +26,31 @@ public class MCH_HBMUtil {
     private static Class<?> PacketThreading;
     private static Class<?> explosionVNTClass;
     private static Class<?> integrationsClass;
+    private static final Set<String> warnedFailures = new HashSet<String>();
 
 
     static {
-        try {
-            nukeExplosionMK5Class = Class.forName("com.hbm.entity.logic.EntityNukeExplosionMK5");
-            nukeTorexClass = Class.forName("com.hbm.entity.effect.EntityNukeTorex");
-            explosionChaosClass = Class.forName("com.hbm.explosion.ExplosionChaos");
-            explosionCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionCreator");
-            explosionSmallCreatorClass = Class.forName("com.hbm.particle.helper.ExplosionSmallCreator");
-            explosionLargeClass = Class.forName("com.hbm.particle.helper.ExplosionLarge");
-            EntityBulletBaseMK4Class = Class.forName("com.hbm.entity.projectile.EntityBulletBaseMK4");
-            PacketThreading = Class.forName("com.hbm.handler.threading.PacketThreading");
-            explosionVNTClass = Class.forName("com.hbm.explosion.vanillant.ExplosionVNT");
-            isHBMLoaded = true;
-        } catch (ClassNotFoundException e) {
-            isHBMLoaded = false;
-            e.printStackTrace();
+        nukeExplosionMK5Class = optionalClass("com.hbm.entity.logic.EntityNukeExplosionMK5");
+        nukeTorexClass = optionalClass("com.hbm.entity.effect.EntityNukeTorex");
+        explosionChaosClass = optionalClass("com.hbm.explosion.ExplosionChaos");
+        explosionCreatorClass = optionalClass("com.hbm.particle.helper.ExplosionCreator");
+        explosionSmallCreatorClass = optionalClass("com.hbm.particle.helper.ExplosionSmallCreator");
+        explosionLargeClass = optionalClass("com.hbm.explosion.ExplosionLarge");
+        if (explosionLargeClass == null) {
+            explosionLargeClass = optionalClass("com.hbm.particle.helper.ExplosionLarge");
         }
+        EntityBulletBaseMK4Class = optionalClass("com.hbm.entity.projectile.EntityBulletBaseMK4");
+        PacketThreading = optionalClass("com.hbm.handler.threading.PacketThreading");
+        explosionVNTClass = optionalClass("com.hbm.explosion.vanillant.ExplosionVNT");
+        isHBMLoaded = nukeExplosionMK5Class != null
+            || nukeTorexClass != null
+            || explosionChaosClass != null
+            || explosionCreatorClass != null
+            || explosionSmallCreatorClass != null
+            || explosionLargeClass != null
+            || EntityBulletBaseMK4Class != null
+            || PacketThreading != null
+            || explosionVNTClass != null;
 
         try {
             integrationsClass = Class.forName("mcheli.wgc.Integrations");
@@ -52,15 +59,30 @@ public class MCH_HBMUtil {
         }
     }
 
+    private static Class<?> optionalClass(String name) {
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private static void warnOnce(String key, Exception e) {
+        if (warnedFailures.add(key)) {
+            String message = e.getMessage();
+            System.err.println("[MCHR][HBM] Optional bridge action failed: " + key + " (" + e.getClass().getSimpleName() + (message != null ? ": " + message : "") + ")");
+        }
+    }
+
     public static Object EntityNukeExplosionMK5_statFac(World world, int r, double posX, double posY, double posZ, UUID ownerParty) {
-        if (!isHBMLoaded) {
+        if (nukeExplosionMK5Class == null) {
             return null;
         }
         try {
-            Method statFacMethod = nukeExplosionMK5Class.getMethod("statFac", World.class, int.class, double.class, double.class, double.class);
-            return statFacMethod.invoke(null, world, r, posX, posY, posZ);
+            Method statFacMethod = nukeExplosionMK5Class.getMethod("statFac", World.class, int.class, double.class, double.class, double.class, UUID.class);
+            return statFacMethod.invoke(null, world, r, posX, posY, posZ, ownerParty);
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("EntityNukeExplosionMK5.statFac", e);
         }
         return null;
     }
@@ -70,26 +92,26 @@ public class MCH_HBMUtil {
     }
 
     public static void EntityNukeTorex_statFac(World world, double posX, double posY, double posZ, float nukeYield, int type) {
-        if (!isHBMLoaded) {
+        if (nukeTorexClass == null) {
             return;
         }
         try {
             Method statFacMethod = nukeTorexClass.getMethod("statFac", World.class, double.class, double.class, double.class, float.class, int.class);
             statFacMethod.invoke(null, world, posX, posY, posZ, nukeYield, type);
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("EntityNukeTorex.statFac", e);
         }
     }
 
     public static void ExplosionChaos_spawnClorine(World world, double posX, double posY, double posZ, float chemYield) {
-        if (!isHBMLoaded) {
+        if (explosionChaosClass == null) {
             return;
         }
         try {
             Method spawnChlorineMethod = explosionChaosClass.getMethod("spawnChlorine", World.class, double.class, double.class, double.class, float.class, double.class, int.class);
             spawnChlorineMethod.invoke(null, world, posX, posY, posZ, chemYield, 1.25, 0);
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("ExplosionChaos.spawnChlorine", e);
         }
     }
 
@@ -106,7 +128,7 @@ public class MCH_HBMUtil {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("Integrations.getContamProtectedChunksWGC", e);
         }
         return Collections.emptySet();
     }
@@ -124,7 +146,7 @@ public class MCH_HBMUtil {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("Integrations.canDetonateWGC", e);
         }
         return true;
     }
@@ -142,13 +164,13 @@ public class MCH_HBMUtil {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("Integrations.canTargetChunkWGC", e);
         }
         return true;
     }
 
     public static void ExplosionCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
-        if (!isHBMLoaded) {
+        if (explosionCreatorClass == null) {
             return;
         }
         try {
@@ -162,12 +184,12 @@ public class MCH_HBMUtil {
             }
             composeEffectMethod.invoke(null, world, posX, posY, posZ);
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("ExplosionCreator.composeEffect", e);
         }
     }
 
     public static void ExplosionSmallCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
-        if (!isHBMLoaded) {
+        if (explosionSmallCreatorClass == null) {
             return;
         }
         try {
@@ -181,12 +203,12 @@ public class MCH_HBMUtil {
                 composeEffectMethod.invoke(null, world, posX, posY, posZ, 15, 3.5F, 1.25F);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("ExplosionSmallCreator.composeEffect", e);
         }
     }
 
     public static void Frag_Effect(World world, double posX, double posY, double posZ) {
-        if (!isHBMLoaded) {
+        if (EntityBulletBaseMK4Class == null) {
             return;
         }
         try {
@@ -202,12 +224,12 @@ public class MCH_HBMUtil {
                 world.spawnEntityInWorld((Entity)bullet);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("Frag_Effect", e);
         }
     }
 
     public static void WP_Effect(World world, double posX, double posY, double posZ, int dim) {
-        if (!isHBMLoaded) {
+        if (PacketThreading == null) {
             return;
         }
         try {
@@ -225,48 +247,122 @@ public class MCH_HBMUtil {
                 createMethod.invoke(null, auxPacket, targetPoint);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("WP_Effect", e);
         }
     }
 
-    public static Object ExplosionVNT(World world, double posX, double posY, double posZ, float explosionPower) {
-        if (!isHBMLoaded) {
+    public static Object ExplosionVNT(World world, double posX, double posY, double posZ, float explosionPower, UUID ownerParty, Entity exploder) {
+        if (explosionVNTClass == null) {
             return null;
         }
         try {
-            Class<?>[] explosionVNTParamTypes = {World.class, double.class, double.class, double.class, float.class, Entity.class};
+            Class<?>[] explosionVNTParamTypes = {World.class, double.class, double.class, double.class, float.class, UUID.class, Entity.class};
             Constructor<?> explosionVNTConstructor = explosionVNTClass.getConstructor(explosionVNTParamTypes);
-            return explosionVNTConstructor.newInstance(world, posX, posY, posZ, explosionPower, null);
+            return explosionVNTConstructor.newInstance(world, posX, posY, posZ, explosionPower, ownerParty, exploder);
         } catch (Exception e) {
-            e.printStackTrace();
+            try {
+                Class<?>[] explosionVNTParamTypes = {World.class, double.class, double.class, double.class, float.class, UUID.class};
+                Constructor<?> explosionVNTConstructor = explosionVNTClass.getConstructor(explosionVNTParamTypes);
+                return explosionVNTConstructor.newInstance(world, posX, posY, posZ, explosionPower, ownerParty);
+            } catch (Exception fallback) {
+                try {
+                    Class<?>[] explosionVNTParamTypes = {World.class, double.class, double.class, double.class, float.class, Entity.class};
+                    Constructor<?> explosionVNTConstructor = explosionVNTClass.getConstructor(explosionVNTParamTypes);
+                    return explosionVNTConstructor.newInstance(world, posX, posY, posZ, explosionPower, exploder);
+                } catch (Exception legacyFallback) {
+                    warnOnce("ExplosionVNT.constructor", legacyFallback);
+                }
+            }
         }
         return null;
     }
 
-    public static void ExplosionVNT_Explode(Object ExplosionVNT, boolean isDestroyBlock) {
-        if (!isHBMLoaded) {
-            return;
+    public static Object ExplosionVNT(World world, double posX, double posY, double posZ, float explosionPower) {
+        return ExplosionVNT(world, posX, posY, posZ, explosionPower, null, null);
+    }
+
+    public static boolean ExplosionVNT_Explode(Object ExplosionVNT, boolean isDestroyBlock) {
+        return ExplosionVNT_Explode(ExplosionVNT, isDestroyBlock, true);
+    }
+
+    public static boolean ExplosionVNT_Explode(Object ExplosionVNT, boolean isDestroyBlock, boolean playStandardSfx) {
+        if (ExplosionVNT == null) {
+            return false;
         }
         try {
-            if (isDestroyBlock) {
-                Class<?> IBlockAllocator = Class.forName("com.hbm.explosion.vanillant.interfaces.IBlockAllocator");
-                Method setBlockAllocator = ExplosionVNT.getClass().getMethod("setBlockAllocator", IBlockAllocator);
-                Object BlockAllocatorStandard = Class.forName("com.hbm.explosion.vanillant.standard.BlockAllocatorStandard").getConstructor().newInstance();
-                setBlockAllocator.invoke(ExplosionVNT, BlockAllocatorStandard);
-                Class<?> IBlockProcessor = Class.forName("com.hbm.explosion.vanillant.interfaces.IBlockProcessor");
-                Method setBlockProcessor = ExplosionVNT.getClass().getMethod("setBlockProcessor", IBlockProcessor);
-                Object BlockProcessorStandard = Class.forName("com.hbm.explosion.vanillant.standard.BlockProcessorStandard").getConstructor().newInstance();
-                setBlockProcessor.invoke(ExplosionVNT, BlockProcessorStandard);
+            try {
+                Method makeStandard = ExplosionVNT.getClass().getMethod("makeStandard");
+                makeStandard.invoke(ExplosionVNT);
+            } catch (NoSuchMethodException e) {
+                prepareStandardVNTExplosion(ExplosionVNT, isDestroyBlock, playStandardSfx);
+            }
+            if (!playStandardSfx) {
+                clearVNTSFX(ExplosionVNT);
+            }
+            if (!isDestroyBlock) {
+                clearVNTBlockProcessors(ExplosionVNT);
             }
             Method explodeMethod = ExplosionVNT.getClass().getMethod("explode");
             explodeMethod.invoke(ExplosionVNT);
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("ExplosionVNT.explode", e);
+        }
+        return false;
+    }
+
+    private static void prepareStandardVNTExplosion(Object ExplosionVNT, boolean isDestroyBlock, boolean playStandardSfx) throws Exception {
+        if (isDestroyBlock) {
+            Class<?> IBlockAllocator = Class.forName("com.hbm.explosion.vanillant.interfaces.IBlockAllocator");
+            Method setBlockAllocator = ExplosionVNT.getClass().getMethod("setBlockAllocator", IBlockAllocator);
+            Object BlockAllocatorStandard = Class.forName("com.hbm.explosion.vanillant.standard.BlockAllocatorStandard").getConstructor().newInstance();
+            setBlockAllocator.invoke(ExplosionVNT, BlockAllocatorStandard);
+            Class<?> IBlockProcessor = Class.forName("com.hbm.explosion.vanillant.interfaces.IBlockProcessor");
+            Method setBlockProcessor = ExplosionVNT.getClass().getMethod("setBlockProcessor", IBlockProcessor);
+            Object BlockProcessorStandard = Class.forName("com.hbm.explosion.vanillant.standard.BlockProcessorStandard").getConstructor().newInstance();
+            setBlockProcessor.invoke(ExplosionVNT, BlockProcessorStandard);
+        }
+        Class<?> IEntityProcessor = Class.forName("com.hbm.explosion.vanillant.interfaces.IEntityProcessor");
+        Method setEntityProcessor = ExplosionVNT.getClass().getMethod("setEntityProcessor", IEntityProcessor);
+        Object EntityProcessorStandard = Class.forName("com.hbm.explosion.vanillant.standard.EntityProcessorStandard").getConstructor().newInstance();
+        setEntityProcessor.invoke(ExplosionVNT, EntityProcessorStandard);
+        Class<?> IPlayerProcessor = Class.forName("com.hbm.explosion.vanillant.interfaces.IPlayerProcessor");
+        Method setPlayerProcessor = ExplosionVNT.getClass().getMethod("setPlayerProcessor", IPlayerProcessor);
+        Object PlayerProcessorStandard = Class.forName("com.hbm.explosion.vanillant.standard.PlayerProcessorStandard").getConstructor().newInstance();
+        setPlayerProcessor.invoke(ExplosionVNT, PlayerProcessorStandard);
+
+        if (playStandardSfx) {
+            Class<?> IExplosionSFX = Class.forName("com.hbm.explosion.vanillant.interfaces.IExplosionSFX");
+            Object ExplosionEffectStandard = Class.forName("com.hbm.explosion.vanillant.standard.ExplosionEffectStandard").getConstructor().newInstance();
+            Method setSFX = ExplosionVNT.getClass().getMethod("setSFX", java.lang.reflect.Array.newInstance(IExplosionSFX, 0).getClass());
+            Object sfx = java.lang.reflect.Array.newInstance(IExplosionSFX, 1);
+            java.lang.reflect.Array.set(sfx, 0, ExplosionEffectStandard);
+            setSFX.invoke(ExplosionVNT, new Object[]{sfx});
         }
     }
 
+    private static void clearVNTSFX(Object ExplosionVNT) {
+        try {
+            Class<?> IExplosionSFX = Class.forName("com.hbm.explosion.vanillant.interfaces.IExplosionSFX");
+            Method setSFX = ExplosionVNT.getClass().getMethod("setSFX", java.lang.reflect.Array.newInstance(IExplosionSFX, 0).getClass());
+            Object sfx = java.lang.reflect.Array.newInstance(IExplosionSFX, 0);
+            setSFX.invoke(ExplosionVNT, new Object[]{sfx});
+        } catch (Exception e) {
+            warnOnce("ExplosionVNT.clearSFX", e);
+        }
+    }
+
+    private static void clearVNTBlockProcessors(Object ExplosionVNT) throws Exception {
+        Class<?> IBlockAllocator = Class.forName("com.hbm.explosion.vanillant.interfaces.IBlockAllocator");
+        Method setBlockAllocator = ExplosionVNT.getClass().getMethod("setBlockAllocator", IBlockAllocator);
+        setBlockAllocator.invoke(ExplosionVNT, new Object[]{null});
+        Class<?> IBlockProcessor = Class.forName("com.hbm.explosion.vanillant.interfaces.IBlockProcessor");
+        Method setBlockProcessor = ExplosionVNT.getClass().getMethod("setBlockProcessor", IBlockProcessor);
+        setBlockProcessor.invoke(ExplosionVNT, new Object[]{null});
+    }
+
     public static void ExplosionNT_instance_setOwnerParty(Object explosionNTInstance, UUID ownerParty) {
-        if (!isHBMLoaded) {
+        if (explosionNTInstance == null) {
             return;
         }
         try {
@@ -275,7 +371,7 @@ public class MCH_HBMUtil {
                 setOwnerPartyMethod.invoke(explosionNTInstance, ownerParty);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("ExplosionNT.setOwnerParty", e);
         }
     }
 
@@ -305,7 +401,7 @@ public class MCH_HBMUtil {
 
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            warnOnce("spawnConcreteCrackerExplosion", e);
         }
         return false;
     }

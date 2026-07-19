@@ -2042,56 +2042,70 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             if (this.getInfo().explosionType.contains("hbmNT") && MCH_HBMUtil.isHBMLoaded) {
                 if (isExplosionDebugEnabled()) {
                     debugExplosion(
-                        "[EXPDBG] branch=HBM_VNT effectYield=%d disableDestroyBlock=%s (fallbackMCHBreak=%s)",
+                        "[EXPDBG] branch=HBM_VNT effectYield=%d disableDestroyBlock=%s",
                         this.getInfo().effectYield,
-                        String.valueOf(this.getInfo().disableDestroyBlock),
                         String.valueOf(this.getInfo().disableDestroyBlock)
                     );
                 }
-                Object ExplosionVNT = MCH_HBMUtil.ExplosionVNT(super.worldObj, x, y, z, getInfo().effectYield);
+                java.util.UUID ownerParty = this.shootingEntity != null ? this.shootingEntity.getUniqueID() : null;
+                float hbmExplosionSize = getEffectiveHbmExplosionSize(exp, expBlock);
+                int hbmEffectYield = getEffectiveHbmEffectYield(exp, expBlock);
+                boolean composeHbmVisualEffect = this.getInfo().explosionType.contains("_Bomb")
+                    || this.getInfo().explosionType.contains("_Shell");
+                Object ExplosionVNT = MCH_HBMUtil.ExplosionVNT(super.worldObj, x, y, z, hbmExplosionSize, ownerParty, this);
+                boolean hbmExplosionHandled = false;
                 if (ExplosionVNT != null) {
-                    if (this.getInfo().disableDestroyBlock) {
-                        MCH_HBMUtil.ExplosionVNT_Explode(ExplosionVNT, false);
-                    } else {
-                        MCH_HBMUtil.ExplosionVNT_Explode(ExplosionVNT, true);
+                    hbmExplosionHandled = MCH_HBMUtil.ExplosionVNT_Explode(
+                        ExplosionVNT,
+                        !this.getInfo().disableDestroyBlock,
+                        !composeHbmVisualEffect
+                    );
+                }
+                if (hbmExplosionHandled) {
+                    if (composeHbmVisualEffect && this.getInfo().explosionType.contains("_Bomb")) {
+                        MCH_HBMUtil.ExplosionCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, hbmEffectYield);
+                    } else if (composeHbmVisualEffect && this.getInfo().explosionType.contains("_Shell")) {
+                        MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, hbmEffectYield);
                     }
+                    if (this.getInfo().explosionType.contains("_frag")) {
+                        MCH_HBMUtil.Frag_Effect(worldObj, x, y, z);
+                    }
+                    if (this.getInfo().explosionType.contains("_WP")) {
+                        MCH_HBMUtil.WP_Effect(worldObj, x, y, z, this.dimension);
+                    }
+                    result = null;
+                    if (directAttackEntity != null) {
+                        this.notifyHitBullet();
+                    }
+                } else {
+                    if (isExplosionDebugEnabled()) {
+                        debugExplosion("[EXPDBG] branch=HBM_VNT_FALLBACK_MCH isDestroyBlock=%s", String.valueOf(getInfo().explosionBlock > 0));
+                    }
+                    MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                        .exploder(this)
+                        .player(creditedPlayer)
+                        .x(x).y(y).z(z)
+                        .size(exp)
+                        .sizeBlock(expBlock)
+                        .isPlaySound(playSound)
+                        .isSmoking(true)
+                        .isFlaming(this.getInfo().flaming)
+                        .isDestroyBlock(getInfo().explosionBlock > 0)
+                        .isInWater(false)
+                        .directAttackEntity(directAttackEntity)
+                        .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+                        .damageVsLiving(getInfo().explosionDamageVsLiving)
+                        .damageVsPlane(getInfo().explosionDamageVsPlane)
+                        .damageVsHeli(getInfo().explosionDamageVsHeli)
+                        .damageVsTank(getInfo().explosionDamageVsTank)
+                        .damageVsVehicle(getInfo().explosionDamageVsVehicle)
+                        .damageVsShip(getInfo().explosionDamageVsShip)
+                        .explosionThroughWall(getInfo().explosionThroughWall)
+                        .explosionThroughWallFactor(getInfo().explosionThroughWallFactor)
+                        .isNewExplosionBreak(getInfo().isNewExplosionBreak)
+                        .build();
+                    result = MCH_Explosion.newExplosion(super.worldObj, param);
                 }
-                if (this.getInfo().explosionType.contains("_Bomb")) {
-                    MCH_HBMUtil.ExplosionCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
-                } else if (this.getInfo().explosionType.contains("_Shell")) {
-                    MCH_HBMUtil.ExplosionSmallCreator_composeEffect(worldObj, x + 0.5, y + 1, z + 0.5, getInfo().effectYield);
-                }
-                if (this.getInfo().explosionType.contains("_frag")) {
-                    MCH_HBMUtil.Frag_Effect(worldObj, x, y, z);
-                }
-                if (this.getInfo().explosionType.contains("_WP")) {
-                    MCH_HBMUtil.WP_Effect(worldObj, x, y, z, this.dimension);
-                }
-                boolean fallbackToMchBlockBreak = this.getInfo().disableDestroyBlock;
-                MCH_ExplosionParam param = MCH_ExplosionParam.builder()
-                    .exploder(this)
-                    .player(creditedPlayer)
-                    .x(x).y(y).z(z)
-                    .size(exp)
-                    .sizeBlock(expBlock)
-                    .isPlaySound(playSound)
-                    .isSmoking(fallbackToMchBlockBreak)
-                    .isFlaming(this.getInfo().flaming)
-                    .isDestroyBlock(fallbackToMchBlockBreak && getInfo().explosionBlock > 0)
-                    .isInWater(false)
-                    .directAttackEntity(directAttackEntity)
-                    .damageVsPlayer(getInfo().explosionDamageVsPlayer)
-                    .damageVsLiving(getInfo().explosionDamageVsLiving)
-                    .damageVsPlane(getInfo().explosionDamageVsPlane)
-                    .damageVsHeli(getInfo().explosionDamageVsHeli)
-                    .damageVsTank(getInfo().explosionDamageVsTank)
-                    .damageVsVehicle(getInfo().explosionDamageVsVehicle)
-                    .damageVsShip(getInfo().explosionDamageVsShip)
-                    .explosionThroughWall(getInfo().explosionThroughWall)
-                    .explosionThroughWallFactor(getInfo().explosionThroughWallFactor)
-                    .isNewExplosionBreak(getInfo().isNewExplosionBreak)
-                    .build();
-                result = MCH_Explosion.newExplosion(super.worldObj, param);
             }
             //普通爆炸效果
             else {
@@ -2183,7 +2197,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
             } else if (this.getInfo().nukeYield > 0 && MCH_HBMUtil.isHBMLoaded) {
                 if (!this.getInfo().nukeEffectOnly) {
-                    worldObj.spawnEntityInWorld((Entity) MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5));
+                    java.util.UUID ownerParty = this.shootingEntity != null ? this.shootingEntity.getUniqueID() : null;
+                    Object nukeExplosion = MCH_HBMUtil.EntityNukeExplosionMK5_statFac(super.worldObj, this.getInfo().nukeYield, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, ownerParty);
+                    if (nukeExplosion instanceof Entity) {
+                        worldObj.spawnEntityInWorld((Entity)nukeExplosion);
+                    }
                 }
                 MCH_HBMUtil.EntityNukeTorex_statFac(super.worldObj, this.posX + 0.5, this.posY + 0.5, this.posZ + 0.5, (float) this.getInfo().nukeYield, getInfo().effectYield);
             }
@@ -2214,6 +2232,20 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
 
         return result;
+    }
+
+    private float getEffectiveHbmExplosionSize(float exp, float expBlock) {
+        if (this.getInfo() != null && this.getInfo().effectYield > 0) {
+            return (float)this.getInfo().effectYield;
+        }
+        return Math.max(1.0F, Math.max(exp, expBlock));
+    }
+
+    private int getEffectiveHbmEffectYield(float exp, float expBlock) {
+        if (this.getInfo() != null && this.getInfo().effectYield > 0) {
+            return this.getInfo().effectYield;
+        }
+        return Math.max(1, MathHelper.ceiling_float_int(Math.max(exp, expBlock)));
     }
 
     public static void setExplosionDebugEnabled(boolean enabled) {
