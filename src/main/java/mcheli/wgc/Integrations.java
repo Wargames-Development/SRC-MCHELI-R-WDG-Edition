@@ -1,10 +1,7 @@
 package mcheli.wgc;
 
-import com.wdg.wgcore.integration.api.WGCoreIntegrationAccess;
-import com.wdg.wgcore.integration.model.ActionAttribution;
-import com.wdg.wgcore.integration.model.ActionSourceType;
-import com.wdg.wgcore.integration.model.ExplosionActionContext;
-import com.wdg.wgcore.integration.model.ExplosionDecision;
+import cpw.mods.fml.common.Loader;
+import mcheli.MCH_Config;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.ChunkPosition;
@@ -17,12 +14,23 @@ import java.util.UUID;
 
 public final class Integrations {
 
-    private static final String SOURCE_MOD_ID = "mcheli";
+    private static final String WGCORE_MOD_ID = "wgcore";
+    private static final boolean WGCORE_LOADED = Loader.isModLoaded(WGCORE_MOD_ID);
 
     private Integrations() {
     }
 
+    public static boolean isWGCoreIntegrationEnabled() {
+        return WGCORE_LOADED
+                && MCH_Config.EnableWGCoreIntegration != null
+                && MCH_Config.EnableWGCoreIntegration.prmBool;
+    }
+
     public static boolean canHarmPlayerWGC(Entity actingEntity, Entity targetEntity, World world) {
+        if (!isWGCoreIntegrationEnabled()) {
+            return true;
+        }
+
         if (world == null) {
             return false;
         }
@@ -38,15 +46,19 @@ public final class Integrations {
             return false;
         }
 
-        return WGCoreIntegrationAccess.canHarmPlayer(actingPlayerId, targetPlayerId, world);
+        return WGCoreCompat.canHarmPlayer(actingPlayerId, targetPlayerId, world);
     }
 
     public static boolean canHarmPlayerWGC(UUID actingPlayerId, UUID targetPlayerId, World world) {
+        if (!isWGCoreIntegrationEnabled()) {
+            return true;
+        }
+
         if (world == null || actingPlayerId == null || targetPlayerId == null) {
             return false;
         }
 
-        return WGCoreIntegrationAccess.canHarmPlayer(actingPlayerId, targetPlayerId, world);
+        return WGCoreCompat.canHarmPlayer(actingPlayerId, targetPlayerId, world);
     }
 
     public static boolean canVehicleDamageBlockWGC(World world,
@@ -55,12 +67,16 @@ public final class Integrations {
                                                    int y,
                                                    int z,
                                                    String impactTypeId) {
+        if (!isWGCoreIntegrationEnabled()) {
+            return true;
+        }
+
         if (world == null) {
             return false;
         }
 
         ChunkPosition blockPos = new ChunkPosition(x, y, z);
-        ExplosionDecision decision = evaluateExplosionWGC(
+        ExplosionResult decision = evaluateExplosionWGC(
                 world,
                 actingEntity,
                 null,
@@ -80,7 +96,7 @@ public final class Integrations {
         }
 
         List<ChunkPosition> filtered = decision.getFilteredAffectedBlocks();
-        if (filtered == null || filtered.isEmpty()) {
+        if (filtered.isEmpty()) {
             return false;
         }
 
@@ -93,61 +109,47 @@ public final class Integrations {
         return false;
     }
 
-    public static ExplosionDecision evaluateExplosionWGC(World world,
-                                                         Entity actingEntity,
-                                                         Explosion explosion,
-                                                         double originX,
-                                                         double originY,
-                                                         double originZ,
-                                                         String explosionTypeId,
-                                                         List<ChunkPosition> affectedBlocks) {
-        if (world == null) {
-            return ExplosionDecision.deny(null);
+    public static ExplosionResult evaluateExplosionWGC(World world,
+                                                       Entity actingEntity,
+                                                       Explosion explosion,
+                                                       double originX,
+                                                       double originY,
+                                                       double originZ,
+                                                       String explosionTypeId,
+                                                       List<ChunkPosition> affectedBlocks) {
+        if (!isWGCoreIntegrationEnabled()) {
+            return ExplosionResult.allowAll();
         }
 
-        UUID actingPlayerId = resolveActingPlayerId(actingEntity);
-        ActionAttribution attribution = buildAttribution(world, actingPlayerId, ActionSourceType.EXPLOSIVE);
+        if (world == null) {
+            return null;
+        }
 
-        ExplosionActionContext context = new ExplosionActionContext(
+        return WGCoreCompat.evaluateExplosion(
                 world,
-                floorToInt(originX),
-                floorToInt(originY),
-                floorToInt(originZ),
+                resolveActingPlayerId(actingEntity),
                 explosion,
-                attribution,
-                normaliseExplosionTypeId(explosionTypeId),
-                affectedBlocks != null ? affectedBlocks : Collections.<ChunkPosition>emptyList()
+                originX,
+                originY,
+                originZ,
+                explosionTypeId,
+                affectedBlocks
         );
+    }
 
-        return WGCoreIntegrationAccess.evaluateExplosion(context);
+    public static boolean arePlayersInSameFactionWGC(World world, UUID firstPlayerId, UUID secondPlayerId) {
+        if (!isWGCoreIntegrationEnabled()
+                || world == null
+                || firstPlayerId == null
+                || secondPlayerId == null) {
+            return false;
+        }
+
+        return WGCoreCompat.arePlayersInSameFaction(world, firstPlayerId, secondPlayerId);
     }
 
     public static Entity resolveActingEntity(Entity preferredPlayerEntity, Entity fallbackEntity) {
         return preferredPlayerEntity != null ? preferredPlayerEntity : fallbackEntity;
-    }
-
-    private static ActionAttribution buildAttribution(World world,
-                                                      UUID actingPlayerId,
-                                                      ActionSourceType sourceType) {
-        if (actingPlayerId == null) {
-            return new ActionAttribution(
-                    null,
-                    null,
-                    null,
-                    null,
-                    SOURCE_MOD_ID,
-                    sourceType,
-                    true,
-                    null
-            );
-        }
-
-        return ActionAttribution.directPlayer(
-                actingPlayerId,
-                WGCoreIntegrationAccess.getPlayerFaction(world, actingPlayerId),
-                SOURCE_MOD_ID,
-                sourceType
-        );
     }
 
     private static UUID resolveActingPlayerId(Entity actingEntity) {
@@ -158,16 +160,58 @@ public final class Integrations {
         return null;
     }
 
-    private static String normaliseExplosionTypeId(String explosionTypeId) {
-        if (explosionTypeId == null) {
-            return "mcheli:explosion";
+    public static final class ExplosionResult {
+
+        private static final ExplosionResult ALLOW_ALL = new ExplosionResult(
+                true,
+                true,
+                true,
+                false,
+                Collections.<ChunkPosition>emptyList()
+        );
+
+        private final boolean explosionAllowed;
+        private final boolean entityDamageAllowed;
+        private final boolean blockDamageAllowed;
+        private final boolean filtered;
+        private final List<ChunkPosition> filteredAffectedBlocks;
+
+        ExplosionResult(boolean explosionAllowed,
+                        boolean entityDamageAllowed,
+                        boolean blockDamageAllowed,
+                        boolean filtered,
+                        List<ChunkPosition> filteredAffectedBlocks) {
+            this.explosionAllowed = explosionAllowed;
+            this.entityDamageAllowed = entityDamageAllowed;
+            this.blockDamageAllowed = blockDamageAllowed;
+            this.filtered = filtered;
+            this.filteredAffectedBlocks = filteredAffectedBlocks != null
+                    ? filteredAffectedBlocks
+                    : Collections.<ChunkPosition>emptyList();
         }
 
-        String trimmed = explosionTypeId.trim();
-        return trimmed.isEmpty() ? "mcheli:explosion" : trimmed;
-    }
+        static ExplosionResult allowAll() {
+            return ALLOW_ALL;
+        }
 
-    private static int floorToInt(double value) {
-        return (int) Math.floor(value);
+        public boolean isExplosionAllowed() {
+            return this.explosionAllowed;
+        }
+
+        public boolean isEntityDamageAllowed() {
+            return this.entityDamageAllowed;
+        }
+
+        public boolean isBlockDamageAllowed() {
+            return this.blockDamageAllowed;
+        }
+
+        public boolean isFiltered() {
+            return this.filtered;
+        }
+
+        public List<ChunkPosition> getFilteredAffectedBlocks() {
+            return this.filteredAffectedBlocks;
+        }
     }
 }

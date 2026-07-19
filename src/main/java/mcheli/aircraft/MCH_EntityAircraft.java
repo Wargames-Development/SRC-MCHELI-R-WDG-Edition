@@ -1,6 +1,5 @@
 package mcheli.aircraft;
 
-import com.wdg.wgcore.integration.api.WGCoreIntegrationAccess;
 import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -21,6 +20,7 @@ import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.weapon.*;
+import mcheli.wgc.Integrations;
 import mcheli.wrapper.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -5028,10 +5028,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             return true;
         }
 
-        UUID riddenFactionId = WGCoreIntegrationAccess.getPlayerFaction(this.worldObj, riddenPlayer.getUniqueID());
-        UUID playerFactionId = WGCoreIntegrationAccess.getPlayerFaction(this.worldObj, player.getUniqueID());
-
-        if (riddenFactionId != null && riddenFactionId.equals(playerFactionId)) {
+        if (Integrations.arePlayersInSameFactionWGC(
+                this.worldObj,
+                riddenPlayer.getUniqueID(),
+                player.getUniqueID())) {
             return true;
         }
 

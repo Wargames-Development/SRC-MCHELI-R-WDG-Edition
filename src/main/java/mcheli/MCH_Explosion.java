@@ -1,6 +1,5 @@
 package mcheli;
 
-import com.wdg.wgcore.integration.model.ExplosionDecision;
 import mcheli.wgc.Integrations;
 import mcheli.flare.MCH_EntityFlare;
 import mcheli.helicopter.MCH_EntityHeli;
@@ -37,7 +36,7 @@ public class MCH_Explosion extends Explosion {
     public MCH_ExplosionParam param;
     public boolean destroyBlocksByRule;
     MCH_Explosion.ExplosionResult result;
-    private ExplosionDecision wgcoreExplosionDecision;
+    private Integrations.ExplosionResult wgcoreExplosionDecision;
 
     public MCH_Explosion(World world, MCH_ExplosionParam param) {
         super(world, param.exploder, param.x, param.y, param.z, param.size);
