@@ -956,7 +956,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
             drawEconomyGainToast(i, j);
             int mortarRadarShift = 0;
-            if (player != null && player.ridingEntity instanceof MCH_EntitySeat && ((MCH_EntitySeat) player.ridingEntity).getParent().isMortarRadarEnabledRuntime()) {
+            if (player != null && player.ridingEntity instanceof MCH_EntitySeat && ((MCH_EntitySeat) player.ridingEntity).getParent() != null && ((MCH_EntitySeat) player.ridingEntity).getParent().isMortarRadarEnabledRuntime()) {
                 double scale = j / 500.0;
                 mortarRadarShift = (int) (480.0 * scale / 2.0 + 480.0 * scale * 0.03);
             } else if (player != null && player.ridingEntity instanceof MCH_EntityAircraft && ((MCH_EntityAircraft) player.ridingEntity).isMortarRadarEnabledRuntime()) {
