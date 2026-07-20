@@ -9,6 +9,7 @@ import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_Lib;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.WorldServer;
 
@@ -108,7 +109,12 @@ public class MCH_AircraftPacketHandler {
         if (!player.worldObj.isRemote) {
             MCH_PacketStatusRequest req = new MCH_PacketStatusRequest();
             req.readData(data);
-            if (req.entityID_AC > 0) {
+            if (req.entityID_AC < -1) {
+                int entityId = -req.entityID_AC;
+                if (entityId > 0 && player instanceof EntityPlayerMP) {
+                    MCH_MOD.entityInfoManager.queueTrackerResync((EntityPlayerMP) player, entityId);
+                }
+            } else if (req.entityID_AC > 0) {
                 Entity e = player.worldObj.getEntityByID(req.entityID_AC);
                 if (e instanceof MCH_EntityAircraft) {
                     MCH_PacketStatusResponse.sendStatus((MCH_EntityAircraft) e, player);

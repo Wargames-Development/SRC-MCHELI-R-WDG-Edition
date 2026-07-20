@@ -60,9 +60,12 @@ public class MCH_EntityVehicle extends MCH_EntityAircraft {
         }
 
         if (this.vehicleInfo == null) {
-            MCH_Lib.Log((Entity) this, "##### MCH_EntityVehicle changeVehicleType() Vehicle info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
-            this.setDead();
+            if (this.shouldDiscardForMissingAircraftInfo(type)) {
+                MCH_Lib.Log((Entity) this, "##### MCH_EntityVehicle changeVehicleType() Vehicle info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
+                this.setDead();
+            }
         } else {
+            this.markAircraftInfoResolved();
             this.setAcInfo(this.vehicleInfo);
             this.newSeats(this.getAcInfo().getNumSeatAndRack());
             super.weapons = this.createWeapon(1 + this.getSeatNum());

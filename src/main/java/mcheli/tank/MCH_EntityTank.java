@@ -105,9 +105,12 @@ public class MCH_EntityTank extends MCH_EntityAircraft {
         }
 
         if (this.tankInfo == null) {
-            MCH_Lib.Log(this, "##### MCH_EntityTank changeTankType() Tank info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
-            this.setDead();
+            if (this.shouldDiscardForMissingAircraftInfo(type)) {
+                MCH_Lib.Log(this, "##### MCH_EntityTank changeTankType() Tank info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
+                this.setDead();
+            }
         } else {
+            this.markAircraftInfoResolved();
             this.setAcInfo(this.tankInfo);
             this.newSeats(this.getAcInfo().getNumSeatAndRack());
             this.switchFreeLookModeClient(this.getAcInfo().defaultFreelook);

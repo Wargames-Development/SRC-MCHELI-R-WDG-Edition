@@ -3,6 +3,14 @@ package mcheli;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.aircraft.MCH_PacketStatusRequest;
+import mcheli.helicopter.MCH_EntityHeli;
+import mcheli.plane.MCP_EntityPlane;
+import mcheli.tank.MCH_EntityTank;
+import mcheli.vehicle.MCH_EntityVehicle;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +22,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * - 定时器：使用 ClientTick（避免 Timer 的跨线程问题）。
  */
 public class MCH_EntityInfoClientTracker {
+
+    private static final long RESYNC_MISSING_GRACE_MS = 2_000L;
+    private static final long RESYNC_ENTITY_COOLDOWN_MS = 10_000L;
+    private static final long RESYNC_GLOBAL_COOLDOWN_MS = 2_000L;
+    private static final double RESYNC_MAX_HORIZONTAL_DISTANCE_SQ = 256.0D * 256.0D;
 
     private static final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
     /**
@@ -31,6 +44,7 @@ public class MCH_EntityInfoClientTracker {
     private static volatile long lastAppliedSeq = -1L;    // 已应用的最新快照序号
     private static volatile long latestSeqObserved = -1L; // 最近接收到的最大序号（用于缺席判断）
     private static int clientTickCounter = 0;
+    private static long lastTrackerResyncRequestMillis;
 
     static {
         // 注册客户端 Tick 监听（类被首次引用时完成注册）
@@ -109,22 +123,83 @@ public class MCH_EntityInfoClientTracker {
         }
     }
 
+    private static void requestMissingAircraftResync() {
+        Entity clientPlayer = MCH_MOD.proxy.getClientPlayer();
+        if (!(clientPlayer instanceof EntityPlayer) || clientPlayer.worldObj == null) {
+            return;
+        }
+        EntityPlayer player = (EntityPlayer) clientPlayer;
+
+        long now = System.currentTimeMillis();
+        for (Tracked trackedEntity : tracked.values()) {
+            MCH_EntityInfo info = trackedEntity.info;
+            if (!isAircraftInfo(info)) {
+                continue;
+            }
+
+            Entity localEntity = player.worldObj.getEntityByID(info.entityId);
+            if (localEntity instanceof MCH_EntityAircraft && !localEntity.isDead) {
+                trackedEntity.missingSinceMillis = 0L;
+                continue;
+            }
+
+            if (info.getHorizonalDistanceSqToEntity(player) > RESYNC_MAX_HORIZONTAL_DISTANCE_SQ) {
+                trackedEntity.missingSinceMillis = 0L;
+                continue;
+            }
+
+            if (trackedEntity.missingSinceMillis == 0L) {
+                trackedEntity.missingSinceMillis = now;
+                continue;
+            }
+
+            if (now - trackedEntity.missingSinceMillis < RESYNC_MISSING_GRACE_MS
+                || now - trackedEntity.lastResyncRequestMillis < RESYNC_ENTITY_COOLDOWN_MS
+                || now - lastTrackerResyncRequestMillis < RESYNC_GLOBAL_COOLDOWN_MS) {
+                continue;
+            }
+
+            trackedEntity.lastResyncRequestMillis = now;
+            lastTrackerResyncRequestMillis = now;
+            MCH_Lib.Log(player, "[EntitySync] Requesting missing aircraft tracker resend: id=%d, type=%s, distance=%.1f",
+                Integer.valueOf(info.entityId), info.entityName, Double.valueOf(info.getDistanceToEntity(player)));
+            MCH_PacketStatusRequest.requestTrackerResync(info.entityId);
+            return;
+        }
+    }
+
+    private static boolean isAircraftInfo(MCH_EntityInfo info) {
+        if (info == null || info.entityClassName == null) {
+            return false;
+        }
+        String className = info.entityClassName;
+        return className.equals(MCP_EntityPlane.class.getName())
+            || className.equals(MCH_EntityHeli.class.getName())
+            || className.equals(MCH_EntityTank.class.getName())
+            || className.equals(MCH_EntityVehicle.class.getName());
+    }
+
     public static void resetTracker() {
         tracked.clear();
         lastAppliedSeq = -1L;
         latestSeqObserved = -1L;
         clientTickCounter = 0;
+        lastTrackerResyncRequestMillis = 0L;
     }
 
     private static final class Tracked {
         MCH_EntityInfo info;
         long lastSeenMillis;
         long lastSeenSeq;
+        long missingSinceMillis;
+        long lastResyncRequestMillis;
 
         Tracked(MCH_EntityInfo info, long now, long seq) {
             this.info = info;
             this.lastSeenMillis = now;
             this.lastSeenSeq = seq;
+            this.missingSinceMillis = 0L;
+            this.lastResyncRequestMillis = 0L;
         }
     }
 
@@ -138,6 +213,7 @@ public class MCH_EntityInfoClientTracker {
             clientTickCounter++;
             if (clientTickCounter % CLEANUP_TICK_INTERVAL == 0) {
                 cleanupExpired();
+                requestMissingAircraftResync();
             }
         }
     }

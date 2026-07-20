@@ -83,9 +83,12 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         }
 
         if (this.planeInfo == null) {
-            MCH_Lib.Log(this, "##### MCP_EntityPlane changePlaneType() Plane info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
-            this.setDead();
+            if (this.shouldDiscardForMissingAircraftInfo(type)) {
+                MCH_Lib.Log(this, "##### MCP_EntityPlane changePlaneType() Plane info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
+                this.setDead();
+            }
         } else {
+            this.markAircraftInfoResolved();
             this.setAcInfo(this.planeInfo);
             this.newSeats(this.getAcInfo().getNumSeatAndRack());
             this.partNozzle = this.createNozzle(this.planeInfo);

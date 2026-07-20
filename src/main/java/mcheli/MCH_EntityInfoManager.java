@@ -3,6 +3,7 @@ package mcheli;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.relauncher.ReflectionHelper;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.helicopter.MCH_EntityHeli;
@@ -12,23 +13,34 @@ import mcheli.weapon.MCH_IEntityLockChecker;
 import mcheli.weapon.MCH_IMissile;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
+import net.minecraft.entity.EntityTrackerEntry;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.IntHashMap;
 import net.minecraft.world.WorldServer;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MCH_EntityInfoManager {
+
+    private static final long TRACKER_RESYNC_REQUEST_INTERVAL_MS = 2_000L;
+    private static final int MAX_TRACKER_RESYNCS_PER_TICK = 16;
 
     // 服务器侧仅用于收集/去重，不再依赖“删除发包”
     public static final Map<Integer, MCH_EntityInfo> serverEntities = new ConcurrentHashMap<>();
 
     private int tickCounter;
     private long snapshotSeq = 0L; // 递增的全局快照序号
+    private final Queue<TrackerResyncRequest> trackerResyncRequests = new ConcurrentLinkedQueue<>();
+    private final Map<EntityPlayerMP, Long> lastTrackerResyncRequest = new WeakHashMap<>();
 
     public MCH_EntityInfoManager() {
         FMLCommonHandler.instance().bus().register(this);
@@ -39,7 +51,87 @@ public class MCH_EntityInfoManager {
         if (event.phase == TickEvent.Phase.END) {
             tickCounter++;
             snapshotSeq++; // 每个服务端 Tick 递增一次
+            processTrackerResyncRequests();
             serverTick();
+        }
+    }
+
+    /**
+     * Called from the network handler. The tracker mutation is deferred to the
+     * server tick rather than modifying EntityTracker collections on a Netty thread.
+     */
+    public synchronized void queueTrackerResync(EntityPlayerMP player, int entityId) {
+        if (player == null || entityId <= 0 || this.trackerResyncRequests.size() >= 256) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        Long lastRequest = this.lastTrackerResyncRequest.get(player);
+        if (lastRequest != null && now - lastRequest.longValue() < TRACKER_RESYNC_REQUEST_INTERVAL_MS) {
+            return;
+        }
+
+        this.lastTrackerResyncRequest.put(player, Long.valueOf(now));
+        this.trackerResyncRequests.offer(new TrackerResyncRequest(player, entityId));
+    }
+
+    private void processTrackerResyncRequests() {
+        for (int i = 0; i < MAX_TRACKER_RESYNCS_PER_TICK; ++i) {
+            TrackerResyncRequest request = this.trackerResyncRequests.poll();
+            if (request == null) {
+                return;
+            }
+            refreshTrackerEntry(request.player, request.entityId);
+        }
+    }
+
+    private void refreshTrackerEntry(EntityPlayerMP player, int entityId) {
+        if (player == null || player.isDead || !(player.worldObj instanceof WorldServer)) {
+            return;
+        }
+
+        Entity entity = player.worldObj.getEntityByID(entityId);
+        if (!(entity instanceof MCH_EntityAircraft) || entity.isDead) {
+            return;
+        }
+
+        WorldServer world = (WorldServer) player.worldObj;
+        EntityTracker tracker = world.getEntityTracker();
+        try {
+            IntHashMap entries = ReflectionHelper.getPrivateValue(EntityTracker.class, tracker,
+                new String[]{"trackedEntityIDs", "field_72794_c"});
+            EntityTrackerEntry entry = entries != null ? (EntityTrackerEntry) entries.lookup(entityId) : null;
+            if (entry == null) {
+                return;
+            }
+
+            double dx = player.posX - entity.posX;
+            double dz = player.posZ - entity.posZ;
+            if (Math.abs(dx) > entry.blocksDistanceThreshold || Math.abs(dz) > entry.blocksDistanceThreshold) {
+                return;
+            }
+
+            // This method also checks that the player watches the entity's chunk,
+            // so the recovery does not force chunk loads or bypass normal limits.
+            entry.removePlayerFromTracker(player);
+            entry.tryStartWachingThis(player);
+            if (entry.trackingPlayers.contains(player)) {
+                MCH_Lib.Log(entity, "[EntitySync] Refreshed tracker entry for player=%s, id=%d, type=%s",
+                    player.getCommandSenderName(), Integer.valueOf(entityId), ((MCH_EntityAircraft) entity).getTypeName());
+            }
+        } catch (RuntimeException ex) {
+            MCH_Lib.Log(entity, "[EntitySync] Failed to refresh tracker entry: player=%s, id=%d, error=%s",
+                player.getCommandSenderName(), Integer.valueOf(entityId), ex.getMessage());
+        }
+    }
+
+    private static final class TrackerResyncRequest {
+        private final EntityPlayerMP player;
+        private final int entityId;
+
+        private TrackerResyncRequest(EntityPlayerMP player, int entityId) {
+            this.player = player;
+            this.entityId = entityId;
         }
     }
 

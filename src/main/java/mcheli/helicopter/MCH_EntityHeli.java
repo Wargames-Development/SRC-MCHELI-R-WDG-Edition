@@ -72,9 +72,12 @@ public class MCH_EntityHeli extends MCH_EntityAircraft {
         }
 
         if (this.heliInfo == null) {
-            MCH_Lib.Log((Entity) this, "##### MCH_EntityHeli changeHeliType() Heli info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
-            this.setDead(true);
+            if (this.shouldDiscardForMissingAircraftInfo(type)) {
+                MCH_Lib.Log((Entity) this, "##### MCH_EntityHeli changeHeliType() Heli info null %d, %s, %s", new Object[]{Integer.valueOf(W_Entity.getEntityId(this)), type, this.getEntityName()});
+                this.setDead(true);
+            }
         } else {
+            this.markAircraftInfoResolved();
             this.setAcInfo(this.heliInfo);
             this.newSeats(this.getAcInfo().getNumSeatAndRack());
             this.createRotors();

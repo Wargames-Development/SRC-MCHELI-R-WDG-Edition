@@ -88,6 +88,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private static final int CMN_ID_GUNNER_STATUS = 12;
     private static final int CMN_ID_RADAR_ENABLED = 13;
     private static final int CMN_ID_MORTAR_RADAR_ENABLED = 14;
+    private static final int CLIENT_TYPE_RESYNC_RETRY = 100;
 
     private static final MCH_EntitySeat[] seatsDummy = new MCH_EntitySeat[0];
     public final MCH_MissileDetector missileDetector;
@@ -240,6 +241,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private boolean switchSeat = false;
     public int jammingTick = 0;
     private long gunnerPilotMountTick = -1L;
+    private int clientTypeResolutionFailures;
+    private String clientUnresolvedType = "";
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -559,6 +562,43 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public abstract void changeType(String var1);
+
+    /**
+     * A client can receive an aircraft spawn before its type is usable. Removing the
+     * entity here leaves the server tracker believing the spawn succeeded, so retain
+     * it and request one clean tracker resend after a short grace period.
+     */
+    protected boolean shouldDiscardForMissingAircraftInfo(String type) {
+        if (!super.worldObj.isRemote) {
+            return true;
+        }
+
+        String unresolvedType = type != null ? type : "";
+        if (!unresolvedType.equals(this.clientUnresolvedType)) {
+            this.clientUnresolvedType = unresolvedType;
+            this.clientTypeResolutionFailures = 0;
+        }
+
+        ++this.clientTypeResolutionFailures;
+        if (this.clientTypeResolutionFailures == 1) {
+            MCH_Lib.Log(this, "[EntitySync] Deferring client removal for unresolved aircraft type: id=%d, type=%s",
+                Integer.valueOf(W_Entity.getEntityId(this)), unresolvedType);
+        } else if (this.clientTypeResolutionFailures == CLIENT_TYPE_RESYNC_RETRY) {
+            MCH_Lib.Log(this, "[EntitySync] Requesting aircraft tracker resend after %d unresolved type retries: id=%d, type=%s",
+                Integer.valueOf(CLIENT_TYPE_RESYNC_RETRY), Integer.valueOf(W_Entity.getEntityId(this)), unresolvedType);
+            MCH_PacketStatusRequest.requestTrackerResync(W_Entity.getEntityId(this));
+        }
+        return false;
+    }
+
+    protected void markAircraftInfoResolved() {
+        if (this.clientTypeResolutionFailures > 0) {
+            MCH_Lib.Log(this, "[EntitySync] Aircraft type recovered after %d retries: id=%d, type=%s",
+                Integer.valueOf(this.clientTypeResolutionFailures), Integer.valueOf(W_Entity.getEntityId(this)), this.getTypeName());
+        }
+        this.clientTypeResolutionFailures = 0;
+        this.clientUnresolvedType = "";
+    }
 
     public boolean isTargetDrone() {
         return this.getAcInfo() != null && this.getAcInfo().isTargetDrone;
@@ -1819,6 +1859,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public abstract void onUpdateAircraft();
 
     public void onUpdate() {
+        if (super.worldObj.isRemote && this.getAcInfo() == null) {
+            this.changeType(this.getTypeName());
+            if (this.getAcInfo() == null) {
+                // The concrete update paths assume type data is available. Keep the
+                // placeholder alive without running aircraft simulation until it is.
+                super.onUpdate();
+                return;
+            }
+        }
+
         if (this.getCountOnUpdate() < 2) {
             this.prevPosition.clear(Vec3.createVectorHelper(super.posX, super.posY, super.posZ));
         }

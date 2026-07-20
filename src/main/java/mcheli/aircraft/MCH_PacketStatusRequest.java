@@ -21,6 +21,15 @@ public class MCH_PacketStatusRequest extends MCH_Packet {
 
     }
 
+    public static void requestTrackerResync(int entityId) {
+        if (entityId > 0) {
+            MCH_PacketStatusRequest request = new MCH_PacketStatusRequest();
+            // Preserve the existing packet layout and positive-ID status behavior.
+            request.entityID_AC = -entityId;
+            W_Network.sendToServer(request);
+        }
+    }
+
     public int getMessageID() {
         return 536875104;
     }
