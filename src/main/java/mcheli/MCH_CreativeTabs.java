@@ -16,10 +16,12 @@ import java.util.List;
 
 public class MCH_CreativeTabs extends CreativeTabs {
 
+    private static final long ICON_SWITCH_INTERVAL_NANOS = 1000000000L;
+
     private List iconItems = new ArrayList();
     private Item lastItem;
     private int currentIconIndex = 0;
-    private int switchItemWait = 0;
+    private long lastIconSwitchNanos = 0L;
     private Item fixedItem = null;
 
 
@@ -55,11 +57,10 @@ public class MCH_CreativeTabs extends CreativeTabs {
         if (this.fixedItem != null) {
             return new ItemStack(this.fixedItem, 1, 0);
         } else {
-            if (this.switchItemWait > 0) {
-                --this.switchItemWait;
-            } else {
+            long now = System.nanoTime();
+            if (this.lastItem == null || now - this.lastIconSwitchNanos >= ICON_SWITCH_INTERVAL_NANOS) {
                 this.lastItem = this.getTabIconItem();
-                this.switchItemWait = 60;
+                this.lastIconSwitchNanos = now;
             }
 
             if (this.lastItem == null) {
