@@ -18,10 +18,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.MouseEvent;
+import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderLivingEvent.Specials.Post;
 import net.minecraftforge.client.event.RenderLivingEvent.Specials.Pre;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -158,6 +161,22 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     }
 
     public void renderPlayerPost(net.minecraftforge.client.event.RenderPlayerEvent.Post event) {
+    }
+
+    @SubscribeEvent
+    public void renderHand(RenderHandEvent event) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null) {
+            return;
+        }
+
+        Render render = RenderManager.instance.getEntityRenderObject(mc.thePlayer);
+        if (render instanceof RenderPlayer) {
+            RenderPlayer playerRender = (RenderPlayer) render;
+            // Minecraft 1.7.10 reuses this model and does not clear the pose after rendering a rider.
+            playerRender.modelBipedMain.isRiding = false;
+            playerRender.modelBipedMain.isSneak = false;
+        }
     }
 
     public void worldEventUnload(Unload event) {
