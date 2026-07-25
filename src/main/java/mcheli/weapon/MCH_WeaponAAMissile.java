@@ -67,17 +67,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
         boolean result = false;
         float yaw, pitch;
-        if (getInfo().enableOffAxis) {
-            yaw = prm.user.rotationYaw + super.fixRotationYaw;
-            pitch = prm.user.rotationPitch + super.fixRotationPitch;
-        } else {
-            yaw = prm.entity.rotationYaw + super.fixRotationYaw;
-            pitch = prm.entity.rotationPitch + super.fixRotationPitch;
-        }
         if (prm.entity instanceof MCH_EntityTank) {
             MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-            yaw += prm.randYaw;
-            pitch += prm.randPitch;
+            // MCH_WeaponSet has already combined the hull and turret rotations here.
+            yaw = prm.rotYaw;
+            pitch = prm.rotPitch;
             int wid = tank.getCurrentWeaponID(prm.user);
             MCH_AircraftInfo.Weapon w = tank.getAcInfo().getWeaponById(wid);
             float minPitch = w == null ? tank.getAcInfo().minRotationPitch : w.minPitch;
@@ -93,9 +87,26 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
             }
             pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
+        } else if (getInfo().enableOffAxis) {
+            yaw = prm.user.rotationYaw + super.fixRotationYaw;
+            pitch = prm.user.rotationPitch + super.fixRotationPitch;
+        } else {
+            yaw = prm.entity.rotationYaw + super.fixRotationYaw;
+            pitch = prm.entity.rotationPitch + super.fixRotationPitch;
         }
         if (!super.worldObj.isRemote) {
             if (getInfo().passiveRadar || getInfo().activeRadar || getInfo().semiActiveRadar) {
+                Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
+                if (!getInfo().antiRadiationMissile) {
+                    boolean validTarget = isValidServerTarget(prm, tgtEnt);
+                    boolean requiresTrackedTarget = getInfo().passiveRadar || getInfo().semiActiveRadar;
+                    if (requiresTrackedTarget && !validTarget) {
+                        return false;
+                    }
+                    if (!validTarget) {
+                        tgtEnt = null;
+                    }
+                }
                 this.playSound(prm.entity);
                 double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                 double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
@@ -110,8 +121,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 e.setParameterFromWeapon(this, prm.entity, prm.user);
                 e.setDataLinkRelayMode((prm.option2 & OPTION_FLAG_DATALINK) != 0);
                 e.setDataLinkTwsSelectedOnly((prm.option2 & OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY) != 0);
-                Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
-                if (tgtEnt != null && !tgtEnt.isDead) {
+                if (tgtEnt != null) {
                     e.setTargetEntity(tgtEnt);
                 }
                 if (MCH_RadarDebug.isEnabled()) {
@@ -139,20 +149,6 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
                 if (tgtEnt != null && !tgtEnt.isDead) {
                     this.playSound(prm.entity);
-                    if (prm.entity instanceof MCH_EntityTank) {
-                        MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
-                        yaw += prm.randYaw;
-                        pitch += prm.randPitch;
-                        float minPitch = tank.getSeatInfo(prm.entity) == null ? tank.getAcInfo().minRotationPitch : tank.getSeatInfo(prm.entity).minPitch;
-                        float maxPitch = tank.getSeatInfo(prm.entity) == null ? tank.getAcInfo().maxRotationPitch : tank.getSeatInfo(prm.entity).maxPitch;
-                        float playerYaw = MathHelper.wrapAngleTo180_float(tank.getRotYaw() - yaw);
-                        float playerPitch = tank.getRotPitch() * MathHelper.cos((float) (playerYaw * Math.PI / 180.0D))
-                            + -tank.getRotRoll() * MathHelper.sin((float) (playerYaw * Math.PI / 180.0D));
-                        if(fixRotationPitch == 0) {
-                            pitch = MCH_Lib.RNG(pitch, playerPitch + minPitch, playerPitch + maxPitch);
-                        }
-                        pitch = MCH_Lib.RNG(pitch, -90.0F, 90.0F);
-                    }
                     double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                     double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                     double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
@@ -171,9 +167,12 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 }
             }
         } else {
-            if (getInfo().passiveRadar || getInfo().activeRadar || getInfo().semiActiveRadar) {
+            if (getInfo().activeRadar) {
                 result = true;
-            } else if ("aamissile".equals(getInfo().type) && getInfo().isHeatSeekerMissile && !getInfo().activeRadar && !getInfo().passiveRadar && !getInfo().semiActiveRadar && !getInfo().antiRadiationMissile && super.optionParameter1 > 0) {
+            } else if ((getInfo().passiveRadar || getInfo().semiActiveRadar)
+                && (getInfo().antiRadiationMissile || super.optionParameter1 > 0)) {
+                result = true;
+            } else if (isPureHeatSeeker() && super.optionParameter1 > 0) {
                 result = true;
             } else if (super.guidanceSystem.lock(prm.user) && super.guidanceSystem.lastLockEntity != null) {
                 result = true;
@@ -186,6 +185,100 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
 
         return result;
+    }
+
+    private boolean isPureHeatSeeker() {
+        return "aamissile".equals(getInfo().type)
+            && getInfo().isHeatSeekerMissile
+            && !getInfo().activeRadar
+            && !getInfo().passiveRadar
+            && !getInfo().semiActiveRadar
+            && !getInfo().antiRadiationMissile;
+    }
+
+    private boolean isValidServerTarget(MCH_WeaponParam prm, Entity target) {
+        if (prm == null || prm.entity == null || target == null || target.isDead || target == prm.entity || target == prm.user) {
+            return false;
+        }
+        if (!super.guidanceSystem.canLockEntity(target)) {
+            return false;
+        }
+        double maxRange = Math.max(1.0D, getInfo().maxLockOnRange);
+        return prm.entity.getDistanceSqToEntity(target) <= maxRange * maxRange;
+    }
+
+    private boolean hasIntegratedRadar(MCH_WeaponParam prm) {
+        if (!(prm.entity instanceof MCH_EntityAircraft)) {
+            return false;
+        }
+        MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
+        return ac.getAcInfo() != null && ac.getAcInfo().enableRadar && ac.isRadarEnabledRuntime();
+    }
+
+    private void setClientTarget(Entity user, int targetId, Entity target, MCH_EntityInfo snapshot) {
+        if (targetId <= 0 || (target == null && snapshot == null)) {
+            super.optionParameter1 = 0;
+        } else {
+            super.optionParameter1 = targetId;
+        }
+
+        for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, user, getInfo().maxLockOnRange)) {
+            bullet.clientSetTargetEntity(target);
+            if (target == null && snapshot != null) {
+                double vx = snapshot.posX - snapshot.lastTickPosX;
+                double vy = snapshot.posY - snapshot.lastTickPosY;
+                double vz = snapshot.posZ - snapshot.lastTickPosZ;
+                bullet.setSnapshotTarget(targetId, snapshot.posX, snapshot.posY, snapshot.posZ, vx, vy, vz);
+            }
+        }
+    }
+
+    private boolean updateRadarTargetFromTrack(MCH_WeaponParam prm) {
+        if (prm.user == null || !hasIntegratedRadar(prm) || getInfo().antiRadiationMissile
+            || !(getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar)) {
+            return false;
+        }
+        MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
+        int targetId = Math.max(0, MCH_RenderRWR.getRadarTrackingTargetId(ac));
+        Entity target = targetId > 0 ? prm.user.worldObj.getEntityByID(targetId) : null;
+        if (target != null && (target.isDead || !super.guidanceSystem.canLockEntity(target))) {
+            target = null;
+            targetId = 0;
+        }
+        MCH_EntityInfo snapshot = targetId > 0 && target == null ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
+        if (snapshot != null && System.currentTimeMillis() - snapshot.lastUpdateTime > SNAPSHOT_TARGET_STALE_MS) {
+            snapshot = null;
+            targetId = 0;
+        }
+        setClientTarget(prm.user, targetId, target, snapshot);
+        return true;
+    }
+
+    private boolean updateHeatSeekerTargetFromRadar(MCH_WeaponParam prm) {
+        if (prm.user == null || !isPureHeatSeeker() || !hasIntegratedRadar(prm)) {
+            return false;
+        }
+        MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
+        int targetId = Math.max(0, MCH_RenderRWR.getRadarTrackingTargetId(ac));
+        if (targetId <= 0) {
+            return false;
+        }
+        Entity target = prm.user.worldObj.getEntityByID(targetId);
+        if (target == null || target.isDead || !super.guidanceSystem.canLockEntity(target)
+            || prm.entity.getDistanceToEntity(target) > 350.0D || !isTargetInMissileFov(prm.user, target)) {
+            setClientTarget(prm.user, 0, null, null);
+            return true;
+        }
+        setClientTarget(prm.user, targetId, target, null);
+        return true;
+    }
+
+    private void updateLegacySeekerTarget(MCH_WeaponParam prm) {
+        Entity target = null;
+        if (super.guidanceSystem.lock(prm.user) && super.guidanceSystem.lastLockEntity != null) {
+            target = super.guidanceSystem.lastLockEntity;
+        }
+        setClientTarget(prm.user, target != null ? W_Entity.getEntityId(target) : 0, target, null);
     }
 
     private boolean isArmNarrowBandMode() {
@@ -307,7 +400,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (!(prm.entity instanceof MCH_EntityAircraft) || prm.user == null || !super.worldObj.isRemote) {
             return false;
         }
-        if (!"aamissile".equals(getInfo().type) || !getInfo().isHeatSeekerMissile || getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar || getInfo().antiRadiationMissile) {
+        if (!isPureHeatSeeker()) {
             return false;
         }
         super.optionParameter2 &= ~(OPTION_FLAG_DATALINK | OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY);
@@ -374,18 +467,14 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             if (updateDataLinkTargetsFromRadar(prm, false)) {
                 return false;
             }
-            // IR data link: skip manual seeker lock, use radar tracking target directly
-            if ("aamissile".equals(getInfo().type) && getInfo().isHeatSeekerMissile && !getInfo().activeRadar && !getInfo().passiveRadar && !getInfo().semiActiveRadar && !getInfo().antiRadiationMissile
-                && prm.entity instanceof MCH_EntityAircraft) {
-                MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
-                int trackingId = MCH_RenderRWR.getRadarTrackingTargetId(ac);
-                if (trackingId > 0) {
-                    Entity target = prm.user.worldObj.getEntityByID(trackingId);
-                    for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
-                        bullet.clientSetTargetEntity(target);
-                    }
-                    super.optionParameter1 = trackingId;
-                }
+            if (updateRadarTargetFromTrack(prm)) {
+                return false;
+            }
+            if (updateHeatSeekerTargetFromRadar(prm)) {
+                return false;
+            }
+            if (isPureHeatSeeker()) {
+                updateLegacySeekerTarget(prm);
                 return false;
             }
             if (getInfo().passiveRadar) {
@@ -409,15 +498,15 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 }
                 if (guidanceSystem.isLockComplete()) {
                     Entity target = guidanceSystem.lastLockEntity;
+                    super.optionParameter1 = W_Entity.getEntityId(target);
                     //获取玩家射击的AA弹
                     for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
                         bullet.clientSetTargetEntity(target);
-                        super.optionParameter1 = W_Entity.getEntityId(target);
                     }
                 } else {
+                    super.optionParameter1 = 0;
                     for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
                         bullet.clientSetTargetEntity(null);
-                        super.optionParameter1 = 0;
                     }
                 }
 
@@ -434,11 +523,17 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             if (updateDataLinkTargetsFromRadar(prm, false)) {
                 return;
             }
+            if (updateRadarTargetFromTrack(prm)) {
+                return;
+            }
+            if (updateHeatSeekerTargetFromRadar(prm)) {
+                return;
+            }
             if (guidanceSystem != null && prm.user != null) {
                 if (!guidanceSystem.isLockComplete()) {
+                    super.optionParameter1 = 0;
                     for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
                         bullet.clientSetTargetEntity(null);
-                        super.optionParameter1 = 0;
                     }
                 }
             }
@@ -481,22 +576,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
         Entity target = targetId > 0 ? prm.user.worldObj.getEntityByID(targetId) : null;
         MCH_EntityInfo snapshot = targetId > 0 && target == null ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
-
-        for (MCH_EntityBaseBullet bullet : getShootBullets(worldObj, prm.user, getInfo().maxLockOnRange)) {
-            bullet.clientSetTargetEntity(target);
-            if (target != null) {
-                super.optionParameter1 = W_Entity.getEntityId(target);
-            } else if (snapshot != null) {
-                // If the target is not a local entity, use the snapshot from EntityInfoClientTracker.
-                double vx = snapshot.posX - snapshot.lastTickPosX;
-                double vy = snapshot.posY - snapshot.lastTickPosY;
-                double vz = snapshot.posZ - snapshot.lastTickPosZ;
-                bullet.setSnapshotTarget(targetId, snapshot.posX, snapshot.posY, snapshot.posZ, vx, vy, vz);
-                super.optionParameter1 = targetId;
-            } else {
-                super.optionParameter1 = 0;
-            }
-        }
+        setClientTarget(prm.user, targetId, target, snapshot);
         return true;
     }
 }

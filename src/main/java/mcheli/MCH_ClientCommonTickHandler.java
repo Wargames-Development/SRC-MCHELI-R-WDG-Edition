@@ -67,7 +67,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import mcheli.network.packets.PacketLockTargetBVR;
-import mcheli.render.MCH_RenderBVRLockBox;
+import mcheli.render.MCH_RenderRWR;
 import mcheli.render.MCH_RWRDisplayTextureManager;
 import mcheli.render.MCH_RadarDisplayTextureManager;
 import mcheli.weapon.MCH_EntityAAMissile;
@@ -303,23 +303,26 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         if (missileIds.length == 0) return;
 
-        // Use the “best locked” target picked by the renderer (red box)
-        MCH_EntityInfo tgt = MCH_RenderBVRLockBox.bestLockedEntity;
-
-        if (tgt != null && (System.currentTimeMillis() - MCH_RenderBVRLockBox.bestLockedEntityTimeMs) < 500L) {
-            int px = (int) Math.floor(tgt.posX);
-            int py = (int) Math.floor(tgt.posY);
-            int pz = (int) Math.floor(tgt.posZ);
-            if (py <= 0) py = 1;
-
+        // SARH guidance must follow the integrated radar's current STT target.
+        // The old renderer-owned bestLockedEntity field is never populated by the new radar system.
+        int targetId = MCH_RenderRWR.getRadarTrackingTargetId(ac);
+        if (targetId > 0) {
+            Entity target = mc.theWorld.getEntityByID(targetId);
+            MCH_EntityInfo snapshot = target == null ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
+            double targetX = target != null ? target.posX : (snapshot != null ? snapshot.posX : ac.posX);
+            double targetY = target != null ? target.posY : (snapshot != null ? snapshot.posY : ac.posY);
+            double targetZ = target != null ? target.posZ : (snapshot != null ? snapshot.posZ : ac.posZ);
+            int px = (int) Math.floor(targetX);
+            int py = Math.max(1, (int) Math.floor(targetY));
+            int pz = (int) Math.floor(targetZ);
 
             for (int mslId : missileIds) {
                 MCH_MOD.getPacketHandler().sendToServer(
-                        new PacketLockTargetBVR(mslId, tgt.entityId, px, py, pz)
+                        new PacketLockTargetBVR(mslId, targetId, px, py, pz)
                 );
             }
         } else {
-            // No hard-lock target => disable BVR guidance
+            // No maintained radar track means a passive/SARH missile must lose illumination.
             for (int mslId : missileIds) {
                 MCH_MOD.getPacketHandler().sendToServer(new PacketLockTargetBVR(mslId, 0, 0, -1, 0));
             }

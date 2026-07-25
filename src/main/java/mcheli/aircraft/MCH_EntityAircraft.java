@@ -3928,9 +3928,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public int getClientPositionDelayCorrection() {
-        if (MCH_MOD.proxy.getClientPlayer() == this.riddenByEntity) {
-            return 7;
-        }
+        // Extra rider-only interpolation makes the aircraft render behind its server position.
         return 0;
     }
 

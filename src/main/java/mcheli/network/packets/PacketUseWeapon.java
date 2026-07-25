@@ -66,7 +66,8 @@ public class PacketUseWeapon extends PacketBase {
             MCH_WeaponParam param = new MCH_WeaponParam();
             param.entity = ac;
             param.user = player;
-            param.setPosAndRot(useWeaponPosX, useWeaponPosY, useWeaponPosZ, 0.0F, 0.0F);
+            // Keep packet coordinates for protocol compatibility, but do not trust them as the spawn origin.
+            param.setPosAndRot(ac.posX, ac.posY, ac.posZ, 0.0F, 0.0F);
             param.option1 = useWeaponOption1;
             param.option2 = useWeaponOption2;
             ac.useCurrentWeapon(param);
