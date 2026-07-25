@@ -68,7 +68,11 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         if (!super.worldObj.isRemote) {
             if (this.isTVGuided && super.tick <= 9) {
                 if (super.tick % 3 == 0 && this.lastShotTvMissile != null && !this.lastShotTvMissile.isDead && this.lastShotEntity != null && !this.lastShotEntity.isDead) {
-                    MCH_PacketNotifyTVMissileEntity.send(W_Entity.getEntityId(this.lastShotEntity), W_Entity.getEntityId(this.lastShotTvMissile));
+                    MCH_PacketNotifyTVMissileEntity.send(
+                        W_Entity.getEntityId(this.lastShotEntity),
+                        W_Entity.getEntityId(this.lastShotTvMissile),
+                        W_Entity.getEntityId(this.lastShotTvMissile.shootingEntity)
+                    );
                 }
 
                 if (super.tick == 9) {

@@ -11,11 +11,13 @@ public class MCH_PacketNotifyTVMissileEntity extends MCH_Packet {
 
     public int entityID_Ac = -1;
     public int entityID_TVMissile = -1;
+    public int entityID_Shooter = -1;
 
-    public static void send(int heliEntityID, int tvMissileEntityID) {
+    public static void send(int heliEntityID, int tvMissileEntityID, int shooterEntityID) {
         MCH_PacketNotifyTVMissileEntity s = new MCH_PacketNotifyTVMissileEntity();
         s.entityID_Ac = heliEntityID;
         s.entityID_TVMissile = tvMissileEntityID;
+        s.entityID_Shooter = shooterEntityID;
         W_Network.sendToAllPlayers(s);
     }
 
@@ -27,6 +29,7 @@ public class MCH_PacketNotifyTVMissileEntity extends MCH_Packet {
         try {
             this.entityID_Ac = data.readInt();
             this.entityID_TVMissile = data.readInt();
+            this.entityID_Shooter = data.readInt();
         } catch (Exception var3) {
             var3.printStackTrace();
         }
@@ -37,6 +40,7 @@ public class MCH_PacketNotifyTVMissileEntity extends MCH_Packet {
         try {
             dos.writeInt(this.entityID_Ac);
             dos.writeInt(this.entityID_TVMissile);
+            dos.writeInt(this.entityID_Shooter);
         } catch (IOException var3) {
             var3.printStackTrace();
         }

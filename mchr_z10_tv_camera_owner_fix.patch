@@ -1,0 +1,87 @@
+diff --git a/src/main/java/mcheli/aircraft/MCH_AircraftPacketHandler.java b/src/main/java/mcheli/aircraft/MCH_AircraftPacketHandler.java
+index 1a88507..1a09b55 100644
+--- a/src/main/java/mcheli/aircraft/MCH_AircraftPacketHandler.java
++++ b/src/main/java/mcheli/aircraft/MCH_AircraftPacketHandler.java
+@@ -263,8 +263,14 @@ public class MCH_AircraftPacketHandler {
+                 return;
+             }
+ 
+-            ((MCH_EntityTvMissile) e).shootingEntity = player;
+-            ac.setTVMissile((MCH_EntityTvMissile) e);
++            MCH_EntityTvMissile tvMissile = (MCH_EntityTvMissile) e;
++            Entity shooter = player.worldObj.getEntityByID(packet.entityID_Shooter);
++            if (shooter == null) {
++                return;
++            }
++
++            tvMissile.shootingEntity = shooter;
++            ac.setTVMissile(tvMissile);
+         }
+ 
+     }
+diff --git a/src/main/java/mcheli/aircraft/MCH_EntityAircraft.java b/src/main/java/mcheli/aircraft/MCH_EntityAircraft.java
+index 4cbe5cc..33f4204 100644
+--- a/src/main/java/mcheli/aircraft/MCH_EntityAircraft.java
++++ b/src/main/java/mcheli/aircraft/MCH_EntityAircraft.java
+@@ -5733,7 +5733,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
+     }
+ 
+     public boolean isMissileCameraMode(Entity entity) {
+-        return this.getTVMissile() != null && this.isCameraView(entity);
++        MCH_EntityTvMissile tvMissile = this.getTVMissile();
++        return tvMissile != null && this.isCameraView(entity) && W_Entity.isEqual(tvMissile.shootingEntity, entity);
+     }
+ 
+     public boolean isPilotReloading() {
+diff --git a/src/main/java/mcheli/aircraft/MCH_PacketNotifyTVMissileEntity.java b/src/main/java/mcheli/aircraft/MCH_PacketNotifyTVMissileEntity.java
+index b096f30..a0982a9 100644
+--- a/src/main/java/mcheli/aircraft/MCH_PacketNotifyTVMissileEntity.java
++++ b/src/main/java/mcheli/aircraft/MCH_PacketNotifyTVMissileEntity.java
+@@ -11,11 +11,13 @@ public class MCH_PacketNotifyTVMissileEntity extends MCH_Packet {
+ 
+     public int entityID_Ac = -1;
+     public int entityID_TVMissile = -1;
++    public int entityID_Shooter = -1;
+ 
+-    public static void send(int heliEntityID, int tvMissileEntityID) {
++    public static void send(int heliEntityID, int tvMissileEntityID, int shooterEntityID) {
+         MCH_PacketNotifyTVMissileEntity s = new MCH_PacketNotifyTVMissileEntity();
+         s.entityID_Ac = heliEntityID;
+         s.entityID_TVMissile = tvMissileEntityID;
++        s.entityID_Shooter = shooterEntityID;
+         W_Network.sendToAllPlayers(s);
+     }
+ 
+@@ -27,6 +29,7 @@ public class MCH_PacketNotifyTVMissileEntity extends MCH_Packet {
+         try {
+             this.entityID_Ac = data.readInt();
+             this.entityID_TVMissile = data.readInt();
++            this.entityID_Shooter = data.readInt();
+         } catch (Exception var3) {
+             var3.printStackTrace();
+         }
+@@ -37,6 +40,7 @@ public class MCH_PacketNotifyTVMissileEntity extends MCH_Packet {
+         try {
+             dos.writeInt(this.entityID_Ac);
+             dos.writeInt(this.entityID_TVMissile);
++            dos.writeInt(this.entityID_Shooter);
+         } catch (IOException var3) {
+             var3.printStackTrace();
+         }
+diff --git a/src/main/java/mcheli/weapon/MCH_WeaponTvMissile.java b/src/main/java/mcheli/weapon/MCH_WeaponTvMissile.java
+index 41d8ef2..17b5bea 100644
+--- a/src/main/java/mcheli/weapon/MCH_WeaponTvMissile.java
++++ b/src/main/java/mcheli/weapon/MCH_WeaponTvMissile.java
+@@ -68,7 +68,11 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
+         if (!super.worldObj.isRemote) {
+             if (this.isTVGuided && super.tick <= 9) {
+                 if (super.tick % 3 == 0 && this.lastShotTvMissile != null && !this.lastShotTvMissile.isDead && this.lastShotEntity != null && !this.lastShotEntity.isDead) {
+-                    MCH_PacketNotifyTVMissileEntity.send(W_Entity.getEntityId(this.lastShotEntity), W_Entity.getEntityId(this.lastShotTvMissile));
++                    MCH_PacketNotifyTVMissileEntity.send(
++                        W_Entity.getEntityId(this.lastShotEntity),
++                        W_Entity.getEntityId(this.lastShotTvMissile),
++                        W_Entity.getEntityId(this.lastShotTvMissile.shootingEntity)
++                    );
+                 }
+ 
+                 if (super.tick == 9) {

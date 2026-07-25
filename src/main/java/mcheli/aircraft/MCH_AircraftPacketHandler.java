@@ -263,8 +263,14 @@ public class MCH_AircraftPacketHandler {
                 return;
             }
 
-            ((MCH_EntityTvMissile) e).shootingEntity = player;
-            ac.setTVMissile((MCH_EntityTvMissile) e);
+            MCH_EntityTvMissile tvMissile = (MCH_EntityTvMissile) e;
+            Entity shooter = player.worldObj.getEntityByID(packet.entityID_Shooter);
+            if (shooter == null) {
+                return;
+            }
+
+            tvMissile.shootingEntity = shooter;
+            ac.setTVMissile(tvMissile);
         }
 
     }

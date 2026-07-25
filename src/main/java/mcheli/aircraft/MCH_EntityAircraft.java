@@ -5733,7 +5733,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean isMissileCameraMode(Entity entity) {
-        return this.getTVMissile() != null && this.isCameraView(entity);
+        MCH_EntityTvMissile tvMissile = this.getTVMissile();
+        return tvMissile != null && this.isCameraView(entity) && W_Entity.isEqual(tvMissile.shootingEntity, entity);
     }
 
     public boolean isPilotReloading() {
