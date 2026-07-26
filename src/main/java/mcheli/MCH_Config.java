@@ -293,6 +293,7 @@ public class MCH_Config {
         AutoRepairHP = new MCH_ConfigPrm("AutoRepairHP", 1D);
         Collision_DestroyBlock = new MCH_ConfigPrm("Collision_DestroyBlock", true);
         Explosion_DestroyBlock = new MCH_ConfigPrm("Explosion_DestroyBlock", true);
+        Explosion_DestroyBlock.desc = ";Explosion_DestroyBlock = false: keep explosion damage/effects but disable all MCHeli/HBM terrain destruction";
         Explosion_FlamingBlock = new MCH_ConfigPrm("Explosion_FlamingBlock", true);
         Collision_Car_BreakableBlock = new MCH_ConfigPrm("Collision_Car_BreakableBlock", "double_plant, glass_pane,stained_glass_pane");
         Collision_Car_NoBreakableBlock = new MCH_ConfigPrm("Collision_Car_NoBreakBlock", "torch");

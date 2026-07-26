@@ -318,9 +318,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float explosionThroughWallFactor = 1.0f;
     public boolean isNewExplosionBreak = true;
     /**
-     * HBM特效阻止破坏方块
+     * Prevent this weapon's explosions from destroying blocks.
+     * Missing parameter defaults to false for backwards compatibility.
      */
-    public boolean disableDestroyBlock = true;
+    public boolean disableDestroyBlock = false;
     /**
      * 弹药是否能被拦截
      */

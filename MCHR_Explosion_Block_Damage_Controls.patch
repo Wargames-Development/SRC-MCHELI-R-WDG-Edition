@@ -1,0 +1,188 @@
+diff --git a/src/main/java/mcheli/MCH_Config.java b/src/main/java/mcheli/MCH_Config.java
+index 714e4ab..fd60a30 100644
+--- a/src/main/java/mcheli/MCH_Config.java
++++ b/src/main/java/mcheli/MCH_Config.java
+@@ -293,6 +293,7 @@ public class MCH_Config {
+         AutoRepairHP = new MCH_ConfigPrm("AutoRepairHP", 1D);
+         Collision_DestroyBlock = new MCH_ConfigPrm("Collision_DestroyBlock", true);
+         Explosion_DestroyBlock = new MCH_ConfigPrm("Explosion_DestroyBlock", true);
++        Explosion_DestroyBlock.desc = ";Explosion_DestroyBlock = false: keep explosion damage/effects but disable all MCHeli/HBM terrain destruction";
+         Explosion_FlamingBlock = new MCH_ConfigPrm("Explosion_FlamingBlock", true);
+         Collision_Car_BreakableBlock = new MCH_ConfigPrm("Collision_Car_BreakableBlock", "double_plant, glass_pane,stained_glass_pane");
+         Collision_Car_NoBreakableBlock = new MCH_ConfigPrm("Collision_Car_NoBreakBlock", "torch");
+diff --git a/src/main/java/mcheli/MCH_Explosion.java b/src/main/java/mcheli/MCH_Explosion.java
+index a809673..ca30b4e 100644
+--- a/src/main/java/mcheli/MCH_Explosion.java
++++ b/src/main/java/mcheli/MCH_Explosion.java
+@@ -45,7 +45,9 @@ public class MCH_Explosion extends Explosion {
+         this.result = newExplosionResult();
+         this.isSmoking = param.isSmoking;
+         this.isFlaming = param.isFlaming;
+-        this.destroyBlocksByRule = world.getGameRules().getGameRuleBooleanValue("mobGriefing") && param.isDestroyBlock;
++        this.destroyBlocksByRule = world.getGameRules().getGameRuleBooleanValue("mobGriefing")
++            && MCH_Config.Explosion_DestroyBlock.prmBool
++            && param.isDestroyBlock;
+     }
+ 
+     public static MCH_Explosion.ExplosionResult newExplosion(World w, MCH_ExplosionParam p) {
+@@ -849,14 +851,12 @@ public class MCH_Explosion extends Explosion {
+                 k = W_ChunkPosition.getChunkPosZ(chunkposition);
+                 l = W_WorldFunc.getBlockId(this.world, i, j, k);
+                 if (l > 0 && destroyBlocksByRule && param.sizeBlock > 0.0F) {
+-                    if (MCH_Config.Explosion_DestroyBlock.prmBool) {
+-                        b = W_Block.getBlockById(l);
+-                        if (b.canDropFromExplosion(this)) {
+-                            b.dropBlockAsItemWithChance(this.world, i, j, k, this.world.getBlockMetadata(i, j, k), 1.0F / param.sizeBlock, 0);
+-                        }
+-
+-                        b.onBlockExploded(this.world, i, j, k, this);
++                    b = W_Block.getBlockById(l);
++                    if (b.canDropFromExplosion(this)) {
++                        b.dropBlockAsItemWithChance(this.world, i, j, k, this.world.getBlockMetadata(i, j, k), 1.0F / param.sizeBlock, 0);
+                     }
++
++                    b.onBlockExploded(this.world, i, j, k, this);
+                 }
+             }
+         }
+diff --git a/src/main/java/mcheli/MCH_HBMUtil.java b/src/main/java/mcheli/MCH_HBMUtil.java
+index c8f975e..89fc3d3 100644
+--- a/src/main/java/mcheli/MCH_HBMUtil.java
++++ b/src/main/java/mcheli/MCH_HBMUtil.java
+@@ -289,17 +289,18 @@ public class MCH_HBMUtil {
+         if (ExplosionVNT == null) {
+             return false;
+         }
++        boolean destroyBlocks = isDestroyBlock && MCH_Config.Explosion_DestroyBlock.prmBool;
+         try {
+             try {
+                 Method makeStandard = ExplosionVNT.getClass().getMethod("makeStandard");
+                 makeStandard.invoke(ExplosionVNT);
+             } catch (NoSuchMethodException e) {
+-                prepareStandardVNTExplosion(ExplosionVNT, isDestroyBlock, playStandardSfx);
++                prepareStandardVNTExplosion(ExplosionVNT, destroyBlocks, playStandardSfx);
+             }
+             if (!playStandardSfx) {
+                 clearVNTSFX(ExplosionVNT);
+             }
+-            if (!isDestroyBlock) {
++            if (!destroyBlocks) {
+                 clearVNTBlockProcessors(ExplosionVNT);
+             }
+             Method explodeMethod = ExplosionVNT.getClass().getMethod("explode");
+diff --git a/src/main/java/mcheli/weapon/MCH_EntityBaseBullet.java b/src/main/java/mcheli/weapon/MCH_EntityBaseBullet.java
+index 48f01b5..053e732 100644
+--- a/src/main/java/mcheli/weapon/MCH_EntityBaseBullet.java
++++ b/src/main/java/mcheli/weapon/MCH_EntityBaseBullet.java
+@@ -2028,6 +2028,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+         EntityPlayer creditedPlayer = (this.shootingEntity instanceof EntityPlayer)
+             ? (EntityPlayer) this.shootingEntity
+             : null;
++        boolean destroyBlocks = expBlock > 0.0F
++            && !this.getInfo().disableDestroyBlock
++            && MCH_Config.Explosion_DestroyBlock.prmBool;
+         if (isExplosionDebugEnabled()) {
+             debugExplosion(
+                 "[EXPDBG] newExplosion bullet=%s exp=%.2f expBlock=%.2f info.expBlock=%d inWater=%s type=%s explosionType=%s effectYield=%d disableDestroyBlock=%s isFAE=%s piercing=%d newBreak=%s",
+@@ -2065,7 +2068,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+                 if (ExplosionVNT != null) {
+                     hbmExplosionHandled = MCH_HBMUtil.ExplosionVNT_Explode(
+                         ExplosionVNT,
+-                        !this.getInfo().disableDestroyBlock,
++                        destroyBlocks,
+                         !composeHbmVisualEffect
+                     );
+                 }
+@@ -2087,7 +2090,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+                     }
+                 } else {
+                     if (isExplosionDebugEnabled()) {
+-                        debugExplosion("[EXPDBG] branch=HBM_VNT_FALLBACK_MCH isDestroyBlock=%s", String.valueOf(getInfo().explosionBlock > 0));
++                        debugExplosion("[EXPDBG] branch=HBM_VNT_FALLBACK_MCH isDestroyBlock=%s", String.valueOf(destroyBlocks));
+                     }
+                     MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                         .exploder(this)
+@@ -2098,7 +2101,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+                         .isPlaySound(playSound)
+                         .isSmoking(true)
+                         .isFlaming(this.getInfo().flaming)
+-                        .isDestroyBlock(getInfo().explosionBlock > 0)
++                        .isDestroyBlock(destroyBlocks)
+                         .isInWater(false)
+                         .directAttackEntity(directAttackEntity)
+                         .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+@@ -2118,7 +2121,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+             //普通爆炸效果
+             else {
+                 if (isExplosionDebugEnabled()) {
+-                    debugExplosion("[EXPDBG] branch=MCH_NORMAL isDestroyBlock=%s", String.valueOf(getInfo().explosionBlock > 0));
++                    debugExplosion("[EXPDBG] branch=MCH_NORMAL isDestroyBlock=%s", String.valueOf(destroyBlocks));
+                 }
+                 MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                     .exploder(this)
+@@ -2129,7 +2132,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+                     .isPlaySound(playSound)
+                     .isSmoking(true)
+                     .isFlaming(this.getInfo().flaming)
+-                    .isDestroyBlock(getInfo().explosionBlock > 0)
++                    .isDestroyBlock(destroyBlocks)
+                     .isInWater(false)
+                     .directAttackEntity(directAttackEntity)
+                     .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+@@ -2148,7 +2151,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+         } else {
+             //水下爆炸
+             if (isExplosionDebugEnabled()) {
+-                debugExplosion("[EXPDBG] branch=MCH_WATER isDestroyBlock=%s", String.valueOf(getInfo().explosionBlock > 0));
++                debugExplosion("[EXPDBG] branch=MCH_WATER isDestroyBlock=%s", String.valueOf(destroyBlocks));
+             }
+             MCH_ExplosionParam param = MCH_ExplosionParam.builder()
+                 .exploder(this)
+@@ -2159,7 +2162,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
+                 .isPlaySound(playSound)
+                 .isSmoking(true)
+                 .isFlaming(this.getInfo().flaming)
+-                .isDestroyBlock(getInfo().explosionBlock > 0)
++                .isDestroyBlock(destroyBlocks)
+                 .isInWater(true)
+                 .directAttackEntity(directAttackEntity)
+                 .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+diff --git a/src/main/java/mcheli/weapon/MCH_WeaponBomb.java b/src/main/java/mcheli/weapon/MCH_WeaponBomb.java
+index e595772..08d6326 100644
+--- a/src/main/java/mcheli/weapon/MCH_WeaponBomb.java
++++ b/src/main/java/mcheli/weapon/MCH_WeaponBomb.java
+@@ -48,7 +48,7 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
+                             .isPlaySound(true)
+                             .isSmoking(true)
+                             .isFlaming(this.getInfo().flaming)
+-                            .isDestroyBlock(true)
++                            .isDestroyBlock(!this.getInfo().disableDestroyBlock)
+                             .countSetFireEntity(0)
+                             .isInWater(false)
+                             .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+@@ -76,7 +76,7 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
+                             .isPlaySound(true)
+                             .isSmoking(true)
+                             .isFlaming(this.getInfo().flaming)
+-                            .isDestroyBlock(true)
++                            .isDestroyBlock(!this.getInfo().disableDestroyBlock)
+                             .countSetFireEntity(0)
+                             .isInWater(false)
+                             .damageVsPlayer(getInfo().explosionDamageVsPlayer)
+diff --git a/src/main/java/mcheli/weapon/MCH_WeaponInfo.java b/src/main/java/mcheli/weapon/MCH_WeaponInfo.java
+index b4d4ea2..63eb8ec 100644
+--- a/src/main/java/mcheli/weapon/MCH_WeaponInfo.java
++++ b/src/main/java/mcheli/weapon/MCH_WeaponInfo.java
+@@ -318,9 +318,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
+     public float explosionThroughWallFactor = 1.0f;
+     public boolean isNewExplosionBreak = true;
+     /**
+-     * HBM特效阻止破坏方块
++     * Prevent this weapon's explosions from destroying blocks.
++     * Missing parameter defaults to false for backwards compatibility.
+      */
+-    public boolean disableDestroyBlock = true;
++    public boolean disableDestroyBlock = false;
+     /**
+      * 弹药是否能被拦截
+      */

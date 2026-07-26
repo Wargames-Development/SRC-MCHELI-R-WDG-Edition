@@ -45,7 +45,9 @@ public class MCH_Explosion extends Explosion {
         this.result = newExplosionResult();
         this.isSmoking = param.isSmoking;
         this.isFlaming = param.isFlaming;
-        this.destroyBlocksByRule = world.getGameRules().getGameRuleBooleanValue("mobGriefing") && param.isDestroyBlock;
+        this.destroyBlocksByRule = world.getGameRules().getGameRuleBooleanValue("mobGriefing")
+            && MCH_Config.Explosion_DestroyBlock.prmBool
+            && param.isDestroyBlock;
     }
 
     public static MCH_Explosion.ExplosionResult newExplosion(World w, MCH_ExplosionParam p) {
@@ -849,14 +851,12 @@ public class MCH_Explosion extends Explosion {
                 k = W_ChunkPosition.getChunkPosZ(chunkposition);
                 l = W_WorldFunc.getBlockId(this.world, i, j, k);
                 if (l > 0 && destroyBlocksByRule && param.sizeBlock > 0.0F) {
-                    if (MCH_Config.Explosion_DestroyBlock.prmBool) {
-                        b = W_Block.getBlockById(l);
-                        if (b.canDropFromExplosion(this)) {
-                            b.dropBlockAsItemWithChance(this.world, i, j, k, this.world.getBlockMetadata(i, j, k), 1.0F / param.sizeBlock, 0);
-                        }
-
-                        b.onBlockExploded(this.world, i, j, k, this);
+                    b = W_Block.getBlockById(l);
+                    if (b.canDropFromExplosion(this)) {
+                        b.dropBlockAsItemWithChance(this.world, i, j, k, this.world.getBlockMetadata(i, j, k), 1.0F / param.sizeBlock, 0);
                     }
+
+                    b.onBlockExploded(this.world, i, j, k, this);
                 }
             }
         }

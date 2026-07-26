@@ -289,17 +289,18 @@ public class MCH_HBMUtil {
         if (ExplosionVNT == null) {
             return false;
         }
+        boolean destroyBlocks = isDestroyBlock && MCH_Config.Explosion_DestroyBlock.prmBool;
         try {
             try {
                 Method makeStandard = ExplosionVNT.getClass().getMethod("makeStandard");
                 makeStandard.invoke(ExplosionVNT);
             } catch (NoSuchMethodException e) {
-                prepareStandardVNTExplosion(ExplosionVNT, isDestroyBlock, playStandardSfx);
+                prepareStandardVNTExplosion(ExplosionVNT, destroyBlocks, playStandardSfx);
             }
             if (!playStandardSfx) {
                 clearVNTSFX(ExplosionVNT);
             }
-            if (!isDestroyBlock) {
+            if (!destroyBlocks) {
                 clearVNTBlockProcessors(ExplosionVNT);
             }
             Method explodeMethod = ExplosionVNT.getClass().getMethod("explode");

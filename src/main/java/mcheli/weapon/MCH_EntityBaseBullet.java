@@ -2028,6 +2028,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         EntityPlayer creditedPlayer = (this.shootingEntity instanceof EntityPlayer)
             ? (EntityPlayer) this.shootingEntity
             : null;
+        boolean destroyBlocks = expBlock > 0.0F
+            && !this.getInfo().disableDestroyBlock
+            && MCH_Config.Explosion_DestroyBlock.prmBool;
         if (isExplosionDebugEnabled()) {
             debugExplosion(
                 "[EXPDBG] newExplosion bullet=%s exp=%.2f expBlock=%.2f info.expBlock=%d inWater=%s type=%s explosionType=%s effectYield=%d disableDestroyBlock=%s isFAE=%s piercing=%d newBreak=%s",
@@ -2065,7 +2068,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 if (ExplosionVNT != null) {
                     hbmExplosionHandled = MCH_HBMUtil.ExplosionVNT_Explode(
                         ExplosionVNT,
-                        !this.getInfo().disableDestroyBlock,
+                        destroyBlocks,
                         !composeHbmVisualEffect
                     );
                 }
@@ -2087,7 +2090,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     }
                 } else {
                     if (isExplosionDebugEnabled()) {
-                        debugExplosion("[EXPDBG] branch=HBM_VNT_FALLBACK_MCH isDestroyBlock=%s", String.valueOf(getInfo().explosionBlock > 0));
+                        debugExplosion("[EXPDBG] branch=HBM_VNT_FALLBACK_MCH isDestroyBlock=%s", String.valueOf(destroyBlocks));
                     }
                     MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                         .exploder(this)
@@ -2098,7 +2101,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         .isPlaySound(playSound)
                         .isSmoking(true)
                         .isFlaming(this.getInfo().flaming)
-                        .isDestroyBlock(getInfo().explosionBlock > 0)
+                        .isDestroyBlock(destroyBlocks)
                         .isInWater(false)
                         .directAttackEntity(directAttackEntity)
                         .damageVsPlayer(getInfo().explosionDamageVsPlayer)
@@ -2118,7 +2121,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             //普通爆炸效果
             else {
                 if (isExplosionDebugEnabled()) {
-                    debugExplosion("[EXPDBG] branch=MCH_NORMAL isDestroyBlock=%s", String.valueOf(getInfo().explosionBlock > 0));
+                    debugExplosion("[EXPDBG] branch=MCH_NORMAL isDestroyBlock=%s", String.valueOf(destroyBlocks));
                 }
                 MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                     .exploder(this)
@@ -2129,7 +2132,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .isPlaySound(playSound)
                     .isSmoking(true)
                     .isFlaming(this.getInfo().flaming)
-                    .isDestroyBlock(getInfo().explosionBlock > 0)
+                    .isDestroyBlock(destroyBlocks)
                     .isInWater(false)
                     .directAttackEntity(directAttackEntity)
                     .damageVsPlayer(getInfo().explosionDamageVsPlayer)
@@ -2148,7 +2151,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         } else {
             //水下爆炸
             if (isExplosionDebugEnabled()) {
-                debugExplosion("[EXPDBG] branch=MCH_WATER isDestroyBlock=%s", String.valueOf(getInfo().explosionBlock > 0));
+                debugExplosion("[EXPDBG] branch=MCH_WATER isDestroyBlock=%s", String.valueOf(destroyBlocks));
             }
             MCH_ExplosionParam param = MCH_ExplosionParam.builder()
                 .exploder(this)
@@ -2159,7 +2162,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 .isPlaySound(playSound)
                 .isSmoking(true)
                 .isFlaming(this.getInfo().flaming)
-                .isDestroyBlock(getInfo().explosionBlock > 0)
+                .isDestroyBlock(destroyBlocks)
                 .isInWater(true)
                 .directAttackEntity(directAttackEntity)
                 .damageVsPlayer(getInfo().explosionDamageVsPlayer)
