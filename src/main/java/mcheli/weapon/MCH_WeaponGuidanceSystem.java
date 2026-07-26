@@ -190,7 +190,9 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                     ++this.lockCount;  // 如果锁定了目标，增加锁定计数
                 }
             } else if (this.targetEntity != null && !this.targetEntity.isDead) {  // 如果已经有目标并且目标未死亡
-                boolean canLockTarget = true;  // 是否可以继续锁定目标
+                // Re-validate the current target every tick so stale locks on now-forbidden
+                // entity types (especially individual players) are dropped immediately.
+                boolean canLockTarget = this.canLockEntity(this.targetEntity);
 
                 if (targetEntity instanceof MCH_EntityAircraft) {
                     if (isRadarMissile && ((MCH_EntityAircraft) targetEntity).chaffUseTime > 0) {
@@ -374,8 +376,9 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
     }
 
     public boolean canLockEntity(Entity entity) {
-        // 如果不允许锁定玩家，且实体为玩家，则返回false
-        if (this.ridableOnly && entity instanceof EntityPlayer && entity.ridingEntity == null) {
+        // Individual players are never valid guided-weapon targets. A player inside
+        // a vehicle is represented by the vehicle entity, which remains lockable.
+        if (entity == null || entity.isDead || entity instanceof EntityPlayer) {
             return false;
         } else {
             // 获取实体的类名
@@ -419,10 +422,6 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             }
             // 如果实体是 EntityCamera 类型的，返回false
             if (className.indexOf("EntityCamera") >= 0) {
-                return false;
-            }
-            // 不会锁定位于载具上的玩家，而是只锁定载具
-            if (entity instanceof EntityPlayer && entity.ridingEntity != null) {
                 return false;
             }
             // 红外弹可以锁定热焰弹

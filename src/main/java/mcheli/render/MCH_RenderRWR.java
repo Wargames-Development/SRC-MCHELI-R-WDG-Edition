@@ -1900,11 +1900,14 @@ public class MCH_RenderRWR {
         }
         if (trackState.selectedTargetId > 0) {
             MCH_EntityInfo selectedInfo = MCH_EntityInfoClientTracker.getEntityInfo(trackState.selectedTargetId);
-            if (isSelfTarget(ac, player, selectedInfo) || isTargetCountermeasureActive(ac, selectedInfo) || isSameTeamTarget(player, ac, selectedInfo)) {
+            boolean invalidTargetType = !isTrackableForSearchType(selectedInfo, searchType);
+            if (invalidTargetType || isSelfTarget(ac, player, selectedInfo) || isTargetCountermeasureActive(ac, selectedInfo) || isSameTeamTarget(player, ac, selectedInfo)) {
                 if (MCH_RadarDebug.isEnabled()) {
-                    String reason = isSelfTarget(ac, player, selectedInfo)
+                    String reason = invalidTargetType
+                        ? "INVALID_TARGET_TYPE"
+                        : (isSelfTarget(ac, player, selectedInfo)
                         ? "SELF_TARGET"
-                        : (isSameTeamTarget(player, ac, selectedInfo) ? "FRIENDLY_TARGET" : "COUNTERMEASURE_ACTIVE");
+                        : (isSameTeamTarget(player, ac, selectedInfo) ? "FRIENDLY_TARGET" : "COUNTERMEASURE_ACTIVE"));
                     MCH_RadarDebug.trace(ac.worldObj, ac, "select drop acId=%d target=%d reason=%s", aircraftId, trackState.selectedTargetId, reason);
                 }
                 if (trackState.trackingTargetId == trackState.selectedTargetId) {
@@ -2438,8 +2441,7 @@ public class MCH_RenderRWR {
         if (isFacAircraftProfile(entity)) {
             return true;
         }
-        return className.contains("EntityPlayer")
-            || className.contains("EntitySoldier")
+        return className.contains("EntitySoldier")
             || className.contains("MCH_EntityGunner");
     }
 
@@ -2505,6 +2507,9 @@ public class MCH_RenderRWR {
                                                    String coverage, float minAltitude, float maxAltitude, double maxDistance, String searchType) {
         if (info == null) {
             return "TARGET_LOST";
+        }
+        if (!isTrackableForSearchType(info, searchType)) {
+            return "INVALID_TARGET_TYPE";
         }
         if (isSelfTarget(ac, player, info)) {
             return "SELF_TARGET";

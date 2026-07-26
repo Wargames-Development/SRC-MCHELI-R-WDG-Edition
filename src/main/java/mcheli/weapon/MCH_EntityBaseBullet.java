@@ -369,6 +369,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void setTargetEntity(Entity entity) {
+        // Guided projectiles must never track an individual player entity. Players
+        // riding vehicles are targeted through the vehicle entity instead.
+        if (entity instanceof EntityPlayer) {
+            entity = null;
+        }
         this.targetEntity = entity;
         if (entity != null) {
             this.lastTargetPosX = entity.posX;
@@ -394,6 +399,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public void clientSetTargetEntity(Entity entity) {
         if (super.worldObj.isRemote) {
+            if (entity instanceof EntityPlayer) {
+                entity = null;
+            }
             this.targetEntity = entity;
             if (entity != null) {
                 MCH_MOD.getPacketHandler().sendToServer(new PacketLockTarget(entity.getEntityId(), this.getEntityId()));
@@ -2349,6 +2357,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             Entity nearestChaff = null;
 
             for (Entity entity : list) {
+                // Active seekers may reacquire after launch, so keep the same
+                // no-player rule here as the launch-time guidance system.
+                if (entity instanceof EntityPlayer) {
+                    continue;
+                }
                 // AA 导弹的目标判定
                 if (this instanceof MCH_EntityAAMissile) {
                     boolean canScanMissiles = getInfo().canLockMissile && (getInfo().activeRadar || getInfo().semiActiveRadar);
