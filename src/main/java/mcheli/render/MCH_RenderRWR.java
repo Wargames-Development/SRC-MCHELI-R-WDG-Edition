@@ -53,11 +53,11 @@ import java.util.Comparator;
 
 public class MCH_RenderRWR {
 
-    private static final ResourceLocation RWR = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR.png");
-    private static final ResourceLocation RWR_HELI = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_HELI.png");
-    private static final ResourceLocation RWR_TANK = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_TANK.png");
-    private static final ResourceLocation RWR_FAC = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_FAC.png");
-    private static final ResourceLocation RWR_jammed = new ResourceLocation(W_MOD.DOMAIN, "textures/RWR_jammed.png");
+    private static final ResourceLocation RWR = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr.png");
+    private static final ResourceLocation RWR_HELI = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr_heli.png");
+    private static final ResourceLocation RWR_TANK = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr_tank.png");
+    private static final ResourceLocation RWR_FAC = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr_fac.png");
+    private static final ResourceLocation RWR_jammed = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr_jammed.png");
     private static final int RADAR_UI_COLOR_AMBER = 0xFFE400;
     private static final int RADAR_UI_COLOR_GREEN = 0x00FF00;
     private static final double PLANE_UI_BASE_WIDTH = 960.0D;

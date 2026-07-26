@@ -26,7 +26,7 @@ import org.lwjgl.opengl.GL11;
 
 public class MCH_RenderGPSPosition {
 
-    private static final ResourceLocation GPS_POS = new ResourceLocation(W_MOD.DOMAIN, "textures/GPSPosition.png");
+    private static final ResourceLocation GPS_POS = new ResourceLocation(W_MOD.DOMAIN, "textures/gpsposition.png");
     private static final int ICON_SIZE_PX = 24; // 以像素为基准的目标尺寸
 
     @SubscribeEvent

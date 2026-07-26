@@ -477,7 +477,12 @@ public class MCH_WeaponSet {
                 prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
                 prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
                 if (crtWpn.use(prm)) {
-                    boolean applyShotState = prm.entity.worldObj.isRemote || prm.user instanceof MCH_EntityGunner;
+                    // Apply ammunition, heat, cooldown and reload state on both logical sides.
+                    // The client predicts the shot for responsive controls, while the server must
+                    // also consume ammo so its authoritative state cannot restore a full load later.
+                    boolean applyShotState = prm.entity.worldObj.isRemote
+                        || prm.user instanceof EntityPlayer
+                        || prm.user instanceof MCH_EntityGunner;
                     if (applyShotState) {
                         if (info.maxHeatCount > 0) {
                             this.cooldownSpeed = 1;

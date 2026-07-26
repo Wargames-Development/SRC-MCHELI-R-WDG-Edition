@@ -80,7 +80,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static final float hitTotalDamageScaleOrigin = 2.0f;
     private static final int DISPLAY_TEXTURE_CLEANUP_INTERVAL_TICKS = 20;
-    private static final ResourceLocation cross3rd = new ResourceLocation(W_MOD.DOMAIN, "textures/3rdCross.png");
+    private static final ResourceLocation cross3rd = new ResourceLocation(W_MOD.DOMAIN, "textures/3rdcross.png");
     private static final ResourceLocation TEX_ICON_SL = new ResourceLocation("mcheli", "textures/gui/economy/coin_sl.png");
     private static final ResourceLocation TEX_ICON_GE = new ResourceLocation("mcheli", "textures/gui/economy/coin_ge.png");
     private static final ResourceLocation TEX_ICON_RP = new ResourceLocation("mcheli", "textures/gui/economy/coin_rp.png");

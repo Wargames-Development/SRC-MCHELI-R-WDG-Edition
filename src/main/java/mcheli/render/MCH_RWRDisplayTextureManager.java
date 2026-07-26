@@ -31,10 +31,10 @@ public final class MCH_RWRDisplayTextureManager {
     private static final int WARMUP_CHUNK_PIXELS = 8192;
     private static final int RING_BG_COLOR = 0xE0000000;
 
-    private static final ResourceLocation RWR_TEX = new ResourceLocation("mcheli", "textures/RWR.png");
-    private static final ResourceLocation RWR_HELI_TEX = new ResourceLocation("mcheli", "textures/RWR_HELI.png");
-    private static final ResourceLocation RWR_TANK_TEX = new ResourceLocation("mcheli", "textures/RWR_TANK.png");
-    private static final ResourceLocation RWR_FAC_TEX = new ResourceLocation("mcheli", "textures/RWR_FAC.png");
+    private static final ResourceLocation RWR_TEX = new ResourceLocation("mcheli", "textures/rwr.png");
+    private static final ResourceLocation RWR_HELI_TEX = new ResourceLocation("mcheli", "textures/rwr_heli.png");
+    private static final ResourceLocation RWR_TANK_TEX = new ResourceLocation("mcheli", "textures/rwr_tank.png");
+    private static final ResourceLocation RWR_FAC_TEX = new ResourceLocation("mcheli", "textures/rwr_fac.png");
 
     private static final Map<Integer, RwrTexState> CACHE = new HashMap<Integer, RwrTexState>();
     private static final int[] PIXEL_COMPARISON = new int[MCH_TextureRenderUtil.TEX_SIZE * MCH_TextureRenderUtil.TEX_SIZE];

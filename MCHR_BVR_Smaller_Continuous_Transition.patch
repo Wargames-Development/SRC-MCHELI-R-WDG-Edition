@@ -1,0 +1,24 @@
+diff --git a/src/main/java/mcheli/render/MCH_RenderBVRLockBox.java b/src/main/java/mcheli/render/MCH_RenderBVRLockBox.java
+index 7d34a3a..0e21f27 100644
+--- a/src/main/java/mcheli/render/MCH_RenderBVRLockBox.java
++++ b/src/main/java/mcheli/render/MCH_RenderBVRLockBox.java
+@@ -41,11 +41,14 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
+ public class MCH_RenderBVRLockBox {
+     private static final ResourceLocation FRAME = new ResourceLocation(W_MOD.DOMAIN, "textures/bvrlockbox.png");
+     private static final ResourceLocation MSL = new ResourceLocation(W_MOD.DOMAIN, "textures/msl.png");
+-    private static final int DEFAULT_BOX_SIZE = 24;
+-    private static final int SELECTED_BOX_SIZE = 32;
+-    private static final int LOCKED_BOX_SIZE = 40;
+-    private static final double HUD_BLEND_START_RANGE = 500.0D;
+-    private static final double HUD_BLEND_END_RANGE = 700.0D;
++    private static final int DEFAULT_BOX_SIZE = 12;
++    private static final int SELECTED_BOX_SIZE = 16;
++    private static final int LOCKED_BOX_SIZE = 20;
++    // Complete the world-space to screen-space handoff before vanilla's far-plane
++    // clipping can remove the 3D marker. This keeps the contact box continuous
++    // while the actual vehicle model enters or leaves normal render distance.
++    private static final double HUD_BLEND_START_RANGE = 160.0D;
++    private static final double HUD_BLEND_END_RANGE = 220.0D;
+     private static final double HUD_EDGE_MARGIN = 26.0D;
+     private static final int HUD_OVERLAP_STEP = 12;
+     public static Map<Integer, MCH_EntityInfo> currentLockedEntities = new HashMap<>();
