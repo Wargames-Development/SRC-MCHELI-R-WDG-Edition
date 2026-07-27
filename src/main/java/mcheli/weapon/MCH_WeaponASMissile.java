@@ -395,6 +395,10 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
     @SideOnly(Side.CLIENT)
     public void clientLock(MCH_WeaponParam prm) {
+        if (!MCH_GPSPosition.tryBeginClientWaypointUpdate(prm.user)) {
+            return;
+        }
+
         // --- JourneyMap GPS waypoint override ---
         if (prm.user instanceof EntityPlayer) {
             Vec3 jm = tryGetGpsFromJourneyMapWaypoint((EntityPlayer)prm.user);

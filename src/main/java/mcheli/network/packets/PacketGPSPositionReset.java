@@ -9,6 +9,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 public class PacketGPSPositionReset extends PacketBase {
 
+    private static final String LAST_UPDATE_TICK_KEY = "MCHGpsLastUpdateTick";
+
     double targetPosX;
     double targetPosY;
     double targetPosZ;
@@ -52,6 +54,17 @@ public class PacketGPSPositionReset extends PacketBase {
         if (ownerId != playerEntity.getEntityId()) {
             return;
         }
+
+        long now = playerEntity.worldObj.getTotalWorldTime();
+        if (playerEntity.getEntityData().hasKey(LAST_UPDATE_TICK_KEY)) {
+            long lastUpdate = playerEntity.getEntityData().getLong(LAST_UPDATE_TICK_KEY);
+            if (now >= lastUpdate
+                && now - lastUpdate < MCH_GPSPosition.CLIENT_WAYPOINT_COOLDOWN_TICKS) {
+                return;
+            }
+        }
+        playerEntity.getEntityData().setLong(LAST_UPDATE_TICK_KEY, now);
+
         if (!isActive) {
             MCH_GPSPosition.currentGPSPositions.remove(playerEntity.getEntityId());
             return;

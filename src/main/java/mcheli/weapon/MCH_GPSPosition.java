@@ -15,6 +15,13 @@ public class MCH_GPSPosition {
 
     public static MCH_GPSPosition currentClientGPSPosition = new MCH_GPSPosition(0, 0, 0);
 
+    /** Half-second waypoint creation cooldown at 20 TPS. */
+    public static final long CLIENT_WAYPOINT_COOLDOWN_TICKS = 10L;
+
+    private static int lastClientWaypointOwnerId = Integer.MIN_VALUE;
+    private static int lastClientWaypointDimension = Integer.MIN_VALUE;
+    private static long lastClientWaypointTick = Long.MIN_VALUE;
+
     public double x, y, z;
     public Entity owner;
     public boolean isActive = false;
@@ -23,6 +30,38 @@ public class MCH_GPSPosition {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    /**
+     * Reserves the next client GPS waypoint update. Repeated right-click lock
+     * calls are ignored until ten client ticks (0.5 seconds) have elapsed.
+     *
+     * Call this before ray tracing, reading JourneyMap files, playing the mark
+     * sound, or sending the GPS packet so the expensive work is throttled too.
+     */
+    @SideOnly(Side.CLIENT)
+    public static boolean tryBeginClientWaypointUpdate(Entity owner) {
+        if (owner == null || owner.worldObj == null || !owner.worldObj.isRemote) {
+            return false;
+        }
+
+        int ownerId = owner.getEntityId();
+        int dimension = owner.worldObj.provider.dimensionId;
+        long now = owner.worldObj.getTotalWorldTime();
+        boolean sameContext = ownerId == lastClientWaypointOwnerId
+            && dimension == lastClientWaypointDimension;
+
+        if (sameContext
+            && lastClientWaypointTick != Long.MIN_VALUE
+            && now >= lastClientWaypointTick
+            && now - lastClientWaypointTick < CLIENT_WAYPOINT_COOLDOWN_TICKS) {
+            return false;
+        }
+
+        lastClientWaypointOwnerId = ownerId;
+        lastClientWaypointDimension = dimension;
+        lastClientWaypointTick = now;
+        return true;
     }
 
     public static void set(double x, double y, double z, boolean isActive, Entity owner) {

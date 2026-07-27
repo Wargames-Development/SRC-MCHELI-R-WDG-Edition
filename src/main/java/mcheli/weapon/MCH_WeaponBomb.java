@@ -124,6 +124,10 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
 
     @SideOnly(Side.CLIENT)
     private void clientLockGpsTarget(MCH_WeaponParam prm) {
+        if (!MCH_GPSPosition.tryBeginClientWaypointUpdate(prm.user)) {
+            return;
+        }
+
         Minecraft.getMinecraft().getSoundHandler().playSound(
             new PositionedSoundRecord(new ResourceLocation("mcheli:mark"), 10.0F, 1.0F,
                 (float) prm.user.posX, (float) prm.user.posY, (float) prm.user.posZ));

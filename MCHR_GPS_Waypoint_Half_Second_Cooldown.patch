@@ -1,0 +1,110 @@
+--- a/src/main/java/mcheli/weapon/MCH_GPSPosition.java
++++ b/src/main/java/mcheli/weapon/MCH_GPSPosition.java
+@@ -15,6 +15,13 @@
+ 
+     public static MCH_GPSPosition currentClientGPSPosition = new MCH_GPSPosition(0, 0, 0);
+ 
++    /** Half-second waypoint creation cooldown at 20 TPS. */
++    public static final long CLIENT_WAYPOINT_COOLDOWN_TICKS = 10L;
++
++    private static int lastClientWaypointOwnerId = Integer.MIN_VALUE;
++    private static int lastClientWaypointDimension = Integer.MIN_VALUE;
++    private static long lastClientWaypointTick = Long.MIN_VALUE;
++
+     public double x, y, z;
+     public Entity owner;
+     public boolean isActive = false;
+@@ -25,6 +32,38 @@
+         this.z = z;
+     }
+ 
++    /**
++     * Reserves the next client GPS waypoint update. Repeated right-click lock
++     * calls are ignored until ten client ticks (0.5 seconds) have elapsed.
++     *
++     * Call this before ray tracing, reading JourneyMap files, playing the mark
++     * sound, or sending the GPS packet so the expensive work is throttled too.
++     */
++    @SideOnly(Side.CLIENT)
++    public static boolean tryBeginClientWaypointUpdate(Entity owner) {
++        if (owner == null || owner.worldObj == null || !owner.worldObj.isRemote) {
++            return false;
++        }
++
++        int ownerId = owner.getEntityId();
++        int dimension = owner.worldObj.provider.dimensionId;
++        long now = owner.worldObj.getTotalWorldTime();
++        boolean sameContext = ownerId == lastClientWaypointOwnerId
++            && dimension == lastClientWaypointDimension;
++
++        if (sameContext
++            && lastClientWaypointTick != Long.MIN_VALUE
++            && now >= lastClientWaypointTick
++            && now - lastClientWaypointTick < CLIENT_WAYPOINT_COOLDOWN_TICKS) {
++            return false;
++        }
++
++        lastClientWaypointOwnerId = ownerId;
++        lastClientWaypointDimension = dimension;
++        lastClientWaypointTick = now;
++        return true;
++    }
++
+     public static void set(double x, double y, double z, boolean isActive, Entity owner) {
+         if (owner != null && owner.worldObj != null && owner.worldObj.isRemote) {
+             clientSet(x, y, z, isActive, owner);
+--- a/src/main/java/mcheli/weapon/MCH_WeaponBomb.java
++++ b/src/main/java/mcheli/weapon/MCH_WeaponBomb.java
+@@ -124,6 +124,10 @@
+ 
+     @SideOnly(Side.CLIENT)
+     private void clientLockGpsTarget(MCH_WeaponParam prm) {
++        if (!MCH_GPSPosition.tryBeginClientWaypointUpdate(prm.user)) {
++            return;
++        }
++
+         Minecraft.getMinecraft().getSoundHandler().playSound(
+             new PositionedSoundRecord(new ResourceLocation("mcheli:mark"), 10.0F, 1.0F,
+                 (float) prm.user.posX, (float) prm.user.posY, (float) prm.user.posZ));
+--- a/src/main/java/mcheli/weapon/MCH_WeaponASMissile.java
++++ b/src/main/java/mcheli/weapon/MCH_WeaponASMissile.java
+@@ -395,6 +395,10 @@
+ 
+     @SideOnly(Side.CLIENT)
+     public void clientLock(MCH_WeaponParam prm) {
++        if (!MCH_GPSPosition.tryBeginClientWaypointUpdate(prm.user)) {
++            return;
++        }
++
+         // --- JourneyMap GPS waypoint override ---
+         if (prm.user instanceof EntityPlayer) {
+             Vec3 jm = tryGetGpsFromJourneyMapWaypoint((EntityPlayer)prm.user);
+--- a/src/main/java/mcheli/network/packets/PacketGPSPositionReset.java
++++ b/src/main/java/mcheli/network/packets/PacketGPSPositionReset.java
+@@ -9,6 +9,8 @@
+ 
+ public class PacketGPSPositionReset extends PacketBase {
+ 
++    private static final String LAST_UPDATE_TICK_KEY = "MCHGpsLastUpdateTick";
++
+     double targetPosX;
+     double targetPosY;
+     double targetPosZ;
+@@ -52,6 +54,17 @@
+         if (ownerId != playerEntity.getEntityId()) {
+             return;
+         }
++
++        long now = playerEntity.worldObj.getTotalWorldTime();
++        if (playerEntity.getEntityData().hasKey(LAST_UPDATE_TICK_KEY)) {
++            long lastUpdate = playerEntity.getEntityData().getLong(LAST_UPDATE_TICK_KEY);
++            if (now >= lastUpdate
++                && now - lastUpdate < MCH_GPSPosition.CLIENT_WAYPOINT_COOLDOWN_TICKS) {
++                return;
++            }
++        }
++        playerEntity.getEntityData().setLong(LAST_UPDATE_TICK_KEY, now);
++
+         if (!isActive) {
+             MCH_GPSPosition.currentGPSPositions.remove(playerEntity.getEntityId());
+             return;
