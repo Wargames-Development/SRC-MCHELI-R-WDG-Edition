@@ -1133,7 +1133,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public boolean canFoldWing() {
-        if (this.partWing != null && this.getModeSwitchCooldown() <= 0) {
+        if (this.partWing != null && this.getPlaneInfo().isEnableManualWingControl && this.getModeSwitchCooldown() <= 0) {
             if (this.getPlaneInfo().isVariableSweepWing) {
                 if (!super.onGround && MCH_Lib.getBlockIdY(this, 3, -20) == 0) {
                     if (this.getCurrentThrottle() < 0.699999988079071D) {
@@ -1159,11 +1159,11 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public boolean canUnfoldWing() {
-        return this.partWing != null && this.getModeSwitchCooldown() <= 0 && this.partWing.isON();
+        return this.partWing != null && this.getPlaneInfo().isEnableManualWingControl && this.getModeSwitchCooldown() <= 0 && this.partWing.isON();
     }
 
     public void foldWing(boolean fold) {
-        if (this.partWing != null && this.getModeSwitchCooldown() <= 0) {
+        if (fold ? this.canFoldWing() : this.canUnfoldWing()) {
             this.partWing.setStatusServer(fold);
             this.setModeSwitchCooldown(20);
         }

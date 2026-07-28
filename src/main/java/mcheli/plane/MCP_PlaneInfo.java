@@ -21,6 +21,7 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
     public float vtolPitch = 0.2F;
     public boolean isEnableAutoPilot = false;
     public boolean isVariableSweepWing = false;
+    public boolean isEnableManualWingControl = false;
     public float sweepWingSpeed;
 
     public static Map<String, Integer> exhaustFlameTextureMap = new HashMap<>();
@@ -129,6 +130,8 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
                 }
             } else if (item.compareTo("variablesweepwing") == 0) {
                 this.isVariableSweepWing = this.toBool(data);
+            } else if (item.compareTo("enablemanualwingcontrol") == 0) {
+                this.isEnableManualWingControl = this.toBool(data);
             } else if (item.compareTo("sweepwingspeed") == 0) {
                 this.sweepWingSpeed = this.toFloat(data, 0.0F, 5.0F);
             } else if (item.compareTo("enablevtol") == 0) {
