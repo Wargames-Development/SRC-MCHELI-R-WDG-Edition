@@ -29,6 +29,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public boolean isEnableGunnerMode;
     public int cameraZoom;
     public boolean isEnableConcurrentGunnerMode;
+    /** Whether an AI gunner mounted as pilot may drive/fly this aircraft. */
+    public boolean canGunnerMoveVehicle;
     public boolean isEnableNightVision;
     public boolean isEnableEntityRadar;
     public boolean isEnableEjectionSeat;
@@ -395,6 +397,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.category = "zzz";
         this.isEnableGunnerMode = false;
         this.isEnableConcurrentGunnerMode = false;
+        this.canGunnerMoveVehicle = true;
         this.isEnableNightVision = false;
         this.isEnableEntityRadar = false;
         this.hasAARadar = false;
@@ -1407,6 +1410,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             this.onGroundPitch = -this.toFloat(data, -90.0F, 90.0F);
                                                         } else if (item.compareTo("enablegunnermode") == 0) {
                                                             this.isEnableGunnerMode = this.toBool(data);
+                                                        } else if (item.compareTo("cangunnermovevehicle") == 0) {
+                                                            this.canGunnerMoveVehicle = this.toBool(data);
                                                         } else if (item.compareTo("hideentity") == 0) {
                                                             this.hideEntity = this.toBool(data);
                                                         } else if (item.equalsIgnoreCase("SmoothShading")) {

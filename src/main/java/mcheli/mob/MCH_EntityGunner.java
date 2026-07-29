@@ -995,6 +995,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private void updateTankDrive(MCH_EntityTank tank) {
         if (!tank.isPilot((Entity)this))
             return;
+        if (tank.getAcInfo() != null && !tank.getAcInfo().canGunnerMoveVehicle) {
+            tank.throttleUp = false;
+            tank.throttleDown = false;
+            tank.moveLeft = false;
+            tank.moveRight = false;
+            tank.setBrake(true);
+            return;
+        }
         final int navStuckCheckTick = 80;
         final double navStuckMinMove = 5.0D;
         final float navUnstuckTurnMin = 120.0F;
@@ -1559,6 +1567,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private void updateHeliDrive(MCH_EntityHeli heli) {
         if (!heli.isPilot((Entity)this))
             return;
+        if (heli.getAcInfo() != null && !heli.getAcInfo().canGunnerMoveVehicle) {
+            this.heliAllowFire = true;
+            heli.throttleUp = false;
+            heli.throttleDown = false;
+            heli.moveLeft = false;
+            heli.moveRight = false;
+            return;
+        }
         if (tryTriggerStupidDiveCrashExplosion((MCH_EntityAircraft)heli))
             return;
         if (heli.isDestroyed() || (!heli.canUseFuel() && !heli.isInfinityFuel((Entity)this, true))) {
@@ -1785,6 +1801,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
     private void updatePlaneDrive(MCP_EntityPlane plane) {
         if (!plane.isPilot((Entity)this))
             return;
+        if (plane.getAcInfo() != null && !plane.getAcInfo().canGunnerMoveVehicle) {
+            this.planeAllowFire = true;
+            plane.throttleUp = false;
+            plane.throttleDown = false;
+            plane.moveLeft = false;
+            plane.moveRight = false;
+            return;
+        }
         if (tryTriggerStupidDiveCrashExplosion((MCH_EntityAircraft)plane))
             return;
         if (plane.isDestroyed() || (!plane.canUseFuel() && !plane.isInfinityFuel((Entity)this, true))) {

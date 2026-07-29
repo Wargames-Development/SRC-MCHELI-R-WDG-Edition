@@ -1,0 +1,79 @@
+diff --git a/src/main/java/mcheli/aircraft/MCH_AircraftInfo.java b/src/main/java/mcheli/aircraft/MCH_AircraftInfo.java
+index 05a2a9c..77bd20c 100644
+--- a/src/main/java/mcheli/aircraft/MCH_AircraftInfo.java
++++ b/src/main/java/mcheli/aircraft/MCH_AircraftInfo.java
+@@ -29,6 +29,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
+     public boolean isEnableGunnerMode;
+     public int cameraZoom;
+     public boolean isEnableConcurrentGunnerMode;
++    /** Whether an AI gunner mounted as pilot may drive/fly this aircraft. */
++    public boolean canGunnerMoveVehicle;
+     public boolean isEnableNightVision;
+     public boolean isEnableEntityRadar;
+     public boolean isEnableEjectionSeat;
+@@ -395,6 +397,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
+         this.category = "zzz";
+         this.isEnableGunnerMode = false;
+         this.isEnableConcurrentGunnerMode = false;
++        this.canGunnerMoveVehicle = true;
+         this.isEnableNightVision = false;
+         this.isEnableEntityRadar = false;
+         this.hasAARadar = false;
+@@ -1406,6 +1409,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
+                                                             this.onGroundPitch = -this.toFloat(data, -90.0F, 90.0F);
+                                                         } else if (item.compareTo("enablegunnermode") == 0) {
+                                                             this.isEnableGunnerMode = this.toBool(data);
++                                                        } else if (item.compareTo("cangunnermovevehicle") == 0) {
++                                                            this.canGunnerMoveVehicle = this.toBool(data);
+                                                         } else if (item.compareTo("hideentity") == 0) {
+                                                             this.hideEntity = this.toBool(data);
+                                                         } else if (item.equalsIgnoreCase("SmoothShading")) {
+diff --git a/src/main/java/mcheli/mob/MCH_EntityGunner.java b/src/main/java/mcheli/mob/MCH_EntityGunner.java
+index 42e3b3f..4acf8ca 100644
+--- a/src/main/java/mcheli/mob/MCH_EntityGunner.java
++++ b/src/main/java/mcheli/mob/MCH_EntityGunner.java
+@@ -995,6 +995,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
+     private void updateTankDrive(MCH_EntityTank tank) {
+         if (!tank.isPilot((Entity)this))
+             return;
++        if (tank.getAcInfo() != null && !tank.getAcInfo().canGunnerMoveVehicle) {
++            tank.throttleUp = false;
++            tank.throttleDown = false;
++            tank.moveLeft = false;
++            tank.moveRight = false;
++            tank.setBrake(true);
++            return;
++        }
+         final int navStuckCheckTick = 80;
+         final double navStuckMinMove = 5.0D;
+         final float navUnstuckTurnMin = 120.0F;
+@@ -1559,6 +1567,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
+     private void updateHeliDrive(MCH_EntityHeli heli) {
+         if (!heli.isPilot((Entity)this))
+             return;
++        if (heli.getAcInfo() != null && !heli.getAcInfo().canGunnerMoveVehicle) {
++            this.heliAllowFire = true;
++            heli.throttleUp = false;
++            heli.throttleDown = false;
++            heli.moveLeft = false;
++            heli.moveRight = false;
++            return;
++        }
+         if (tryTriggerStupidDiveCrashExplosion((MCH_EntityAircraft)heli))
+             return;
+         if (heli.isDestroyed() || (!heli.canUseFuel() && !heli.isInfinityFuel((Entity)this, true))) {
+@@ -1785,6 +1801,14 @@ public class MCH_EntityGunner extends EntityLivingBase {
+     private void updatePlaneDrive(MCP_EntityPlane plane) {
+         if (!plane.isPilot((Entity)this))
+             return;
++        if (plane.getAcInfo() != null && !plane.getAcInfo().canGunnerMoveVehicle) {
++            this.planeAllowFire = true;
++            plane.throttleUp = false;
++            plane.throttleDown = false;
++            plane.moveLeft = false;
++            plane.moveRight = false;
++            return;
++        }
+         if (tryTriggerStupidDiveCrashExplosion((MCH_EntityAircraft)plane))
+             return;
+         if (plane.isDestroyed() || (!plane.canUseFuel() && !plane.isInfinityFuel((Entity)this, true))) {
