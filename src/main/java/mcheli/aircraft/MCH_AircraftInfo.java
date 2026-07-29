@@ -699,8 +699,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     private void applyApsRadarDefaults() {
         if (this.aps == null) return;
 
-        this.enableBVR = true;
-        this.enableRadar = true;
+        // APS uses its own projectile-interception logic. Do not implicitly
+        // expose the general-purpose radar/BVR HUD just because APS exists.
+        // Vehicles with search radar must opt in with EnableRadar/EnableBVR.
 
         if (Math.abs(this.radarScanElevationDeg - 40.0F) < 0.01F) this.radarScanElevationDeg = 80.0F;
         if (!this.radarFollowTurretYaw) this.radarFollowTurretYaw = true;
