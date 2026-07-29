@@ -769,9 +769,17 @@ public abstract class MCH_RenderAircraft extends W_Render {
             }
             for (Object o : info.landingGear) {
                 MCH_AircraftInfo.LandingGear n = (MCH_AircraftInfo.LandingGear) o;
+                boolean render = true;
                 GL11.glPushMatrix();
                 GL11.glTranslated(n.pos.xCoord, n.pos.yCoord, n.pos.zCoord);
-                if (!n.reverse) {
+                if (n.scale) {
+                    float scale = 1.0F - rot1 / 90.0F;
+                    if (scale <= 0.001F) {
+                        render = false;
+                    } else {
+                        GL11.glScalef(scale, scale, scale);
+                    }
+                } else if (!n.reverse) {
                     if (!n.hatch) {
                         GL11.glRotatef(rot1 * n.maxRotFactor, (float) n.rot.xCoord, (float) n.rot.yCoord, (float) n.rot.zCoord);
                     } else {
@@ -781,7 +789,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                     GL11.glRotatef(rot1Rev * n.maxRotFactor, (float) n.rot.xCoord, (float) n.rot.yCoord, (float) n.rot.zCoord);
                 }
 
-                if (n.enableRot2) {
+                if (!n.scale && n.enableRot2) {
                     if (!n.reverse) {
                         GL11.glRotatef(rot1 * n.maxRotFactor2, (float) n.rot2.xCoord, (float) n.rot2.yCoord, (float) n.rot2.zCoord);
                     } else {
@@ -799,7 +807,9 @@ public abstract class MCH_RenderAircraft extends W_Render {
                     GL11.glTranslated((double) f * n.slide.xCoord, (double) f * n.slide.yCoord, (double) f * n.slide.zCoord);
                 }
 
-                renderPart(n.model, info.model, n.modelName);
+                if (render) {
+                    renderPart(n.model, info.model, n.modelName);
+                }
                 GL11.glPopMatrix();
             }
         }

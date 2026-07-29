@@ -1417,7 +1417,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             if (!item.equalsIgnoreCase("AddPartWeaponBay") && !item.equalsIgnoreCase("AddPartSlideWeaponBay") && !item.equalsIgnoreCase("AddPartTurretWeaponBay")) {
                                                                 if (item.compareTo("addparthatch") != 0 && item.compareTo("addpartslidehatch") != 0) {
                                                                     if (item.compareTo("addpartcanopy") != 0 && item.compareTo("addpartslidecanopy") != 0) {
-                                                                        if (!item.equalsIgnoreCase("AddPartLG") && !item.equalsIgnoreCase("AddPartSlideRotLG") && !item.equalsIgnoreCase("AddPartLGRev") && !item.equalsIgnoreCase("AddPartLGHatch")) {
+                                                                        if (!item.equalsIgnoreCase("AddPartLG") && !item.equalsIgnoreCase("AddPartSlideRotLG") && !item.equalsIgnoreCase("AddPartLGRev") && !item.equalsIgnoreCase("AddPartLGHatch") && !item.equalsIgnoreCase("AddPartLGScale")) {
                                                                             if (item.equalsIgnoreCase("AddPartThrottle")) {
                                                                                 s = data.split("\\s*,\\s*");
                                                                                 if (s.length >= 7) {
@@ -1578,10 +1578,13 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                         } else {
                                                                             s = data.split("\\s*,\\s*");
                                                                             MCH_AircraftInfo.LandingGear var42;
-                                                                            if (!item.equalsIgnoreCase("AddPartSlideRotLG") && s.length >= 6) {
+                                                                            if (item.equalsIgnoreCase("AddPartLGScale") && s.length >= 3) {
+                                                                                var42 = new MCH_AircraftInfo.LandingGear(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]), 0.0F, 0.0F, 0.0F, "lg" + this.landingGear.size(), 1.0F, false, false, true);
+                                                                                this.landingGear.add(var42);
+                                                                            } else if (!item.equalsIgnoreCase("AddPartSlideRotLG") && s.length >= 6) {
                                                                                 var15 = s.length >= 7 ? this.toFloat(s[6], -180.0F, 180.0F) : 90.0F;
                                                                                 var15 /= 90.0F;
-                                                                                var42 = new MCH_AircraftInfo.LandingGear(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), "lg" + this.landingGear.size(), var15, item.equalsIgnoreCase("AddPartLgRev"), item.equalsIgnoreCase("AddPartLGHatch"));
+                                                                                var42 = new MCH_AircraftInfo.LandingGear(this.toFloat(s[0]), this.toFloat(s[1]), this.toFloat(s[2]), this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), "lg" + this.landingGear.size(), var15, item.equalsIgnoreCase("AddPartLgRev"), item.equalsIgnoreCase("AddPartLGHatch"), false);
                                                                                 if (s.length >= 8) {
                                                                                     var42.enableRot2 = true;
                                                                                     var42.maxRotFactor2 = s.length >= 11 ? this.toFloat(s[10], -180.0F, 180.0F) : 90.0F;
@@ -1595,7 +1598,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                                             if (item.equalsIgnoreCase("AddPartSlideRotLG") && s.length >= 9) {
                                                                                 var15 = s.length >= 10 ? this.toFloat(s[9], -180.0F, 180.0F) : 90.0F;
                                                                                 var15 /= 90.0F;
-                                                                                var42 = new MCH_AircraftInfo.LandingGear(this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]), this.toFloat(s[7]), this.toFloat(s[8]), "lg" + this.landingGear.size(), var15, false, false);
+                                                                                var42 = new MCH_AircraftInfo.LandingGear(this.toFloat(s[3]), this.toFloat(s[4]), this.toFloat(s[5]), this.toFloat(s[6]), this.toFloat(s[7]), this.toFloat(s[8]), "lg" + this.landingGear.size(), var15, false, false, false);
                                                                                 var42.slide = Vec3.createVectorHelper((double) this.toFloat(s[0]), (double) this.toFloat(s[1]), (double) this.toFloat(s[2]));
                                                                                 this.landingGear.add(var42);
                                                                             }
@@ -2023,13 +2026,14 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         public final float maxRotFactor;
         public final boolean reverse;
         public final boolean hatch;
+        public final boolean scale;
         public Vec3 slide = null;
         public boolean enableRot2;
         public Vec3 rot2;
         public float maxRotFactor2;
 
 
-        public LandingGear(float x, float y, float z, float rx, float ry, float rz, String model, float maxRotF, boolean rev, boolean isHatch) {
+        public LandingGear(float x, float y, float z, float rx, float ry, float rz, String model, float maxRotF, boolean rev, boolean isHatch, boolean isScale) {
             super(x, y, z, rx, ry, rz, model);
             this.maxRotFactor = maxRotF;
             this.enableRot2 = false;
@@ -2037,6 +2041,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
             this.maxRotFactor2 = 0.0F;
             this.reverse = rev;
             this.hatch = isHatch;
+            this.scale = isScale;
         }
     }
 
