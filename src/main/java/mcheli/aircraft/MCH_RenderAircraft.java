@@ -856,7 +856,8 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                 // 计算目标实体与玩家之间的平方距离
                                 double dist = entity.getDistanceSqToEntity(rm.livingPlayer);
                                 double distance = Math.sqrt(dist);
-                                if (wi != null && ac.getAcInfo() != null && ac.getAcInfo().enableBVR) {
+                                if (wi != null && ac.getAcInfo() != null
+                                    && (ac.getAcInfo().enableBVR || isGmtiGroundTarget(ac.getAcInfo(), entity))) {
                                     return;
                                 }
                                 double bvrDisplayMaxRange = 4096.0D;
@@ -1047,6 +1048,15 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 }
             }
         }
+    }
+
+    private static boolean isGmtiGroundTarget(MCH_AircraftInfo info, Entity target) {
+        if (info == null || info.radarSearchType == null
+            || !(target instanceof MCH_EntityTank || target instanceof MCH_EntityVehicle)) {
+            return false;
+        }
+        return "GMTI_SRC".equalsIgnoreCase(info.radarSearchType)
+            || "GMTI_TWS".equalsIgnoreCase(info.radarSearchType);
     }
 
     public static void renderRope(MCH_EntityAircraft ac, MCH_AircraftInfo info, double x, double y, double z, float tickTime) {

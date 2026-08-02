@@ -206,7 +206,7 @@ public class MCH_RenderBVRLockBox {
             return;
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
         MCH_AircraftInfo acInfo = ac.getAcInfo();
-        if (wi == null || acInfo == null || !acInfo.enableBVR) return;
+        if (wi == null || acInfo == null || (!acInfo.enableBVR && !isGmtiMode(acInfo))) return;
         if (!acInfo.enableRadar || !ac.isRadarEnabledRuntime()) return;
         if (wi.antiRadiationMissile) {
             renderArmNarrowBandBoxes(mc, player, ac, event.partialTicks);
@@ -850,8 +850,7 @@ public class MCH_RenderBVRLockBox {
 
     private boolean canRenderEntity(MCH_EntityInfo entity, EntityPlayer player, MCH_WeaponInfo wi, MCH_AircraftInfo acInfo) {
         boolean result = false;
-        String searchType = acInfo != null ? acInfo.radarSearchType : "SRC";
-        boolean gmtiMode = "GMTI_SRC".equalsIgnoreCase(searchType) || "GMTI_TWS".equalsIgnoreCase(searchType);
+        boolean gmtiMode = isGmtiMode(acInfo);
         double distSq = entity.getDistanceSqToEntity(player);
         if (acInfo != null && acInfo.radarMaxTargetRange > 0.0F) {
             double maxRangeSq = acInfo.radarMaxTargetRange * acInfo.radarMaxTargetRange;
@@ -886,6 +885,14 @@ public class MCH_RenderBVRLockBox {
             }
         }
         return result;
+    }
+
+    private boolean isGmtiMode(MCH_AircraftInfo acInfo) {
+        if (acInfo == null || acInfo.radarSearchType == null) {
+            return false;
+        }
+        return "GMTI_SRC".equalsIgnoreCase(acInfo.radarSearchType)
+            || "GMTI_TWS".equalsIgnoreCase(acInfo.radarSearchType);
     }
 
     private double computeAgl(net.minecraft.world.World world, double x, double y, double z) {
