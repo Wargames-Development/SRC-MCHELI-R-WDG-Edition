@@ -299,7 +299,9 @@ public abstract class MCH_HudItem extends Gui {
 
             int cntLockMax1 = wb.getLockCountMax();
             MCH_SightType sight = wb.getSightType();
-            if (sight == MCH_SightType.LOCK && cntLockMax1 > 0) {
+            boolean pureIrAam = "aamissile".equals(wi.type) && wi.isHeatSeekerMissile
+                && !wi.activeRadar && !wi.passiveRadar && !wi.semiActiveRadar && !wi.antiRadiationMissile;
+            if (sight == MCH_SightType.LOCK && cntLockMax1 > 0 && !pureIrAam) {
                 lock = (double) wb.getLockCount() / (double) cntLockMax1;
                 sight_type = 2;
             }

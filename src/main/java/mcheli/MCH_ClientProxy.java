@@ -505,6 +505,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
 
     public void registerSounds() {
         W_McClient.addSound("alert.ogg");
+        W_McClient.addSound("irlock.ogg");
         W_McClient.addSound("locked.ogg");
         W_McClient.addSound("gltd.ogg");
         W_McClient.addSound("zoom.ogg");
@@ -629,6 +630,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MinecraftForge.EVENT_BUS.register(new MCH_RenderGPSPosition());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderCCIP());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderLeadCircle());
+        MinecraftForge.EVENT_BUS.register(new MCH_RenderIRSeeker());
     }
 
     public void setCreativeDigDelay(int n) {

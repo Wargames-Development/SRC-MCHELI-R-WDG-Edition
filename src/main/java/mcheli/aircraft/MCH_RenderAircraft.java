@@ -17,6 +17,8 @@ import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_EntityGuidanceSystem;
 import mcheli.weapon.MCH_IGuidanceSystem;
+import mcheli.weapon.MCH_WeaponAAMissile;
+import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
@@ -831,8 +833,17 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
                 if (ac != null) {
                     if (!W_Entity.isEqual(ac, entity)) {
-                        MCH_IGuidanceSystem guidanceSystem = ac.getCurrentWeapon(player).getCurrentWeapon().getGuidanceSystem();
-                        MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
+                        MCH_WeaponSet weaponSet = ac.getCurrentWeapon(player);
+                        MCH_WeaponBase weapon = weaponSet != null ? weaponSet.getCurrentWeapon() : null;
+                        if (weapon == null) {
+                            return;
+                        }
+                        if (weapon instanceof MCH_WeaponAAMissile
+                            && ((MCH_WeaponAAMissile)weapon).isPureHeatSeeker()) {
+                            return;
+                        }
+                        MCH_IGuidanceSystem guidanceSystem = weapon.getGuidanceSystem();
+                        MCH_WeaponInfo wi = weapon.getInfo();
                         if (guidanceSystem == null) {
                             return;
                         }

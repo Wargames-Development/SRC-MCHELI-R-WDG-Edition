@@ -12,10 +12,13 @@ import mcheli.network.packets.PacketLockTargetBVR;
 import mcheli.render.MCH_RenderRWR;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_Entity;
+import mcheli.wrapper.W_MovingObjectPosition;
+import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
@@ -32,6 +35,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         super.interval = 5;
         super.guidanceSystem.canLockInAir = true;
         super.guidanceSystem.ridableOnly = wi.ridableOnly;
+        super.guidanceSystem.playDefaultLockSounds = !("aamissile".equals(wi.type)
+            && wi.isHeatSeekerMissile && !wi.activeRadar && !wi.passiveRadar
+            && !wi.semiActiveRadar && !wi.antiRadiationMissile);
     }
 
     public boolean isCooldownCountReloadTime() {
@@ -147,7 +153,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 result = true;
             } else {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
-                if (tgtEnt != null && !tgtEnt.isDead) {
+                boolean validTarget = tgtEnt != null && !tgtEnt.isDead;
+                if (isPureHeatSeeker()) {
+                    validTarget = isValidServerHeatSeekerTarget(prm, tgtEnt);
+                }
+                if (validTarget) {
                     this.playSound(prm.entity);
                     double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                     double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
@@ -187,7 +197,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         return result;
     }
 
-    private boolean isPureHeatSeeker() {
+    public boolean isPureHeatSeeker() {
         return "aamissile".equals(getInfo().type)
             && getInfo().isHeatSeekerMissile
             && !getInfo().activeRadar
@@ -205,6 +215,48 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
         double maxRange = Math.max(1.0D, getInfo().maxLockOnRange);
         return prm.entity.getDistanceSqToEntity(target) <= maxRange * maxRange;
+    }
+
+    private boolean isValidServerHeatSeekerTarget(MCH_WeaponParam prm, Entity target) {
+        if (!isValidServerTarget(prm, target)
+            || MCH_WeaponGuidanceSystem.isEntityOnGround(target, getInfo().lockMinHeight)) {
+            return false;
+        }
+
+        float launchYaw = getLaunchYaw(prm);
+        float launchPitch = getLaunchPitch(prm);
+        Entity cueOrigin = getInfo().enableHMS ? prm.user : prm.entity;
+        float cueYaw = getInfo().enableHMS ? prm.user.rotationYaw : launchYaw;
+        float cuePitch = getInfo().enableHMS ? prm.user.rotationPitch : launchPitch;
+        if (!MCH_WeaponGuidanceSystem.inLockAngle(cueOrigin, cueYaw, cuePitch, target, getInfo().maxLockOnAngle)
+            || !MCH_WeaponGuidanceSystem.inLockCone(prm.entity, launchYaw, launchPitch, target,
+                (float)getInfo().getEffectiveMaxDegreeOfMissile(0))) {
+            return false;
+        }
+
+        Vec3 from = W_WorldFunc.getWorldVec3(super.worldObj, prm.entity.posX, prm.entity.posY, prm.entity.posZ);
+        Vec3 to = W_WorldFunc.getWorldVec3(super.worldObj, target.posX,
+            target.posY + (double)(target.height * 0.5F), target.posZ);
+        MovingObjectPosition hit = W_WorldFunc.clip(super.worldObj, from, to, false, true, false);
+        return hit == null || W_MovingObjectPosition.isHitTypeEntity(hit);
+    }
+
+    private float getLaunchYaw(MCH_WeaponParam prm) {
+        if (prm.entity instanceof MCH_EntityTank) {
+            return prm.rotYaw;
+        }
+        return getInfo().enableOffAxis
+            ? prm.user.rotationYaw + super.fixRotationYaw
+            : prm.entity.rotationYaw + super.fixRotationYaw;
+    }
+
+    private float getLaunchPitch(MCH_WeaponParam prm) {
+        if (prm.entity instanceof MCH_EntityTank) {
+            return prm.rotPitch;
+        }
+        return getInfo().enableOffAxis
+            ? prm.user.rotationPitch + super.fixRotationPitch
+            : prm.entity.rotationPitch + super.fixRotationPitch;
     }
 
     private boolean hasIntegratedRadar(MCH_WeaponParam prm) {
@@ -265,9 +317,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
         Entity target = prm.user.worldObj.getEntityByID(targetId);
         if (target == null || target.isDead || !super.guidanceSystem.canLockEntity(target)
-            || prm.entity.getDistanceToEntity(target) > 350.0D || !isTargetInMissileFov(prm.user, target)) {
+            || prm.entity.getDistanceToEntity(target) > 350.0D || !isTargetInLaunchCone(prm, target)) {
             setClientTarget(prm.user, 0, null, null);
-            return true;
+            return false;
         }
         setClientTarget(prm.user, targetId, target, null);
         return true;
@@ -275,10 +327,23 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 
     private void updateLegacySeekerTarget(MCH_WeaponParam prm) {
         Entity target = null;
-        if (super.guidanceSystem.lock(prm.user) && super.guidanceSystem.lastLockEntity != null) {
+        float launchYaw = getLaunchYaw(prm);
+        float launchPitch = getLaunchPitch(prm);
+        Entity cueOrigin = getInfo().enableHMS ? prm.user : prm.entity;
+        float cueYaw = getInfo().enableHMS ? prm.user.rotationYaw : launchYaw;
+        float cuePitch = getInfo().enableHMS ? prm.user.rotationPitch : launchPitch;
+        if (super.guidanceSystem.lock(prm.user, cueOrigin, cueYaw, cuePitch,
+            prm.entity, launchYaw, launchPitch, (float)getInfo().getEffectiveMaxDegreeOfMissile(0))
+            && super.guidanceSystem.lastLockEntity != null) {
             target = super.guidanceSystem.lastLockEntity;
         }
         setClientTarget(prm.user, target != null ? W_Entity.getEntityId(target) : 0, target, null);
+    }
+
+    private boolean isTargetInLaunchCone(MCH_WeaponParam prm, Entity target) {
+        return prm != null && prm.entity != null && target != null
+            && MCH_WeaponGuidanceSystem.inLockCone(prm.entity, getLaunchYaw(prm), getLaunchPitch(prm), target,
+                (float)getInfo().getEffectiveMaxDegreeOfMissile(0));
     }
 
     private boolean isArmNarrowBandMode() {

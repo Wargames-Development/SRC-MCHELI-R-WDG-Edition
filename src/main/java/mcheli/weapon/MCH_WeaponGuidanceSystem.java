@@ -28,6 +28,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
     public Entity lastLockEntity;
     protected Entity user;
     private Entity targetEntity;
+    public boolean playDefaultLockSounds = true;
 
 
     public MCH_WeaponGuidanceSystem() {
@@ -88,6 +89,27 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
         return (diffYaw < lockAng || diffYaw > 360.0F - lockAng) && Math.abs(diffPitch) < lockAng;
     }
 
+    public static boolean inLockCone(Entity origin, float yaw, float pitch, Entity target, float angle) {
+        if (origin == null || target == null || angle < 0.0F) {
+            return false;
+        }
+        double dx = target.posX - origin.posX;
+        double dy = target.posY + (double)(target.height * 0.5F) - origin.posY;
+        double dz = target.posZ - origin.posZ;
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (length <= 1.0E-6D) {
+            return true;
+        }
+        double yawRad = Math.toRadians(yaw);
+        double pitchRad = Math.toRadians(pitch);
+        double lookX = -Math.sin(yawRad) * Math.cos(pitchRad);
+        double lookY = -Math.sin(pitchRad);
+        double lookZ = Math.cos(yawRad) * Math.cos(pitchRad);
+        double dot = (dx * lookX + dy * lookY + dz * lookZ) / length;
+        dot = Math.max(-1.0D, Math.min(1.0D, dot));
+        return Math.toDegrees(Math.acos(dot)) <= angle;
+    }
+
     public void setWorld(World w) {
         this.worldObj = w;
     }
@@ -143,9 +165,25 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
     }
 
     public boolean lock(Entity user, boolean isLockContinue) {
+        Entity cueOrigin = this.getLockEntity(user);
+        return this.lock(user, cueOrigin, user.rotationYaw, user.rotationPitch,
+            null, 0.0F, 0.0F, -1.0F, isLockContinue);
+    }
+
+    public boolean lock(Entity user, Entity cueOrigin, float cueYaw, float cuePitch,
+                        Entity constraintOrigin, float constraintYaw, float constraintPitch,
+                        float constraintAngle) {
+        this.user = user;
+        return this.lock(user, cueOrigin, cueYaw, cuePitch,
+            constraintOrigin, constraintYaw, constraintPitch, constraintAngle, true);
+    }
+
+    private boolean lock(Entity user, Entity cueOrigin, float cueYaw, float cuePitch,
+                         Entity constraintOrigin, float constraintYaw, float constraintPitch,
+                         float constraintAngle, boolean isLockContinue) {
 
         // 如果是服务器端，则直接返回
-        if (!this.worldObj.isRemote) {
+        if (user == null || cueOrigin == null || this.worldObj == null || !this.worldObj.isRemote) {
             return false;
         } else {
 
@@ -154,7 +192,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
 
             if (this.lockCount == 0) {  // 如果还没有锁定实体
                 // 获取范围内的所有实体
-                List canLock = this.worldObj.getEntitiesWithinAABBExcludingEntity(user, user.boundingBox.expand(this.lockRange, this.lockRange, this.lockRange));
+                List canLock = this.worldObj.getEntitiesWithinAABBExcludingEntity(cueOrigin, cueOrigin.boundingBox.expand(this.lockRange, this.lockRange, this.lockRange));
                 Entity potentialTarget = null;  // 潜在的锁定目标
                 double dist = this.lockRange * this.lockRange * 2.0D;  // 最大锁定距离
 
@@ -162,20 +200,21 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                 for (int i = 0; i < canLock.size(); ++i) {
                     Entity currentEntity = (Entity) canLock.get(i);
                     // 检查实体是否可以锁定
-                    if (this.canLockEntity(currentEntity)) {
-                        dz = currentEntity.posX - user.posX;
-                        double dy = currentEntity.posY - user.posY;
-                        double dz1 = currentEntity.posZ - user.posZ;
+                    if (currentEntity != constraintOrigin && this.canLockEntity(currentEntity)) {
+                        dz = currentEntity.posX - cueOrigin.posX;
+                        double dy = currentEntity.posY - cueOrigin.posY;
+                        double dz1 = currentEntity.posZ - cueOrigin.posZ;
                         double distance = dz * dz + dy * dy + dz1 * dz1;
-                        Entity entityLocker1 = this.getLockEntity(user);
                         float stealth1 = 1.0F - getEntityStealth(currentEntity);
                         double range1 = this.lockRange;
                         // 计算锁定角度
                         float angle = (float) this.lockAngle * (stealth1 / 2.0F + 0.5F);
                         // 判断实体是否在锁定范围内
-                        if (distance < range1 * range1 && distance < dist && inLockAngle(entityLocker1, user.rotationYaw, user.rotationPitch, currentEntity, angle)) {
+                        if (distance < range1 * range1 && distance < dist
+                            && inLockAngle(cueOrigin, cueYaw, cuePitch, currentEntity, angle)
+                            && inConstraintAngle(constraintOrigin, constraintYaw, constraintPitch, currentEntity, constraintAngle)) {
                             // 检测目标是否可见
-                            Vec3 v1 = W_WorldFunc.getWorldVec3(this.worldObj, entityLocker1.posX, entityLocker1.posY, entityLocker1.posZ);
+                            Vec3 v1 = W_WorldFunc.getWorldVec3(this.worldObj, cueOrigin.posX, cueOrigin.posY, cueOrigin.posZ);
                             Vec3 v2 = W_WorldFunc.getWorldVec3(this.worldObj, currentEntity.posX, currentEntity.posY + (double) (currentEntity.height / 2.0F), currentEntity.posZ);
                             MovingObjectPosition m = W_WorldFunc.clip(this.worldObj, v1, v2, false, true, false);
                             if (m == null || W_MovingObjectPosition.isHitTypeEntity(m)) {
@@ -254,9 +293,9 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
 
                 // 如果可以继续锁定
                 if (canLockTarget) {
-                    double dx = this.targetEntity.posX - user.posX;
-                    double dy = this.targetEntity.posY - user.posY;
-                    dz = this.targetEntity.posZ - user.posZ;
+                    double dx = this.targetEntity.posX - cueOrigin.posX;
+                    double dy = this.targetEntity.posY - cueOrigin.posY;
+                    dz = this.targetEntity.posZ - cueOrigin.posZ;
                     float stealth = 1.0F - getEntityStealth(this.targetEntity);
                     double lockRange = this.lockRange * (double) stealth;
                     // 判断目标是否在锁定范围内
@@ -266,9 +305,9 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                         }
 
                         this.lockSoundCount = (this.lockSoundCount + 1) % 15;
-                        Entity entityLocker = this.getLockEntity(user);
                         // 判断目标是否处于锁定范围
-                        if (inLockAngle(entityLocker, user.rotationYaw, user.rotationPitch, this.targetEntity, (float) this.lockAngle)) {
+                        if (inLockAngle(cueOrigin, cueYaw, cuePitch, this.targetEntity, (float) this.lockAngle)
+                            && inConstraintAngle(constraintOrigin, constraintYaw, constraintPitch, this.targetEntity, constraintAngle)) {
                             if (this.lockCount < this.getLockCountMax()) {
                                 ++this.lockCount;  // 增加锁定计数
                             }
@@ -313,15 +352,19 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
 
             if (result) {
                 this.lastLockEntity = targetEntity;
-                // 播放锁定成功音效
-                this.worldObj.playSoundAtEntity(user, "mcheli:ir_basic_tone", 1.0f, 1.0f);
-            } else {
-                // 播放锁定失败音效
-                this.worldObj.playSoundAtEntity(user, "mcheli:ir_lock_tone", 1.0f, 1.0f);
+                if (this.playDefaultLockSounds) {
+                    this.worldObj.playSoundAtEntity(user, "mcheli:ir_basic_tone", 1.0F, 1.0F);
+                }
+            } else if (this.playDefaultLockSounds) {
+                this.worldObj.playSoundAtEntity(user, "mcheli:ir_lock_tone", 1.0F, 1.0F);
             }
 
             return result;  // 返回锁定结果
         }
+    }
+
+    private static boolean inConstraintAngle(Entity origin, float yaw, float pitch, Entity target, float angle) {
+        return origin == null || angle < 0.0F || inLockCone(origin, yaw, pitch, target, angle);
     }
 
     public void clearLock() {

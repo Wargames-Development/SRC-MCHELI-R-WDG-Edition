@@ -442,7 +442,8 @@ public class MCH_WeaponSet {
 
     public boolean lock(MCH_WeaponParam prm) {
         MCH_WeaponBase crtWpn = this.getCurrentWeapon();
-        if (crtWpn != null && crtWpn.getInfo() != null) {
+        if (crtWpn != null && crtWpn.getInfo() != null && prm.entity != null) {
+            setWeaponRotation(prm, crtWpn);
             return crtWpn.lock(prm);
         }
         return false;
@@ -461,10 +462,7 @@ public class MCH_WeaponSet {
             MCH_WeaponInfo info = crtWpn.getInfo();
             if ((this.getAmmoNumMax() <= 0 || this.getAmmoNum() > 0) && (info.maxHeatCount <= 0 || this.currentHeat < info.maxHeatCount)) {
                 crtWpn.canPlaySound = this.soundWait == 0;
-                prm.rotYaw = prm.entity != null ? prm.entity.rotationYaw : 0.0F;
-                prm.rotPitch = prm.entity != null ? prm.entity.rotationPitch : 0.0F;
-                prm.rotYaw += this.rotationYaw + crtWpn.fixRotationYaw;
-                prm.rotPitch += this.rotationPitch + crtWpn.fixRotationPitch;
+                setWeaponRotation(prm, crtWpn);
                 if (info.accuracy > 0.0F) {
                     float randYaw = rand.nextFloat() - 0.5F;
                     float randPitch = rand.nextFloat() - 0.5F;
@@ -537,6 +535,13 @@ public class MCH_WeaponSet {
         }
 
         return prm.result;
+    }
+
+    private void setWeaponRotation(MCH_WeaponParam prm, MCH_WeaponBase weapon) {
+        prm.rotYaw = prm.entity.rotationYaw + this.rotationYaw + weapon.fixRotationYaw;
+        prm.rotPitch = prm.entity.rotationPitch + this.rotationPitch + weapon.fixRotationPitch;
+        prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
+        prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
     }
 
     public void waitAndReloadByOther(boolean reload) {

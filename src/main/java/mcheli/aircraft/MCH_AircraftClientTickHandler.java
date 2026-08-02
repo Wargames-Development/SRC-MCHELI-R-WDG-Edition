@@ -323,6 +323,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             boolean lockKeyPress = this.KeyCurrentWeaponLock.isKeyPress();
             boolean armCurrentWeapon = MCH_RenderRWR.isArmCurrentWeapon(ac, player);
             boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
+            boolean automaticIrSeeker = isPureHeatSeeker(ac, player);
             if (armCurrentWeapon) {
                 // ARM窄频使用RWR目标层锁定，不走常规武器锁定与雷达STT上报
                 ac.currentWeaponUnlock(player);
@@ -336,9 +337,11 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     }
                 }
             } else {
-                if (lockKeyPress) {
+                if (lockKeyPress || automaticIrSeeker) {
                     ac.currentWeaponLock(player);
-                    send = true;
+                    if (lockKeyPress) {
+                        send = true;
+                    }
                 } else {
                     ac.currentWeaponUnlock(player);
                 }
@@ -420,6 +423,16 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         }
         // These weapon modes rely on right-click guidance/lock and should keep their original behavior.
         return info.passiveRadar || info.isGPSMissile || info.laserGuidance || "tvmissile".equals(type);
+    }
+
+    private boolean isPureHeatSeeker(MCH_EntityAircraft ac, EntityPlayer player) {
+        MCH_WeaponSet ws = ac != null && player != null ? ac.getCurrentWeapon(player) : null;
+        return ws != null && isPureHeatSeeker(ws.getInfo());
+    }
+
+    private boolean isPureHeatSeeker(MCH_WeaponInfo info) {
+        return info != null && "aamissile".equalsIgnoreCase(info.type) && info.isHeatSeekerMissile
+            && !info.activeRadar && !info.passiveRadar && !info.semiActiveRadar && !info.antiRadiationMissile;
     }
 
     private void updateAheadPreSolve(EntityPlayer player, MCH_EntityAircraft ac) {
