@@ -9,6 +9,7 @@ import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.multiplay.MCH_GuiTargetMarker;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.render.MCH_RadarDisplayTextureManager;
+import mcheli.render.MCH_RenderFarVehicle;
 import mcheli.render.MCH_RWRDisplayTextureManager;
 import mcheli.render.MCH_TextureRenderUtil;
 import mcheli.tank.MCH_EntityTank;
@@ -1050,6 +1051,12 @@ public abstract class MCH_RenderAircraft extends W_Render {
         }
     }
 
+    public static void renderStaticModel(IModelCustom model) {
+        if (model != null && !MCH_ModelDisplayListCache.renderAll(model)) {
+            model.renderAll();
+        }
+    }
+
     private static boolean isGmtiGroundTarget(MCH_AircraftInfo info, Entity target) {
         if (info == null || info.radarSearchType == null
             || !(target instanceof MCH_EntityTank || target instanceof MCH_EntityVehicle)) {
@@ -1101,7 +1108,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 this.renderRiddenEntity(ac, tickTime, yaw, pitch + info.entityPitch, roll + info.entityRoll, info.entityWidth, info.entityHeight);
             }
 
-            if (!shouldSkipRender(entity)) {
+            if (!shouldSkipRender(entity) && !MCH_RenderFarVehicle.shouldSuppressNormalRender(ac, posX, posZ)) {
                 this.setCommonRenderParam(info.smoothShading, ac.getBrightnessForRender(tickTime));
                 if (ac.isDestroyed()) {
                     GL11.glColor4f(0.15F, 0.15F, 0.15F, 1.0F);

@@ -29,6 +29,7 @@ public class MCH_EntityInfoClientTracker {
     private static final double RESYNC_MAX_HORIZONTAL_DISTANCE_SQ = 256.0D * 256.0D;
 
     private static final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
+    private static volatile Set<Integer> latestSnapshotEntityIds = Collections.emptySet();
     /**
      * 可调：心跳缺席的毫秒阈值（例如 5s）
      */
@@ -62,8 +63,10 @@ public class MCH_EntityInfoClientTracker {
 
         long now = System.currentTimeMillis();
         latestSeqObserved = Math.max(latestSeqObserved, snapshotSeq);
+        Set<Integer> snapshotEntityIds = new HashSet<Integer>();
 
         for (MCH_EntityInfo info : infos) {
+            snapshotEntityIds.add(Integer.valueOf(info.entityId));
             Tracked t = tracked.get(info.entityId);
             if (t == null) {
                 tracked.put(info.entityId, new Tracked(info, now, snapshotSeq));
@@ -74,6 +77,7 @@ public class MCH_EntityInfoClientTracker {
             }
         }
 
+        latestSnapshotEntityIds = Collections.unmodifiableSet(snapshotEntityIds);
         lastAppliedSeq = snapshotSeq;
     }
 
@@ -90,6 +94,10 @@ public class MCH_EntityInfoClientTracker {
     public static MCH_EntityInfo getEntityInfo(int entityId) {
         Tracked t = tracked.get(entityId);
         return t == null ? null : t.info;
+    }
+
+    public static boolean isEntityInLatestSnapshot(int entityId) {
+        return latestSnapshotEntityIds.contains(Integer.valueOf(entityId));
     }
 
     public static Collection<MCH_EntityInfo> getAllTrackedEntities() {
@@ -181,6 +189,7 @@ public class MCH_EntityInfoClientTracker {
 
     public static void resetTracker() {
         tracked.clear();
+        latestSnapshotEntityIds = Collections.emptySet();
         lastAppliedSeq = -1L;
         latestSeqObserved = -1L;
         clientTickCounter = 0;

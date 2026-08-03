@@ -623,6 +623,7 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MinecraftForge.EVENT_BUS.register(new MCH_ParticlesUtil());
         MinecraftForge.EVENT_BUS.register(new MCH_ClientEventHook());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderBVRLockBox());
+        MinecraftForge.EVENT_BUS.register(new MCH_RenderFarVehicle());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderRWR());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderMortarRadar());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderLaser());

@@ -21,6 +21,8 @@ public class MCH_EntityInfo {
     public double lastTickPosZ;
     public float rotationYaw;
     public float rotationPitch;
+    public float rotationRoll;
+    public boolean destroyed;
     public byte countermeasureFlags;
     public long countermeasureUntilTick;
     public long lastUpdateTime;
@@ -35,6 +37,18 @@ public class MCH_EntityInfo {
 
     public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ,
                           float rotationYaw, float rotationPitch, byte countermeasureFlags, long countermeasureUntilTick) {
+        this(entityId, worldName, entityName, entityClassName, posX, posY, posZ, lastTickPosX, lastTickPosY, lastTickPosZ,
+            rotationYaw, rotationPitch, countermeasureFlags, countermeasureUntilTick, 0.0F);
+    }
+
+    public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ,
+                          float rotationYaw, float rotationPitch, byte countermeasureFlags, long countermeasureUntilTick, float rotationRoll) {
+        this(entityId, worldName, entityName, entityClassName, posX, posY, posZ, lastTickPosX, lastTickPosY, lastTickPosZ,
+            rotationYaw, rotationPitch, countermeasureFlags, countermeasureUntilTick, rotationRoll, false);
+    }
+
+    public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ,
+                          float rotationYaw, float rotationPitch, byte countermeasureFlags, long countermeasureUntilTick, float rotationRoll, boolean destroyed) {
         this.entityId = entityId;
         this.worldName = worldName;
         this.entityName = entityName;
@@ -47,6 +61,8 @@ public class MCH_EntityInfo {
         this.lastTickPosZ = lastTickPosZ;
         this.rotationYaw = rotationYaw;
         this.rotationPitch = rotationPitch;
+        this.rotationRoll = rotationRoll;
+        this.destroyed = destroyed;
         this.countermeasureFlags = countermeasureFlags;
         this.countermeasureUntilTick = countermeasureUntilTick;
         this.lastUpdateTime = System.currentTimeMillis();
@@ -85,6 +101,8 @@ public class MCH_EntityInfo {
                 name = b.getInfo().name;
             }
         }
+        float rotationRoll = e instanceof MCH_EntityAircraft ? ((MCH_EntityAircraft)e).getRotRoll() : 0.0F;
+        boolean destroyed = e instanceof MCH_EntityAircraft && ((MCH_EntityAircraft)e).isDestroyed();
         return new MCH_EntityInfo(e.getEntityId(),
             e.worldObj.getWorldInfo().getWorldName(),
             name,
@@ -92,7 +110,7 @@ public class MCH_EntityInfo {
             e.posX, e.posY, e.posZ,
             e.lastTickPosX, e.lastTickPosY, e.lastTickPosZ,
             e.rotationYaw, e.rotationPitch,
-            countermeasureFlags, countermeasureUntilTick
+            countermeasureFlags, countermeasureUntilTick, rotationRoll, destroyed
         );
     }
 

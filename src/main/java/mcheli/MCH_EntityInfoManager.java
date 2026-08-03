@@ -6,9 +6,7 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.flare.MCH_EntityChaff;
-import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.network.packets.PacketEntityInfoSync;
-import mcheli.plane.MCP_EntityPlane;
 import mcheli.weapon.MCH_IEntityLockChecker;
 import mcheli.weapon.MCH_IMissile;
 import net.minecraft.entity.Entity;
@@ -20,7 +18,6 @@ import net.minecraft.util.IntHashMap;
 import net.minecraft.world.WorldServer;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -32,6 +29,8 @@ public class MCH_EntityInfoManager {
 
     private static final long TRACKER_RESYNC_REQUEST_INTERVAL_MS = 2_000L;
     private static final int MAX_TRACKER_RESYNCS_PER_TICK = 16;
+    public static final double ENTITY_INFO_SYNC_RANGE = 4096.0D;
+    private static final double ENTITY_INFO_SYNC_RANGE_SQ = ENTITY_INFO_SYNC_RANGE * ENTITY_INFO_SYNC_RANGE;
 
     // 服务器侧仅用于收集/去重，不再依赖“删除发包”
     public static final Map<Integer, MCH_EntityInfo> serverEntities = new ConcurrentHashMap<>();
@@ -135,74 +134,48 @@ public class MCH_EntityInfoManager {
     }
 
     public void serverTick() {
-        // 收集应跟踪的实体，写入（覆盖）快照
+        serverEntities.clear();
         for (WorldServer world : MinecraftServer.getServer().worldServers) {
+            List<MCH_EntityInfo> worldEntities = new ArrayList<MCH_EntityInfo>();
             @SuppressWarnings("unchecked")
             List<Entity> loaded = world.loadedEntityList;
             for (Entity entity : loaded) {
                 if (shouldTrack(world, entity)) {
-                    serverEntities.put(entity.getEntityId(), MCH_EntityInfo.createInfo(entity, world.getTotalWorldTime()));
+                    MCH_EntityInfo info = MCH_EntityInfo.createInfo(entity, world.getTotalWorldTime());
+                    serverEntities.put(entity.getEntityId(), info);
+                    worldEntities.add(info);
                 }
             }
-        }
 
-        // 仅做本地内存清理，避免服务端集合膨胀（不再对客户端发 REMOVE）
-        if (tickCounter % 10 == 0) {
-            Iterator<Map.Entry<Integer, MCH_EntityInfo>> it = serverEntities.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<Integer, MCH_EntityInfo> entry = it.next();
-                MCH_EntityInfo info = entry.getValue();
-                Entity entity = serverGetEntity(info.entityId);
-                // 若实体确实不存在/死亡，或者长时间未更新，直接从服务端集合剔除
-                if (entity == null || entity.isDead || System.currentTimeMillis() - info.lastUpdateTime > 5_000L) {
-                    it.remove();
-                }
-            }
-        }
-
-        // 发送本帧（本 tick）的全量权威快照（带序号）
-        List<MCH_EntityInfo> list = new ArrayList<>(serverEntities.values());
-        MCH_MOD.getPacketHandler().sendToAll(new PacketEntityInfoSync(list, snapshotSeq));
-    }
-
-    private Entity serverGetEntity(int entityId) {
-        for (WorldServer world : MinecraftServer.getServer().worldServers) {
             @SuppressWarnings("unchecked")
-            List<Entity> loaded = world.loadedEntityList;
-            for (Entity entity : loaded) {
-                if (entity.getEntityId() == entityId) {
-                    return entity;
+            List<EntityPlayerMP> players = world.playerEntities;
+            for (EntityPlayerMP player : players) {
+                List<MCH_EntityInfo> visibleEntities = new ArrayList<MCH_EntityInfo>();
+                for (MCH_EntityInfo info : worldEntities) {
+                    if (info.getDistanceSqToEntity(player) <= ENTITY_INFO_SYNC_RANGE_SQ) {
+                        visibleEntities.add(info);
+                    }
                 }
+                MCH_MOD.getPacketHandler().sendTo(new PacketEntityInfoSync(visibleEntities, snapshotSeq), player);
             }
         }
-        return null;
     }
 
     private boolean shouldTrack(WorldServer w, Entity entity) {
         if (entity.isDead) {
             return false;
         }
-        // Track missiles explicitly to keep radar contacts synced even if lock-checker paths change.
-        if (MCH_FMURUtil.isSoldier(entity) || entity instanceof MCH_IEntityLockChecker || entity instanceof MCH_IMissile) {
-            if (entity instanceof MCP_EntityPlane || entity instanceof MCH_EntityHeli || entity instanceof MCH_EntityChaff) {
-                if (!isShip(entity) && entity.posY - w.getHeightValue((int) entity.posX, (int) entity.posZ) < 0) {
-                    return false;
-                }
-            }
-            if (entity instanceof MCH_EntityAircraft) {
-                MCH_EntityAircraft aircraft = (MCH_EntityAircraft) entity;
-                if (aircraft.isECMJammerUsing()) {
-                    return false;
-                }
-            }
+        // Visual contacts are sensor-independent: every live aircraft must remain continuous.
+        if (entity instanceof MCH_EntityAircraft) {
             return true;
         }
-        return false;
-    }
-
-    private boolean isShip(Entity entity) {
-        if (entity instanceof MCP_EntityPlane) {
-            return ((MCP_EntityPlane) entity).getAcInfo() != null && ((MCP_EntityPlane) entity).getAcInfo().isFloat;
+        // Track missiles explicitly to keep radar contacts synced even if lock-checker paths change.
+        if (MCH_FMURUtil.isSoldier(entity) || entity instanceof MCH_IEntityLockChecker || entity instanceof MCH_IMissile) {
+            if (entity instanceof MCH_EntityChaff
+                && entity.posY - w.getHeightValue((int)entity.posX, (int)entity.posZ) < 0) {
+                return false;
+            }
+            return true;
         }
         return false;
     }

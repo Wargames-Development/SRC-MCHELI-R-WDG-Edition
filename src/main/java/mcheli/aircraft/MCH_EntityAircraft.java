@@ -330,6 +330,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.lastSearchLightYaw = this.lastSearchLightPitch = 0.0F;
     }
 
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean isInRangeToRenderDist(double distance) {
+        // Loaded aircraft render normally; contacts absent from WorldClient use the far proxy.
+        return true;
+    }
+
     public static MCH_EntityAircraft getAircraft_RiddenOrControl(Entity rider) {
         if (rider != null) {
             if (rider.ridingEntity instanceof MCH_EntityAircraft) {

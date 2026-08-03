@@ -29,8 +29,11 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -52,6 +55,12 @@ public class MCH_RenderBVRLockBox {
     private static final double HUD_EDGE_MARGIN = 26.0D;
     private static final int HUD_OVERLAP_STEP = 12;
     public static Map<Integer, MCH_EntityInfo> currentLockedEntities = new HashMap<>();
+    private final float[] activeModelView = new float[16];
+    private final float[] activeProjection = new float[16];
+    private final int[] activeViewport = new int[4];
+    private final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
+    private final IntBuffer viewportBuffer = BufferUtils.createIntBuffer(4);
+    private boolean activeProjectionValid;
 
     // Best “hard lock” candidate this frame (red box target)
     public static volatile MCH_EntityInfo bestLockedEntity = null;
@@ -80,6 +89,11 @@ public class MCH_RenderBVRLockBox {
             ? (EntityLivingBase) mc.renderViewEntity
             : mc.thePlayer;
         if (viewer == null) return new double[]{-1, -1, -1, -1, -1};
+
+        double[] activeCameraProjection = this.projectWithActiveCamera(pos, mc);
+        if (activeCameraProjection != null) {
+            return activeCameraProjection;
+        }
 
         Vector3f camPos = new Vector3f(
                 (float) RenderManager.renderPosX,
@@ -162,6 +176,59 @@ public class MCH_RenderBVRLockBox {
         };
     }
 
+    private void captureActiveProjection(Minecraft mc) {
+        if (mc == null || mc.displayWidth <= 0 || mc.displayHeight <= 0) {
+            return;
+        }
+        this.matrixBuffer.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, this.matrixBuffer);
+        this.matrixBuffer.get(this.activeModelView);
+        this.matrixBuffer.clear();
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, this.matrixBuffer);
+        this.matrixBuffer.get(this.activeProjection);
+        this.viewportBuffer.clear();
+        GL11.glGetInteger(GL11.GL_VIEWPORT, this.viewportBuffer);
+        this.viewportBuffer.get(this.activeViewport);
+        this.activeProjectionValid = this.activeViewport[2] > 0 && this.activeViewport[3] > 0
+            && Math.abs(this.activeProjection[0]) > 1.0E-6F && Math.abs(this.activeProjection[5]) > 1.0E-6F;
+    }
+
+    private double[] projectWithActiveCamera(Vector3f worldPos, Minecraft mc) {
+        if (!this.activeProjectionValid || worldPos == null || mc == null) {
+            return null;
+        }
+        double x = worldPos.x - RenderManager.renderPosX;
+        double y = worldPos.y - RenderManager.renderPosY;
+        double z = worldPos.z - RenderManager.renderPosZ;
+        double eyeX = this.activeModelView[0] * x + this.activeModelView[4] * y + this.activeModelView[8] * z + this.activeModelView[12];
+        double eyeY = this.activeModelView[1] * x + this.activeModelView[5] * y + this.activeModelView[9] * z + this.activeModelView[13];
+        double eyeZ = this.activeModelView[2] * x + this.activeModelView[6] * y + this.activeModelView[10] * z + this.activeModelView[14];
+        double eyeW = this.activeModelView[3] * x + this.activeModelView[7] * y + this.activeModelView[11] * z + this.activeModelView[15];
+        double clipX = this.activeProjection[0] * eyeX + this.activeProjection[4] * eyeY + this.activeProjection[8] * eyeZ + this.activeProjection[12] * eyeW;
+        double clipY = this.activeProjection[1] * eyeX + this.activeProjection[5] * eyeY + this.activeProjection[9] * eyeZ + this.activeProjection[13] * eyeW;
+        double clipW = this.activeProjection[3] * eyeX + this.activeProjection[7] * eyeY + this.activeProjection[11] * eyeZ + this.activeProjection[15] * eyeW;
+        if (Double.isNaN(clipW) || Double.isInfinite(clipW) || Math.abs(clipW) < 1.0E-6D) {
+            return null;
+        }
+
+        double divisor = Math.abs(clipW);
+        double pixelX = this.activeViewport[0] + (clipX / divisor + 1.0D) * this.activeViewport[2] * 0.5D;
+        double pixelY = this.activeViewport[1] + (clipY / divisor + 1.0D) * this.activeViewport[3] * 0.5D;
+        ScaledResolution scaled = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+        double screenW = scaled.getScaledWidth_double();
+        double screenH = scaled.getScaledHeight_double();
+        double screenX = pixelX * screenW / mc.displayWidth;
+        double screenY = screenH - pixelY * screenH / mc.displayHeight;
+        return new double[]{screenX, screenY, screenX - screenW * 0.5D, screenY - screenH * 0.5D, clipW};
+    }
+
+    private float getWorldUnitsPerPixel(double distance, ScaledResolution scaled, double fallbackFovRadians) {
+        if (this.activeProjectionValid && Math.abs(this.activeProjection[5]) > 1.0E-6F) {
+            return (float)(2.0D * distance / (Math.abs(this.activeProjection[5]) * scaled.getScaledHeight_double()));
+        }
+        return (float)((2.0D * distance * Math.tan(fallbackFovRadians * 0.5D)) / scaled.getScaledHeight_double());
+    }
+
     private static double calculateAngle(Entity viewer, double x, double y, double z) {
         double dx = x - viewer.posX;
         double dy = y - viewer.posY;
@@ -191,6 +258,7 @@ public class MCH_RenderBVRLockBox {
 
     @SubscribeEvent
     public void onRenderWorldLast(RenderWorldLastEvent event) {
+        this.activeProjectionValid = false;
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
         if (player == null || mc.theWorld == null) return;
@@ -208,6 +276,7 @@ public class MCH_RenderBVRLockBox {
         MCH_AircraftInfo acInfo = ac.getAcInfo();
         if (wi == null || acInfo == null || (!acInfo.enableBVR && !isGmtiMode(acInfo))) return;
         if (!acInfo.enableRadar || !ac.isRadarEnabledRuntime()) return;
+        this.captureActiveProjection(mc);
         if (wi.antiRadiationMissile) {
             renderArmNarrowBandBoxes(mc, player, ac, event.partialTicks);
         }
@@ -320,7 +389,7 @@ public class MCH_RenderBVRLockBox {
                 skippedByTooNear++;
                 continue;
             }
-            float sPerPixel = (float) ((2.0 * vdist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
+            float sPerPixel = this.getWorldUnitsPerPixel(vdist, sc, fovRad);
             String text;
             int color;
             String targetName = rwrResult.name == null ? "" : rwrResult.name;
@@ -435,7 +504,7 @@ public class MCH_RenderBVRLockBox {
             if (vdist < 1e-4) {
                 continue;
             }
-            float sPerPixel = (float) ((2.0 * vdist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
+            float sPerPixel = this.getWorldUnitsPerPixel(vdist, sc, fovRad);
             String stateText = hardLock ? "LOCK" : (selected ? "SELECT" : null);
             String text = String.format("[%s %s]", contact.name == null ? "UNKNOWN" : contact.name, formatRange(dist));
             String detailText = null;
