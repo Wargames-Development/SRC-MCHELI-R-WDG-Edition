@@ -422,7 +422,7 @@ public class MCH_RenderBVRLockBox {
             boolean inMissileFov = currentWi != null && angle <= currentWi.getHudPreferredMissileFovDeg();
             boolean showDataLinkRings = dataLinkMode && inMissileFov && isPriorityTarget;
             String stateText = hardLock ? "LOCK" : (selected ? "SELECT" : null);
-            double hudBlend = getHudBlendFactor(dist);
+            double hudBlend = Math.max(getHudBlendFactor(dist), MCH_RenderFarVehicle.getContactLodTransitionAlpha(mc, entity, x, z));
             float worldAlpha = (float)(alpha * (1.0D - hudBlend));
             float hudAlpha = (float)(alpha * hudBlend);
             int markerColor = hardLock ? 0xFF2020 : (selected ? 0xFFC000 : (isMSL ? 0xFF4040 : 0x00FF00));
@@ -517,7 +517,7 @@ public class MCH_RenderBVRLockBox {
             int textColor = highlight ? markerColor : contact.color;
             int markerSize = hardLock ? LOCKED_BOX_SIZE : (selected ? SELECTED_BOX_SIZE : DEFAULT_BOX_SIZE);
             boolean showArmLockRings = armNarrowBandMode && contact.tracking;
-            double hudBlend = getHudBlendFactor(dist);
+            double hudBlend = Math.max(getHudBlendFactor(dist), MCH_RenderFarVehicle.getContactLodTransitionAlpha(mc, targetInfo, x, z));
             float worldAlpha = (float)(alpha * (1.0D - hudBlend));
             float hudAlpha = (float)(alpha * hudBlend);
             if (worldAlpha > 0.01F) {

@@ -10,15 +10,18 @@ import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_RenderAircraft;
 import mcheli.helicopter.MCH_EntityHeli;
+import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.plane.MCP_PlaneInfoManager;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.tank.MCH_TankInfoManager;
 import mcheli.vehicle.MCH_EntityVehicle;
+import mcheli.vehicle.MCH_VehicleInfo;
 import mcheli.vehicle.MCH_VehicleInfoManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
@@ -83,7 +86,7 @@ public class MCH_RenderFarVehicle {
             SmoothedPose pose = this.getSmoothedPose(contact, now);
             double x = pose.x - RenderManager.instance.viewerPosX;
             double z = pose.z - RenderManager.instance.viewerPosZ;
-            float alpha = hasLiveEntity ? getTransitionAlpha(mc, x, z) : 1.0F;
+            float alpha = hasLiveEntity ? getLodTransitionAlpha(mc, x, z) : 1.0F;
             if (alpha <= 0.0F) {
                 continue;
             }
@@ -111,7 +114,7 @@ public class MCH_RenderFarVehicle {
 
         float oldBrightnessX = OpenGlHelper.lastBrightnessX;
         float oldBrightnessY = OpenGlHelper.lastBrightnessY;
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_LIGHTING_BIT);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_POLYGON_BIT);
         GL11.glPushMatrix();
         try {
             GL11.glTranslated(x, y, z);
@@ -122,21 +125,123 @@ public class MCH_RenderFarVehicle {
 
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_DEPTH_TEST);
-            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_COLOR_MATERIAL);
+            GL11.glColorMaterial(GL11.GL_FRONT_AND_BACK, GL11.GL_AMBIENT_AND_DIFFUSE);
+            GL11.glEnable(GL11.GL_NORMALIZE);
+            GL11.glShadeModel(definition.info.smoothShading ? GL11.GL_SMOOTH : GL11.GL_FLAT);
+            RenderHelper.enableStandardItemLighting();
             if (alpha < 1.0F) {
                 GL11.glEnable(GL11.GL_BLEND);
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                 GL11.glDepthMask(false);
             }
             GL11.glColor4f(1.0F, 1.0F, 1.0F, alpha);
-            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240.0F, 240.0F);
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 200.0F, 200.0F);
             mc.getTextureManager().bindTexture(definition.texture);
-            MCH_RenderAircraft.renderStaticModel(definition.info.model);
+            MCH_RenderAircraft.renderBody(definition.info.model);
+            this.renderLightweightParts(definition.info, pose);
         } finally {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, oldBrightnessX, oldBrightnessY);
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
             GL11.glPopMatrix();
             GL11.glPopAttrib();
+        }
+    }
+
+    private void renderLightweightParts(MCH_AircraftInfo info, SmoothedPose pose) {
+        this.renderWeaponParts(info, pose);
+        if (info instanceof MCH_VehicleInfo) {
+            MCH_VehicleInfo vehicleInfo = (MCH_VehicleInfo)info;
+            for (Object part : vehicleInfo.partList) {
+                this.renderVehiclePart(vehicleInfo, (MCH_VehicleInfo.VPart)part, pose);
+            }
+        }
+        if (info instanceof MCH_HeliInfo) {
+            this.renderHelicopterRotors((MCH_HeliInfo)info);
+        }
+    }
+
+    private void renderWeaponParts(MCH_AircraftInfo info, SmoothedPose pose) {
+        float turretYaw = wrapAngle(pose.turretYaw - pose.yaw);
+        float turretPitch = clamp(pose.turretPitch, info.minRotationPitch, info.maxRotationPitch);
+        for (Object part : info.partWeapon) {
+            MCH_AircraftInfo.PartWeapon weapon = (MCH_AircraftInfo.PartWeapon)part;
+            GL11.glPushMatrix();
+            if (weapon.turret) {
+                GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
+                GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
+                GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
+            }
+            GL11.glTranslated(weapon.pos.xCoord, weapon.pos.yCoord, weapon.pos.zCoord);
+            if (weapon.yaw && !weapon.turret) {
+                GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
+            }
+            if (weapon.pitch) {
+                GL11.glRotatef(turretPitch, 1.0F, 0.0F, 0.0F);
+            }
+            GL11.glTranslated(-weapon.pos.xCoord, -weapon.pos.yCoord, -weapon.pos.zCoord);
+            MCH_RenderAircraft.renderPart(weapon.model, info.model, weapon.modelName);
+            for (Object childPart : weapon.child) {
+                MCH_AircraftInfo.PartWeaponChild child = (MCH_AircraftInfo.PartWeaponChild)childPart;
+                GL11.glPushMatrix();
+                GL11.glTranslated(child.pos.xCoord, child.pos.yCoord, child.pos.zCoord);
+                if (child.yaw) {
+                    GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
+                }
+                if (child.pitch) {
+                    GL11.glRotatef(turretPitch, 1.0F, 0.0F, 0.0F);
+                }
+                GL11.glTranslated(-child.pos.xCoord, -child.pos.yCoord, -child.pos.zCoord);
+                MCH_RenderAircraft.renderPart(child.model, info.model, child.modelName);
+                GL11.glPopMatrix();
+            }
+            GL11.glPopMatrix();
+        }
+    }
+
+    private void renderVehiclePart(MCH_VehicleInfo info, MCH_VehicleInfo.VPart part, SmoothedPose pose) {
+        GL11.glPushMatrix();
+        GL11.glTranslated(part.pos.xCoord, part.pos.yCoord, part.pos.zCoord);
+        if (part.rotYaw) {
+            GL11.glRotatef(wrapAngle(pose.turretYaw - pose.yaw), 0.0F, -1.0F, 0.0F);
+        }
+        if (part.rotPitch) {
+            float pitch = clamp(pose.turretPitch, info.minRotationPitch, info.maxRotationPitch);
+            GL11.glRotatef(pitch - pose.pitch, 1.0F, 0.0F, 0.0F);
+        }
+        GL11.glTranslated(-part.pos.xCoord, -part.pos.yCoord, -part.pos.zCoord);
+        MCH_RenderAircraft.renderPart(part.model, info.model, part.modelName);
+        if (part.child != null) {
+            for (Object child : part.child) {
+                this.renderVehiclePart(info, (MCH_VehicleInfo.VPart)child, pose);
+            }
+        }
+        GL11.glPopMatrix();
+    }
+
+    private void renderHelicopterRotors(MCH_HeliInfo info) {
+        // Far contacts do not need authoritative rotor RPM; a local phase keeps this cosmetic animation packet-free.
+        float rotorPhase = (System.currentTimeMillis() % 500L) * 0.72F;
+        for (Object part : info.rotorList) {
+            MCH_HeliInfo.Rotor rotor = (MCH_HeliInfo.Rotor)part;
+            GL11.glPushMatrix();
+            if (rotor.oldRenderMethod) {
+                GL11.glTranslated(rotor.pos.xCoord, rotor.pos.yCoord, rotor.pos.zCoord);
+            }
+            for (int blade = 0; blade < rotor.bladeNum; ++blade) {
+                GL11.glPushMatrix();
+                if (!rotor.oldRenderMethod) {
+                    GL11.glTranslated(rotor.pos.xCoord, rotor.pos.yCoord, rotor.pos.zCoord);
+                }
+                GL11.glRotatef(rotorPhase + rotor.bladeRot * blade, (float)rotor.rot.xCoord, (float)rotor.rot.yCoord, (float)rotor.rot.zCoord);
+                if (!rotor.oldRenderMethod) {
+                    GL11.glTranslated(-rotor.pos.xCoord, -rotor.pos.yCoord, -rotor.pos.zCoord);
+                }
+                MCH_RenderAircraft.renderPart(rotor.model, info.model, rotor.modelName);
+                GL11.glPopMatrix();
+            }
+            GL11.glPopMatrix();
         }
     }
 
@@ -200,11 +305,17 @@ public class MCH_RenderFarVehicle {
         return horizontalChunkDistance(cameraRelativeX, cameraRelativeZ) >= getTransitionEnd(Minecraft.getMinecraft());
     }
 
-    private static float getTransitionAlpha(Minecraft mc, double cameraRelativeX, double cameraRelativeZ) {
+    public static float getLodTransitionAlpha(Minecraft mc, double cameraRelativeX, double cameraRelativeZ) {
         double distance = horizontalChunkDistance(cameraRelativeX, cameraRelativeZ);
         double end = getTransitionEnd(mc);
         double start = Math.max(CHUNK_SIZE, end - TRANSITION_WIDTH);
         return (float)Math.max(0.0D, Math.min(1.0D, (distance - start) / (end - start)));
+    }
+
+    public static float getContactLodTransitionAlpha(Minecraft mc, MCH_EntityInfo contact, double cameraRelativeX, double cameraRelativeZ) {
+        return contact != null && contact.entityClassName != null && isSupportedVehicleClass(contact.entityClassName)
+            ? getLodTransitionAlpha(mc, cameraRelativeX, cameraRelativeZ)
+            : 0.0F;
     }
 
     private static double getTransitionEnd(Minecraft mc) {
@@ -217,6 +328,17 @@ public class MCH_RenderFarVehicle {
 
     private static double horizontalChunkDistance(double x, double z) {
         return Math.max(Math.abs(x), Math.abs(z));
+    }
+
+    private static float clamp(float value, float minimum, float maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    private static float wrapAngle(float angle) {
+        angle %= 360.0F;
+        if (angle > 180.0F) angle -= 360.0F;
+        if (angle < -180.0F) angle += 360.0F;
+        return angle;
     }
 
     private static boolean isVehicleClass(String className, Class<?> baseClass, String packageSegment) {
@@ -247,6 +369,8 @@ public class MCH_RenderFarVehicle {
         private float yaw;
         private float pitch;
         private float roll;
+        private float turretYaw;
+        private float turretPitch;
         private long lastUpdateMillis;
         private int lastRenderFrame;
         private boolean initialized;
@@ -267,6 +391,8 @@ public class MCH_RenderFarVehicle {
                 this.yaw = contact.rotationYaw;
                 this.pitch = contact.rotationPitch;
                 this.roll = contact.rotationRoll;
+                this.turretYaw = contact.turretYaw;
+                this.turretPitch = contact.turretPitch;
                 this.initialized = true;
             } else {
                 float factor = (float)(1.0D - Math.exp(-elapsedMillis / POSITION_SMOOTHING_MILLIS));
@@ -276,6 +402,8 @@ public class MCH_RenderFarVehicle {
                 this.yaw = interpolateAngle(this.yaw, contact.rotationYaw, factor);
                 this.pitch = interpolateAngle(this.pitch, contact.rotationPitch, factor);
                 this.roll = interpolateAngle(this.roll, contact.rotationRoll, factor);
+                this.turretYaw = interpolateAngle(this.turretYaw, contact.turretYaw, factor);
+                this.turretPitch = interpolateAngle(this.turretPitch, contact.turretPitch, factor);
             }
             this.lastUpdateMillis = now;
             this.lastRenderFrame = renderFrame;

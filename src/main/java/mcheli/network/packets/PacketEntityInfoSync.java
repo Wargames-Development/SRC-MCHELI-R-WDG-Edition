@@ -50,6 +50,8 @@ public class PacketEntityInfoSync extends PacketBase {
             // Appended to preserve the existing packet field prefix.
             buf.writeFloat(info.rotationRoll);
             buf.writeBoolean(info.destroyed);
+            buf.writeFloat(info.turretYaw);
+            buf.writeFloat(info.turretPitch);
         }
     }
 
@@ -75,7 +77,9 @@ public class PacketEntityInfoSync extends PacketBase {
                 buf.readByte(),
                 buf.readLong(),
                 buf.readFloat(),
-                buf.readBoolean()
+                buf.readBoolean(),
+                buf.readFloat(),
+                buf.readFloat()
             ));
         }
     }
