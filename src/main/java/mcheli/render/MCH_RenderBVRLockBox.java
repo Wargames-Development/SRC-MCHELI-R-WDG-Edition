@@ -1,5 +1,6 @@
 package mcheli.render;
 
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
@@ -47,11 +48,6 @@ public class MCH_RenderBVRLockBox {
     private static final int DEFAULT_BOX_SIZE = 12;
     private static final int SELECTED_BOX_SIZE = 16;
     private static final int LOCKED_BOX_SIZE = 20;
-    // Complete the world-space to screen-space handoff before vanilla's far-plane
-    // clipping can remove the 3D marker. This keeps the contact box continuous
-    // while the actual vehicle model enters or leaves normal render distance.
-    private static final double HUD_BLEND_START_RANGE = 160.0D;
-    private static final double HUD_BLEND_END_RANGE = 220.0D;
     private static final double HUD_EDGE_MARGIN = 26.0D;
     private static final int HUD_OVERLAP_STEP = 12;
     public static Map<Integer, MCH_EntityInfo> currentLockedEntities = new HashMap<>();
@@ -222,13 +218,6 @@ public class MCH_RenderBVRLockBox {
         return new double[]{screenX, screenY, screenX - screenW * 0.5D, screenY - screenH * 0.5D, clipW};
     }
 
-    private float getWorldUnitsPerPixel(double distance, ScaledResolution scaled, double fallbackFovRadians) {
-        if (this.activeProjectionValid && Math.abs(this.activeProjection[5]) > 1.0E-6F) {
-            return (float)(2.0D * distance / (Math.abs(this.activeProjection[5]) * scaled.getScaledHeight_double()));
-        }
-        return (float)((2.0D * distance * Math.tan(fallbackFovRadians * 0.5D)) / scaled.getScaledHeight_double());
-    }
-
     private static double calculateAngle(Entity viewer, double x, double y, double z) {
         double dx = x - viewer.posX;
         double dy = y - viewer.posY;
@@ -256,7 +245,8 @@ public class MCH_RenderBVRLockBox {
         return Math.toDegrees(Math.acos(dot));
     }
 
-    @SubscribeEvent
+    // Draw after the far-vehicle handler so screen-space markers cannot be painted over by an LOD model.
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onRenderWorldLast(RenderWorldLastEvent event) {
         this.activeProjectionValid = false;
         Minecraft mc = Minecraft.getMinecraft();
@@ -286,9 +276,6 @@ public class MCH_RenderBVRLockBox {
         final double camZ = rm.viewerPosZ;
         float partialTicks = event.partialTicks;
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
-        double fovDeg = mc.gameSettings.fovSetting;
-        double fovRad = Math.toRadians(fovDeg);
-        float rollDeg = getViewRollDeg(mc, ac, partialTicks);
         List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
         currentLockedEntities.clear();
         int fireControlLockedId = MCH_RenderLeadCircle.getLeadLockedTargetId(ac);
@@ -389,7 +376,6 @@ public class MCH_RenderBVRLockBox {
                 skippedByTooNear++;
                 continue;
             }
-            float sPerPixel = this.getWorldUnitsPerPixel(vdist, sc, fovRad);
             String text;
             int color;
             String targetName = rwrResult.name == null ? "" : rwrResult.name;
@@ -422,18 +408,11 @@ public class MCH_RenderBVRLockBox {
             boolean inMissileFov = currentWi != null && angle <= currentWi.getHudPreferredMissileFovDeg();
             boolean showDataLinkRings = dataLinkMode && inMissileFov && isPriorityTarget;
             String stateText = hardLock ? "LOCK" : (selected ? "SELECT" : null);
-            double hudBlend = Math.max(getHudBlendFactor(dist), MCH_RenderFarVehicle.getContactLodTransitionAlpha(mc, entity, x, z));
-            float worldAlpha = (float)(alpha * (1.0D - hudBlend));
-            float hudAlpha = (float)(alpha * hudBlend);
             int markerColor = hardLock ? 0xFF2020 : (selected ? 0xFFC000 : (isMSL ? 0xFF4040 : 0x00FF00));
             int markerSize = hardLock ? LOCKED_BOX_SIZE : (selected ? SELECTED_BOX_SIZE : DEFAULT_BOX_SIZE);
             color = highlight ? markerColor : color;
-            if (worldAlpha > 0.01F) {
-                int heatSeekerRingColor = isHeatSeekerDatalink ? (dist <= 350.0D ? 0xFF0000 : 0xFFFFFF) : 0;
-                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, isMSL, markerColor, highlight, hardLock, markerSize, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, detailText, color, drawText, worldAlpha);
-            }
             HudProjection projection = projectRelativeToHud((float)gx, (float)(gy + 0.2D), (float)gz, sc, mc, partialTicks);
-            float effectiveHudAlpha = projection != null && projection.edgeClamped ? alpha : hudAlpha;
+            float effectiveHudAlpha = alpha;
             if (projection != null && effectiveHudAlpha > 0.01F) {
                 int heatSeekerRingColor = isHeatSeekerDatalink ? (dist <= 350.0D ? 0xFF0000 : 0xFFFFFF) : 0;
                 projection = avoidHudOverlap(projection, occupiedHudRects, mc, markerSize, stateText, text, detailText, drawText);
@@ -458,8 +437,6 @@ public class MCH_RenderBVRLockBox {
     private void renderArmNarrowBandBoxes(Minecraft mc, EntityPlayer player, MCH_EntityAircraft ac, float partialTicks) {
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
         RenderManager rm = RenderManager.instance;
-        float rollDeg = getViewRollDeg(mc, ac, partialTicks);
-        double fovRad = Math.toRadians(mc.gameSettings.fovSetting);
         MCH_WeaponSet ws = ac.getCurrentWeapon(player);
         MCH_WeaponInfo wi = ws != null ? ws.getInfo() : null;
         if (wi == null) {
@@ -504,7 +481,6 @@ public class MCH_RenderBVRLockBox {
             if (vdist < 1e-4) {
                 continue;
             }
-            float sPerPixel = this.getWorldUnitsPerPixel(vdist, sc, fovRad);
             String stateText = hardLock ? "LOCK" : (selected ? "SELECT" : null);
             String text = String.format("[%s %s]", contact.name == null ? "UNKNOWN" : contact.name, formatRange(dist));
             String detailText = null;
@@ -517,14 +493,8 @@ public class MCH_RenderBVRLockBox {
             int textColor = highlight ? markerColor : contact.color;
             int markerSize = hardLock ? LOCKED_BOX_SIZE : (selected ? SELECTED_BOX_SIZE : DEFAULT_BOX_SIZE);
             boolean showArmLockRings = armNarrowBandMode && contact.tracking;
-            double hudBlend = Math.max(getHudBlendFactor(dist), MCH_RenderFarVehicle.getContactLodTransitionAlpha(mc, targetInfo, x, z));
-            float worldAlpha = (float)(alpha * (1.0D - hudBlend));
-            float hudAlpha = (float)(alpha * hudBlend);
-            if (worldAlpha > 0.01F) {
-                drawBillboardMarker(mc, rm, rollDeg, x, y + 0.2D, z, sPerPixel, false, markerColor, highlight, hardLock, markerSize, showArmLockRings, false, 0, stateText, text, detailText, textColor, true, worldAlpha);
-            }
             HudProjection projection = projectRelativeToHud((float)gx, (float)(gy + 0.2D), (float)gz, sc, mc, partialTicks);
-            float effectiveHudAlpha = projection != null && projection.edgeClamped ? alpha : hudAlpha;
+            float effectiveHudAlpha = alpha;
             if (projection != null && effectiveHudAlpha > 0.01F) {
                 projection = avoidHudOverlap(projection, occupiedHudRects, mc, markerSize, stateText, text, detailText, true);
                 drawHudMarker(mc, projection, false, markerColor, highlight, hardLock, markerSize, showArmLockRings, false, 0, stateText, text, detailText, textColor, true, effectiveHudAlpha);
@@ -544,19 +514,6 @@ public class MCH_RenderBVRLockBox {
             return entityClassName.contains("MCH_EntityTank") || entityClassName.contains("MCH_EntityVehicle");
         }
         return true;
-    }
-
-    private void drawBillboardMarker(Minecraft mc, RenderManager rm, float rollDeg, double x, double y, double z, float sPerPixel,
-                                     boolean isMSL, int markerColor, boolean highlight, boolean hardLock, int markerSize, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor, String stateText,
-                                     String text, String detailText, int textColor, boolean drawText, float alpha) {
-        GL11.glPushMatrix();
-        GL11.glTranslated(x, y, z);
-        GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
-        GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
-        GL11.glRotatef(-rollDeg, 0.0F, 0.0F, 1.0F);
-        GL11.glScalef(-sPerPixel, -sPerPixel, sPerPixel);
-        drawMarkerCore(mc, isMSL, markerColor, highlight, hardLock, markerSize, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, detailText, textColor, drawText, alpha);
-        GL11.glPopMatrix();
     }
 
     private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean hardLock, int markerSize, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor,
@@ -641,16 +598,6 @@ public class MCH_RenderBVRLockBox {
         GL11.glDepthMask(true);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glColor4f(1F, 1F, 1F, 1F);
-    }
-
-    private double getHudBlendFactor(double dist) {
-        if (dist <= HUD_BLEND_START_RANGE) {
-            return 0.0D;
-        }
-        if (dist >= HUD_BLEND_END_RANGE) {
-            return 1.0D;
-        }
-        return (dist - HUD_BLEND_START_RANGE) / (HUD_BLEND_END_RANGE - HUD_BLEND_START_RANGE);
     }
 
     private HudProjection projectRelativeToHud(float worldX, float worldY, float worldZ, ScaledResolution sc, Minecraft mc, float partialTicks) {

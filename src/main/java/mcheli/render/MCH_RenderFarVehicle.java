@@ -312,12 +312,6 @@ public class MCH_RenderFarVehicle {
         return (float)Math.max(0.0D, Math.min(1.0D, (distance - start) / (end - start)));
     }
 
-    public static float getContactLodTransitionAlpha(Minecraft mc, MCH_EntityInfo contact, double cameraRelativeX, double cameraRelativeZ) {
-        return contact != null && contact.entityClassName != null && isSupportedVehicleClass(contact.entityClassName)
-            ? getLodTransitionAlpha(mc, cameraRelativeX, cameraRelativeZ)
-            : 0.0F;
-    }
-
     private static double getTransitionEnd(Minecraft mc) {
         int chunks = mc != null && mc.gameSettings != null ? mc.gameSettings.renderDistanceChunks : DEFAULT_RENDER_DISTANCE_CHUNKS;
         if (chunks <= 0) {
