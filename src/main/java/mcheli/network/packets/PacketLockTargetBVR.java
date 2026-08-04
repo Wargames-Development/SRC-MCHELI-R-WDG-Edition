@@ -2,23 +2,18 @@ package mcheli.network.packets;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.PacketBase;
 import mcheli.weapon.MCH_EntityAAMissile;
+import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.WorldServer;
-
-import java.util.List;
 
 public class PacketLockTargetBVR extends PacketBase {
 
     public int mslId;
-
-    // NEW: entity being “painted” (for RWR). 0 = none
     public int targetEntityId;
-
     public int posX;
     public int posY;
     public int posZ;
@@ -36,60 +31,55 @@ public class PacketLockTargetBVR extends PacketBase {
 
     @Override
     public void encodeInto(ChannelHandlerContext ctx, ByteBuf data) {
-        data.writeInt(mslId);
-        data.writeInt(targetEntityId); // NEW
-        data.writeInt(posX);
-        data.writeInt(posY);
-        data.writeInt(posZ);
+        data.writeInt(this.mslId);
+        data.writeInt(this.targetEntityId);
+        data.writeInt(this.posX);
+        data.writeInt(this.posY);
+        data.writeInt(this.posZ);
     }
 
     @Override
     public void decodeInto(ChannelHandlerContext ctx, ByteBuf data) {
-        mslId = data.readInt();
-        targetEntityId = data.readInt(); // NEW
-        posX = data.readInt();
-        posY = data.readInt();
-        posZ = data.readInt();
+        this.mslId = data.readInt();
+        this.targetEntityId = data.readInt();
+        this.posX = data.readInt();
+        this.posY = data.readInt();
+        this.posZ = data.readInt();
     }
 
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
-        for (WorldServer world : MinecraftServer.getServer().worldServers) {
-            for (Entity entity : (List<Entity>) world.loadedEntityList) {
-                if (entity.getEntityId() == mslId && entity instanceof MCH_EntityAAMissile) {
+        Entity entity = playerEntity.worldObj.getEntityByID(this.mslId);
+        if (!(entity instanceof MCH_EntityAAMissile)) {
+            return;
+        }
+        MCH_EntityAAMissile missile = (MCH_EntityAAMissile)entity;
+        if (!W_Entity.isEqual(missile.shootingEntity, playerEntity) || missile.getInfo() == null
+            || !missile.getInfo().enableBVR || missile.isCountermeasureDiversionActive()) {
+            return;
+        }
 
-                    MCH_EntityAAMissile aa = (MCH_EntityAAMissile) entity;
-
-                    // Lock state
-                    boolean enable = (posY > 0);
-                    aa.passiveRadarBVRLocking = enable;
-                    aa.passiveRadarBVRLockingPosX = posX;
-                    aa.passiveRadarBVRLockingPosY = posY;
-                    aa.passiveRadarBVRLockingPosZ = posZ;
-
-                    // NEW: set targetEntity only as “RWR illumination owner”
-                    if (!enable || targetEntityId <= 0) {
-                        aa.setTargetEntity(null);
-                    } else {
-                        Entity tgt = null;
-
-                        // Find target in the same world first (fast)
-                        tgt = world.getEntityByID(targetEntityId);
-
-                        // If not found, try all worlds (dimension mismatch edge cases)
-                        if (tgt == null) {
-                            for (WorldServer w2 : MinecraftServer.getServer().worldServers) {
-                                tgt = w2.getEntityByID(targetEntityId);
-                                if (tgt != null) break;
-                            }
-                        }
-
-                        aa.setTargetEntity(tgt); // may be null if not found; that’s fine
-                    }
-                    return;
-                }
+        boolean enable = this.posY > 0;
+        if (enable) {
+            double dx = this.posX - missile.posX;
+            double dy = this.posY - missile.posY;
+            double dz = this.posZ - missile.posZ;
+            double maxRange = Math.max(512.0D, missile.getInfo().maxLockOnRange * 1.25D);
+            if (dx * dx + dy * dy + dz * dz > maxRange * maxRange) {
+                return;
             }
         }
+
+        missile.passiveRadarBVRLocking = enable;
+        missile.passiveRadarBVRLockingPosX = this.posX;
+        missile.passiveRadarBVRLockingPosY = this.posY;
+        missile.passiveRadarBVRLockingPosZ = this.posZ;
+        if (!enable || this.targetEntityId <= 0) {
+            missile.setTargetEntity(null);
+            return;
+        }
+        Entity target = playerEntity.worldObj.getEntityByID(this.targetEntityId);
+        missile.setTargetEntity(target instanceof MCH_EntityAircraft ? target : null);
     }
 
     @Override

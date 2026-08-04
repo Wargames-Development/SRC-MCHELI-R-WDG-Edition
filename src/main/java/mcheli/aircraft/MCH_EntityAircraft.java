@@ -14,6 +14,7 @@ import mcheli.multiplay.MCH_Multiplay;
 import mcheli.mob.MCH_EntityGunner;
 import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketBoundingBoxHit;
+import mcheli.network.packets.PacketCountermeasureState;
 import mcheli.network.packets.PacketDamageIndicator;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.particles.MCH_ParticleParam;
@@ -215,6 +216,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private MCH_Radar entityRadar;
     private int radarRotate;
     private MCH_Flare flareDv;
+    private int remainingFlarePairs = -1;
+    private int remainingChaffPairs = -1;
     private int currentFlareIndex;
     private int countOnUpdate;
     private MCH_EntityChain towChainEntity;
@@ -958,6 +961,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
 
+        this.remainingFlarePairs = nbt.hasKey("AcFlarePairs")
+            ? MathHelper.clamp_int(nbt.getInteger("AcFlarePairs"), 0, this.getFlareCapacity())
+            : this.getFlareCapacity();
+        this.remainingChaffPairs = nbt.hasKey("AcChaffPairs")
+            ? MathHelper.clamp_int(nbt.getInteger("AcChaffPairs"), 0, this.getChaffCapacity())
+            : this.getChaffCapacity();
+
         if (this.getDespawnCount() > 0) {
             this.setDamageTaken(this.getMaxHP());
         } else if (nbt.hasKey("AcDamage")) {
@@ -1011,6 +1021,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         nbt.setTag("AcWeaponsAmmoInMag", W_NBTTag.newTagIntArray("AcWeaponsAmmoInMag", ammoInMag));
         nbt.setTag("AcWeaponsRestAmmo", W_NBTTag.newTagIntArray("AcWeaponsRestAmmo", restAmmo));
         nbt.setTag("AcWeaponsReloadWait", W_NBTTag.newTagIntArray("AcWeaponsReloadWait", reloadWait));
+        nbt.setInteger("AcFlarePairs", this.getRemainingFlarePairs());
+        nbt.setInteger("AcChaffPairs", this.getRemainingChaffPairs());
         nbt.setInteger("AcDamage", this.getDamageTaken());
         nbt.setString("AcERAState", this.buildERAStateString());
         nbt.setBoolean("AcDismounted", this.dismountedUserCtrl);
@@ -2051,11 +2063,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
         this.updateSupplyAmmo();
         this.autoRepair();
+        if (!super.worldObj.isRemote && this.getCountOnUpdate() % 40 == 0 && this.hasCountermeasureOperator()) {
+            this.syncCountermeasureState();
+        }
         int ft = this.getFlareTick();
         this.flareDv.update();
         if (this.getAcInfo() != null && this.chaff != null) {
-            this.chaff.chaffUseTime = getAcInfo().chaffUseTime;
-            this.chaff.chaffWaitTime = getAcInfo().chaffWaitTime * this.getCountermeasureCooldownMultiplier();
+            this.chaff.chaffUseTime = 10;
+            this.chaff.chaffWaitTime = getAcInfo().chaffReleaseCooldown * this.getCountermeasureCooldownMultiplier();
             this.chaff.onUpdate();
         }
         if (this.getAcInfo() != null && this.maintenance != null) {
@@ -3599,15 +3614,19 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean useFlare(int type) {
-        if (this.getAcInfo() != null && this.getAcInfo().haveFlare()) {
+        if (this.canUseFlare()) {
             int[] arr$ = this.getAcInfo().flare.types;
             int len$ = arr$.length;
 
             for (int i$ = 0; i$ < len$; ++i$) {
                 int i = arr$[i$];
                 if (i == type) {
-                    this.setCommonStatus(0, true);
                     if (this.flareDv.use(type)) {
+                        this.setCommonStatus(0, true);
+                        if (!this.worldObj.isRemote) {
+                            --this.remainingFlarePairs;
+                            this.syncCountermeasureState();
+                        }
                         return true;
                     }
                 }
@@ -3620,8 +3639,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean useChaff() {
-        if (this.getAcInfo() != null && this.getAcInfo().haveChaff()) {
+        if (this.canUseChaff()) {
             if (this.chaff.onUse()) {
+                if (!this.worldObj.isRemote) {
+                    --this.remainingChaffPairs;
+                    this.syncCountermeasureState();
+                }
                 return true;
             }
             return false;
@@ -3678,7 +3701,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean canUseFlare() {
-        return this.getAcInfo() != null && this.getAcInfo().haveFlare() && (!this.getCommonStatus(0) && this.flareDv.tick == 0);
+        return this.getAcInfo() != null && this.getAcInfo().haveFlare() && this.getRemainingFlarePairs() > 0
+            && !this.getCommonStatus(0) && this.flareDv.tick == 0;
     }
 
     public boolean isFlarePreparation() {
@@ -3713,7 +3737,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean canUseChaff() {
-        return this.getAcInfo() != null && this.getAcInfo().haveChaff() && this.chaff.tick == 0;
+        return this.getAcInfo() != null && this.getAcInfo().haveChaff() && this.getRemainingChaffPairs() > 0
+            && this.chaff.tick == 0;
     }
 
     public boolean isChaffUsing() {
@@ -3748,6 +3773,65 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public int getCountermeasureCooldownMultiplier() {
         return this.isGunnerDrivingMode() ? 2 : 1;
+    }
+
+    public int getFlareCapacity() {
+        return this.getAcInfo() != null && this.getAcInfo().haveFlare() ? this.getAcInfo().flareCapacity : 0;
+    }
+
+    public int getChaffCapacity() {
+        return this.getAcInfo() != null && this.getAcInfo().haveChaff() ? this.getAcInfo().chaffCapacity : 0;
+    }
+
+    public int getRemainingFlarePairs() {
+        return Math.max(0, this.remainingFlarePairs);
+    }
+
+    public int getRemainingChaffPairs() {
+        return Math.max(0, this.remainingChaffPairs);
+    }
+
+    public void setCountermeasureStateClient(int flarePairs, int chaffPairs) {
+        this.remainingFlarePairs = MathHelper.clamp_int(flarePairs, 0, this.getFlareCapacity());
+        this.remainingChaffPairs = MathHelper.clamp_int(chaffPairs, 0, this.getChaffCapacity());
+    }
+
+    public boolean canOperateCountermeasures(Entity operator) {
+        if (operator == null || getAircraft_RiddenOrControl(operator) != this) {
+            return false;
+        }
+        if (operator.ridingEntity instanceof MCH_EntityUavStation) {
+            return true;
+        }
+        int seatId = this.getSeatIdByEntity(operator);
+        return seatId >= 0 && seatId <= 1;
+    }
+
+    private boolean hasCountermeasureOperator() {
+        return this.getRiddenByEntity() != null || this.getEntityBySeatId(1) != null || this.getUavStation() != null;
+    }
+
+    private void syncCountermeasureState() {
+        if (!this.worldObj.isRemote) {
+            PacketCountermeasureState packet = new PacketCountermeasureState(this);
+            MCH_MOD.getPacketHandler().sendToAllAround(packet,
+                this.posX, this.posY, this.posZ, 256.0F, this.dimension);
+            MCH_EntityUavStation station = this.getUavStation();
+            if (station != null && station.riddenByEntity instanceof EntityPlayerMP
+                && station.riddenByEntity.getDistanceSqToEntity(this) > 256.0D * 256.0D) {
+                MCH_MOD.getPacketHandler().sendTo(new PacketCountermeasureState(this),
+                    (EntityPlayerMP)station.riddenByEntity);
+            }
+        }
+    }
+
+    public void rearmCountermeasures() {
+        if (this.worldObj.isRemote) {
+            return;
+        }
+        this.remainingFlarePairs = this.getFlareCapacity();
+        this.remainingChaffPairs = this.getChaffCapacity();
+        this.syncCountermeasureState();
     }
 
     public boolean haveChaff() {
@@ -5502,6 +5586,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         for (int i = 0; i < this.getWeaponNum(); ++i) {
             this.getWeapon(i).reloadMag();
         }
+        this.rearmCountermeasures();
 
     }
 
@@ -6207,6 +6292,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public void setAcInfo(MCH_AircraftInfo info) {
         this.acInfo = info;
         if (info != null) {
+            if (this.remainingFlarePairs < 0) {
+                this.remainingFlarePairs = this.getFlareCapacity();
+            }
+            if (this.remainingChaffPairs < 0) {
+                this.remainingChaffPairs = this.getChaffCapacity();
+            }
             this.partHatch = this.createHatch();
             this.partCanopy = this.createCanopy();
             this.partLandingGear = this.createLandingGear();

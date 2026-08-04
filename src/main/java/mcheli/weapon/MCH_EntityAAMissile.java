@@ -138,6 +138,10 @@ public class MCH_EntityAAMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 this.onUpdateArmGuidance();
                 return;
             }
+            if (super.targetEntity instanceof MCH_EntityAircraft
+                && this.ticksExisted % this.getInfo().countermeasureScanInterval == 0) {
+                this.tryDivertToCountermeasure();
+            }
             boolean dlRelay = this.isDataLinkRelayMode();
             if (super.shootingEntity != null && super.targetEntity != null && !super.targetEntity.isDead) {
                 if (dlRelay && (getInfo().passiveRadar || getInfo().semiActiveRadar) && !this.isDataLinkRelaySourceMaintained()) {

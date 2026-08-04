@@ -87,12 +87,13 @@ public class MCH_HeliPacketHandler {
                         heli.moveRight = pc.moveRight;
                     }
 
-                    if (pc.useFlareType > 0) {
-                        heli.useFlare(pc.useFlareType);
-                    }
-
-                    if (pc.useChaff) {
-                        heli.useChaff();
+                    if (heli.canOperateCountermeasures(player)) {
+                        if (pc.useFlareType > 0) {
+                            heli.useFlare(pc.useFlareType);
+                        }
+                        if (pc.useChaff) {
+                            heli.useChaff();
+                        }
                     }
 
                     if (pc.useMaintenance) {

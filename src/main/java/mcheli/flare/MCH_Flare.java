@@ -20,6 +20,7 @@ public class MCH_Flare {
     public final Random rand;
     public int numFlare;
     public int tick;
+    private int useTick;
     private int flareType;
 
 
@@ -43,7 +44,6 @@ public class MCH_Flare {
             FLARE_DATA[6] = new MCH_Flare.FlareParam(3, 5, 30 + delay, 2000, 6);
             FLARE_DATA[7] = FLARE_DATA[1];
             FLARE_DATA[8] = FLARE_DATA[1];
-            FLARE_DATA[9] = new MCH_Flare.FlareParam(0, 1, 400 + delay, 100, 0);
         }
 
     }
@@ -53,8 +53,7 @@ public class MCH_Flare {
     }
 
     public boolean isUsing() {
-        int type = this.getFlareType();
-        return this.tick != 0 && type < FLARE_DATA.length && this.tick > FLARE_DATA[type].tickWait - FLARE_DATA[type].tickEnable;
+        return this.useTick > 0;
     }
 
     public int getFlareType() {
@@ -83,21 +82,24 @@ public class MCH_Flare {
     public boolean use(int type) {
         boolean result = false;
         MCH_Lib.DbgLog(this.aircraft.worldObj, "MCH_Flare.use type = %d", type);
-        this.flareType = type;
-        if (type <= 0 && type >= FLARE_DATA.length) {
+        if (type <= 0 || type >= FLARE_DATA.length || FLARE_DATA[type] == null || this.tick != 0) {
             return false;
         } else {
+            this.flareType = type;
+            int cooldown = type == 10 ? FLARE_DATA[type].tickWait
+                : this.aircraft.getAcInfo().flareReleaseCooldown * this.aircraft.getCountermeasureCooldownMultiplier();
+            this.tick = cooldown;
+            this.useTick = type == 10 ? FLARE_DATA[type].tickEnable : Math.min(10, cooldown);
+            this.numFlare = 0;
             if (this.worldObj.isRemote) {
-                if (this.tick == 0) {
-                    this.tick = FLARE_DATA[this.getFlareType()].tickWait;
-                    result = true;
-                    this.numFlare = 0;
-                    W_McClient.DEF_playSoundFX("mcheli:flare_deploy", 10.0F, 1.0F);
-                }
+                result = true;
+                W_McClient.DEF_playSoundFX("mcheli:flare_deploy", 10.0F, 1.0F);
             } else {
                 result = true;
-                this.numFlare = 0;
-                this.tick = FLARE_DATA[this.getFlareType()].tickWait;
+                Vec3 v = this.aircraft.getAcInfo().flare.pos;
+                v = this.aircraft.getTransformedPosition(v.xCoord, v.yCoord, v.zCoord,
+                    this.aircraft.posX, this.aircraft.posY, this.aircraft.posZ);
+                this.spawnFlare(v);
                 this.aircraft.getEntityData().setBoolean("FlareUsing", true);
             }
 
@@ -111,11 +113,8 @@ public class MCH_Flare {
             if (this.tick > 0) {
                 --this.tick;
             }
-
-            if (!this.worldObj.isRemote && this.tick > 0 && this.tick % FLARE_DATA[type].interval == 0 && this.numFlare < FLARE_DATA[type].numFlareMax) {
-                Vec3 v = this.aircraft.getAcInfo().flare.pos;
-                v = this.aircraft.getTransformedPosition(v.xCoord, v.yCoord, v.zCoord, this.aircraft.prevPosX, this.aircraft.prevPosY, this.aircraft.prevPosZ);
-                this.spawnFlare(v);
+            if (this.useTick > 0) {
+                --this.useTick;
             }
 
             if (!this.isUsing() && this.aircraft.getEntityData().getBoolean("FlareUsing")) {
@@ -128,7 +127,8 @@ public class MCH_Flare {
     private void spawnFlare(Vec3 v) {
         ++this.numFlare;
         int type = this.getFlareType();
-        int num = FLARE_DATA[type].num;
+        int num = type == 10 ? 8 : 2;
+        long releaseId = (this.worldObj.getTotalWorldTime() << 20) ^ (long)this.aircraft.getEntityId();
         double x = v.xCoord - this.aircraft.motionX * 2.0D;
         double y = v.yCoord - this.aircraft.motionY * 2.0D - 1.0D;
         double z = v.zCoord - this.aircraft.motionZ * 2.0D;
@@ -190,6 +190,7 @@ public class MCH_Flare {
             }
 
             MCH_EntityFlare e = new MCH_EntityFlare(this.worldObj, x, y, z, tx * 0.5D, ty * 0.5D, tz * 0.5D, 6.0F, fuseCount);
+            e.getEntityData().setLong("CountermeasureReleaseId", releaseId);
             e.rotationPitch = this.rand.nextFloat() * 360.0F;
             e.rotationYaw = this.rand.nextFloat() * 360.0F;
             e.prevRotationPitch = this.rand.nextFloat() * 360.0F;

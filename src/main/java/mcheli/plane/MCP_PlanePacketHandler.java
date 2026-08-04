@@ -78,12 +78,13 @@ public class MCP_PlanePacketHandler {
                         plane.moveRight = pc.moveRight;
                     }
 
-                    if (pc.useFlareType > 0) {
-                        plane.useFlare(pc.useFlareType);
-                    }
-
-                    if (pc.useChaff) {
-                        plane.useChaff();
+                    if (plane.canOperateCountermeasures(player)) {
+                        if (pc.useFlareType > 0) {
+                            plane.useFlare(pc.useFlareType);
+                        }
+                        if (pc.useChaff) {
+                            plane.useChaff();
+                        }
                     }
 
                     if (pc.useMaintenance) {

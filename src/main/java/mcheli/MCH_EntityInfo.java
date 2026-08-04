@@ -132,6 +132,11 @@ public class MCH_EntityInfo {
         return this.countermeasureFlags != 0 && this.countermeasureUntilTick >= worldTick;
     }
 
+    public boolean isElectronicCountermeasureActive(long worldTick) {
+        int electronicFlags = CM_FLAG_ECM | CM_FLAG_JAMMING;
+        return (this.countermeasureFlags & electronicFlags) != 0 && this.countermeasureUntilTick >= worldTick;
+    }
+
     public double getDistanceToEntity(Entity e) {
         return Math.sqrt((e.posX - posX) * (e.posX - posX) + (e.posY - posY) * (e.posY - posY) + (e.posZ - posZ) * (e.posZ - posZ));
     }

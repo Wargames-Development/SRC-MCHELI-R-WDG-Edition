@@ -37,12 +37,13 @@ public class MCH_VehiclePacketHandler {
                         vehicle.moveRight = pc.moveRight;
                     }
 
-                    if (pc.useFlareType > 0) {
-                        vehicle.useFlare(pc.useFlareType);
-                    }
-
-                    if (pc.useChaff) {
-                        vehicle.useChaff();
+                    if (vehicle.canOperateCountermeasures(player)) {
+                        if (pc.useFlareType > 0) {
+                            vehicle.useFlare(pc.useFlareType);
+                        }
+                        if (pc.useChaff) {
+                            vehicle.useChaff();
+                        }
                     }
 
                     if (pc.useMaintenance) {

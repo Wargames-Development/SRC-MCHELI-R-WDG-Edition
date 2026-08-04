@@ -310,6 +310,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 箔条冷却时长
      */
     public int chaffWaitTime = 400;
+    public int flareCapacity = 30;
+    public int chaffCapacity = 30;
+    public int flareReleaseCooldown = 10;
+    public int chaffReleaseCooldown = 10;
     /**
      * 维修系统生效时长 （时长即为回血百分比）
      */
@@ -1358,8 +1362,26 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             if (s.length >= 3) {
                                                                 this.flare.pos = this.toVec3(s[0], s[1], s[2]);
                                                             }
+                                                        } else if (item.equalsIgnoreCase("FlareCapacity")) {
+                                                            this.flareCapacity = this.toInt(data, 0, 10000);
+                                                        } else if (item.equalsIgnoreCase("ChaffCapacity")) {
+                                                            this.chaffCapacity = this.toInt(data, 0, 10000);
+                                                        } else if (item.equalsIgnoreCase("FlareReleaseCooldown")) {
+                                                            this.flareReleaseCooldown = this.toInt(data, 1, 1200);
+                                                        } else if (item.equalsIgnoreCase("ChaffReleaseCooldown")) {
+                                                            this.chaffReleaseCooldown = this.toInt(data, 1, 1200);
                                                         } else if (item.equalsIgnoreCase("HasChaff")) {
-                                                            chaff = new MCH_AircraftInfo.Chaff();
+                                                            if (this.chaff == null) {
+                                                                this.chaff = new MCH_AircraftInfo.Chaff();
+                                                            }
+                                                        } else if (item.equalsIgnoreCase("ChaffOption")) {
+                                                            s = this.splitParam(data);
+                                                            if (s.length >= 3) {
+                                                                if (this.chaff == null) {
+                                                                    this.chaff = new MCH_AircraftInfo.Chaff();
+                                                                }
+                                                                this.chaff.pos = this.toVec3(s[0], s[1], s[2]);
+                                                            }
                                                         } else if (item.equalsIgnoreCase("ChaffUseTime")) {
                                                             chaffUseTime = this.toInt(data, 0, 10000);
                                                         } else if (item.equalsIgnoreCase("ChaffWaitTime")) {
@@ -2289,7 +2311,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
 
     public class Chaff {
 
-        public Vec3 pos = Vec3.createVectorHelper(0.0D, 0.0D, 0.0D);
+        public Vec3 pos = Vec3.createVectorHelper(0.0D, -0.5D, -3.0D);
 
     }
 

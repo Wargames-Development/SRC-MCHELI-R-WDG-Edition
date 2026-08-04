@@ -174,11 +174,15 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("auto_pilot", getAutoPilot(ac, player));
         updateVarMapItem("have_flare", ac.haveFlare() ? 1.0D : 0.0D);
         updateVarMapItem("can_flare", ac.canUseFlare() ? 1.0D : 0.0D);
+        updateVarMapItem("flare_count", ac.getRemainingFlarePairs());
+        updateVarMapItem("flare_capacity", ac.getFlareCapacity());
         updateVarMapItem("inventory", ac.getSizeInventory());
         updateVarMapItem("hovering", ac instanceof MCH_EntityHeli && ac.isHoveringMode() ? 1.0D : 0.0D);
         updateVarMapItem("is_uav", ac.isUAV() ? 1.0D : 0.0D);
         updateVarMapItem("uav_fs", getUAV_Fs(ac));
         updateVarMapItem("can_chaff", ac.canUseChaff() ? 1.0D : 0.0D);
+        updateVarMapItem("chaff_count", ac.getRemainingChaffPairs());
+        updateVarMapItem("chaff_capacity", ac.getChaffCapacity());
         updateVarMapItem("can_maintenance", ac.canUseMaintenance() ? 1.0D : 0.0D);
         updateVarMapItem("have_chaff", ac.haveChaff() ? 1.0D : 0.0D);
         updateVarMapItem("have_maintenance", ac.haveMaintenance() ? 1.0D : 0.0D);

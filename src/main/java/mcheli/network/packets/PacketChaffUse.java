@@ -43,7 +43,7 @@ public class PacketChaffUse extends PacketBase {
     public void handleClientSide(EntityPlayer clientPlayer) {
         Entity e = clientPlayer.worldObj.getEntityByID(acId);
         if (e instanceof MCH_EntityAircraft) {
-            ((MCH_EntityAircraft) e).chaffUseTime = time;
+            ((MCH_EntityAircraft) e).chaff.setUseTickClient(time);
         }
     }
 }

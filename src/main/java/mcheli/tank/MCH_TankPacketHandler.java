@@ -78,12 +78,13 @@ public class MCH_TankPacketHandler {
                         tank.setBrake(pc.useBrake);
                     }
 
-                    if (pc.useFlareType > 0) {
-                        tank.useFlare(pc.useFlareType);
-                    }
-
-                    if (pc.useChaff) {
-                        tank.useChaff();
+                    if (tank.canOperateCountermeasures(player)) {
+                        if (pc.useFlareType > 0) {
+                            tank.useFlare(pc.useFlareType);
+                        }
+                        if (pc.useChaff) {
+                            tank.useChaff();
+                        }
                     }
 
                     if (pc.useMaintenance) {

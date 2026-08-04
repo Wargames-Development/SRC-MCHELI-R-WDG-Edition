@@ -35,22 +35,26 @@ public class PacketLockTarget extends PacketBase {
 
     @Override
     public void handleServerSide(EntityPlayerMP playerEntity) {
-        MCH_EntityBaseBullet bullet = null;
-        Entity target = null;
-        for (Object obj : playerEntity.worldObj.loadedEntityList) {
-            if (obj instanceof MCH_EntityBaseBullet && ((Entity) obj).getEntityId() == entityID) {
-                bullet = (MCH_EntityBaseBullet) obj;
-            }
-            if (((Entity) obj).getEntityId() == targetID) {
-                target = (Entity) obj;
-            }
+        Entity bulletEntity = playerEntity.worldObj.getEntityByID(this.entityID);
+        if (!(bulletEntity instanceof MCH_EntityBaseBullet)) {
+            return;
         }
-        if (bullet != null) {
-            if (!W_Entity.isEqual(bullet.shootingEntity, playerEntity)) {
+        MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet)bulletEntity;
+        if (!W_Entity.isEqual(bullet.shootingEntity, playerEntity) || bullet.isCountermeasureDiversionActive()) {
+            return;
+        }
+        Entity target = this.targetID > 0 ? playerEntity.worldObj.getEntityByID(this.targetID) : null;
+        if (target instanceof EntityPlayer || W_Entity.isEqual(target, bullet.shootingEntity)
+            || W_Entity.isEqual(target, bullet.shootingAircraft)) {
+            return;
+        }
+        if (target != null && bullet.getInfo() != null) {
+            double maxRange = Math.max(256.0D, bullet.getInfo().maxLockOnRange + 256.0D);
+            if (bullet.getDistanceSqToEntity(target) > maxRange * maxRange) {
                 return;
             }
-            bullet.setTargetEntity(target);
         }
+        bullet.setTargetEntity(target);
     }
 
     @Override

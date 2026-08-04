@@ -5,6 +5,7 @@ import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.packets.PacketChaffUse;
 import mcheli.wrapper.W_McClient;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import java.util.Random;
@@ -23,7 +24,6 @@ public class MCH_Chaff {
     public World worldObj;
     public MCH_EntityAircraft aircraft;
     //箔条使用时分批间隔
-    private int spawnChaffEntityIntervalTick;
 
     public MCH_Chaff(World w, MCH_EntityAircraft ac) {
         this.worldObj = w;
@@ -31,25 +31,20 @@ public class MCH_Chaff {
     }
 
     public boolean onUse() {
-        boolean result = false;
-        System.out.println("MCH_Chaff.onUse");
+        if (tick != 0) {
+            return false;
+        }
+        tick = chaffWaitTime;
+        useTick = chaffUseTime;
         if (worldObj.isRemote) {
-            if (tick == 0) {
-                tick = chaffWaitTime;
-                useTick = chaffUseTime;
-                spawnChaffEntityIntervalTick = 0;
-                result = true;
-                //W_McClient.DEF_playSoundFX("flare_deploy", 10.0F, 1.0F);
-            }
+            W_McClient.MOD_playSoundFX("chaff", 10.0F, 1.0F);
         } else {
-            result = true;
-            tick = chaffWaitTime;
-            useTick = chaffUseTime;
-            spawnChaffEntityIntervalTick = 0;
-            MCH_MOD.getPacketHandler().sendToAll(new PacketChaffUse(aircraft.getEntityId(), useTick));
+            this.spawnChaffEntity();
+            MCH_MOD.getPacketHandler().sendToAllAround(new PacketChaffUse(aircraft.getEntityId(), useTick),
+                aircraft.posX, aircraft.posY, aircraft.posZ, 256.0F, aircraft.dimension);
             aircraft.getEntityData().setBoolean("ChaffUsing", true);
         }
-        return result;
+        return true;
     }
 
     public void onUpdate() {
@@ -60,27 +55,9 @@ public class MCH_Chaff {
             if (this.useTick > 0) {
                 --this.useTick;
             }
-            if (this.useTick > 0) {
-                this.onUsing();
-            }
             if (!this.isUsing() && this.aircraft.getEntityData().getBoolean("ChaffUsing")) {
                 this.aircraft.getEntityData().setBoolean("ChaffUsing", false);
             }
-        }
-    }
-
-    private void onUsing() {
-        if (spawnChaffEntityIntervalTick == 0) {
-            spawnChaffEntityIntervalTick = chaffUseTime / 10;
-            if (!worldObj.isRemote) {
-                spawnChaffEntity();
-            }
-            if (worldObj.isRemote) {
-                W_McClient.MOD_playSoundFX("chaff", 10.0F, 1.0F);
-            }
-        }
-        if (spawnChaffEntityIntervalTick > 0) {
-            spawnChaffEntityIntervalTick--;
         }
     }
 
@@ -99,12 +76,15 @@ public class MCH_Chaff {
         double rightZ = MathHelper.cos(rad - (float) Math.PI / 2F);
 
         // 基准位置：在飞机尾部稍微偏下一点
-        double baseX = this.aircraft.lastTickPosX - forwardX * 20D;
-        double baseY = this.aircraft.lastTickPosY - 10D;
-        double baseZ = this.aircraft.lastTickPosZ - forwardZ * 20D;
+        Vec3 dispenser = this.aircraft.getAcInfo().chaff.pos;
+        Vec3 base = this.aircraft.getTransformedPosition(dispenser.xCoord, dispenser.yCoord, dispenser.zCoord,
+            this.aircraft.posX, this.aircraft.posY, this.aircraft.posZ);
+        double baseX = base.xCoord;
+        double baseY = base.yCoord;
+        double baseZ = base.zCoord;
 
         // 左右偏移距离，可根据机体宽度调整
-        double sideOffset = 1.5D;
+        double sideOffset = 0.75D;
 
         // 计算左侧与右侧箔条的生成位置
         double leftPosX = baseX + leftX * sideOffset;
@@ -114,14 +94,15 @@ public class MCH_Chaff {
 
         // 初速度：用飞机当前速度加上一小段侧向速度，使箔条朝两侧散开
         double sideSpeed = 0.2D;
+        double rearSpeed = 0.15D;
         // 左侧初速度
-        double leftVelX = this.aircraft.motionX + leftX * sideSpeed;
-        double leftVelY = this.aircraft.motionY;
-        double leftVelZ = this.aircraft.motionZ + leftZ * sideSpeed;
+        double leftVelX = this.aircraft.motionX + leftX * sideSpeed - forwardX * rearSpeed;
+        double leftVelY = this.aircraft.motionY - 0.05D;
+        double leftVelZ = this.aircraft.motionZ + leftZ * sideSpeed - forwardZ * rearSpeed;
         // 右侧初速度
-        double rightVelX = this.aircraft.motionX + rightX * sideSpeed;
-        double rightVelY = this.aircraft.motionY;
-        double rightVelZ = this.aircraft.motionZ + rightZ * sideSpeed;
+        double rightVelX = this.aircraft.motionX + rightX * sideSpeed - forwardX * rearSpeed;
+        double rightVelY = this.aircraft.motionY - 0.05D;
+        double rightVelZ = this.aircraft.motionZ + rightZ * sideSpeed - forwardZ * rearSpeed;
 
         // 创建并加入两枚箔条实体
         MCH_EntityChaff leftChaff = new MCH_EntityChaff(worldObj,
@@ -130,6 +111,9 @@ public class MCH_Chaff {
         MCH_EntityChaff rightChaff = new MCH_EntityChaff(worldObj,
             rightPosX, baseY, rightPosZ,
             rightVelX, rightVelY, rightVelZ);
+        long releaseId = (this.worldObj.getTotalWorldTime() << 20) ^ (long)this.aircraft.getEntityId();
+        leftChaff.getEntityData().setLong("CountermeasureReleaseId", releaseId);
+        rightChaff.getEntityData().setLong("CountermeasureReleaseId", releaseId);
 
         this.worldObj.spawnEntityInWorld(leftChaff);
         this.worldObj.spawnEntityInWorld(rightChaff);
@@ -142,5 +126,15 @@ public class MCH_Chaff {
 
     public boolean isUsing() {
         return this.useTick > 0;
+    }
+
+    public void setUseTickClient(int time) {
+        if (this.worldObj.isRemote) {
+            boolean wasUsing = this.isUsing();
+            this.useTick = Math.max(this.useTick, Math.max(0, time));
+            if (!wasUsing && this.useTick > 0) {
+                W_McClient.MOD_playSoundFX("chaff", 10.0F, 1.0F);
+            }
+        }
     }
 }

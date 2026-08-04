@@ -522,8 +522,7 @@ public class MCH_RWRThreatManager {
         if (target == null || target.getAcInfo() == null) {
             return false;
         }
-        return target.isChaffUsing()
-            || target.isECMJammerUsing()
+        return target.isECMJammerUsing()
             || target.jammingTick > 0
             ;
     }

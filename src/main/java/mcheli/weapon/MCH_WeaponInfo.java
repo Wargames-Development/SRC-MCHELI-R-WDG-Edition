@@ -165,7 +165,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      */
     public int pdHDNMaxDegreeLockOutCount = 10;
     /**
-     * 导弹抗干扰时长，-1为不抗干扰
+     * Number of unique flare releases rejected before a heat seeker can be diverted.
+     * Values less than or equal to zero allow the first eligible release to divert it.
      */
     public int antiFlareCount = -1;
     /**
@@ -300,9 +301,14 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public boolean predictTargetPos = true;
 
     /**
-     * 锁定箔条的最大次数，超过此次数导弹将变为直射状态
+     * Successful chaff diversions required to exhaust autonomous radar reacquisition.
+     * Zero makes the seeker ignore chaff. Only autonomous active-radar seekers
+     * can benefit from values above one by reacquiring after a diversion.
      */
     public int numLockedChaffMax = 2;
+    public int countermeasureScanInterval = 3;
+    public float countermeasureRange = 64.0F;
+    public int countermeasureEffectiveTime = 80;
 
     /**
      * 对不同实体类型的爆炸伤害倍率
@@ -989,7 +995,13 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             } else if (item.equalsIgnoreCase("HitSoundRange")) {
                 this.hitSoundRange = this.toInt(data);
             } else if (item.equalsIgnoreCase("NumLockedChaffMax")) {
-                this.numLockedChaffMax = this.toInt(data);
+                this.numLockedChaffMax = this.toInt(data, 0, 100);
+            } else if (item.equalsIgnoreCase("CountermeasureScanInterval")) {
+                this.countermeasureScanInterval = this.toInt(data, 1, 20);
+            } else if (item.equalsIgnoreCase("CountermeasureRange")) {
+                this.countermeasureRange = this.toFloat(data, 1.0F, 256.0F);
+            } else if (item.equalsIgnoreCase("CountermeasureEffectiveTime")) {
+                this.countermeasureEffectiveTime = this.toInt(data, 1, 300);
             } else if (item.equalsIgnoreCase("ExplosionDamageVsLiving")) {
                 this.explosionDamageVsLiving = this.toFloat(data);
             } else if (item.equalsIgnoreCase("ExplosionDamageVsPlayer")) {

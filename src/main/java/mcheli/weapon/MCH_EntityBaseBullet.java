@@ -46,8 +46,10 @@ import net.minecraftforge.common.ForgeChunkManager;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
 public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChunkLoader {
@@ -80,8 +82,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     public double prevMotionX;
     public double prevMotionY;
     public double prevMotionZ;
-    public boolean antiFlareUse;
-    public int antiFlareTick;
     public int numLockedChaff = 0;
     public boolean armHojCepActive = false;
     public boolean heatSeekerDatalinkMode = false;
@@ -109,6 +109,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private boolean dataLinkRelayEverEnabled = false;
     private boolean activeRadarCaptured = false;
     private boolean dataLinkTwsSelectedOnly = false;
+    private boolean countermeasureDiversionActive = false;
+    private final Set<Long> resistedFlareReleaseIds = new HashSet<Long>();
+    private final Set<Long> processedFlareReleaseIds = new HashSet<Long>();
+    private final Set<Long> processedChaffReleaseIds = new HashSet<Long>();
     protected static final int DATALINK_ACTIVE_RADAR_DELAY_TICK = 40;
     private boolean missileWatchDeathLogged = false;
     private String missileDeathReasonHint = "";
@@ -366,6 +370,103 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public boolean isSnapshotTargetUsable(long staleMs) {
         return this.snapshotTargetId > 0 && (System.currentTimeMillis() - this.snapshotLastUpdate < staleMs);
+    }
+
+    public boolean isCountermeasureDiversionActive() {
+        return this.countermeasureDiversionActive;
+    }
+
+    protected void clearTargetMemory() {
+        this.snapshotTargetId = 0;
+        this.snapshotLastUpdate = 0L;
+        this.hasLastKnownTarget = false;
+    }
+
+    private long getCountermeasureReleaseId(Entity decoy) {
+        return decoy.getEntityData().hasKey("CountermeasureReleaseId")
+            ? decoy.getEntityData().getLong("CountermeasureReleaseId") : -(long)decoy.getEntityId();
+    }
+
+    protected boolean tryDivertToCountermeasure() {
+        if (this.worldObj.isRemote || this.getInfo() == null || !(this.targetEntity instanceof MCH_EntityAircraft)
+            || this.getInfo().antiRadiationMissile) {
+            return false;
+        }
+
+        boolean heatSeeker = this.getInfo().isHeatSeekerMissile;
+        boolean radarSeeker = this.getInfo().isRadarMissile || this.getInfo().activeRadar
+            || this.getInfo().passiveRadar || this.getInfo().semiActiveRadar;
+        if ((!heatSeeker && !radarSeeker)
+            || (!heatSeeker && this.numLockedChaff >= this.getInfo().numLockedChaffMax)) {
+            return false;
+        }
+
+        double range = this.getInfo().countermeasureRange;
+        Class decoyClass = heatSeeker ? MCH_EntityFlare.class : MCH_EntityChaff.class;
+        List<Entity> decoys = this.worldObj.getEntitiesWithinAABB(decoyClass,
+            this.targetEntity.boundingBox.expand(range, range, range));
+        if (decoys == null || decoys.isEmpty()) {
+            return false;
+        }
+
+        Vector3f missileDirection = new Vector3f((float)this.motionX, (float)this.motionY, (float)this.motionZ);
+        double maxAngle = Math.toRadians(this.getCurrentMaxDegreeOfMissile());
+        Entity bestDecoy = null;
+        long bestReleaseId = 0L;
+        double bestScore = Double.MAX_VALUE;
+        for (Entity decoy : decoys) {
+            if (decoy == null || decoy.isDead || decoy.ticksExisted > this.getInfo().countermeasureEffectiveTime) {
+                continue;
+            }
+            long releaseId = this.getCountermeasureReleaseId(decoy);
+            if ((heatSeeker && this.processedFlareReleaseIds.contains(releaseId))
+                || (!heatSeeker && this.processedChaffReleaseIds.contains(releaseId))) {
+                continue;
+            }
+            double dx = decoy.posX - this.posX;
+            double dy = decoy.posY - this.posY;
+            double dz = decoy.posZ - this.posZ;
+            double distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < 1.0E-6D) {
+                continue;
+            }
+            Vector3f decoyDirection = new Vector3f((float)dx, (float)dy, (float)dz);
+            double angle = Math.abs(Vector3f.angle(missileDirection, decoyDirection));
+            if (Double.isNaN(angle) || angle > maxAngle) {
+                continue;
+            }
+            double score = angle + Math.min(1.0D, distSq / (range * range)) * 0.05D;
+            if (score < bestScore) {
+                bestScore = score;
+                bestDecoy = decoy;
+                bestReleaseId = releaseId;
+            }
+        }
+        if (bestDecoy == null) {
+            return false;
+        }
+
+        if (heatSeeker) {
+            this.processedFlareReleaseIds.add(bestReleaseId);
+            int flareRejectCount = Math.max(0, this.getInfo().antiFlareCount);
+            if (this.resistedFlareReleaseIds.size() < flareRejectCount) {
+                this.resistedFlareReleaseIds.add(bestReleaseId);
+                return false;
+            }
+        } else {
+            // Both entities in a released pair share this ID and must count as one diversion.
+            this.processedChaffReleaseIds.add(bestReleaseId);
+        }
+
+        this.countermeasureDiversionActive = true;
+        this.setDataLinkRelayMode(false);
+        this.setActiveRadarCaptured(false);
+        this.setTargetEntity(bestDecoy);
+        this.clearTargetMemory();
+        if (!heatSeeker) {
+            ++this.numLockedChaff;
+        }
+        return true;
     }
 
     public void setTargetEntity(Entity entity) {
@@ -958,17 +1059,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 this.setTargetEntity(super.worldObj.getEntityByID(f3));
             }
         }
-
-        //抗干扰
-        if (!worldObj.isRemote && antiFlareUse) {
-            if (antiFlareTick > 0) {
-                antiFlareTick--;
-            } else {
-                setTargetEntity(null);
-                antiFlareUse = false;
-            }
-        }
-
 
         if (this.prevMotionX != super.motionX || this.prevMotionY != super.motionY || this.prevMotionZ != super.motionZ) {
             double var5 = (double) ((float) Math.atan2(super.motionZ, super.motionX));
@@ -2337,7 +2427,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
 
     protected void scanForTargets() {
-        if (numLockedChaff >= getInfo().numLockedChaffMax) {
+        boolean radarCountermeasureSensitive = getInfo().isRadarMissile || getInfo().activeRadar
+            || getInfo().passiveRadar || getInfo().semiActiveRadar;
+        if (this.countermeasureDiversionActive && radarCountermeasureSensitive
+            && numLockedChaff >= getInfo().numLockedChaffMax) {
             setTargetEntity(null);
             return;
         }
@@ -2355,10 +2448,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             double closestArmScore = Double.MAX_VALUE;
             Entity closestArmTarget = null;
 
-            // 记录最近的箔条及其距离
-            double nearestChaffDistSq = Double.MAX_VALUE;
-            Entity nearestChaff = null;
-
             for (Entity entity : list) {
                 // Active seekers may reacquire after launch, so keep the same
                 // no-player rule here as the launch-time guidance system.
@@ -2368,23 +2457,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 // AA 导弹的目标判定
                 if (this instanceof MCH_EntityAAMissile) {
                     boolean canScanMissiles = getInfo().canLockMissile && (getInfo().activeRadar || getInfo().semiActiveRadar);
-                    // 发现箔条时先处理
-                    if (entity instanceof MCH_EntityChaff) {
-                        // 计算与导弹方向的夹角，确保在锁定范围内
-                        double dx = entity.posX - super.posX;
-                        double dy = entity.posY - super.posY;
-                        double dz = entity.posZ - super.posZ;
-                        Vector3f targetDir = new Vector3f((float) dx, (float) dy, (float) dz);
-                        double angle = Math.abs(Vector3f.angle(missileDirection, targetDir));
-                        if (angle > Math.toRadians(this.getCurrentMaxDegreeOfMissile())) continue;
-                        double distSq = dx * dx + dy * dy + dz * dz;
-                        if (distSq < nearestChaffDistSq) {
-                            nearestChaffDistSq = distSq;
-                            nearestChaff = entity;
-                        }
-                    }
-                    // 未发现箔条时按原有逻辑扫描飞机
-                    else if (entity instanceof MCH_EntityAircraft) {
+                    if (entity instanceof MCH_EntityAircraft) {
                         MCH_EntityAircraft ac = (MCH_EntityAircraft) entity;
                         if (W_Entity.isEqual(entity, shootingAircraft)) continue;
                         if (shootingEntity instanceof EntityLivingBase && entity.riddenByEntity instanceof EntityPlayer
@@ -2530,20 +2603,13 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
             // ARM always prioritizes radiating emitters once detected.
             if (getInfo().antiRadiationMissile && closestArmTarget != null) {
-                targetEntity = closestArmTarget;
+                setTargetEntity(closestArmTarget);
                 armHojCepActive = (closestArmTarget instanceof MCH_EntityAircraft) && ((MCH_EntityAircraft)closestArmTarget).isECMJammerUsing();
                 if (getInfo().activeRadar) {
                     setActiveRadarCaptured(true);
                 }
-            } else if (nearestChaff != null) {
-                targetEntity = nearestChaff;
-                numLockedChaff++;
-                armHojCepActive = false;
-                if (getInfo().activeRadar) {
-                    setActiveRadarCaptured(false);
-                }
             } else if (closestTarget != null) {
-                targetEntity = closestTarget;
+                setTargetEntity(closestTarget);
                 armHojCepActive = false;
                 if (getInfo().activeRadar) {
                     setActiveRadarCaptured(true);

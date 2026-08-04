@@ -2567,13 +2567,12 @@ public class MCH_RenderRWR {
         Entity e = ac.worldObj.getEntityByID(info.entityId);
         if (e instanceof MCH_EntityAircraft) {
             MCH_EntityAircraft tgt = (MCH_EntityAircraft)e;
-            return tgt.isChaffUsing()
-                || tgt.isECMJammerUsing()
+            return tgt.isECMJammerUsing()
                 || tgt.jammingTick > 0
                 ;
         }
         long nowTick = ac.worldObj.getTotalWorldTime();
-        return info.isCountermeasureActive(nowTick);
+        return info.isElectronicCountermeasureActive(nowTick);
     }
 
     private static boolean isOwnLaunchedMissile(MCH_EntityAircraft ac, EntityPlayer player, MCH_EntityInfo info) {
