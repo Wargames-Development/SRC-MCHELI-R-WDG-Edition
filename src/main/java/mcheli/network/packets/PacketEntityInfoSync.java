@@ -17,6 +17,8 @@ import java.util.List;
  */
 public class PacketEntityInfoSync extends PacketBase {
 
+    private static final int AGL_EXTENSION_MAGIC = 0x41474C31; // "AGL1"
+
     private List<MCH_EntityInfo> entities;
     private long snapshotSeq; // 新增：包级快照序号
 
@@ -53,6 +55,12 @@ public class PacketEntityInfoSync extends PacketBase {
             buf.writeFloat(info.turretYaw);
             buf.writeFloat(info.turretPitch);
         }
+        // Keep the existing entity-record layout intact for mixed-version clients.
+        buf.writeInt(AGL_EXTENSION_MAGIC);
+        buf.writeInt(entities.size());
+        for (MCH_EntityInfo info : entities) {
+            buf.writeDouble(info.altitudeAboveGround);
+        }
     }
 
     @Override
@@ -81,6 +89,21 @@ public class PacketEntityInfoSync extends PacketBase {
                 buf.readFloat(),
                 buf.readFloat()
             ));
+        }
+        readAglExtension(buf);
+    }
+
+    private void readAglExtension(ByteBuf buf) {
+        if (buf.readableBytes() < 8 || buf.getInt(buf.readerIndex()) != AGL_EXTENSION_MAGIC) {
+            return;
+        }
+        buf.readInt();
+        int aglCount = buf.readInt();
+        if (aglCount != entities.size() || buf.readableBytes() < aglCount * 8) {
+            return;
+        }
+        for (int i = 0; i < aglCount; ++i) {
+            entities.get(i).altitudeAboveGround = buf.readDouble();
         }
     }
 

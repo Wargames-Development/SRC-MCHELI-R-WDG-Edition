@@ -3,6 +3,7 @@ package mcheli;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.MathHelper;
 
 public class MCH_EntityInfo {
     public static final byte CM_FLAG_CHAFF = 1;
@@ -25,6 +26,8 @@ public class MCH_EntityInfo {
     public float turretYaw;
     public float turretPitch;
     public boolean destroyed;
+    /** Server-calculated altitude above terrain; NaN when an older snapshot did not provide it. */
+    public double altitudeAboveGround = Double.NaN;
     public byte countermeasureFlags;
     public long countermeasureUntilTick;
     public long lastUpdateTime;
@@ -117,7 +120,7 @@ public class MCH_EntityInfo {
         float turretYaw = aircraft != null ? aircraft.getLastRiderYaw() : e.rotationYaw;
         float turretPitch = aircraft != null ? aircraft.getLastRiderPitch() : e.rotationPitch;
         boolean destroyed = aircraft != null && aircraft.isDestroyed();
-        return new MCH_EntityInfo(e.getEntityId(),
+        MCH_EntityInfo info = new MCH_EntityInfo(e.getEntityId(),
             e.worldObj.getWorldInfo().getWorldName(),
             name,
             e.getClass().getName(),
@@ -126,6 +129,21 @@ public class MCH_EntityInfo {
             e.rotationYaw, e.rotationPitch,
             countermeasureFlags, countermeasureUntilTick, rotationRoll, destroyed, turretYaw, turretPitch
         );
+        info.altitudeAboveGround = computeServerAgl(e);
+        return info;
+    }
+
+    private static double computeServerAgl(Entity entity) {
+        if (entity == null || entity.worldObj == null || entity.worldObj.isRemote) {
+            return Double.NaN;
+        }
+        int blockX = MathHelper.floor_double(entity.posX);
+        int blockZ = MathHelper.floor_double(entity.posZ);
+        if (!entity.worldObj.blockExists(blockX, 0, blockZ)) {
+            return Double.NaN;
+        }
+        int groundY = entity.worldObj.getHeightValue(blockX, blockZ);
+        return entity.posY - (double)groundY;
     }
 
     public boolean isCountermeasureActive(long worldTick) {
