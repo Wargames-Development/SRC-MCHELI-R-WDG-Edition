@@ -55,6 +55,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public boolean ridableOnly;
     public float proximityFuseDist;
     public int rigidityTime;
+    public boolean hasRigidityTimeSet;
     public float accuracy;
     public int bomblet;
     public int bombletSTime;
@@ -1250,6 +1251,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     this.hasProximityFuseDistSet = true;
                 } else if (item.equalsIgnoreCase("RigidityTime")) {
                     this.rigidityTime = this.toInt(data, 0, 1000000);
+                    this.hasRigidityTimeSet = true;
                 } else if (item.compareTo("accuracy") == 0) {
                     this.accuracy = this.toFloat(data, 0.0F, 1000.0F);
                 } else if (item.compareTo("bomblet") == 0) {

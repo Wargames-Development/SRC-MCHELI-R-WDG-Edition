@@ -89,6 +89,15 @@ public final class MCH_LaserStateStore {
         return CLIENT_STATES.get(buildKey(ownerId, sourceType));
     }
 
+    public static synchronized long nextClientSequence(int ownerId, int sourceType) {
+        if (!isValidSourceType(sourceType)) {
+            return 0L;
+        }
+        // Sequence ownership follows the shared owner/source channel, not an individual weapon hardpoint.
+        LaserState old = CLIENT_STATES.get(buildKey(ownerId, sourceType));
+        return old != null ? old.sequence + 1L : 1L;
+    }
+
     public static synchronized void expireServerStates(long worldTick, int ttlTicks) {
         int ttl = Math.max(1, ttlTicks);
         Iterator<Map.Entry<Long, LaserState>> it = SERVER_STATES.entrySet().iterator();

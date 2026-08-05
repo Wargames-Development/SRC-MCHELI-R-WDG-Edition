@@ -49,7 +49,11 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 this.setDead();
             }
 
-            if (!super.worldObj.isRemote && !super.isDead && this.getCountOnUpdate() > this.getInfo().rigidityTime) {
+            // Laser guidance is immediate by default; an explicit RigidityTime still preserves content-pack intent.
+            int rigidityTime = this.getInfo().laserGuidance && !this.getInfo().hasRigidityTimeSet
+                ? 0
+                : this.getInfo().rigidityTime;
+            if (!super.worldObj.isRemote && !super.isDead && this.getCountOnUpdate() > rigidityTime) {
                 this.onUpdateMotion();
             }
         } else if (!super.worldObj.isRemote) {

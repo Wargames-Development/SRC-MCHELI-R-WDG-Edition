@@ -24,7 +24,6 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
     protected MCH_EntityTvMissile lastShotTvMissile;
     protected Entity lastShotEntity;
     protected boolean isTVGuided;
-    private long aircraftLaserSequence = 0L;
 
     public MCH_WeaponTvMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
@@ -183,12 +182,12 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         if (user == null || user.worldObj == null) {
             return;
         }
-        ++this.aircraftLaserSequence;
         long now = user.worldObj.getTotalWorldTime();
         int ownerId = user.getEntityId();
-        MCH_LaserStateStore.upsertClientState(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT, x, y, z, active, this.aircraftLaserSequence, now);
+        long sequence = MCH_LaserStateStore.nextClientSequence(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT);
+        MCH_LaserStateStore.upsertClientState(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT, x, y, z, active, sequence, now);
         MCH_MOD.getPacketHandler().sendToServer(
-            new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_AIRCRAFT, this.aircraftLaserSequence, active, x, y, z, ownerId)
+            new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_AIRCRAFT, sequence, active, x, y, z, ownerId)
         );
     }
 }
