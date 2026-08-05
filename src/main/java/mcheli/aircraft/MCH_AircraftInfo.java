@@ -164,6 +164,9 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 是否启用新雷达扫描动画面板
      */
     public boolean enableRadar = false;
+    /** Enables the legacy artillery radar independently of the search-radar panel. */
+    public boolean hasMortarRadar = false;
+    public double mortarRadarMaxDist = -1.0D;
     /**
      * 水平扫描扇区总角度
      */
@@ -406,6 +409,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         this.isEnableEntityRadar = false;
         this.hasAARadar = false;
         this.enableRadar = false;
+        this.hasMortarRadar = false;
+        this.mortarRadarMaxDist = -1.0D;
         this.radarScanAzimuthDeg = 120.0F;
         this.radarPanelFillAlpha = 0.30F;
         this.radarFollowTurretYaw = false;
@@ -1002,6 +1007,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 hasRWR = this.toBool(data);
             } else if (item.equalsIgnoreCase("EnableRadar")) {
                 this.enableRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("EnableMortarRadar")) {
+                this.hasMortarRadar = this.toBool(data);
+            } else if (item.equalsIgnoreCase("MortarRadarMaxDist")) {
+                this.mortarRadarMaxDist = this.toDouble(data);
             } else if (item.equalsIgnoreCase("EnableBVR")) {
                 this.enableBVR = this.toBool(data);
             } else if (item.equalsIgnoreCase("RadarMaxTargetRange")) {

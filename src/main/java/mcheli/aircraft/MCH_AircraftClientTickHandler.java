@@ -279,24 +279,12 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         }
         if (!ac.isDestroyed() && !ac.isPilotReloading()) {
             if (ac.getSeatIdByEntity(player) <= 1) {
-                if (this.KeyRadarSwitch.isKeyDown()) {
-                    if (ac.isMortarRadarEnabledRuntime()) {
-                        ac.setMortarRadarEnabledRuntime(false);
-                        playSoundOK();
-                    } else {
-                        MCH_WeaponSet ws = ac.getCurrentWeapon(player);
-                        MCH_WeaponInfo wi = ws != null ? ws.getInfo() : null;
-                        if (wi != null && wi.hasMortarRadar) {
-                            ac.setMortarRadarEnabledRuntime(true);
-                            playSoundOK();
-                        } else if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar) {
-                            boolean newRadarEnabled = !ac.isRadarEnabledRuntime();
-                            ac.setRadarEnabledRuntime(newRadarEnabled, true);
-                            MCH_RenderRWR.handleRadarPowerStateChanged(ac, newRadarEnabled);
-                            MCH_MOD.getPacketHandler().sendToServer(new PacketRadarSwitchState(ac.getEntityId(), newRadarEnabled));
-                            playSoundOK();
-                        }
-                    }
+                if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar && this.KeyRadarSwitch.isKeyDown()) {
+                    boolean newRadarEnabled = !ac.isRadarEnabledRuntime();
+                    ac.setRadarEnabledRuntime(newRadarEnabled, true);
+                    MCH_RenderRWR.handleRadarPowerStateChanged(ac, newRadarEnabled);
+                    MCH_MOD.getPacketHandler().sendToServer(new PacketRadarSwitchState(ac.getEntityId(), newRadarEnabled));
+                    playSoundOK();
                 }
                 boolean armCurrentWeapon = MCH_RenderRWR.isArmCurrentWeapon(ac, player);
                 boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);

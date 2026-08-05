@@ -958,16 +958,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         //渲染命中信息
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
             drawEconomyGainToast(i, j);
-            int mortarRadarShift = 0;
-            if (player != null && player.ridingEntity instanceof MCH_EntitySeat && ((MCH_EntitySeat) player.ridingEntity).getParent() != null && ((MCH_EntitySeat) player.ridingEntity).getParent().isMortarRadarEnabledRuntime()) {
-                double scale = j / 500.0;
-                mortarRadarShift = (int) (480.0 * scale / 2.0 + 480.0 * scale * 0.03);
-            } else if (player != null && player.ridingEntity instanceof MCH_EntityAircraft && ((MCH_EntityAircraft) player.ridingEntity).isMortarRadarEnabledRuntime()) {
-                double scale = j / 500.0;
-                mortarRadarShift = (int) (480.0 * scale / 2.0 + 480.0 * scale * 0.03);
-            }
             if (!hitList.isEmpty() && hitTotalDamage > 0) {
-                int x = (int) (i * 0.6f) + mortarRadarShift;
+                int x = (int) (i * 0.6f);
                 int y = (int) (j * 0.4f);
                 GL11.glPushMatrix();
                 float scale = hitTotalDamageScale;
@@ -975,7 +967,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 mc.fontRenderer.drawString(-(int) hitTotalDamage + "", (int) (x / scale), (int) (y / scale), 0xffffff, true);
                 GL11.glPopMatrix();
             }
-            int baseX = (int) (i * 0.6f) + mortarRadarShift;
+            int baseX = (int) (i * 0.6f);
             for (int idx = hitList.size() - 1, pos = 0; idx >= 0; idx--, pos++) {
                 HitMessage message = hitList.get(idx);
                 if (message.hitDisplay != null && (message.hitDamage > 0 || message.hitDamageType == 2)) {
