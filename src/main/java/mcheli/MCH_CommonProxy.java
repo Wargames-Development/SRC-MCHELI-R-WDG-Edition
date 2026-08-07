@@ -48,6 +48,10 @@ public class MCH_CommonProxy {
         return false;
     }
 
+    public boolean isShiftKeyDown() {
+        return false;
+    }
+
     public String side() {
         return "Server";
     }

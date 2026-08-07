@@ -24,8 +24,9 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
-import java.lang.reflect.Method;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class MCH_ItemAircraft extends W_Item {
 
@@ -58,85 +59,96 @@ public abstract class MCH_ItemAircraft extends W_Item {
 
         lines.add("\u00a7b\u00a7o" + info.displayName);
 
-        if (!isTooltipShiftKeyDown()) {
+        if (!isTooltipShiftKeyDown(player)) {
             lines.add(MCH_I18n.format("aircraft.info.hold_shift", "Shift"));
         } else {
-
-            // Category directly under white name (NO blank line before)
             if (info.category != null && !info.category.isEmpty()) {
-                String cat = info.category;
-
-                cat = cat.replace("_", " ");
-
-                lines.add("\u00a7b\u00a7oTier: " + cat);
+                lines.add("\u00a7b\u00a7oTier: " + info.category.replace("_", " "));
             }
-
-            // Single spacing AFTER category
-            lines.add("");
-
-            lines.add("\u00a79Max HP\u00a77: " + info.maxHp);
-            lines.add("\u00a79Speed\u00a77: " + roundFloat(info.speed, 2));
-            lines.add("\u00a79Throttle\u00a77: " + roundFloat(info.throttleUpDown, 2));
-            lines.add("\u00a79Fuel\u00a77: " + info.maxFuel);
-            lines.add("\u00a79RadarType\u00a77: " + info.radarType);
-            lines.add("\u00a79AirRadarRange\u00a77: " + roundFloat(info.airRadarRange, 2));
-            lines.add("\u00a79GroundRadarRange\u00a77: " + roundFloat(info.groundRadarRange, 2));
-            lines.add("\u00a79StealthFactor\u00a77: " + roundFloat(info.stealthFactor, 2));
 
             lines.add("");
-            if (info.haveFlare()) {
-                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.flare"));
-            }
-            if (info.haveChaff()) {
-                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.chaff"));
-            }
-            if (info.haveAPS()) {
-                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.aps"));
-            }
-            if (info.haveMaintenance()) {
-                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.maintenance"));
-            }
-            if (info.hasPhotoelectricJammer) {
-                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.photoelectric_jammer"));
-            }
-            if (info.hasDIRCM) {
-                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.dircm"));
-            }
-            if (info.hasRWR) {
-                lines.add("\u00a7e" + MCH_I18n.format("aircraft.info.rwr"));
+            lines.add("\u00a79Vehicle\u00a77: " + info.maxHp + " HP | Speed "
+                + roundFloat(info.speed, 2) + " | Fuel " + info.maxFuel);
+
+            float radarRange = getGeneralRadarRange(info);
+            if (radarRange > 0.0F) {
+                lines.add("\u00a79Radar\u00a77: " + formatRange(radarRange));
             }
 
-            int num = info.getWeaponNum();
-            if (num > 0) {
-                lines.add("");
-                lines.add("\u00a79" + MCH_I18n.format("aircraft.info.weapon_list") + ": ");
-                for (int i = 0; i < num; i++) {
-                    String s = info.getWeaponSetNameById(i);
-                    if (s != null) {
-                        MCH_WeaponInfo wi = MCH_WeaponInfoManager.get(s);
-                        if (wi != null) {
-                            lines.add("\u00a77" + wi.displayName);
-                        }
-                    }
-                }
-            } else {
+            String systems = getSystemSummary(info);
+            if (!systems.isEmpty()) {
+                lines.add("\u00a79Systems\u00a77: " + systems);
+            }
+
+            Set<String> weaponNames = getWeaponNames(info);
+            lines.add("\u00a79Weapons\u00a77:");
+            if (weaponNames.isEmpty()) {
                 lines.add("\u00a77" + MCH_I18n.format("aircraft.info.no_weapon"));
+            } else {
+                for (String weaponName : weaponNames) {
+                    lines.add("\u00a77" + weaponName);
+                }
             }
-
         }
     }
 
-    private static boolean isTooltipShiftKeyDown() {
-        try {
-            Class<?> keyboardClass = Class.forName("org.lwjgl.input.Keyboard");
-            Method isKeyDown = keyboardClass.getMethod("isKeyDown", int.class);
-            Boolean leftShift = (Boolean)isKeyDown.invoke(null, 42);
-            Boolean rightShift = (Boolean)isKeyDown.invoke(null, 54);
-            Object result = Boolean.valueOf(leftShift.booleanValue() || rightShift.booleanValue());
-            return result instanceof Boolean && (Boolean) result;
-        } catch (Throwable ignored) {
-            return false;
+    private static boolean isTooltipShiftKeyDown(EntityPlayer player) {
+        // This is side-safe and was the original working tooltip behavior.
+        if (player != null && player.isSneaking()) {
+            return true;
         }
+
+        // Creative inventory tooltips do not update the player's sneaking state.
+        return MCH_MOD.proxy != null && MCH_MOD.proxy.isShiftKeyDown();
+    }
+
+    private static float getGeneralRadarRange(MCH_AircraftInfo info) {
+        float range = Math.max(info.airRadarRange, info.groundRadarRange);
+        if (info.enableRadar || info.enableBVR) {
+            range = Math.max(range, info.radarMaxTargetRange);
+        }
+        if (info.hasMortarRadar && info.mortarRadarMaxDist > 0.0D) {
+            range = Math.max(range, (float)info.mortarRadarMaxDist);
+        }
+        return range;
+    }
+
+    private static String formatRange(float range) {
+        int wholeRange = (int)range;
+        return (range == wholeRange ? Integer.toString(wholeRange) : Float.toString(roundFloat(range, 1))) + " m";
+    }
+
+    private static String getSystemSummary(MCH_AircraftInfo info) {
+        StringBuilder systems = new StringBuilder();
+        appendSummaryValue(systems, info.haveFlare(), "Flare");
+        appendSummaryValue(systems, info.haveChaff(), "Chaff");
+        appendSummaryValue(systems, info.haveECMJammer(), "ECM");
+        appendSummaryValue(systems, info.hasPhotoelectricJammer, "EO Jammer");
+        appendSummaryValue(systems, info.hasDIRCM, "DIRCM");
+        appendSummaryValue(systems, info.haveAPS(), "APS");
+        appendSummaryValue(systems, info.hasRWR, "RWR");
+        appendSummaryValue(systems, info.haveMaintenance(), "Repair");
+        return systems.toString();
+    }
+
+    private static void appendSummaryValue(StringBuilder summary, boolean enabled, String value) {
+        if (!enabled) return;
+        if (summary.length() > 0) summary.append(", ");
+        summary.append(value);
+    }
+
+    private static Set<String> getWeaponNames(MCH_AircraftInfo info) {
+        Set<String> weaponNames = new LinkedHashSet<String>();
+        for (int i = 0; i < info.getWeaponNum(); i++) {
+            String weaponName = info.getWeaponSetNameById(i);
+            if (weaponName == null) continue;
+
+            MCH_WeaponInfo weaponInfo = MCH_WeaponInfoManager.get(weaponName);
+            if (weaponInfo != null && weaponInfo.displayName != null && !weaponInfo.displayName.isEmpty()) {
+                weaponNames.add(weaponInfo.displayName);
+            }
+        }
+        return weaponNames;
     }
 
     public abstract MCH_AircraftInfo getAircraftInfo();

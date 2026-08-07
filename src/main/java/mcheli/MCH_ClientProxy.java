@@ -66,12 +66,18 @@ import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.model.IModelCustom;
 import net.minecraftforge.common.MinecraftForge;
+import org.lwjgl.input.Keyboard;
 
 import java.util.Iterator;
 
 public class MCH_ClientProxy extends MCH_CommonProxy {
 
     public String lastLoadHUDPath = "";
+
+    @Override
+    public boolean isShiftKeyDown() {
+        return Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+    }
 
     public static void registerModels_Throwable() {
         System.out.println("Loading throwable");

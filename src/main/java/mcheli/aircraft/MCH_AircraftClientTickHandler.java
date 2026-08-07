@@ -223,7 +223,8 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 pc.moveLeft = ac.moveLeft = this.KeyLeft.isKeyPress();
             }
         }
-        if (!ac.isDestroyed() && this.KeyFlare.isKeyDown()) {
+        if (!ac.isDestroyed() && (this.KeyFlare.isKeyDown()
+            || (this.KeyFlare.isKeyPress() && ac.canUseFlare()))) {
             if (ac.getSeatIdByEntity(player) <= 1)
                 if (ac.canUseFlare() && ac.useFlare(ac.getCurrentFlareType())) {
                     pc.useFlareType = (byte) ac.getCurrentFlareType();
@@ -233,7 +234,8 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     playSoundNG();
                 }
         }
-        if (!ac.isDestroyed() && this.KeyChaff.isKeyDown()) {
+        if (!ac.isDestroyed() && (this.KeyChaff.isKeyDown()
+            || (this.KeyChaff.isKeyPress() && ac.canUseChaff()))) {
             if (ac.getSeatIdByEntity(player) <= 1) {
                 if (ac.canUseChaff() && ac.useChaff()) {
                     pc.useChaff = true;

@@ -182,6 +182,8 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.key.reset_airburst_dist", "zh_CN", "重置空爆距离");
         addTranslation("gui.mcheli.key.open_gps_panel", "en_US", "Open GPS Panel");
         addTranslation("gui.mcheli.key.open_gps_panel", "zh_CN", "打开GPS坐标面板");
+        addTranslation("gui.mcheli.key.toggle_radar", "en_US", "Toggle Radar");
+        addTranslation("gui.mcheli.key.toggle_radar", "zh_CN", "\u5207\u6362\u96f7\u8fbe\u5f00\u5173");
         addTranslation("gui.mcheli.key.key_reset", "en_US", "Reset");
         addTranslation("gui.mcheli.key.key_reset", "zh_CN", "重置按键");
         addTranslation("gui.mcheli.key.key_on", "en_US", "ON");
