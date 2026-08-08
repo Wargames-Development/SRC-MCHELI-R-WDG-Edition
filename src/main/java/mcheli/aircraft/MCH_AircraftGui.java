@@ -77,7 +77,8 @@ public class MCH_AircraftGui extends W_GuiContainer {
     }
 
     public boolean canReload(EntityPlayer player) {
-        return this.aircraft.canPlayerSupplyAmmo(player, this.currentWeaponId);
+        return this.aircraft.canPlayerSupplyAmmo(player, this.currentWeaponId)
+            || this.aircraft.canPlayerRearmCountermeasures(player);
     }
 
     public void updateScreen() {
@@ -108,10 +109,18 @@ public class MCH_AircraftGui extends W_GuiContainer {
         if (button.enabled) {
             switch (button.id) {
                 case 1:
-                    this.buttonReload.enabled = this.canReload(this.thePlayer);
+                    boolean canSupplyAmmo = this.aircraft.canPlayerSupplyAmmo(this.thePlayer, this.currentWeaponId);
+                    boolean canRearmCountermeasures = this.aircraft.canPlayerRearmCountermeasures(this.thePlayer);
+                    this.buttonReload.enabled = canSupplyAmmo || canRearmCountermeasures;
                     if (this.buttonReload.enabled) {
                         MCH_PacketIndReload.send(this.aircraft, this.currentWeaponId);
-                        this.aircraft.supplyAmmo(this.currentWeaponId);
+                        if (canSupplyAmmo) {
+                            this.aircraft.supplyAmmo(this.currentWeaponId);
+                        }
+                        if (canRearmCountermeasures) {
+                            this.aircraft.setCountermeasureStateClient(
+                                this.aircraft.getFlareCapacity(), this.aircraft.getChaffCapacity());
+                        }
                         this.reloadWait = 3;
                         this.buttonReload.enabled = false;
                     }

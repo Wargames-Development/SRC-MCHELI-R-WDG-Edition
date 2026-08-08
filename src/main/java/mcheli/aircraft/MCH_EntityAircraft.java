@@ -3825,13 +3825,25 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
     }
 
-    public void rearmCountermeasures() {
-        if (this.worldObj.isRemote) {
-            return;
+    public boolean canPlayerRearmCountermeasures(EntityPlayer player) {
+        if (player == null || this.isDestroyed() || !W_Entity.isEqual(this.getRiddenByEntity(), player)) {
+            return false;
+        }
+        if (MCH_Lib.getBlockIdY(this, 1, -3) == 0 || !this.canSupply()) {
+            return false;
+        }
+        return this.getRemainingFlarePairs() < this.getFlareCapacity()
+            || this.getRemainingChaffPairs() < this.getChaffCapacity();
+    }
+
+    public boolean rearmCountermeasures(EntityPlayer player) {
+        if (this.worldObj.isRemote || !this.canPlayerRearmCountermeasures(player)) {
+            return false;
         }
         this.remainingFlarePairs = this.getFlareCapacity();
         this.remainingChaffPairs = this.getChaffCapacity();
         this.syncCountermeasureState();
+        return true;
     }
 
     public boolean haveChaff() {
@@ -5586,7 +5598,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         for (int i = 0; i < this.getWeaponNum(); ++i) {
             this.getWeapon(i).reloadMag();
         }
-        this.rearmCountermeasures();
 
     }
 
