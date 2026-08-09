@@ -30,8 +30,10 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /** Renders a presentation-only model for an aircraft contact absent from WorldClient. */
 @SideOnly(Side.CLIENT)
@@ -44,6 +46,7 @@ public class MCH_RenderFarVehicle {
     private static final double SNAP_DISTANCE_SQ = 64.0D * 64.0D;
     private static final double MAX_CONTACT_DISTANCE_SQ = MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE
         * MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE;
+    private static final Set<Integer> NORMAL_RENDERED_THIS_FRAME = new HashSet<Integer>();
 
     private final Map<String, RenderDefinition> definitions = new HashMap<String, RenderDefinition>();
     private final Map<Integer, SmoothedPose> smoothedPoses = new HashMap<Integer, SmoothedPose>();
@@ -54,12 +57,14 @@ public class MCH_RenderFarVehicle {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) {
             this.smoothedPoses.clear();
+            NORMAL_RENDERED_THIS_FRAME.clear();
             return;
         }
 
         Collection<MCH_EntityInfo> contacts = MCH_EntityInfoClientTracker.getAllTrackedEntities();
         if (contacts.isEmpty()) {
             this.smoothedPoses.clear();
+            NORMAL_RENDERED_THIS_FRAME.clear();
             return;
         }
 
@@ -86,13 +91,16 @@ public class MCH_RenderFarVehicle {
             SmoothedPose pose = this.getSmoothedPose(contact, now);
             double x = pose.x - RenderManager.instance.viewerPosX;
             double z = pose.z - RenderManager.instance.viewerPosZ;
-            float alpha = hasLiveEntity ? getLodTransitionAlpha(mc, x, z) : 1.0F;
-            if (alpha <= 0.0F) {
+            boolean normalRendered = NORMAL_RENDERED_THIS_FRAME.contains(Integer.valueOf(contact.entityId));
+            boolean inHandoffRegion = horizontalChunkDistance(x, z) >= getTransitionStart(mc);
+            if (hasLiveEntity && normalRendered && !inHandoffRegion) {
                 continue;
             }
-            this.renderContact(mc, pose, definition, alpha);
+            // Full opacity is deliberate: DH and entity culling may fade or omit the normal model independently.
+            this.renderContact(mc, pose, definition, 1.0F);
         }
         this.removeUnusedPoses();
+        NORMAL_RENDERED_THIS_FRAME.clear();
     }
 
     private void renderContact(Minecraft mc, SmoothedPose pose, RenderDefinition definition, float alpha) {
@@ -296,6 +304,10 @@ public class MCH_RenderFarVehicle {
         }
     }
 
+    public static void markNormalRender(int entityId) {
+        NORMAL_RENDERED_THIS_FRAME.add(Integer.valueOf(entityId));
+    }
+
     public static boolean shouldSuppressNormalRender(MCH_EntityAircraft aircraft, double cameraRelativeX, double cameraRelativeZ) {
         if (aircraft == null || aircraft.isDestroyed() || aircraft.getAcInfo() == null || aircraft.getAcInfo().model == null
             || !isSupportedVehicleClass(aircraft.getClass().getName())
@@ -305,10 +317,11 @@ public class MCH_RenderFarVehicle {
         return horizontalChunkDistance(cameraRelativeX, cameraRelativeZ) >= getTransitionEnd(Minecraft.getMinecraft());
     }
 
+    /** Retained for callers that need the legacy distance-based transition weight. */
     public static float getLodTransitionAlpha(Minecraft mc, double cameraRelativeX, double cameraRelativeZ) {
         double distance = horizontalChunkDistance(cameraRelativeX, cameraRelativeZ);
         double end = getTransitionEnd(mc);
-        double start = Math.max(CHUNK_SIZE, end - TRANSITION_WIDTH);
+        double start = getTransitionStart(mc);
         return (float)Math.max(0.0D, Math.min(1.0D, (distance - start) / (end - start)));
     }
 
@@ -318,6 +331,10 @@ public class MCH_RenderFarVehicle {
             chunks = DEFAULT_RENDER_DISTANCE_CHUNKS;
         }
         return chunks * CHUNK_SIZE;
+    }
+
+    private static double getTransitionStart(Minecraft mc) {
+        return Math.max(CHUNK_SIZE, getTransitionEnd(mc) - TRANSITION_WIDTH);
     }
 
     private static double horizontalChunkDistance(double x, double z) {

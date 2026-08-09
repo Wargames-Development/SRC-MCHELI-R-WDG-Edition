@@ -12,6 +12,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import mcheli.MCH_NetworkProfiler;
 import mcheli.network.packets.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
@@ -74,7 +75,14 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
         byte discriminator = (byte) packets.indexOf(cl);
         encodedData.writeByte(discriminator);
         //Get the packet class to encode our packet
+        boolean profiling = MCH_NetworkProfiler.isActive()
+            && FMLCommonHandler.instance().getEffectiveSide().isServer();
+        long started = profiling ? System.nanoTime() : 0L;
         msg.encodeInto(ctx, encodedData);
+        if (profiling) {
+            MCH_NetworkProfiler.recordServerEncoded("MCHReforged", msg, encodedData.readableBytes(),
+                System.nanoTime() - started);
+        }
         //Convert our packet into a Forge packet to get it through the Netty system
         FMLProxyPacket proxyPacket = new FMLProxyPacket(encodedData.copy(), ctx.channel().attr(NetworkRegistry.FML_CHANNEL).get());
         //Add our packet to the outgoing packet queue
@@ -85,6 +93,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
     protected void decode(ChannelHandlerContext ctx, FMLProxyPacket msg, List<Object> out) throws Exception {
         //Get the encoded data from the incoming packet
         ByteBuf encodedData = msg.payload();
+        int packetBytes = encodedData.readableBytes();
         //Get the class for interpreting this packet
         byte discriminator = encodedData.readByte();
         Class<? extends PacketBase> cl = packets.get(discriminator);
@@ -104,7 +113,13 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
             }
             case SERVER: {
                 INetHandler netHandler = ctx.channel().attr(NetworkRegistry.NET_HANDLER).get();
+                boolean profiling = MCH_NetworkProfiler.isActive();
+                long started = profiling ? System.nanoTime() : 0L;
                 packet.handleServerSide(((NetHandlerPlayServer) netHandler).playerEntity);
+                if (profiling) {
+                    MCH_NetworkProfiler.recordServerReceived("MCHReforged", cl.getSimpleName(), packetBytes,
+                        System.nanoTime() - started);
+                }
                 break;
             }
         }
@@ -170,6 +185,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
      * Send a packet to all players
      */
     public void sendToAll(PacketBase packet) {
+        MCH_NetworkProfiler.recordServerSend("MCHReforged", packet, MCH_NetworkProfiler.getPlayerCount());
         channels.get(Side.SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.ALL);
         channels.get(Side.SERVER).writeAndFlush(packet);
     }
@@ -178,6 +194,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
      * Send a packet to a player
      */
     public void sendTo(PacketBase packet, EntityPlayerMP player) {
+        MCH_NetworkProfiler.recordServerSend("MCHReforged", packet, 1);
         channels.get(Side.SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.PLAYER);
         channels.get(Side.SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(player);
         channels.get(Side.SERVER).writeAndFlush(packet);
@@ -187,6 +204,8 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
      * Send a packet to all around a point
      */
     public void sendToAllAround(PacketBase packet, NetworkRegistry.TargetPoint point) {
+        MCH_NetworkProfiler.recordServerSend("MCHReforged", packet,
+            MCH_NetworkProfiler.countPlayersAround(point.dimension, point.x, point.y, point.z, point.range));
         channels.get(Side.SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.ALLAROUNDPOINT);
         channels.get(Side.SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(point);
         channels.get(Side.SERVER).writeAndFlush(packet);
@@ -196,6 +215,8 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
      * Send a packet to all in a dimension
      */
     public void sendToDimension(PacketBase packet, int dimensionID) {
+        MCH_NetworkProfiler.recordServerSend("MCHReforged", packet,
+            MCH_NetworkProfiler.countPlayersInDimension(dimensionID));
         channels.get(Side.SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGET).set(FMLOutboundHandler.OutboundTarget.DIMENSION);
         channels.get(Side.SERVER).attr(FMLOutboundHandler.FML_MESSAGETARGETARGS).set(dimensionID);
         channels.get(Side.SERVER).writeAndFlush(packet);

@@ -1109,6 +1109,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
             }
 
             if (!shouldSkipRender(entity) && !MCH_RenderFarVehicle.shouldSuppressNormalRender(ac, posX, posZ)) {
+                MCH_RenderFarVehicle.markNormalRender(ac.getEntityId());
                 this.setCommonRenderParam(info.smoothShading, ac.getBrightnessForRender(tickTime));
                 if (ac.isDestroyed()) {
                     GL11.glColor4f(0.15F, 0.15F, 0.15F, 1.0F);

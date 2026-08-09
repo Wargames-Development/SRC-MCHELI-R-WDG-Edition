@@ -8,6 +8,7 @@ import mcheli.MCH_FreeLookDebug;
 import mcheli.MCH_Lib;
 import mcheli.MCH_WaypointNavDebug;
 import mcheli.MCH_MOD;
+import mcheli.MCH_NetworkProfiler;
 import mcheli.MCH_ExplosionDebug;
 import mcheli.MCH_PacketNotifyServerSettings;
 import mcheli.MCH_RadarDebug;
@@ -71,6 +72,7 @@ public class MCH_Command extends CommandBase {
     public static final String CMD_ATTACK_ENTITY = "attackentity";
     public static final String CMD_SHOW_BB = "showboundingbox";
     public static final String CMD_DEBUG = "debug";
+    public static final String CMD_NET_LOG = "netlog";
     public static final String CMD_EXP_DEBUG = "expdebug";
     public static final String CMD_SPAWNER_FREEZE = "spawnerfreeze";
     public static final String CMD_SPAWNER_DEBUG = "spawnerdebug";
@@ -84,7 +86,7 @@ public class MCH_Command extends CommandBase {
     public static final String CMD_STRUCT = "struct";
     public static final String CMD_LIST = "list";
     public static final String CMD_GIVE = "give";
-    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "expdebug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "bvrdebug", "mslwatch", "rwrwatch", "rwrdiag", "rwrsound", "struct", "give", "list"};
+    public static String[] ALL_COMMAND = new String[]{"sendss", "modlist", "reconfig", "title", "fill", "status", "killentity", "removeentity", "attackentity", "showboundingbox", "debug", "netlog", "expdebug", "spawnerfreeze", "spawnerdebug", "structdebug", "radardebug", "bvrdebug", "mslwatch", "rwrwatch", "rwrdiag", "rwrsound", "struct", "give", "list"};
     public static MCH_Command instance = new MCH_Command();
 
 
@@ -280,6 +282,8 @@ public class MCH_Command extends CommandBase {
                             MCH_PacketNotifyServerSettings.sendAll();
                             sender.addChatMessage(new ChatComponentText("Debug waypoint label: " + (MCH_ServerSettings.enableDebugWaypointLabel ? "ON" : "OFF")));
                         }
+                    } else if (prm[0].equalsIgnoreCase("netlog")) {
+                        this.executeNetworkLog(sender, prm);
                     } else if (prm[0].equalsIgnoreCase("expdebug")) {
                         if (prm.length == 1 || (prm.length >= 2 && prm[1].equalsIgnoreCase("toggle"))) {
                             MCH_EntityBaseBullet.setExplosionDebugEnabled(!MCH_EntityBaseBullet.isExplosionDebugEnabled());
@@ -349,6 +353,58 @@ public class MCH_Command extends CommandBase {
                 }
 
             }
+        }
+    }
+
+    private void executeNetworkLog(ICommandSender sender, String[] args) {
+        if (args.length < 2) {
+            throw new WrongUsageException("/mcheli netlog <start <session>|stop|status>", new Object[0]);
+        }
+
+        if (args[1].equalsIgnoreCase("start")) {
+            if (args.length != 3) {
+                throw new WrongUsageException("/mcheli netlog start <session>", new Object[0]);
+            }
+            try {
+                MCH_NetworkProfiler.start(args[2]);
+            } catch (IllegalArgumentException e) {
+                throw new CommandException(e.getMessage(), new Object[0]);
+            } catch (IllegalStateException e) {
+                throw new CommandException(e.getMessage(), new Object[0]);
+            }
+            sender.addChatMessage(new ChatComponentText("Network logging started: " + MCH_NetworkProfiler.getSessionName()));
+            sender.addChatMessage(new ChatComponentText("Summary: " + MCH_NetworkProfiler.getSummaryPath()));
+            sender.addChatMessage(new ChatComponentText("Packets: " + MCH_NetworkProfiler.getPacketPath()));
+        } else if (args[1].equalsIgnoreCase("stop")) {
+            if (args.length != 2) {
+                throw new WrongUsageException("/mcheli netlog stop", new Object[0]);
+            }
+            String name = MCH_NetworkProfiler.getSessionName();
+            String summary = MCH_NetworkProfiler.getSummaryPath();
+            String packets = MCH_NetworkProfiler.getPacketPath();
+            long elapsed = MCH_NetworkProfiler.getElapsedSeconds();
+            try {
+                MCH_NetworkProfiler.stop();
+            } catch (IllegalStateException e) {
+                throw new CommandException(e.getMessage(), new Object[0]);
+            }
+            sender.addChatMessage(new ChatComponentText("Network logging stopped: " + name + " (" + elapsed + "s)"));
+            sender.addChatMessage(new ChatComponentText("Summary: " + summary));
+            sender.addChatMessage(new ChatComponentText("Packets: " + packets));
+        } else if (args[1].equalsIgnoreCase("status")) {
+            if (args.length != 2) {
+                throw new WrongUsageException("/mcheli netlog status", new Object[0]);
+            }
+            if (MCH_NetworkProfiler.isActive()) {
+                sender.addChatMessage(new ChatComponentText("Network logging active: " + MCH_NetworkProfiler.getSessionName()
+                    + " (" + MCH_NetworkProfiler.getElapsedSeconds() + "s)"));
+                sender.addChatMessage(new ChatComponentText("Summary: " + MCH_NetworkProfiler.getSummaryPath()));
+                sender.addChatMessage(new ChatComponentText("Packets: " + MCH_NetworkProfiler.getPacketPath()));
+            } else {
+                sender.addChatMessage(new ChatComponentText("Network logging is not active."));
+            }
+        } else {
+            throw new WrongUsageException("/mcheli netlog <start <session>|stop|status>", new Object[0]);
         }
     }
 
@@ -726,6 +782,10 @@ public class MCH_Command extends CommandBase {
                     }
                     if (prm.length == 3 && (prm[1].equalsIgnoreCase("gunner") || prm[1].equalsIgnoreCase("freelook") || prm[1].equalsIgnoreCase("waypoint") || prm[1].equalsIgnoreCase("waypointnav"))) {
                         return getListOfStringsMatchingLastWord(prm, new String[]{"true", "false"});
+                    }
+                } else if (prm[0].equalsIgnoreCase("netlog")) {
+                    if (prm.length == 2) {
+                        return getListOfStringsMatchingLastWord(prm, new String[]{"start", "stop", "status"});
                     }
                 } else if (prm[0].equalsIgnoreCase("expdebug")) {
                     if (prm.length == 2) {
