@@ -17,7 +17,9 @@ import mcheli.wrapper.W_Lib;
 import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -195,19 +197,72 @@ public class MCH_MissileDetector {
         if (this.ac.getAcInfo() == null || this.ac.getAcInfo().ecmJammerType != 2) {
             return;
         }
-        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, this.ac.boundingBox.expand(80.0D, 80.0D, 80.0D));
+        double range = this.ac.getAcInfo().ecmJammerRange;
+        if (range <= 0.0D) {
+            return;
+        }
+        AxisAlignedBB area = AxisAlignedBB.getBoundingBox(
+            this.ac.boundingBox.minX - range, -30000000.0D, this.ac.boundingBox.minZ - range,
+            this.ac.boundingBox.maxX + range, 30000000.0D, this.ac.boundingBox.maxZ + range);
+        List list = this.world.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, area);
         if (list == null) {
             return;
         }
         for (Object o : list) {
             MCH_EntityBaseBullet msl = (MCH_EntityBaseBullet) o;
-            if (msl.targetEntity != null && (this.ac.isMountedEntity(msl.targetEntity) || msl.targetEntity.equals(this.ac))) {
-                if (msl.getInfo().isRadarMissile || msl.getInfo().antiRadiationMissile) {
-                    msl.setTargetEntity(null);
-                }
+            if (msl.getInfo() == null || msl.targetEntity == null || isFriendlyMissile(msl)) {
+                continue;
+            }
+            double dx = msl.posX - this.ac.posX;
+            double dz = msl.posZ - this.ac.posZ;
+            if (dx * dx + dz * dz > range * range) {
+                continue;
+            }
+            if (msl.getInfo().isRadarMissile || msl.getInfo().activeRadar
+                || msl.getInfo().passiveRadar || msl.getInfo().semiActiveRadar
+                || msl.getInfo().antiRadiationMissile) {
+                msl.setTargetEntity(null);
             }
         }
 
+    }
+
+    private boolean isFriendlyMissile(MCH_EntityBaseBullet missile) {
+        if (W_Entity.isEqual(missile.shootingAircraft, this.ac)
+            || W_Entity.isEqual(missile.shootingEntity, this.ac)
+            || this.ac.isMountedEntity(missile.shootingEntity)) {
+            return true;
+        }
+        for (int jammerSeat = 0; jammerSeat <= this.ac.getSeatNum(); ++jammerSeat) {
+            Entity jammerCrew = this.ac.getEntityBySeatId(jammerSeat);
+            if (!(jammerCrew instanceof EntityLivingBase)) {
+                continue;
+            }
+            if (W_Entity.isEqual(jammerCrew, missile.shootingEntity)) {
+                return true;
+            }
+            if (isSameTeam((EntityLivingBase)jammerCrew, missile.shootingEntity)) {
+                return true;
+            }
+            if (missile.shootingAircraft instanceof MCH_EntityAircraft) {
+                MCH_EntityAircraft shootingAc = (MCH_EntityAircraft)missile.shootingAircraft;
+                for (int shooterSeat = 0; shooterSeat <= shootingAc.getSeatNum(); ++shooterSeat) {
+                    Entity shooter = shootingAc.getEntityBySeatId(shooterSeat);
+                    if (W_Entity.isEqual(jammerCrew, shooter)
+                        || isSameTeam((EntityLivingBase)jammerCrew, shooter)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isSameTeam(EntityLivingBase jammerCrew, Entity other) {
+        return other instanceof EntityLivingBase
+            && jammerCrew.getTeam() != null
+            && ((EntityLivingBase)other).getTeam() != null
+            && jammerCrew.isOnSameTeam((EntityLivingBase)other);
     }
 
 

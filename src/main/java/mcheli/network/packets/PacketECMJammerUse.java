@@ -51,11 +51,14 @@ public class PacketECMJammerUse extends PacketBase {
     @Override
     public void handleClientSide(EntityPlayer clientPlayer) {
         Entity e = clientPlayer.worldObj.getEntityByID(acId);
-        Entity e1 = clientPlayer.ridingEntity;
-        if (e1 instanceof MCH_EntityAircraft) {
-            MCH_EntityAircraft ac = (MCH_EntityAircraft) e1;
-            if (type == 1 && !W_Entity.isEqual(e, e1)){
-                ac.jammingTick = jammingTime;
+        MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(clientPlayer);
+        if (type == 1 && e instanceof MCH_EntityAircraft && ac != null && !W_Entity.isEqual(e, ac)) {
+            MCH_EntityAircraft jammer = (MCH_EntityAircraft)e;
+            float range = jammer.getAcInfo() != null ? jammer.getAcInfo().ecmJammerRange : 0.0F;
+            double dx = jammer.posX - ac.posX;
+            double dz = jammer.posZ - ac.posZ;
+            if (range > 0.0F && dx * dx + dz * dz <= (double)range * (double)range) {
+                ac.jammingTick = Math.max(ac.jammingTick, jammingTime);
             }
         }
         if (e instanceof MCH_EntityAircraft) {

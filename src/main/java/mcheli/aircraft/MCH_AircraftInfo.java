@@ -353,6 +353,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * 电子干扰冷却时长
      */
     public int ecmJammerWaitTime = 400;
+    /** Horizontal (X/Z) radius in blocks affected by this ECM jammer. */
+    public float ecmJammerRange = 80.0F;
     /**
      * 是否有RWR
      */
@@ -1419,6 +1421,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             ecmJammerUseTime = this.toInt(data, 0, 10000);
                                                         } else if (item.equalsIgnoreCase("ECMJammerWaitTime")) {
                                                             ecmJammerWaitTime = this.toInt(data, 0, 10000);
+                                                        } else if (item.equalsIgnoreCase("ECMJammerRange")) {
+                                                            ecmJammerRange = this.toFloat(data, 0.0F, 10000.0F);
                                                         } else if (item.equalsIgnoreCase("Sound")) {
                                                             this.soundMove = data.toLowerCase();
                                                         } else if (item.equalsIgnoreCase("SoundRange")) {

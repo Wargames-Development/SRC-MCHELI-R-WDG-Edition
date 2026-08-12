@@ -15,6 +15,9 @@ import java.util.List;
 
 public class MCH_ECMJammer {
 
+    private static final int RADAR_JAM_REFRESH_INTERVAL = 10;
+    private static final int RADAR_JAM_GRACE_TICKS = 15;
+
     //冷却时长 0代表冷却结束
     public int tick;
     //生效时长 0代表使用结束
@@ -48,12 +51,11 @@ public class MCH_ECMJammer {
             tick = waitTime;
             useTick = useTime;
 
-            int jammingTime = 180;
             aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
             int type = aircraft.getAcInfo() != null ? aircraft.getAcInfo().ecmJammerType : 0;
             W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "iron_curtain", 10.0F, 1.0F);
             MCH_MOD.getPacketHandler().sendToAll(
-                new PacketECMJammerUse(aircraft.getEntityId(), useTick, type, jammingTime));
+                new PacketECMJammerUse(aircraft.getEntityId(), useTick, type, RADAR_JAM_GRACE_TICKS));
         }
 
         return result;
@@ -104,7 +106,16 @@ public class MCH_ECMJammer {
 
 
     private void onUsing() {
-        if (!worldObj.isRemote || this.aircraft == null) {
+        if (this.aircraft == null) {
+            return;
+        }
+        if (!worldObj.isRemote) {
+            if (this.aircraft.getAcInfo() != null
+                && this.aircraft.getAcInfo().ecmJammerType == 1
+                && this.useTick % RADAR_JAM_REFRESH_INTERVAL == 0) {
+                MCH_MOD.getPacketHandler().sendToAll(new PacketECMJammerUse(
+                    this.aircraft.getEntityId(), this.useTick, 1, RADAR_JAM_GRACE_TICKS));
+            }
             return;
         }
         if (this.aircraft.ticksExisted % 2 != 0) {
