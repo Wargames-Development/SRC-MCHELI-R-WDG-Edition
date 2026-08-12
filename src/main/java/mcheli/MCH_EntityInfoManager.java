@@ -18,9 +18,12 @@ import net.minecraft.util.IntHashMap;
 import net.minecraft.world.WorldServer;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -29,16 +32,19 @@ public class MCH_EntityInfoManager {
 
     private static final long TRACKER_RESYNC_REQUEST_INTERVAL_MS = 2_000L;
     private static final int MAX_TRACKER_RESYNCS_PER_TICK = 16;
+    private static final int ACTIVE_SYNC_INTERVAL_TICKS = 2;
+    private static final int EMPTY_HEARTBEAT_INTERVAL_TICKS = 20;
     public static final double ENTITY_INFO_SYNC_RANGE = 4096.0D;
     private static final double ENTITY_INFO_SYNC_RANGE_SQ = ENTITY_INFO_SYNC_RANGE * ENTITY_INFO_SYNC_RANGE;
 
     // 服务器侧仅用于收集/去重，不再依赖“删除发包”
     public static final Map<Integer, MCH_EntityInfo> serverEntities = new ConcurrentHashMap<>();
 
-    private int tickCounter;
+    private long tickCounter;
     private long snapshotSeq = 0L; // 递增的全局快照序号
     private final Queue<TrackerResyncRequest> trackerResyncRequests = new ConcurrentLinkedQueue<>();
     private final Map<EntityPlayerMP, Long> lastTrackerResyncRequest = new WeakHashMap<>();
+    private final Map<EntityPlayerMP, PlayerSyncState> playerSyncStates = new WeakHashMap<>();
 
     public MCH_EntityInfoManager() {
         FMLCommonHandler.instance().bus().register(this);
@@ -150,14 +156,69 @@ public class MCH_EntityInfoManager {
             @SuppressWarnings("unchecked")
             List<EntityPlayerMP> players = world.playerEntities;
             for (EntityPlayerMP player : players) {
-                List<MCH_EntityInfo> visibleEntities = new ArrayList<MCH_EntityInfo>();
+                List<MCH_EntityInfo> visibleEntities = null;
                 for (MCH_EntityInfo info : worldEntities) {
                     if (info.getDistanceSqToEntity(player) <= ENTITY_INFO_SYNC_RANGE_SQ) {
+                        if (visibleEntities == null) {
+                            visibleEntities = new ArrayList<MCH_EntityInfo>();
+                        }
                         visibleEntities.add(info);
                     }
                 }
-                MCH_MOD.getPacketHandler().sendTo(new PacketEntityInfoSync(visibleEntities, snapshotSeq), player);
+                if (visibleEntities == null) {
+                    visibleEntities = Collections.emptyList();
+                }
+                PlayerSyncState state = this.playerSyncStates.get(player);
+                if (state == null || state.dimension != player.dimension) {
+                    state = new PlayerSyncState(player.dimension);
+                    this.playerSyncStates.put(player, state);
+                }
+                boolean membershipChanged = state.hasMembershipChanged(visibleEntities);
+                int interval = visibleEntities.isEmpty() ? EMPTY_HEARTBEAT_INTERVAL_TICKS : ACTIVE_SYNC_INTERVAL_TICKS;
+                if (!state.hasSent || membershipChanged || tickCounter - state.lastSendTick >= interval) {
+                    MCH_MOD.getPacketHandler().sendTo(new PacketEntityInfoSync(visibleEntities, snapshotSeq), player);
+                    if (!state.hasSent || membershipChanged) {
+                        state.rememberMembership(visibleEntities);
+                    }
+                    state.lastSendTick = tickCounter;
+                    state.hasSent = true;
+                }
             }
+        }
+    }
+
+    private static final class PlayerSyncState {
+        final int dimension;
+        Set<Integer> visibleEntityIds = Collections.emptySet();
+        long lastSendTick;
+        boolean hasSent;
+
+        PlayerSyncState(int dimension) {
+            this.dimension = dimension;
+        }
+
+        boolean hasMembershipChanged(List<MCH_EntityInfo> entities) {
+            if (this.visibleEntityIds.size() != entities.size()) {
+                return true;
+            }
+            for (MCH_EntityInfo info : entities) {
+                if (!this.visibleEntityIds.contains(Integer.valueOf(info.entityId))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void rememberMembership(List<MCH_EntityInfo> entities) {
+            if (entities.isEmpty()) {
+                this.visibleEntityIds = Collections.emptySet();
+                return;
+            }
+            Set<Integer> ids = new HashSet<Integer>();
+            for (MCH_EntityInfo info : entities) {
+                ids.add(Integer.valueOf(info.entityId));
+            }
+            this.visibleEntityIds = ids;
         }
     }
 

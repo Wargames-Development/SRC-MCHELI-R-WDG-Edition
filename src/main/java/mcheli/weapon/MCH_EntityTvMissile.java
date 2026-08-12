@@ -104,7 +104,8 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
             if (e != null) {
                 int sourceType = ac != null ? MCH_LaserStateStore.SOURCE_AIRCRAFT : MCH_LaserStateStore.SOURCE_HANDHELD;
-                MCH_LaserStateStore.LaserState laser = MCH_LaserStateStore.getServerState(e.getEntityId(), sourceType);
+                MCH_LaserStateStore.LaserState laser = MCH_LaserStateStore.getServerState(
+                    e.getEntityId(), sourceType, super.worldObj.getTotalWorldTime());
                 if (laser != null && laser.active) {
                     if (!this.isLaserPointJammed(laser.x, laser.y, laser.z)) {
                         onLaserGuide(laser.x, laser.y, laser.z);

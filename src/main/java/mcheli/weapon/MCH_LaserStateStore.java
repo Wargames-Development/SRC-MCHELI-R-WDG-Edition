@@ -14,6 +14,7 @@ public final class MCH_LaserStateStore {
     public static final int SOURCE_AIRCRAFT = 2;
 
     public static final int DEFAULT_TTL_TICKS = 40;
+    public static final long NO_NETWORK_UPDATE = -1L;
 
     public static class LaserState {
         public int ownerId;
@@ -24,6 +25,9 @@ public final class MCH_LaserStateStore {
         public boolean active;
         public long sequence;
         public long lastUpdateTick;
+        private boolean published;
+        private boolean lastPublishedActive;
+        private long lastPublishedTick;
     }
 
     private static final Map<Long, LaserState> SERVER_STATES = new HashMap<Long, LaserState>();
@@ -63,6 +67,17 @@ public final class MCH_LaserStateStore {
         return SERVER_STATES.get(buildKey(ownerId, sourceType));
     }
 
+    public static synchronized LaserState getServerState(int ownerId, int sourceType, long worldTick) {
+        long key = buildKey(ownerId, sourceType);
+        LaserState state = SERVER_STATES.get(key);
+        if (state != null && (worldTick < state.lastUpdateTick
+            || worldTick - state.lastUpdateTick > DEFAULT_TTL_TICKS)) {
+            SERVER_STATES.remove(key);
+            return null;
+        }
+        return state;
+    }
+
     public static synchronized void upsertClientState(int ownerId, int sourceType, double x, double y, double z,
                                                       boolean active, long sequence, long worldTick) {
         if (!isValidSourceType(sourceType)) {
@@ -83,6 +98,47 @@ public final class MCH_LaserStateStore {
         st.sequence = sequence;
         st.lastUpdateTick = worldTick;
         CLIENT_STATES.put(key, st);
+    }
+
+    /**
+     * Updates the local presentation state and returns a sequence only when a packet is needed.
+     * State transitions are immediate; active coordinates are capped to the requested interval.
+     */
+    public static synchronized long updateClientStateForNetwork(int ownerId, int sourceType,
+                                                                 double x, double y, double z, boolean active,
+                                                                 long worldTick, int activeIntervalTicks) {
+        if (!isValidSourceType(sourceType)) {
+            return NO_NETWORK_UPDATE;
+        }
+        long key = buildKey(ownerId, sourceType);
+        LaserState state = CLIENT_STATES.get(key);
+        if (state == null) {
+            state = new LaserState();
+            state.ownerId = ownerId;
+            state.sourceType = sourceType;
+            CLIENT_STATES.put(key, state);
+        }
+
+        int interval = Math.max(1, activeIntervalTicks);
+        boolean transition = !state.published || state.lastPublishedActive != active;
+        boolean activeUpdateDue = active && (worldTick < state.lastPublishedTick
+            || worldTick - state.lastPublishedTick >= interval);
+
+        state.x = x;
+        state.y = y;
+        state.z = z;
+        state.active = active;
+        state.lastUpdateTick = worldTick;
+
+        if (!transition && !activeUpdateDue) {
+            return NO_NETWORK_UPDATE;
+        }
+
+        state.sequence++;
+        state.published = true;
+        state.lastPublishedActive = active;
+        state.lastPublishedTick = worldTick;
+        return state.sequence;
     }
 
     public static synchronized LaserState getClientState(int ownerId, int sourceType) {

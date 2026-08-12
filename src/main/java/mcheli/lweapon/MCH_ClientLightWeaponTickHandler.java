@@ -32,6 +32,8 @@ import java.nio.IntBuffer;
 
 public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase {
 
+    private static final int ACTIVE_LASER_SYNC_INTERVAL_TICKS = 2;
+
     public static FloatBuffer screenPos = BufferUtils.createFloatBuffer(3);
     public static FloatBuffer matModel = BufferUtils.createFloatBuffer(16);
     public static FloatBuffer matProjection = BufferUtils.createFloatBuffer(16);
@@ -59,7 +61,6 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
     private int laserAimKeepTicks = 0;
     private boolean fovZoomActive = false;
     private float baseFov = 70.0F;
-    private long handheldLaserSequence = 0L;
 
 
     public MCH_ClientLightWeaponTickHandler(Minecraft minecraft, MCH_Config config) {
@@ -565,12 +566,15 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
         if (player == null || player.worldObj == null) {
             return;
         }
-        ++this.handheldLaserSequence;
         long now = player.worldObj.getTotalWorldTime();
         int ownerId = player.getEntityId();
-        MCH_LaserStateStore.upsertClientState(ownerId, MCH_LaserStateStore.SOURCE_HANDHELD, x, y, z, active, this.handheldLaserSequence, now);
+        long sequence = MCH_LaserStateStore.updateClientStateForNetwork(ownerId, MCH_LaserStateStore.SOURCE_HANDHELD,
+            x, y, z, active, now, ACTIVE_LASER_SYNC_INTERVAL_TICKS);
+        if (sequence == MCH_LaserStateStore.NO_NETWORK_UPDATE) {
+            return;
+        }
         MCH_MOD.getPacketHandler().sendToServer(
-            new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_HANDHELD, this.handheldLaserSequence, active, x, y, z, ownerId)
+            new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_HANDHELD, sequence, active, x, y, z, ownerId)
         );
     }
 

@@ -20,6 +20,8 @@ import net.minecraft.world.World;
 
 public class MCH_WeaponTvMissile extends MCH_WeaponBase {
 
+    private static final int ACTIVE_LASER_SYNC_INTERVAL_TICKS = 2;
+
     public MCH_LaserGuidanceSystem guidanceSystem;
     protected MCH_EntityTvMissile lastShotTvMissile;
     protected Entity lastShotEntity;
@@ -184,8 +186,11 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
         }
         long now = user.worldObj.getTotalWorldTime();
         int ownerId = user.getEntityId();
-        long sequence = MCH_LaserStateStore.nextClientSequence(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT);
-        MCH_LaserStateStore.upsertClientState(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT, x, y, z, active, sequence, now);
+        long sequence = MCH_LaserStateStore.updateClientStateForNetwork(ownerId, MCH_LaserStateStore.SOURCE_AIRCRAFT,
+            x, y, z, active, now, ACTIVE_LASER_SYNC_INTERVAL_TICKS);
+        if (sequence == MCH_LaserStateStore.NO_NETWORK_UPDATE) {
+            return;
+        }
         MCH_MOD.getPacketHandler().sendToServer(
             new PacketLaserStateSync(MCH_LaserStateStore.SOURCE_AIRCRAFT, sequence, active, x, y, z, ownerId)
         );
