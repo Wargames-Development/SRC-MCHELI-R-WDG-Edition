@@ -7,9 +7,11 @@ import mcheli.network.packets.PacketRadarSwitchState;
 import mcheli.network.packets.PacketUseWeapon;
 import mcheli.render.MCH_RenderLeadCircle;
 import mcheli.render.MCH_RenderRWR;
+import mcheli.weapon.MCH_EntityTvMissile;
 import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
+import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_Network;
 import mcheli.wrapper.W_PacketBase;
 import net.minecraft.client.Minecraft;
@@ -103,6 +105,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
     }
 
     public boolean commonPlayerControl(EntityPlayer player, MCH_EntityAircraft ac, boolean isPilot, MCH_PacketPlayerControlBase pc) {
+        this.syncTVMissileGuidance(player, ac);
         if (Keyboard.isKeyDown(MCH_Config.KeyFreeLook.prmInt)) {
             if (this.KeyGUI.isKeyDown() || this.KeyExtra.isKeyDown()) {
                 MCH_PacketSeatPlayerControl psc = new MCH_PacketSeatPlayerControl();
@@ -398,6 +401,20 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         return (send || player.ticksExisted % 100 == 0);
     }
 
+    private void syncTVMissileGuidance(EntityPlayer player, MCH_EntityAircraft ac) {
+        if (player == null || ac == null) {
+            return;
+        }
+        MCH_EntityTvMissile missile = ac.getTVMissile();
+        if (missile == null || !missile.isTVMissile || missile.isDead
+            || !W_Entity.isEqual(missile.shootingEntity, player)) {
+            return;
+        }
+        Entity view = ac.isMissileCameraMode(player) && this.mc.renderViewEntity != null
+            ? this.mc.renderViewEntity : player;
+        MCH_PacketTVMissileGuidance.send(missile.getEntityId(), view.rotationYaw, view.rotationPitch);
+    }
+
     private boolean shouldKeepWeaponRightLock(MCH_EntityAircraft ac, EntityPlayer player) {
         if (ac == null || player == null) {
             return false;
@@ -411,8 +428,18 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         if (info.enableDataLink && info.onlyDataLink) {
             ws.setDataLinkMode(true);
         }
+        if (usesBvrRadarFireControl(ac, info)) {
+            return false;
+        }
         // These weapon modes rely on right-click guidance/lock and should keep their original behavior.
         return info.passiveRadar || info.isGPSMissile || info.laserGuidance || "tvmissile".equals(type);
+    }
+
+    private boolean usesBvrRadarFireControl(MCH_EntityAircraft ac, MCH_WeaponInfo info) {
+        return ac != null && ac.getAcInfo() != null
+            && ac.getAcInfo().enableBVR && ac.getAcInfo().enableRadar
+            && info != null && !info.antiRadiationMissile
+            && (info.activeRadar || info.passiveRadar || info.semiActiveRadar);
     }
 
     private boolean isPureHeatSeeker(MCH_EntityAircraft ac, EntityPlayer player) {

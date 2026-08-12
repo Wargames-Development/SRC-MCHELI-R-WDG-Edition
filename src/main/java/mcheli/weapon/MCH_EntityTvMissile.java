@@ -14,6 +14,9 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
     public boolean isSpawnParticle = true;
     public boolean isTVMissile;
     public boolean targeting = true;
+    private boolean hasTVGuidanceAngles;
+    private float tvGuidanceYaw;
+    private float tvGuidancePitch;
 
     public MCH_EntityTvMissile(World par1World) {
         super(par1World);
@@ -32,6 +35,14 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
 
     public void setTVMissile(boolean isTVMissile) {
         this.isTVMissile = isTVMissile;
+    }
+
+    public void setTVGuidanceAngles(float yaw, float pitch) {
+        if (!super.worldObj.isRemote && this.isTVMissile) {
+            this.tvGuidanceYaw = MathHelper.wrapAngleTo180_float(yaw);
+            this.tvGuidancePitch = MathHelper.clamp_float(pitch, -89.9F, 89.9F);
+            this.hasTVGuidanceAngles = true;
+        }
     }
 
     public void onUpdate() {
@@ -77,8 +88,8 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
                 MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(e);
                 if (ac != null) {
                     if (!isTVMissile || ac.getTVMissile() == this) {
-                        float yaw = e.rotationYaw;
-                        float pitch = e.rotationPitch;
+                        float yaw = this.hasTVGuidanceAngles ? this.tvGuidanceYaw : e.rotationYaw;
+                        float pitch = this.hasTVGuidanceAngles ? this.tvGuidancePitch : e.rotationPitch;
                         double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                         double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                         double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);

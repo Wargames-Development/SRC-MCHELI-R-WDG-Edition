@@ -2,6 +2,7 @@ package mcheli;
 
 import com.google.common.io.ByteArrayDataInput;
 import mcheli.aircraft.MCH_AircraftPacketHandler;
+import mcheli.aircraft.MCH_PacketTVMissileGuidance;
 import mcheli.block.MCH_DraftingTablePacketHandler;
 import mcheli.command.MCH_CommandPacketHandler;
 import mcheli.economy.MCH_EconomyPacketHandler;
@@ -119,6 +120,9 @@ public class MCH_PacketHandler extends W_PacketHandler {
                 break;
             case 536875063:
                 MCH_AircraftPacketHandler.onPacketNotifyInfoReloaded(entityPlayer, data);
+                break;
+            case 536875064:
+                MCH_PacketTVMissileGuidance.handleServer(entityPlayer, data);
                 break;
             case 536875072:
                 MCH_AircraftPacketHandler.onPacket_ClientSetting(entityPlayer, data);

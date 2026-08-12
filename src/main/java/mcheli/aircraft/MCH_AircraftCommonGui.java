@@ -3,6 +3,7 @@ package mcheli.aircraft;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
+import mcheli.MCH_I18n;
 import mcheli.MCH_KeyName;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
@@ -85,6 +86,29 @@ public abstract class MCH_AircraftCommonGui extends MCH_Gui {
 
     public void drawHitBullet(MCH_EntityAircraft ac, int color, int seatID) {
         this.drawHitBullet(ac.getHitStatus(), ac.getMaxHitStatus(), color);
+    }
+
+    protected void drawCountermeasureCounts(MCH_EntityAircraft ac) {
+        if (ac == null || (!ac.haveFlare() && !ac.haveChaff())) {
+            return;
+        }
+        int y = 8;
+        if (ac.haveFlare()) {
+            y = this.drawCountermeasureCount(
+                MCH_I18n.format("gui.mcheli.key.flare"),
+                ac.getRemainingFlarePairs(), ac.getFlareCapacity(), y);
+        }
+        if (ac.haveChaff()) {
+            this.drawCountermeasureCount(
+                MCH_I18n.format("gui.mcheli.key.chaff"),
+                ac.getRemainingChaffPairs(), ac.getChaffCapacity(), y);
+        }
+    }
+
+    private int drawCountermeasureCount(String label, int remaining, int capacity, int y) {
+        String text = String.format("%s %d/%d", label, remaining, capacity);
+        this.drawString(text, 8, y, 0x00FF00);
+        return y + 10;
     }
 
     protected void drawTvMissileNoise(MCH_EntityAircraft ac, MCH_EntityTvMissile tvmissile) {

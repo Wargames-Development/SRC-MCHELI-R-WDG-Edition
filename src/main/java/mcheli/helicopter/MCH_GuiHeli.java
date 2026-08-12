@@ -89,6 +89,9 @@ public class MCH_GuiHeli extends MCH_AircraftCommonGui {
                 this.drawHitBullet(heli, -805306369, seatID);
             }
 
+            if (!isThirdPersonView || MCH_Config.DisplayHUDThirdPerson.prmBool) {
+                this.drawCountermeasureCounts(heli);
+            }
         }
     }
 

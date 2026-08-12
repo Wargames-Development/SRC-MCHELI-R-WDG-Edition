@@ -3,6 +3,7 @@ package mcheli.weapon;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.MCH_Lib;
+import mcheli.MCH_MOD;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.MCH_RadarDebug;
 import mcheli.aircraft.MCH_AircraftInfo;
@@ -56,6 +57,9 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                 }
             }
         }
+        if (shouldBlockShotWithoutBvrRadarTrack(prm)) {
+            return false;
+        }
         if (shouldBlockShotByDataLink(prm)) {
             return false;
         }
@@ -102,7 +106,8 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
                 if (!getInfo().antiRadiationMissile) {
                     boolean validTarget = isValidServerTarget(prm, tgtEnt);
-                    boolean requiresTrackedTarget = getInfo().passiveRadar || getInfo().semiActiveRadar;
+                    boolean requiresTrackedTarget = requiresBvrRadarTrack(prm)
+                        || getInfo().passiveRadar || getInfo().semiActiveRadar;
                     if (requiresTrackedTarget && !validTarget) {
                         return false;
                     }
@@ -220,8 +225,51 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                     maxRange = Math.min(maxRange, ac.getAcInfo().radarMaxTargetRange);
                 }
             }
+            if (requiresBvrRadarTrack(prm)
+                && !MCH_MOD.rwrThreatManager.isEmitterTrackingTarget(ac.getEntityId(), target.getEntityId(),
+                    MCH_MOD.rwrThreatManager.getCurrentTick())) {
+                return false;
+            }
         }
         return prm.entity.getDistanceSqToEntity(target) <= maxRange * maxRange;
+    }
+
+    private boolean requiresBvrRadarTrack(MCH_WeaponParam prm) {
+        if (prm == null || !(prm.entity instanceof MCH_EntityAircraft) || getInfo().antiRadiationMissile
+            || !(getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar)) {
+            return false;
+        }
+        MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
+        return ac.getAcInfo() != null && ac.getAcInfo().enableBVR && ac.getAcInfo().enableRadar;
+    }
+
+    private boolean shouldBlockShotWithoutBvrRadarTrack(MCH_WeaponParam prm) {
+        if (!super.worldObj.isRemote || !requiresBvrRadarTrack(prm)) {
+            return false;
+        }
+        if (prm.user == null || prm.user.worldObj == null) {
+            return true;
+        }
+        MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
+        int targetId = ac.isRadarEnabledRuntime()
+            ? Math.max(0, MCH_RenderRWR.getRadarTrackingTargetId(ac)) : 0;
+        Entity target = targetId > 0 ? prm.user.worldObj.getEntityByID(targetId) : null;
+        if (target != null && (target.isDead || !super.guidanceSystem.canLockEntity(target))) {
+            target = null;
+            targetId = 0;
+        }
+        MCH_EntityInfo snapshot = targetId > 0 && target == null
+            ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
+        if (snapshot != null && System.currentTimeMillis() - snapshot.lastUpdateTime > SNAPSHOT_TARGET_STALE_MS) {
+            snapshot = null;
+            targetId = 0;
+        }
+        setClientTarget(prm.user, targetId, target, snapshot);
+        if (targetId <= 0 || (target == null && snapshot == null)) {
+            sendDenyMessage(prm.user, "weapon.deny.radar_lock_first");
+            return true;
+        }
+        return false;
     }
 
     private boolean hasIntegratedRadar(MCH_WeaponParam prm) {
@@ -491,6 +539,13 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
         if (!super.worldObj.isRemote) {
             // do nothing
         } else {
+            if (requiresBvrRadarTrack(prm)) {
+                super.guidanceSystem.clearLock();
+                if (!updateRadarTargetFromRadar(prm)) {
+                    setClientTarget(prm.user, 0, null, null);
+                }
+                return false;
+            }
             if (updateDataLinkTargetsFromRadar(prm, false)) {
                 return false;
             }
@@ -534,6 +589,13 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
     @Override
     public void onUnlock(MCH_WeaponParam prm) {
         if (worldObj.isRemote) {
+            if (requiresBvrRadarTrack(prm)) {
+                super.guidanceSystem.clearLock();
+                if (!updateRadarTargetFromRadar(prm)) {
+                    setClientTarget(prm.user, 0, null, null);
+                }
+                return;
+            }
             if (updateDataLinkTargetsFromRadar(prm, false)) {
                 return;
             }

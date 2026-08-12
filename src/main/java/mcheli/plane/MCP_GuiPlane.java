@@ -64,6 +64,9 @@ public class MCP_GuiPlane extends MCH_AircraftCommonGui {
                 }
             }
 
+            if (!isThirdPersonView || MCH_Config.DisplayHUDThirdPerson.prmBool) {
+                this.drawCountermeasureCounts(plane);
+            }
             this.drawHitBullet(plane, -14101432, seatID);
         }
     }

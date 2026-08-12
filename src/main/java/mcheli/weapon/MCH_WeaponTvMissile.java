@@ -124,10 +124,12 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
             // Runtime mode:
             // mode=0 -> TV guidance
-            // mode=1 -> terminal attack path (laser or command-line fallback handled by missile)
-            this.isTVGuided = prm.option1 == 0;
+            // mode=1 -> laser guidance when configured, otherwise fixed-mode manual TV guidance
+            // Non-laser TV weapons in existing content packs commonly use FixMode=1.
+            // Keep those on manual camera guidance; only mode 1 with LaserGuidance is laser-guided.
+            this.isTVGuided = prm.option1 == 0 || !getInfo().laserGuidance;
             float acr = super.acceleration;
-            if (!this.isTVGuided) {
+            if (prm.option1 != 0) {
                 acr = (float) ((double) acr * 1.5D);
             }
 
