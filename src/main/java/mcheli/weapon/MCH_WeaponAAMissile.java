@@ -214,6 +214,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (prm == null || prm.entity == null || target == null || target.isDead || target == prm.entity || target == prm.user) {
             return false;
         }
+        if (!getInfo().antiRadiationMissile && target instanceof MCH_EntityAircraft
+            && (getInfo().isRadarMissile || getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar)
+            && ((MCH_EntityAircraft)target).isECMJammerUsing()) {
+            return false;
+        }
         if (!super.guidanceSystem.canLockEntity(target)) {
             return false;
         }

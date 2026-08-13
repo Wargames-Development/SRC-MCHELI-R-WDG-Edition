@@ -477,7 +477,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             }
             if (this.isRadarMissile) {
                 MCH_EntityAircraft targetAc = getAircraftForEcmCheck(entity);
-                if (targetAc != null && targetAc.getAcInfo() != null && targetAc.getAcInfo().ecmJammerType == 2 && targetAc.isECMJammerUsing()) {
+                if (targetAc != null && targetAc.isECMJammerUsing()) {
                     return false;
                 }
             }

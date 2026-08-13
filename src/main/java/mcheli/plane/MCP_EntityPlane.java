@@ -28,6 +28,8 @@ import net.minecraft.world.World;
 import net.minecraft.util.AxisAlignedBB;
 public class MCP_EntityPlane extends MCH_EntityAircraft {
 
+    private static final float ROLL_REFERENCE_FRAMES_PER_TICK = 3.0F;
+
     public float soundVolume;
     public MCH_Parts partNozzle;
     public MCH_Parts partWing;
@@ -302,6 +304,11 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         return roll * 0.8F;
     }
 
+    protected float normalizeControlTickDelta(float partialTicks) {
+        // Preserve real sub-frame timing at high FPS instead of replacing it with a fixed large step.
+        return MathHelper.clamp_float(partialTicks, 0.0F, 1.0F);
+    }
+
     public boolean isOverridePlayerPitch() {
         return super.isOverridePlayerPitch() && !this.isHovering();
     }
@@ -358,7 +365,8 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             if (isFly && !this.isFreeLookMode() && !super.isGunnerMode && (!this.getAcInfo().isFloat || this.getWaterDepth() <= 0.0D)) {
                 if (!MCH_Config.MouseControlFlightSimMode.prmBool) {
                     this.rotationByKey(partialTicks);
-                    this.setRotRoll(this.getRotRoll() + this.addkeyRotValue * 0.5F * this.getAcInfo().mobilityRoll);
+                    this.setRotRoll(this.getRotRoll() + this.addkeyRotValue * 0.5F * this.getAcInfo().mobilityRoll
+                            * partialTicks * ROLL_REFERENCE_FRAMES_PER_TICK);
                 }
             } else {
                 rot = 1.0F;

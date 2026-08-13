@@ -1665,14 +1665,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void setAngles(Entity player, boolean fixRot, float fixYaw, float fixPitch, float deltaX, float deltaY, float x, float y, float partialTicks) {
-        if (partialTicks < 0.03F) {
-            partialTicks = 0.4F;
-        }
-
-        if (partialTicks > 0.9F) {
-            partialTicks = 0.6F;
-        }
-
+        partialTicks = this.normalizeControlTickDelta(partialTicks);
         this.lowPassPartialTicks.put(partialTicks);
         partialTicks = this.lowPassPartialTicks.getAvg();
         float ac_pitch = this.getRotPitch();
@@ -1809,6 +1802,18 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             this.aircraftRotChanged = true;
         }
 
+    }
+
+    protected float normalizeControlTickDelta(float partialTicks) {
+        if (partialTicks < 0.03F) {
+            partialTicks = 0.4F;
+        }
+
+        if (partialTicks > 0.9F) {
+            partialTicks = 0.6F;
+        }
+
+        return partialTicks;
     }
 
     public boolean canSwitchSearchLight(Entity entity) {

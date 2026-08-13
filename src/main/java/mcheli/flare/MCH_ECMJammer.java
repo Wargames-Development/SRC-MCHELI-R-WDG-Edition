@@ -6,8 +6,12 @@ import mcheli.network.PacketBase;
 import mcheli.network.packets.PacketECMJammerUse;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.weapon.MCH_EntityBaseBullet;
+import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -17,6 +21,7 @@ public class MCH_ECMJammer {
 
     private static final int RADAR_JAM_REFRESH_INTERVAL = 10;
     private static final int RADAR_JAM_GRACE_TICKS = 15;
+    private static final int MISSILE_JAM_HOLD_TICKS = 3;
 
     //冷却时长 0代表冷却结束
     public int tick;
@@ -52,6 +57,7 @@ public class MCH_ECMJammer {
             useTick = useTime;
 
             aircraft.getEntityData().setBoolean("ECMJammerUsing", true);
+            this.jamRadarMissilesInRange();
             int type = aircraft.getAcInfo() != null ? aircraft.getAcInfo().ecmJammerType : 0;
             W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "iron_curtain", 10.0F, 1.0F);
             MCH_MOD.getPacketHandler().sendToAll(
@@ -110,6 +116,9 @@ public class MCH_ECMJammer {
             return;
         }
         if (!worldObj.isRemote) {
+            if (this.aircraft.ticksExisted % 2 == 0) {
+                this.jamRadarMissilesInRange();
+            }
             if (this.aircraft.getAcInfo() != null
                 && this.aircraft.getAcInfo().ecmJammerType == 1
                 && this.useTick % RADAR_JAM_REFRESH_INTERVAL == 0) {
@@ -139,6 +148,70 @@ public class MCH_ECMJammer {
             prm.motionYUpAge = 1.5F;
             MCH_ParticlesUtil.spawnParticle(prm);
         }
+    }
+
+    private void jamRadarMissilesInRange() {
+        if (this.aircraft == null || this.aircraft.getAcInfo() == null) {
+            return;
+        }
+        double range = this.aircraft.getAcInfo().ecmJammerRange;
+        if (range <= 0.0D) {
+            return;
+        }
+        AxisAlignedBB area = AxisAlignedBB.getBoundingBox(
+            this.aircraft.boundingBox.minX - range, -30000000.0D, this.aircraft.boundingBox.minZ - range,
+            this.aircraft.boundingBox.maxX + range, 30000000.0D, this.aircraft.boundingBox.maxZ + range);
+        List missiles = this.worldObj.getEntitiesWithinAABB(MCH_EntityBaseBullet.class, area);
+        if (missiles == null) {
+            return;
+        }
+        double rangeSq = range * range;
+        for (Object o : missiles) {
+            MCH_EntityBaseBullet missile = (MCH_EntityBaseBullet)o;
+            if (missile == null || missile.isDead || missile.getInfo() == null || this.isFriendlyMissile(missile)) {
+                continue;
+            }
+            double dx = missile.posX - this.aircraft.posX;
+            double dz = missile.posZ - this.aircraft.posZ;
+            if (dx * dx + dz * dz <= rangeSq) {
+                missile.applyRadarJamming(MISSILE_JAM_HOLD_TICKS);
+            }
+        }
+    }
+
+    private boolean isFriendlyMissile(MCH_EntityBaseBullet missile) {
+        if (W_Entity.isEqual(missile.shootingAircraft, this.aircraft)
+            || W_Entity.isEqual(missile.shootingEntity, this.aircraft)
+            || this.aircraft.isMountedEntity(missile.shootingEntity)) {
+            return true;
+        }
+        for (int jammerSeat = 0; jammerSeat <= this.aircraft.getSeatNum(); ++jammerSeat) {
+            Entity jammerCrew = this.aircraft.getEntityBySeatId(jammerSeat);
+            if (!(jammerCrew instanceof EntityLivingBase)) {
+                continue;
+            }
+            if (W_Entity.isEqual(jammerCrew, missile.shootingEntity)
+                || this.isSameTeam((EntityLivingBase)jammerCrew, missile.shootingEntity)) {
+                return true;
+            }
+            if (missile.shootingAircraft instanceof MCH_EntityAircraft) {
+                MCH_EntityAircraft shootingAircraft = (MCH_EntityAircraft)missile.shootingAircraft;
+                for (int shooterSeat = 0; shooterSeat <= shootingAircraft.getSeatNum(); ++shooterSeat) {
+                    Entity shooter = shootingAircraft.getEntityBySeatId(shooterSeat);
+                    if (W_Entity.isEqual(jammerCrew, shooter)
+                        || this.isSameTeam((EntityLivingBase)jammerCrew, shooter)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isSameTeam(EntityLivingBase jammerCrew, Entity other) {
+        return other instanceof EntityLivingBase && jammerCrew.getTeam() != null
+            && ((EntityLivingBase)other).getTeam() != null
+            && jammerCrew.isOnSameTeam((EntityLivingBase)other);
     }
 
 

@@ -110,6 +110,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private boolean activeRadarCaptured = false;
     private boolean dataLinkTwsSelectedOnly = false;
     private boolean countermeasureDiversionActive = false;
+    private long radarJammedUntilTick = -1L;
     private final Set<Long> resistedFlareReleaseIds = new HashSet<Long>();
     private final Set<Long> processedFlareReleaseIds = new HashSet<Long>();
     private final Set<Long> processedChaffReleaseIds = new HashSet<Long>();
@@ -376,6 +377,28 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         return this.countermeasureDiversionActive;
     }
 
+    public boolean isRadarGuidanceJammed() {
+        return !this.worldObj.isRemote && this.getInfo() != null
+            && !this.getInfo().antiRadiationMissile
+            && (this.getInfo().isRadarMissile || this.getInfo().activeRadar
+                || this.getInfo().passiveRadar || this.getInfo().semiActiveRadar)
+            && this.radarJammedUntilTick >= this.worldObj.getTotalWorldTime();
+    }
+
+    public void applyRadarJamming(int holdTicks) {
+        if (this.worldObj.isRemote || this.getInfo() == null || this.getInfo().antiRadiationMissile
+            || !(this.getInfo().isRadarMissile || this.getInfo().activeRadar
+                || this.getInfo().passiveRadar || this.getInfo().semiActiveRadar)) {
+            return;
+        }
+        long untilTick = this.worldObj.getTotalWorldTime() + Math.max(1, holdTicks);
+        this.radarJammedUntilTick = Math.max(this.radarJammedUntilTick, untilTick);
+        this.setTargetEntity(null);
+        this.clearTargetMemory();
+        this.setDataLinkRelayMode(false);
+        this.setActiveRadarCaptured(false);
+    }
+
     protected void clearTargetMemory() {
         this.snapshotTargetId = 0;
         this.snapshotLastUpdate = 0L;
@@ -470,6 +493,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void setTargetEntity(Entity entity) {
+        if (entity != null && this.isRadarGuidanceJammed()) {
+            entity = null;
+        }
         // Guided projectiles must never track an individual player entity. Players
         // riding vehicles are targeted through the vehicle entity instead.
         if (entity instanceof EntityPlayer) {
@@ -2427,6 +2453,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
 
     protected void scanForTargets() {
+        if (this.isRadarGuidanceJammed()) {
+            this.setTargetEntity(null);
+            return;
+        }
         boolean radarCountermeasureSensitive = getInfo().isRadarMissile || getInfo().activeRadar
             || getInfo().passiveRadar || getInfo().semiActiveRadar;
         if (this.countermeasureDiversionActive && radarCountermeasureSensitive

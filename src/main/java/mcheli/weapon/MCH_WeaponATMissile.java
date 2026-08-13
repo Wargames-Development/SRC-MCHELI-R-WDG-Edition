@@ -214,6 +214,11 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
             || target == prm.entity || target == prm.user || !super.guidanceSystem.canLockEntity(target)) {
             return false;
         }
+        if (!getInfo().antiRadiationMissile && target instanceof MCH_EntityAircraft
+            && (getInfo().isRadarMissile || getInfo().activeRadar || getInfo().passiveRadar || getInfo().semiActiveRadar)
+            && ((MCH_EntityAircraft)target).isECMJammerUsing()) {
+            return false;
+        }
         double maxRange = Math.max(1.0D, getInfo().maxLockOnRange);
         if (prm.entity instanceof MCH_EntityAircraft) {
             MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;

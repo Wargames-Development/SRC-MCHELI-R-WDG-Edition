@@ -112,6 +112,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private static double mouseRollDeltaY = 0.0D;
     private static boolean isRideAircraft = false;
     private static float prevTick = 0.0F;
+    private long lastPlaneControlNanos = 0L;
     private final RenderItem economyHudItemRenderer = new RenderItem();
     public MCH_GuiCommon gui_Common;
     public MCH_Gui gui_Heli;
@@ -616,6 +617,18 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     }
 
+    private float getPlaneControlTickDelta() {
+        long now = System.nanoTime();
+        if (this.lastPlaneControlNanos == 0L) {
+            this.lastPlaneControlNanos = now;
+            return 1.0F / 3.0F;
+        }
+
+        float tickDelta = (float) (now - this.lastPlaneControlNanos) / 50000000.0F;
+        this.lastPlaneControlNanos = now;
+        return MathHelper.clamp_float(tickDelta, 0.0F, 1.0F);
+    }
+
     public void onRenderTickPre(float partialTicks) {
         MCH_GuiTargetMarker.clearMarkEntityPos();
         if (!MCH_ServerSettings.enableDebugBoundingBox) {
@@ -706,7 +719,13 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     if (var19.getAcInfo() == null) {
                         var17.setAngles((float) mouseDeltaX, (float) mouseDeltaY);
                     } else {
-                        var19.setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, partialTicks - prevTick);
+                        float controlTickDelta = partialTicks - prevTick;
+                        if (var19 instanceof MCP_EntityPlane) {
+                            controlTickDelta = this.getPlaneControlTickDelta();
+                        } else {
+                            this.lastPlaneControlNanos = 0L;
+                        }
+                        var19.setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, controlTickDelta);
                     }
 
                     var19.setupAllRiderRenderPosition(partialTicks, var17);
@@ -792,6 +811,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         W_Reflection.setCameraRoll(roll + revRoll);
                         this.correctViewEntityDummy(var17);
                     } else {
+                        this.lastPlaneControlNanos = 0L;
                         if (isRideAircraft) {
                             W_Reflection.setCameraRoll(0.0F);
                             isRideAircraft = false;

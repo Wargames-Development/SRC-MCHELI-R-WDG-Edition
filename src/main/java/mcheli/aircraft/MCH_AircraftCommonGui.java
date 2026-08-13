@@ -92,7 +92,7 @@ public abstract class MCH_AircraftCommonGui extends MCH_Gui {
         if (ac == null || (!ac.haveFlare() && !ac.haveChaff())) {
             return;
         }
-        int y = 8;
+        int y = super.height * 7 / 16;
         if (ac.haveFlare()) {
             y = this.drawCountermeasureCount(
                 MCH_I18n.format("gui.mcheli.key.flare"),
@@ -107,7 +107,8 @@ public abstract class MCH_AircraftCommonGui extends MCH_Gui {
 
     private int drawCountermeasureCount(String label, int remaining, int capacity, int y) {
         String text = String.format("%s %d/%d", label, remaining, capacity);
-        this.drawString(text, 8, y, 0x00FF00);
+        int x = super.width - super.mc.fontRenderer.getStringWidth(text) - 8;
+        this.drawString(text, x, y, 0x00FF00);
         return y + 10;
     }
 
