@@ -166,8 +166,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      */
     public int pdHDNMaxDegreeLockOutCount = 10;
     /**
-     * Number of unique flare releases rejected before a heat seeker can be diverted.
-     * Values less than or equal to zero allow the first eligible release to divert it.
+     * Legacy number of unique flare releases rejected before a heat seeker can be diverted.
+     * Used when FlareDiversionChance is omitted. Values less than or equal to zero
+     * allow the first eligible release to divert it.
      */
     public int antiFlareCount = -1;
     /**
@@ -302,11 +303,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public boolean predictTargetPos = true;
 
     /**
-     * Successful chaff diversions required to exhaust autonomous radar reacquisition.
-     * Zero makes the seeker ignore chaff. Only autonomous active-radar seekers
-     * can benefit from values above one by reacquiring after a diversion.
+     * Legacy number of successful chaff diversions allowed before autonomous radar
+     * reacquisition is exhausted. Used when ChaffDiversionChance is omitted.
+     * Zero makes the seeker ignore chaff.
      */
     public int numLockedChaffMax = 2;
+    /** Per-release diversion chance from 0 to 1. A negative value keeps legacy deterministic behavior. */
+    public float chaffDiversionChance = -1.0F;
+    /** Per-release diversion chance from 0 to 1. A negative value keeps legacy AntiFlareCount behavior. */
+    public float flareDiversionChance = -1.0F;
     public int countermeasureScanInterval = 3;
     public float countermeasureRange = 64.0F;
     public int countermeasureEffectiveTime = 80;
@@ -997,6 +1002,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.hitSoundRange = this.toInt(data);
             } else if (item.equalsIgnoreCase("NumLockedChaffMax")) {
                 this.numLockedChaffMax = this.toInt(data, 0, 100);
+            } else if (item.equalsIgnoreCase("ChaffDiversionChance")) {
+                this.chaffDiversionChance = this.toFloat(data, 0.0F, 1.0F);
+            } else if (item.equalsIgnoreCase("FlareDiversionChance")) {
+                this.flareDiversionChance = this.toFloat(data, 0.0F, 1.0F);
             } else if (item.equalsIgnoreCase("CountermeasureScanInterval")) {
                 this.countermeasureScanInterval = this.toInt(data, 1, 20);
             } else if (item.equalsIgnoreCase("CountermeasureRange")) {

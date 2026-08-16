@@ -17,7 +17,6 @@ import mcheli.wrapper.W_PacketBase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.Vec3;
 import org.lwjgl.input.Keyboard;
 
@@ -260,11 +259,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
         }
         if (!ac.isDestroyed() && this.KeyAPS.isKeyDown()) {
             if (ac.getSeatIdByEntity(player) <= 1) {
-                if (ac.getAcInfo() != null && ac.getAcInfo().haveAPS()
-                    && ac.getAcInfo().enableRadar && !ac.isRadarEnabledRuntime()) {
-                    player.addChatMessage(new ChatComponentText(MCH_I18n.format("key.mcheli.aps.radar_off")));
-                    playSoundNG();
-                } else if (ac.canUseAPS() && ac.useAPS(player)) {
+                if (ac.canUseAPS() && ac.useAPS(player)) {
                     pc.useAPS = true;
                     send = true;
                 } else {

@@ -3673,14 +3673,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean useAPS(Entity e) {
-        if (this.getAcInfo() != null && this.getAcInfo().haveAPS()) {
-            if (this.aps.onUse(e)) {
-                return true;
-            }
-            return false;
-        } else {
+        if (this.isDestroyed() || !this.canOperateCountermeasures(e) || !this.canUseAPS()) {
             return false;
         }
+        return this.aps.onUse(e);
     }
 
     public boolean useECMJammer(Entity e) {
@@ -3759,8 +3755,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean canUseAPS() {
-        return this.getAcInfo() != null && this.getAcInfo().haveAPS() && this.aps.tick == 0
-            && this.getAcInfo().enableRadar && this.isRadarEnabledRuntime();
+        // APS has its own threat sensor; the crew-operated search radar is unrelated.
+        return this.getAcInfo() != null && this.getAcInfo().haveAPS() && this.aps.tick == 0;
     }
 
     public boolean canUseECMJammer() {

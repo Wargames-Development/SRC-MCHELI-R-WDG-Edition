@@ -419,8 +419,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         boolean heatSeeker = this.getInfo().isHeatSeekerMissile;
         boolean radarSeeker = this.getInfo().isRadarMissile || this.getInfo().activeRadar
             || this.getInfo().passiveRadar || this.getInfo().semiActiveRadar;
+        boolean chanceBasedChaff = !heatSeeker && this.getInfo().chaffDiversionChance >= 0.0F;
         if ((!heatSeeker && !radarSeeker)
-            || (!heatSeeker && this.numLockedChaff >= this.getInfo().numLockedChaffMax)) {
+            || (!heatSeeker && !chanceBasedChaff
+                && this.numLockedChaff >= this.getInfo().numLockedChaffMax)) {
             return false;
         }
 
@@ -471,14 +473,26 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
         if (heatSeeker) {
             this.processedFlareReleaseIds.add(bestReleaseId);
-            int flareRejectCount = Math.max(0, this.getInfo().antiFlareCount);
-            if (this.resistedFlareReleaseIds.size() < flareRejectCount) {
-                this.resistedFlareReleaseIds.add(bestReleaseId);
-                return false;
+            if (this.getInfo().flareDiversionChance >= 0.0F) {
+                if (this.rand.nextFloat() >= this.getInfo().flareDiversionChance) {
+                    return false;
+                }
+            } else {
+                int flareRejectCount = Math.max(0, this.getInfo().antiFlareCount);
+                if (this.resistedFlareReleaseIds.size() < flareRejectCount) {
+                    this.resistedFlareReleaseIds.add(bestReleaseId);
+                    return false;
+                }
             }
         } else {
-            // Both entities in a released pair share this ID and must count as one diversion.
+            // Both entities in a released pair share this ID and must count as one release.
             this.processedChaffReleaseIds.add(bestReleaseId);
+            ++this.numLockedChaff;
+            if (chanceBasedChaff) {
+                if (this.rand.nextFloat() >= this.getInfo().chaffDiversionChance) {
+                    return false;
+                }
+            }
         }
 
         this.countermeasureDiversionActive = true;
@@ -486,9 +500,6 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.setActiveRadarCaptured(false);
         this.setTargetEntity(bestDecoy);
         this.clearTargetMemory();
-        if (!heatSeeker) {
-            ++this.numLockedChaff;
-        }
         return true;
     }
 
@@ -2460,7 +2471,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         boolean radarCountermeasureSensitive = getInfo().isRadarMissile || getInfo().activeRadar
             || getInfo().passiveRadar || getInfo().semiActiveRadar;
         if (this.countermeasureDiversionActive && radarCountermeasureSensitive
-            && numLockedChaff >= getInfo().numLockedChaffMax) {
+            && (getInfo().chaffDiversionChance >= 0.0F
+                || numLockedChaff >= getInfo().numLockedChaffMax)) {
             setTargetEntity(null);
             return;
         }

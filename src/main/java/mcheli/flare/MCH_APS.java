@@ -1,23 +1,18 @@
 package mcheli.flare;
 
-import mcheli.MCH_Explosion;
-import mcheli.MCH_ExplosionParam;
 import mcheli.MCH_FMURUtil;
 import mcheli.MCH_MOD;
+import mcheli.MCH_PacketEffectExplosion;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.packets.PacketIronCurtainUse;
-import mcheli.particles.MCH_ParticleParam;
-import mcheli.particles.MCH_ParticlesUtil;
 import mcheli.weapon.*;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 
 import java.util.List;
-import java.util.Random;
 
 public class MCH_APS {
 
@@ -37,7 +32,6 @@ public class MCH_APS {
     public int range;
 
     public Entity user;
-    private final Random rand = new Random();
 
     public MCH_APS(World w, MCH_EntityAircraft ac) {
         this.worldObj = w;
@@ -45,25 +39,21 @@ public class MCH_APS {
     }
 
     public boolean onUse(Entity user) {
-        boolean result = false;
-        System.out.println("MCH_APS.onUse");
+        if (!(user instanceof EntityLivingBase) || this.tick != 0) {
+            return false;
+        }
+
         this.user = user;
+        this.tick = this.waitTime;
+        this.useTick = this.useTime;
         if (worldObj.isRemote) {
-            if (tick == 0) {
-                tick = waitTime;
-                useTick = useTime;
-                result = true;
-                if (range == 100) {
-                    W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "iron_curtain", 3.0F, 1.0F);
-                    aircraft.ironCurtainRunningTick = useTick;
-                } else {
-                    W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_activate", 3.0F, 1.0F);
-                }
+            if (range == 100) {
+                W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "iron_curtain", 3.0F, 1.0F);
+                aircraft.ironCurtainRunningTick = useTick;
+            } else {
+                W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_activate", 3.0F, 1.0F);
             }
         } else {
-            result = true;
-            tick = waitTime;
-            useTick = useTime;
             aircraft.getEntityData().setBoolean("APSUsing", true);
             if (range == 100) {
                 W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "iron_curtain", 10.0F, 1.0F);
@@ -73,7 +63,7 @@ public class MCH_APS {
                 W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_activate", 3.0F, 1.0F);
             }
         }
-        return result;
+        return true;
     }
 
     public void onUpdate() {
@@ -88,7 +78,7 @@ public class MCH_APS {
                     onEnd();
                 }
             }
-            if (this.useTick > 0) {
+            if (this.useTick > 0 && !this.worldObj.isRemote) {
                 this.onUsing();
             }
             if (!this.isUsing() && this.aircraft.getEntityData().getBoolean("APSUsing")) {
@@ -97,31 +87,36 @@ public class MCH_APS {
         }
     }
 
-    private void spawnFlameLine(double ax, double ay, double az, double bx, double by, double bz) {
-        if (!worldObj.isRemote) return;
+    private void sendInterceptEffect(Entity projectile, float size, boolean smoking) {
+        W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
+        // Reuse the existing visual-effect packet without creating a damaging server explosion.
+        MCH_PacketEffectExplosion.ExplosionParam effect = MCH_PacketEffectExplosion.create();
+        effect.exploderID = user != null ? user.getEntityId() : -1;
+        effect.posX = projectile.posX;
+        effect.posY = projectile.posY;
+        effect.posZ = projectile.posZ;
+        effect.size = size;
+        effect.inWater = false;
+        effect.isSmoking = smoking;
+        MCH_PacketEffectExplosion.send(effect);
+    }
 
-        double dx = bx - ax;
-        double dy = by - ay;
-        double dz = bz - az;
-        int numParticles = 8 + rand.nextInt(6);
-
-        for (int i = 0; i < numParticles; ++i) {
-            double t = rand.nextDouble();
-            double px = ax + dx * t + (rand.nextDouble() - 0.5D) * 0.6D;
-            double py = ay + dy * t + (rand.nextDouble() - 0.5D) * 0.6D;
-            double pz = az + dz * t + (rand.nextDouble() - 0.5D) * 0.6D;
-
-            MCH_ParticleParam prm = new MCH_ParticleParam(worldObj, "smoke", px, py, pz);
-            prm.setColor(0.9F, 1.0F, 0.6F + rand.nextFloat() * 0.3F, rand.nextFloat() * 0.15F);
-            prm.size = 0.6F + rand.nextFloat() * 0.8F;
-            prm.age = 8 + rand.nextInt(12);
-            prm.gravity = -0.008F;
-            MCH_ParticlesUtil.spawnParticle(prm);
+    private boolean isHostileMissile(MCH_EntityBaseBullet bullet) {
+        if (!(this.user instanceof EntityLivingBase) || !(bullet.shootingEntity instanceof EntityLivingBase)) {
+            return false;
         }
+        if (bullet.shootingAircraft == this.aircraft || bullet.shootingEntity == this.aircraft || bullet.shootingEntity == this.user) {
+            return false;
+        }
+
+        EntityLivingBase operator = (EntityLivingBase)this.user;
+        EntityLivingBase shooter = (EntityLivingBase)bullet.shootingEntity;
+        return operator.getTeam() == null || shooter.getTeam() == null || !operator.isOnSameTeam(shooter);
     }
 
     private void onUsing() {
-        if (range == 100) {
+        // Projectile removal and FMUR integration are authoritative server operations.
+        if (worldObj.isRemote || range == 100 || !(user instanceof EntityLivingBase)) {
             return;
         }
         List list = worldObj.getEntitiesWithinAABBExcludingEntity(aircraft, aircraft.boundingBox.expand(range, range, range));
@@ -130,6 +125,8 @@ public class MCH_APS {
 
             boolean isBullet = entity.getClass().getName().contains("EntityBullet");
             boolean isGrenade = entity.getClass().getName().contains("EntityGrenade");
+            // APS recognizes guided threat classes directly. WeaponInfo.canBeIntercepted
+            // is reserved for weapon-on-weapon interceptor targeting.
             boolean isMissile = entity instanceof MCH_EntityAAMissile
                 || entity instanceof MCH_EntityRocket
                 || entity instanceof MCH_EntityATMissile
@@ -140,62 +137,25 @@ public class MCH_APS {
 
             if (isBullet) {
                 if (MCH_FMURUtil.bulletDestructedByAPS(entity, (EntityLivingBase) user)) {
-                    spawnFlameLine(aircraft.posX, aircraft.posY, aircraft.posZ, entity.posX, entity.posY, entity.posZ);
-                    if (!worldObj.isRemote) {
-                        W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
-                    }
+                    sendInterceptEffect(entity, 1.0F, false);
                 }
                 continue;
             }
 
             if (isGrenade) {
                 if (MCH_FMURUtil.grenadeDestructedByAPS(entity, (EntityLivingBase) user)) {
-                    spawnFlameLine(aircraft.posX, aircraft.posY, aircraft.posZ, entity.posX, entity.posY, entity.posZ);
-                    if (!worldObj.isRemote) {
-                        W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
-                        MCH_ExplosionParam param = MCH_ExplosionParam.builder()
-                            .exploder(user)
-                            .player(user instanceof EntityPlayer ? (EntityPlayer) user : null)
-                            .x(entity.posX).y(entity.posY).z(entity.posZ)
-                            .size(2.0F)
-                            .sizeBlock(0.0F)
-                            .isPlaySound(true)
-                            .isSmoking(true)
-                            .isFlaming(false)
-                            .isDestroyBlock(true)
-                            .countSetFireEntity(0)
-                            .isInWater(false)
-                            .build();
-                        MCH_Explosion.newExplosion(worldObj, param);
-                    }
+                    sendInterceptEffect(entity, 2.0F, true);
                 }
                 continue;
             }
 
             if (isMissile) {
                 MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) entity;
-                if (bullet.shootingEntity instanceof EntityLivingBase && user instanceof EntityLivingBase && !((EntityLivingBase) user).isOnSameTeam((EntityLivingBase) bullet.shootingEntity)) {
-                    spawnFlameLine(aircraft.posX, aircraft.posY, aircraft.posZ, entity.posX, entity.posY, entity.posZ);
-                    if (!worldObj.isRemote) {
-                        bullet.setDead();
-                        W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ, "aps_shoot", 5.0F, 1.0F);
-                        if (bullet.shootingEntity instanceof EntityPlayerMP) {
-                            MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
-                        }
-                        MCH_ExplosionParam param = MCH_ExplosionParam.builder()
-                            .exploder(user)
-                            .player(user instanceof EntityPlayer ? (EntityPlayer) user : null)
-                            .x(entity.posX).y(entity.posY).z(entity.posZ)
-                            .size(3.0F)
-                            .sizeBlock(0.0F)
-                            .isPlaySound(true)
-                            .isSmoking(true)
-                            .isFlaming(false)
-                            .isDestroyBlock(true)
-                            .countSetFireEntity(0)
-                            .isInWater(false)
-                            .build();
-                        MCH_Explosion.newExplosion(worldObj, param);
+                if (isHostileMissile(bullet)) {
+                    bullet.setDead();
+                    sendInterceptEffect(entity, 3.0F, true);
+                    if (bullet.shootingEntity instanceof EntityPlayerMP) {
+                        MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
                     }
                 }
             }
