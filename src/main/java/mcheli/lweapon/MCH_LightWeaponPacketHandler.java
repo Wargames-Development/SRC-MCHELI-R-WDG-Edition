@@ -2,6 +2,7 @@ package mcheli.lweapon;
 
 import com.google.common.io.ByteArrayDataInput;
 import mcheli.weapon.MCH_IEntityLockChecker;
+import mcheli.weapon.MCH_WeaponAAMissile;
 import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponCreator;
 import mcheli.weapon.MCH_WeaponParam;
@@ -46,16 +47,33 @@ public class MCH_LightWeaponPacketHandler {
                         MCH_WeaponParam prm = new MCH_WeaponParam();
                         prm.entity = player;
                         prm.user = player;
-                        prm.setPosAndRot(pc.useWeaponPosX, pc.useWeaponPosY, pc.useWeaponPosZ, player.rotationYaw, player.rotationPitch);
-                        prm.option1 = pc.useWeaponOption1;
-                        prm.option2 = pc.useWeaponOption2;
-                        w.shot(prm);
-                        if (!player.capabilities.isCreativeMode && is.getMaxDamage() == 1) {
-                            --is.stackSize;
+
+                        double launchX = pc.useWeaponPosX;
+                        double launchY = pc.useWeaponPosY;
+                        double launchZ = pc.useWeaponPosZ;
+                        if (w instanceof MCH_WeaponAAMissile) {
+                            // Handheld AAM packets historically used player.posY (feet) as the launch point.
+                            // Rebuild the origin on the server at shoulder/eye height so terrain at the
+                            // player's feet cannot reject or immediately eat an otherwise valid launch.
+                            launchX = player.posX;
+                            launchY = player.posY + player.getEyeHeight() - 0.15D;
+                            launchZ = player.posZ;
                         }
 
-                        if (is.getMaxDamage() > 1) {
-                            is.setItemDamage(is.getMaxDamage());
+                        prm.setPosAndRot(launchX, launchY, launchZ, player.rotationYaw, player.rotationPitch);
+                        prm.option1 = pc.useWeaponOption1;
+                        prm.option2 = pc.useWeaponOption2;
+
+                        boolean fired = w.shot(prm);
+                        if (fired) {
+                            // Only consume ammunition after the server actually accepted/spawned the shot.
+                            if (!player.capabilities.isCreativeMode && is.getMaxDamage() == 1) {
+                                --is.stackSize;
+                            }
+
+                            if (is.getMaxDamage() > 1) {
+                                is.setItemDamage(is.getMaxDamage());
+                            }
                         }
                     } else if (pc.cmpReload > 0 && is.getItemDamage() > 1 && W_EntityPlayer.hasItem(player, lweapon.bullet)) {
                         if (!player.capabilities.isCreativeMode) {

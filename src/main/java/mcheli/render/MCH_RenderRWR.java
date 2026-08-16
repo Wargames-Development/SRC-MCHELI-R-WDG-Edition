@@ -1901,16 +1901,20 @@ public class MCH_RenderRWR {
         if (trackState.selectedTargetId > 0) {
             MCH_EntityInfo selectedInfo = MCH_EntityInfoClientTracker.getEntityInfo(trackState.selectedTargetId);
             boolean invalidTargetType = !isTrackableForSearchType(selectedInfo, searchType);
-            if (invalidTargetType || isSelfTarget(ac, player, selectedInfo) || isTargetCountermeasureActive(ac, selectedInfo) || isSameTeamTarget(player, ac, selectedInfo)) {
+            boolean selectedIsMaintainedTrack = trackState.trackingTargetId == trackState.selectedTargetId;
+            boolean contactLost = !selectedIsMaintainedTrack && !cache.containsKey(trackState.selectedTargetId);
+            if (invalidTargetType || contactLost || isSelfTarget(ac, player, selectedInfo) || isTargetCountermeasureActive(ac, selectedInfo) || isSameTeamTarget(player, ac, selectedInfo)) {
                 if (MCH_RadarDebug.isEnabled()) {
                     String reason = invalidTargetType
                         ? "INVALID_TARGET_TYPE"
+                        : (contactLost
+                        ? "CONTACT_LOST"
                         : (isSelfTarget(ac, player, selectedInfo)
                         ? "SELF_TARGET"
-                        : (isSameTeamTarget(player, ac, selectedInfo) ? "FRIENDLY_TARGET" : "COUNTERMEASURE_ACTIVE"));
+                        : (isSameTeamTarget(player, ac, selectedInfo) ? "FRIENDLY_TARGET" : "COUNTERMEASURE_ACTIVE")));
                     MCH_RadarDebug.trace(ac.worldObj, ac, "select drop acId=%d target=%d reason=%s", aircraftId, trackState.selectedTargetId, reason);
                 }
-                if (trackState.trackingTargetId == trackState.selectedTargetId) {
+                if (selectedIsMaintainedTrack) {
                     setTrackingTarget(ac, aircraftId, trackState, -1);
                 }
                 trackState.selectedTargetId = -1;
@@ -2884,6 +2888,14 @@ public class MCH_RenderRWR {
             }
             // No selected target: silently ignore right-click to avoid noisy NG sound.
             return 0;
+        }
+        Map<Integer, RadarContact> cache = radarContactCache.get(aircraftId);
+        if (cache == null || !cache.containsKey(state.selectedTargetId)) {
+            if (MCH_RadarDebug.isEnabled()) {
+                MCH_RadarDebug.trace(ac.worldObj, ac, "track toggle acId=%d target=%d reason=NO_RADAR_CONTACT", aircraftId, state.selectedTargetId);
+            }
+            state.selectedTargetId = -1;
+            return 2;
         }
         MCH_EntityInfo target = MCH_EntityInfoClientTracker.getEntityInfo(state.selectedTargetId);
         if (target == null) {

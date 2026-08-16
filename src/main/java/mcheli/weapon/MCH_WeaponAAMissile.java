@@ -292,7 +292,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             return false;
         }
 
-        Vec3 from = W_WorldFunc.getWorldVec3(super.worldObj, prm.entity.posX, prm.entity.posY, prm.entity.posZ);
+        // Validate LOS from the actual launch/muzzle position. For handheld AAMs the packet
+        // handler rebuilds this at shoulder/eye height instead of the player's feet.
+        Vec3 from = W_WorldFunc.getWorldVec3(super.worldObj, prm.posX, prm.posY, prm.posZ);
         Vec3 to = W_WorldFunc.getWorldVec3(super.worldObj, target.posX,
             target.posY + (double)(target.height * 0.5F), target.posZ);
         MovingObjectPosition hit = W_WorldFunc.clip(super.worldObj, from, to, false, true, false);

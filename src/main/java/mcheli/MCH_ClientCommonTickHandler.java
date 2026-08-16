@@ -80,6 +80,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static final float hitTotalDamageScaleOrigin = 2.0f;
     private static final int DISPLAY_TEXTURE_CLEANUP_INTERVAL_TICKS = 20;
+    private static final int VEHICLE_DISMOUNT_HOLD_TICKS = 20;
     private static final ResourceLocation cross3rd = new ResourceLocation(W_MOD.DOMAIN, "textures/3rdcross.png");
     private static final ResourceLocation TEX_ICON_SL = new ResourceLocation("mcheli", "textures/gui/economy/coin_sl.png");
     private static final ResourceLocation TEX_ICON_GE = new ResourceLocation("mcheli", "textures/gui/economy/coin_ge.png");
@@ -142,6 +143,71 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private int lastAppliedCameraMode = -1;
     private World displayTextureCleanupWorld;
     private long lastDisplayTextureCleanupTick = -1L;
+    private int vehicleDismountHoldTicks = 0;
+    private boolean vehicleDismountKeyGateActive = false;
+
+    /**
+     * Prevent an accidental tap of Minecraft's Sneak/Dismount key from ejecting a
+     * player from an MCH vehicle. The physical key state is read directly so this
+     * follows whatever key the player has bound to Sneak/Dismount (Shift by
+     * default), including mouse-button bindings.
+     *
+     * While mounted, vanilla only sees the key as pressed after it has been held
+     * continuously for one second (20 client ticks). Releasing the key or opening
+     * a GUI resets the hold.
+     */
+    private void updateVehicleDismountHoldGate(EntityClientPlayerMP player) {
+        if (this.mc == null || this.mc.gameSettings == null || this.mc.gameSettings.keyBindSneak == null) {
+            this.vehicleDismountHoldTicks = 0;
+            this.vehicleDismountKeyGateActive = false;
+            return;
+        }
+
+        int keyCode = W_KeyBinding.getKeyCode(this.mc.gameSettings.keyBindSneak);
+        boolean physicallyDown = MCH_Key.isKeyDown(this.mc.gameSettings.keyBindSneak);
+        boolean ridingMchVehicle = false;
+
+        if (player != null) {
+            if (player.ridingEntity instanceof MCH_EntityAircraft) {
+                ridingMchVehicle = true;
+            } else if (player.ridingEntity instanceof MCH_EntitySeat) {
+                ridingMchVehicle = ((MCH_EntitySeat) player.ridingEntity).getParent() != null;
+            }
+        }
+
+        if (!ridingMchVehicle) {
+            // Restore the real key state immediately so normal sneaking works
+            // after leaving an MCH vehicle.
+            if (this.vehicleDismountKeyGateActive && keyCode != 0) {
+                net.minecraft.client.settings.KeyBinding.setKeyBindState(keyCode, physicallyDown);
+            }
+            this.vehicleDismountHoldTicks = 0;
+            this.vehicleDismountKeyGateActive = false;
+            return;
+        }
+
+        this.vehicleDismountKeyGateActive = true;
+
+        // Time spent in an inventory/menu does not count toward the hold.
+        if (this.mc.currentScreen != null || !physicallyDown) {
+            this.vehicleDismountHoldTicks = 0;
+            if (keyCode != 0) {
+                net.minecraft.client.settings.KeyBinding.setKeyBindState(keyCode, false);
+            }
+            return;
+        }
+
+        if (this.vehicleDismountHoldTicks < VEHICLE_DISMOUNT_HOLD_TICKS) {
+            ++this.vehicleDismountHoldTicks;
+        }
+
+        if (keyCode != 0) {
+            net.minecraft.client.settings.KeyBinding.setKeyBindState(
+                    keyCode,
+                    this.vehicleDismountHoldTicks >= VEHICLE_DISMOUNT_HOLD_TICKS
+            );
+        }
+    }
 
     private int[] getAndUpdateTrackedBvrMissileIds(MCH_EntityAircraft ac) {
         long now = System.currentTimeMillis();
@@ -869,6 +935,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onPlayerTickPre(EntityPlayer player) {
+        if (player == super.mc.thePlayer) {
+            this.updateVehicleDismountHoldGate(super.mc.thePlayer);
+        }
+
         if (player.worldObj.isRemote) {
             ItemStack currentItemstack = player.getCurrentEquippedItem();
             if (currentItemstack != null && currentItemstack.getItem() instanceof MCH_ItemWrench && player.getItemInUseCount() > 0 && player.getItemInUse() != currentItemstack) {

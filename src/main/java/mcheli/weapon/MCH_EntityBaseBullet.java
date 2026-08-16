@@ -880,23 +880,44 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             return;
         }
 
-        //如果需要预测目标位置，则根据目标当前速度做一个简单的预测
+        //如果需要预测目标位置，则根据目标当前速度做预测。
         if (getInfo().predictTargetPos) {
-            double currentDistance = MathHelper.sqrt_double(
-                (targetPosX - posX) * (targetPosX - posX)
-                    + (targetPosY - posY) * (targetPosY - posY)
-                    + (targetPosZ - posZ) * (targetPosZ - posZ)
-            );
+            double relX = targetPosX - posX;
+            double relY = targetPosY - posY;
+            double relZ = targetPosZ - posZ;
+            double currentDistance = MathHelper.sqrt_double(relX * relX + relY * relY + relZ * relZ);
             double missileSpeed = MathHelper.sqrt_double(
                 motionX * motionX + motionY * motionY + motionZ * motionZ
             );
             if (missileSpeed < 0.0001D) {
                 missileSpeed = this.acceleration;
             }
-            double timeToTarget = currentDistance / missileSpeed;
+
             double vx = targetEntity.motionX;
             double vy = targetEntity.motionY;
             double vz = targetEntity.motionZ;
+            double timeToTarget;
+
+            if (isPureHeatSeekerAAMissile()) {
+                // A distance/speed estimate badly over-leads closing targets and can put the
+                // predicted point behind the missile. Solve the constant-velocity intercept
+                // instead so head-on IR shots keep a physically sensible aim point.
+                timeToTarget = solveInterceptTime(relX, relY, relZ, vx, vy, vz, missileSpeed);
+                if (timeToTarget < 0.0D) {
+                    // No constant-velocity intercept exists (for example a faster receding
+                    // target). Aim at the current position rather than fabricating an extreme lead.
+                    timeToTarget = 0.0D;
+                } else {
+                    // Very long constant-velocity predictions are unstable against normal aircraft
+                    // maneuvering. Cap the IR lead horizon while preserving the correct head-on solve.
+                    double maxLeadTime = Math.max(1.0D, currentDistance / missileSpeed * 2.0D);
+                    timeToTarget = Math.min(timeToTarget, maxLeadTime);
+                }
+            } else {
+                // Preserve legacy prediction for other missile/guidance types.
+                timeToTarget = currentDistance / missileSpeed;
+            }
+
             targetPosX += vx * timeToTarget;
             targetPosY += vy * timeToTarget;
             targetPosZ += vz * timeToTarget;
@@ -918,6 +939,12 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         Vector3f targetDirection = new Vector3f(tx, ty, tz);
         double angle = Math.abs(Vector3f.angle(missileDirection, targetDirection));
         double maxAllowedAngle = Math.toRadians(this.getCurrentMaxDegreeOfMissile());
+        if (isPureHeatSeekerAAMissile()) {
+            // Keep the configured acquisition cone strict, but give a launched IR seeker a
+            // modest retention margin. This prevents one high-closing-rate tick from instantly
+            // deleting the target while turningFactor still limits how quickly the missile turns.
+            maxAllowedAngle = Math.min(Math.PI, maxAllowedAngle + Math.toRadians(20.0D));
+        }
 
         if (angle > maxAllowedAngle && !doingTopAttack) {
             setTargetEntity(null);
@@ -975,6 +1002,54 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.rotationPitch = -((float) (Math.atan2(this.motionY, r) * 180.0D / Math.PI));
     }
 
+    private boolean isPureHeatSeekerAAMissile() {
+        return this instanceof MCH_EntityAAMissile
+            && this.getInfo() != null
+            && "aamissile".equalsIgnoreCase(this.getInfo().type)
+            && this.getInfo().isHeatSeekerMissile
+            && !this.getInfo().activeRadar
+            && !this.getInfo().passiveRadar
+            && !this.getInfo().semiActiveRadar
+            && !this.getInfo().antiRadiationMissile;
+    }
+
+    /**
+     * Returns the earliest positive constant-velocity intercept time in ticks, or -1 when no
+     * intercept exists at the missile's current speed.
+     */
+    private double solveInterceptTime(double relX, double relY, double relZ,
+                                      double targetVelX, double targetVelY, double targetVelZ,
+                                      double missileSpeed) {
+        double a = targetVelX * targetVelX + targetVelY * targetVelY + targetVelZ * targetVelZ
+            - missileSpeed * missileSpeed;
+        double b = 2.0D * (relX * targetVelX + relY * targetVelY + relZ * targetVelZ);
+        double c = relX * relX + relY * relY + relZ * relZ;
+
+        if (Math.abs(a) < 1.0E-8D) {
+            if (Math.abs(b) < 1.0E-8D) {
+                return -1.0D;
+            }
+            double t = -c / b;
+            return t > 0.0D ? t : -1.0D;
+        }
+
+        double discriminant = b * b - 4.0D * a * c;
+        if (discriminant < 0.0D) {
+            return -1.0D;
+        }
+
+        double sqrt = Math.sqrt(discriminant);
+        double t1 = (-b - sqrt) / (2.0D * a);
+        double t2 = (-b + sqrt) / (2.0D * a);
+        double best = Double.POSITIVE_INFINITY;
+        if (t1 > 0.0D) {
+            best = t1;
+        }
+        if (t2 > 0.0D && t2 < best) {
+            best = t2;
+        }
+        return Double.isInfinite(best) ? -1.0D : best;
+    }
 
     public boolean checkValid() {
         if (this.shootingEntity == null && this.shootingAircraft == null) {

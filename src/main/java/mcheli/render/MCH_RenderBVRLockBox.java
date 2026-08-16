@@ -325,7 +325,10 @@ public class MCH_RenderBVRLockBox {
                 }
                 continue;
             }
-            if (!isPriorityTarget && !MCH_RenderRWR.isRadarContactVisible(ac, player, entity, partialTicks)) {
+            // Every BVR/GMTI box must come from the radar contact/track state. A selected or
+            // fire-control-priority entity must not bypass this gate, otherwise a stale ground
+            // selection can remain lockable after its GMTI contact has disappeared.
+            if (!MCH_RenderRWR.isRadarContactVisible(ac, player, entity, partialTicks)) {
                 skippedByRadarVisible++;
                 if (bvrDebugTick && (bvrDebugVerbose || isRadarSelectedOrTracking || isFireControlLocked)) {
                     double distDbg = Math.sqrt(entity.getDistanceSqToEntity(ac));
