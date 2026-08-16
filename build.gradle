@@ -1,5 +1,3 @@
-import java.util.Properties
-
 buildscript {
     repositories {
         mavenCentral()
@@ -26,26 +24,8 @@ archivesBaseName = jarBaseName
 def mcVersion = "1.7.10"
 def forgeVersion = "${mcVersion}-10.13.4.1614-1.7.10"
 
-def gradlePropsFile = file("gradle.properties")
-def persistedProps = new Properties()
-gradlePropsFile.withInputStream { persistedProps.load(it) }
-
-def currentBuildNumber = (persistedProps.getProperty("modBuildNumber") ?: "0").toInteger()
-
-def requestedTasks = gradle.startParameter.taskNames.collect { it.toLowerCase() }
-def shouldAutoIncrement = requestedTasks.isEmpty() || requestedTasks.any { taskName ->
-    taskName == "build" ||
-            taskName.endsWith(":build") ||
-            taskName == "assemble" ||
-            taskName.endsWith(":assemble") ||
-            taskName == "reobf" ||
-            taskName.endsWith(":reobf") ||
-            taskName == "jar" ||
-            taskName.endsWith(":jar")
-}
-
-def effectiveBuildNumber = shouldAutoIncrement ? currentBuildNumber + 1 : currentBuildNumber
-def baseVersion = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${effectiveBuildNumber}"
+def buildNumber = (project.findProperty("modBuildNumber") ?: "0").toInteger()
+def baseVersion = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${buildNumber}"
 def branchSuffix = (project.hasProperty("branch") && project.branch) ? "-${project.branch}" : ""
 def modVersionString = "${baseVersion}${branchSuffix}"
 
@@ -130,31 +110,9 @@ processResources {
 }
 
 jar {
-    def fullVersion = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${effectiveBuildNumber}"
+    def fullVersion = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${buildNumber}"
     def suffix = (project.hasProperty("branch") && project.branch) ? "-${project.branch}" : ""
     baseName = "${jarBaseName}-${fullVersion}${suffix}"
     version = null
     destinationDir = file("build/libs")
-}
-
-task persistBuildNumber {
-    onlyIf { shouldAutoIncrement }
-
-    doLast {
-        def updatedProps = new Properties()
-        gradlePropsFile.withInputStream { updatedProps.load(it) }
-        updatedProps.setProperty("modBuildNumber", String.valueOf(effectiveBuildNumber))
-
-        gradlePropsFile.withOutputStream { out ->
-            updatedProps.store(out, null)
-        }
-
-        println "MCHELI build number updated: X${currentBuildNumber} -> X${effectiveBuildNumber}"
-    }
-}
-
-if (shouldAutoIncrement) {
-    tasks.matching { it.name in ["build", "assemble", "reobf", "jar"] }.all { task ->
-        task.dependsOn persistBuildNumber
-    }
 }
