@@ -946,18 +946,26 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (ammoInMag.length > 0 && restAmmo.length > 0) {
             for (int i = 0; i < weaponNum; ++i) {
                 MCH_WeaponSet ws = this.getWeapon(i);
-                int inMag = i < ammoInMag.length ? ammoInMag[i] : 0;
-                int rest = i < restAmmo.length ? restAmmo[i] : 0;
-                ws.setAmmoNum(Math.max(0, inMag));
-                ws.setRestAllAmmoNum(Math.max(0, rest));
+                int savedInMag = i < ammoInMag.length ? Math.max(0, ammoInMag[i]) : 0;
+                int savedRest = i < restAmmo.length ? Math.max(0, restAmmo[i]) : 0;
+                int total = (int)Math.min((long)ws.getAllAmmoNum(), (long)savedInMag + (long)savedRest);
+                int inMag = Math.min(savedInMag, ws.getAmmoNumMax());
+                if (inMag > total) {
+                    inMag = total;
+                }
+                ws.setAmmoNum(inMag);
+                ws.setRestAllAmmoNum(total - inMag);
                 ws.countReloadWait = i < reloadWait.length ? Math.max(0, reloadWait[i]) : 0;
             }
         } else {
-            // Backward compatibility with legacy save format (only total ammo).
+            // Legacy AcWeaponsAmmo stores total ammo, not reserve ammo.
             int[] wa_list = nbt.getIntArray("AcWeaponsAmmo");
             for (int i = 0; i < wa_list.length && i < weaponNum; ++i) {
-                this.getWeapon(i).setRestAllAmmoNum(wa_list[i]);
-                this.getWeapon(i).reloadMag();
+                MCH_WeaponSet ws = this.getWeapon(i);
+                int total = MathHelper.clamp_int(wa_list[i], 0, ws.getAllAmmoNum());
+                int inMag = Math.min(total, ws.getAmmoNumMax());
+                ws.setAmmoNum(inMag);
+                ws.setRestAllAmmoNum(total - inMag);
             }
         }
 
@@ -3004,7 +3012,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
             this.setCommonStatus(2, isReloading);
             if (!this.isDestroyed() && this.beforeSupplyAmmo && !isReloading) {
-                this.reloadAllWeapon();
                 MCH_PacketNotifyAmmoNum.sendAllAmmoNum(this, (EntityPlayer) null);
             }
 
@@ -3086,7 +3093,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     ammo = 1;
                                 }
 
-                                ws.setRestAllAmmoNum(num + ammo);
+                                ws.setRestAllAmmoNum(ws.getRestAllAmmoNum() + ammo);
                                 EntityPlayer player = ac.getEntityByWeaponId(wid);
                                 if (num != ws.getRestAllAmmoNum() + ws.getAmmoNum()) {
                                     if (ws.getAmmoNum() <= 0) {

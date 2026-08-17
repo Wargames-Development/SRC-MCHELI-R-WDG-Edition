@@ -31,7 +31,6 @@ public class MCH_WeaponSet {
     public int countWait;
     public int countReloadWait;
 
-    private int[] reloadRemainPerSlot;
     public int soundWait;
     public float rotBarrelSpd;
     public float rotBarrel;
@@ -89,7 +88,7 @@ public class MCH_WeaponSet {
     }
 
     public void setAmmoNum(int n) {
-        this.numAmmo = n;
+        this.numAmmo = MathHelper.clamp_int(n, 0, this.getAmmoNumMax());
     }
 
     public int getAmmoNumMax() {
@@ -102,8 +101,8 @@ public class MCH_WeaponSet {
 
     public void setRestAllAmmoNum(int n) {
         int debugBefore = this.numRestAllAmmo;
-        int m = this.getInfo().maxAmmo - this.getAmmoNum();
-        this.numRestAllAmmo = n <= m ? n : m;
+        int maxReserve = Math.max(0, this.getInfo().maxAmmo - this.getAmmoNum());
+        this.numRestAllAmmo = MathHelper.clamp_int(n, 0, maxReserve);
         MCH_Lib.DbgLog(this.getFirstWeapon().worldObj, "MCH_WeaponSet.setRestAllAmmoNum:%s %d->%d (%d)", new Object[]{this.getName(), Integer.valueOf(debugBefore), Integer.valueOf(this.numRestAllAmmo), Integer.valueOf(n)});
     }
 
@@ -112,34 +111,21 @@ public class MCH_WeaponSet {
     }
 
     public void supplyRestAllAmmo() {
-         /*
-        int m = this.getInfo().maxAmmo;
-        if (this.getRestAllAmmoNum() + this.getAmmoNum() < m) {
-            this.setRestAllAmmoNum(this.getRestAllAmmoNum() + this.getAmmoNum() + this.getInfo().suppliedNum);
-        }
-        */
+        int maxAmmo = this.getInfo().maxAmmo;
+        if (this.getRestAllAmmoNum() + this.getAmmoNum() < maxAmmo) {
+            this.setRestAllAmmoNum(this.getRestAllAmmoNum() + this.getInfo().suppliedNum);
 
-        int m = this.getInfo().maxAmmo;
-        if (this.getRestAllAmmoNum() + this.getAmmoNum() < m) {
-            // Do the existing reserve/top-up logic
-            this.setRestAllAmmoNum(this.getRestAllAmmoNum() + this.getAmmoNum() + this.getInfo().suppliedNum);
-            // enforce reload delay when supplied via GUI/force paths
-            int delay = this.getCurrentWeapon().getReloadCount(); // == getInfo().reloadTime
+            int delay = this.getCurrentWeapon().getReloadCount();
             if (delay > 0) {
-                // Match the behavior in reload(): server subtracts 20 and clamps to >=1
                 if (!this.getFirstWeapon().worldObj.isRemote) {
                     delay -= 20;
-                    if (delay <= 0) delay = 1;
-                }
-                // Don’t shorten an already running reload
-                if (this.countReloadWait < delay) {
-                    this.countReloadWait = delay;
+                    if (delay <= 0) {
+                        delay = 1;
+                    }
                 }
 
-                // Keep the per-slot cache (Fix A) in sync
-                int idx = this.getCurrentWeaponIndex();
-                if (this.reloadRemainPerSlot != null && idx >= 0 && idx < this.reloadRemainPerSlot.length) {
-                    this.reloadRemainPerSlot[idx] = this.countReloadWait;
+                if (this.countReloadWait < delay) {
+                    this.countReloadWait = delay;
                 }
             }
         }
@@ -226,9 +212,7 @@ public class MCH_WeaponSet {
     }
 
     public void onSwitchWeapon(boolean isRemote, boolean isCreative) {
-        /*
         int cntSwitch = getCurrentWeapon().getInfo().weaponSwitchCount;
-
         if (this.countWait >= -cntSwitch) {
             if (this.countWait > cntSwitch) {
                 this.countWait = -this.countWait;
@@ -241,41 +225,6 @@ public class MCH_WeaponSet {
         if (isCreative) {
             this.setAmmoNum(this.getAmmoNumMax());
         }
-         */
-        // --- save remaining time for the current slot BEFORE changing index ---
-        if (this.reloadRemainPerSlot != null) {
-            int oldIdx = this.getCurrentWeaponIndex();
-            if (oldIdx >= 0 && oldIdx < this.reloadRemainPerSlot.length) {
-                this.reloadRemainPerSlot[oldIdx] = this.countReloadWait;
-            }
-        }
-
-        // existing switch timer logic
-        int cntSwitch = getCurrentWeapon().getInfo().weaponSwitchCount;
-        if (this.countWait >= -cntSwitch) {
-            if (this.countWait > cntSwitch) {
-                this.countWait = -this.countWait;
-            } else {
-                this.countWait = -cntSwitch;
-            }
-        }
-
-        // If your mod intentionally resets to slot 0, keep this:
-        this.currentWeaponIndex = 0;
-
-        // --- restore remaining time for the NEW slot AFTER changing index ---
-        if (this.reloadRemainPerSlot != null) {
-            int newIdx = this.getCurrentWeaponIndex();
-            if (newIdx >= 0 && newIdx < this.reloadRemainPerSlot.length) {
-                this.countReloadWait = this.reloadRemainPerSlot[newIdx];
-            }
-        }
-
-        // ----------------------------------------------------------------------
-        if (isCreative) {
-            this.setAmmoNum(this.getAmmoNumMax());
-        }
-
     }
 
     public boolean isUsed(int index) {
@@ -290,37 +239,12 @@ public class MCH_WeaponSet {
 
     public void update(Entity shooter, boolean isSelected, boolean isUsed) {
         if (this.getCurrentWeapon().getInfo() != null) {
-            /*
-            if (this.countReloadWait > 0) {
+            // Reload state belongs to the weapon set because magazine and reserve ammo are shared.
+            // Keep the existing behavior where a reload pauses while this weapon set is not selected.
+            if (isSelected && this.countReloadWait > 0) {
                 --this.countReloadWait;
                 if (this.countReloadWait == 0) {
                     this.reloadMag();
-                }
-            }
-             */
-
-            // lazy init / resize cache
-            if (this.weapons != null) {
-                if (this.reloadRemainPerSlot == null || this.reloadRemainPerSlot.length != this.weapons.length) {
-                    this.reloadRemainPerSlot = new int[this.weapons.length];
-                    java.util.Arrays.fill(this.reloadRemainPerSlot, 0);
-                }
-            }
-
-            // Pause reload unless this weapon is selected AND mirror remaining ticks into per-slot cache.
-            final int idx = this.getCurrentWeaponIndex();
-            if (idx >= 0 && this.reloadRemainPerSlot != null && idx < this.reloadRemainPerSlot.length) {
-                if (isSelected) {
-                    if (this.countReloadWait > 0) {
-                        --this.countReloadWait;
-                        this.reloadRemainPerSlot[idx] = this.countReloadWait;
-                        if (this.countReloadWait == 0) {
-                            this.reloadMag();
-                            this.reloadRemainPerSlot[idx] = 0;
-                        }
-                    }
-                } else {
-                    this.countReloadWait = this.reloadRemainPerSlot[idx];
                 }
             }
 
