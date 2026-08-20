@@ -1014,6 +1014,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 drawGui(this.gui_Title, partialTicks);
             }
 
+            this.renderVehicleDismountHoldIndicator(i, j, partialTicks);
+
             //渲染第三人称准心
             if (player != null && showVehicleCrossHair) {
                 final int scrW = scaledresolution.getScaledWidth();
@@ -1077,6 +1079,62 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 }
             }
         }
+    }
+
+    private void renderVehicleDismountHoldIndicator(int screenW, int screenH, float partialTicks) {
+        if (!this.vehicleDismountKeyGateActive || this.vehicleDismountHoldTicks <= 0
+                || this.mc == null || this.mc.thePlayer == null || this.mc.currentScreen != null) {
+            return;
+        }
+
+        float progress = ((float) this.vehicleDismountHoldTicks + partialTicks) / (float) VEHICLE_DISMOUNT_HOLD_TICKS;
+        progress = MathHelper.clamp_float(progress, 0.0F, 1.0F);
+
+        String text = "EXITING VEHICLE";
+        int centerX = screenW / 2;
+        int textY = screenH / 2 + 28;
+        int barWidth = 84;
+        int barHeight = 5;
+        int barLeft = centerX - barWidth / 2;
+        int barTop = textY + 11;
+        int fillWidth = Math.round((barWidth - 2) * progress);
+
+        this.mc.fontRenderer.drawStringWithShadow(
+                text,
+                centerX - this.mc.fontRenderer.getStringWidth(text) / 2,
+                textY,
+                0xFFFFFF
+        );
+
+        GL11.glPushMatrix();
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthMask(false);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+
+        Tessellator tess = Tessellator.instance;
+        this.drawDismountIndicatorRect(tess, barLeft, barTop, barLeft + barWidth, barTop + barHeight, 0, 0, 0, 150);
+        if (fillWidth > 0) {
+            this.drawDismountIndicatorRect(tess, barLeft + 1, barTop + 1, barLeft + 1 + fillWidth, barTop + barHeight - 1, 255, 255, 255, 220);
+        }
+
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glDepthMask(true);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glPopMatrix();
+    }
+
+    private void drawDismountIndicatorRect(Tessellator tess, int left, int top, int right, int bottom,
+                                            int red, int green, int blue, int alpha) {
+        tess.startDrawingQuads();
+        tess.setColorRGBA(red, green, blue, alpha);
+        tess.addVertex(left, bottom, 0.0D);
+        tess.addVertex(right, bottom, 0.0D);
+        tess.addVertex(right, top, 0.0D);
+        tess.addVertex(left, top, 0.0D);
+        tess.draw();
     }
 
     private void drawEconomyGainToast(int screenW, int screenH) {

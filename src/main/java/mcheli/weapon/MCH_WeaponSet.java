@@ -42,12 +42,18 @@ public class MCH_WeaponSet {
     private int lastUsedOptionParameter1;
     private int lastUsedOptionParameter2;
     private boolean dataLinkMode;
+    private volatile Entity pendingServerUseUser;
+    private int pendingServerUseOption1;
+    private int pendingServerUseOption2;
 
 
     public MCH_WeaponSet(MCH_WeaponBase[] weapon) {
         this.lastUsedOptionParameter1 = 0;
         this.lastUsedOptionParameter2 = 0;
         this.dataLinkMode = false;
+        this.pendingServerUseUser = null;
+        this.pendingServerUseOption1 = 0;
+        this.pendingServerUseOption2 = 0;
         this.name = weapon[0].name;
         this.weapons = weapon;
         this.currentWeaponIndex = 0;
@@ -144,6 +150,35 @@ public class MCH_WeaponSet {
         // return this.countWait == 0;
         // Block firing during switch-delay AND during reload countdown.
         return this.countWait == 0 && this.countReloadWait == 0;
+    }
+
+    public boolean hasPendingServerUse() {
+        return this.pendingServerUseUser != null;
+    }
+
+    public synchronized void queueServerUse(MCH_WeaponParam prm) {
+        if (prm == null || prm.user == null || this.pendingServerUseUser != null) {
+            return;
+        }
+        this.pendingServerUseUser = prm.user;
+        this.pendingServerUseOption1 = prm.option1;
+        this.pendingServerUseOption2 = prm.option2;
+    }
+
+    public synchronized MCH_WeaponParam consumePendingServerUse(Entity shooter) {
+        if (this.pendingServerUseUser == null || shooter == null) {
+            return null;
+        }
+        MCH_WeaponParam prm = new MCH_WeaponParam();
+        prm.entity = shooter;
+        prm.user = this.pendingServerUseUser;
+        prm.option1 = this.pendingServerUseOption1;
+        prm.option2 = this.pendingServerUseOption2;
+        prm.setPosition(shooter.posX, shooter.posY, shooter.posZ);
+        this.pendingServerUseUser = null;
+        this.pendingServerUseOption1 = 0;
+        this.pendingServerUseOption2 = 0;
+        return prm;
     }
 
     public boolean isLongDelayWeapon() {

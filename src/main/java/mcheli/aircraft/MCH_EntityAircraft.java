@@ -5739,7 +5739,17 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         prm.isInfinity = this.isInfinityAmmo(prm.user);
         if (prm.user != null) {
             MCH_WeaponSet currentWs = this.getCurrentWeapon(prm.user);
-            if (currentWs != null && currentWs.canUse()) {
+            if (currentWs != null && !currentWs.canUse()) {
+                // The client predicts a legal shot before sending PacketUseWeapon. Network/tick phase
+                // can therefore deliver that intent while the authoritative server cooldown still has
+                // a few ticks remaining. Preserve that one already-issued intent instead of dropping it.
+                if (!super.worldObj.isRemote && prm.user instanceof EntityPlayer
+                    && currentWs.countWait > 0 && currentWs.countReloadWait == 0) {
+                    currentWs.queueServerUse(prm);
+                }
+                return false;
+            }
+            if (currentWs != null) {
                 int sid = this.getSeatIdByEntity(prm.user);
                 if (this.getAcInfo().getWeaponSetById(sid) != null) {
                     prm.isTurret = ((MCH_AircraftInfo.Weapon) this.getAcInfo().getWeaponSetById(sid).weapons.get(0)).turret;
@@ -5974,6 +5984,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     }
 
                     w.update(this, isSelected, isWpnUsed);
+                    if (!this.worldObj.isRemote && w.hasPendingServerUse() && w.canUse()) {
+                        MCH_WeaponParam pendingUse = w.consumePendingServerUse(this);
+                        if (pendingUse != null && this.getCurrentWeapon(pendingUse.user) == w) {
+                            this.useCurrentWeapon(pendingUse);
+                        }
+                    }
                     MCH_AircraftInfo.Weapon wi = this.getAcInfo().getWeaponById(wid);
                     if (wi != null && !this.isDestroyed()) {
                         Entity entity = this.getEntityBySeatId(this.getWeaponSeatID(this.getWeaponInfoById(wid), wi));
