@@ -121,6 +121,9 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
         int srcBlend = GL11.glGetInteger(3041);
         int dstBlend = GL11.glGetInteger(3040);
         GL11.glBlendFunc(770, 771);
+        // Layer-3 particles render outside vanilla's normal transparent-particle state setup.
+        // Keep depth testing, but never let a translucent smoke billboard write scene depth.
+        GL11.glDepthMask(false);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         GL11.glDisable(2896);
         GL11.glDisable(2884);
@@ -147,6 +150,7 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
         tessellator.addVertexWithUV((double) (f11 + par3 * f10 + par6 * f10), (double) (f12 + par4 * f10), (double) (f13 + par5 * f10 + par7 * f10), (double) f6, (double) f8);
         tessellator.addVertexWithUV((double) (f11 + par3 * f10 - par6 * f10), (double) (f12 - par4 * f10), (double) (f13 + par5 * f10 - par7 * f10), (double) f6, (double) f9);
         tessellator.draw();
+        GL11.glDepthMask(true);
         GL11.glEnable(2884);
         GL11.glEnable(2896);
         GL11.glBlendFunc(srcBlend, dstBlend);

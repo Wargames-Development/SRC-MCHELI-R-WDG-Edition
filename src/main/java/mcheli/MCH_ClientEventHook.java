@@ -22,9 +22,11 @@ import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.event.RenderLivingEvent.Specials.Post;
 import net.minecraftforge.client.event.RenderLivingEvent.Specials.Pre;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -161,6 +163,35 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     }
 
     public void renderPlayerPost(net.minecraftforge.client.event.RenderPlayerEvent.Post event) {
+    }
+
+    @SubscribeEvent
+    public void renderWorldLast(RenderWorldLastEvent event) {
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityClientPlayerMP clientPlayer = mc.thePlayer;
+        if (clientPlayer == null || mc.theWorld == null || !MCH_GuiTargetMarker.isEnableEntityMarker()) {
+            return;
+        }
+
+        // Player markers used to be registered only from RenderLivingEvent.Post.
+        // A player culled by Minecraft's entity renderer therefore lost the HUD marker too.
+        // Register player positions independently without forcing their model or chunk to render.
+        for (Object obj : mc.theWorld.playerEntities) {
+            if (!(obj instanceof EntityPlayer)) {
+                continue;
+            }
+
+            EntityPlayer target = (EntityPlayer) obj;
+            if (target == clientPlayer || target.isDead) {
+                continue;
+            }
+
+            double x = target.lastTickPosX + (target.posX - target.lastTickPosX) * event.partialTicks - RenderManager.renderPosX;
+            double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * event.partialTicks - RenderManager.renderPosY
+                + (double) target.height + 0.5D;
+            double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * event.partialTicks - RenderManager.renderPosZ;
+            MCH_GuiTargetMarker.addMarkEntityPos(2, target, x, y, z);
+        }
     }
 
     @SubscribeEvent

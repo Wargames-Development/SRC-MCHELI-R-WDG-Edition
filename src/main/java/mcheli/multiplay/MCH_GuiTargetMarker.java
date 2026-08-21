@@ -26,6 +26,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 
 @SideOnly(Side.CLIENT)
@@ -36,6 +37,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     private static IntBuffer matViewport = BufferUtils.createIntBuffer(16);
     private static ArrayList<MCH_MarkEntityPos> entityPos = new ArrayList<>();
     private static HashMap<Integer, Integer> spotedEntity = new HashMap<>();
+    private static HashSet<Integer> markedPlayerEntityIds = new HashSet<>();
     private static Minecraft s_minecraft;
     private static int spotedEntityCountdown = 0;
 
@@ -155,6 +157,13 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
             }
 
             if (spotType != MCH_TargetType.NONE) {
+                if (entity instanceof EntityPlayer && spotType != MCH_TargetType.POINT) {
+                    Integer entityId = Integer.valueOf(entity.getEntityId());
+                    if (!markedPlayerEntityIds.add(entityId)) {
+                        return;
+                    }
+                }
+
                 MCH_MarkEntityPos e1 = new MCH_MarkEntityPos(spotType.ordinal(), entity);
                 GL11.glGetFloat(2982, matModel);
                 GL11.glGetFloat(2983, matProjection);
@@ -176,6 +185,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
 
     public static void clearMarkEntityPos() {
         entityPos.clear();
+        markedPlayerEntityIds.clear();
     }
 
     public static boolean isEnableEntityMarker() {
