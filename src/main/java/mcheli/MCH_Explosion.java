@@ -124,7 +124,7 @@ public class MCH_Explosion extends Explosion {
         }
 
         affectedBlockPositions.addAll(hashset);
-        if (explosionSize >= 2.0F && isSmoking) {
+        if (shouldUseHugeExplosionParticle(explosionSize) && isSmoking) {
             MCH_ParticlesUtil.DEF_spawnParticle("hugeexplosion", explosionX, explosionY, explosionZ, 1.0D, 0.0D, 0.0D, 10.0F);
         } else {
             MCH_ParticlesUtil.DEF_spawnParticle("largeexplode", explosionX, explosionY, explosionZ, 1.0D, 0.0D, 0.0D, 10.0F);
@@ -250,7 +250,7 @@ public class MCH_Explosion extends Explosion {
                         dirX,
                         dirY,
                         dirZ,
-                        explosionSize < 8.0F ? (explosionSize < 2.0F ? 1.5F : explosionSize * 1.5F) : 12.0F
+                        getExplosionParticleSize(explosionSize)
                     );
                     // 为粒子随机设置颜色值（RGB通道）
                     particle.r = particle.g = particle.b =
@@ -328,7 +328,7 @@ public class MCH_Explosion extends Explosion {
         }
 
         affectedBlockPositions.addAll(hashset);
-        if (explosionSize >= 2.0F && isSmoking) {
+        if (shouldUseHugeExplosionParticle(explosionSize) && isSmoking) {
             MCH_ParticlesUtil.DEF_spawnParticle("hugeexplosion", explosionX, explosionY, explosionZ, 1.0D, 0.0D, 0.0D, 10.0F);
         } else {
             MCH_ParticlesUtil.DEF_spawnParticle("largeexplode", explosionX, explosionY, explosionZ, 1.0D, 0.0D, 0.0D, 10.0F);
@@ -391,6 +391,18 @@ public class MCH_Explosion extends Explosion {
             }
 
         }
+    }
+
+    // Level 2 used to cross both visual thresholds at once, causing an abrupt jump from level 1.
+    private static boolean shouldUseHugeExplosionParticle(float explosionSize) {
+        return explosionSize > 2.0F;
+    }
+
+    private static float getExplosionParticleSize(float explosionSize) {
+        if (explosionSize <= 2.0F) {
+            return 1.5F;
+        }
+        return explosionSize < 8.0F ? explosionSize * 1.5F : 12.0F;
     }
 
     /**
