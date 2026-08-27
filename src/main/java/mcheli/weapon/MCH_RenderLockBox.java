@@ -109,7 +109,7 @@ public class MCH_RenderLockBox extends W_Render {
             if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
                 RenderHelper.disableStandardItemLighting();
                 OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-                GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
+                GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
             }
 
             tessellator.addVertex(-size - 1.0F, -size, 0.0D);

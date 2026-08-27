@@ -141,8 +141,8 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
         tessellator.setNormal(0.0F, 1.0F, 0.0F);
         if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-            GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
-            tessellator.setColorRGBA_F(1000F, 0F, 1000F, 1.0F);
+            GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
+            tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
             tessellator.setBrightness(15728880);
         }
         tessellator.addVertexWithUV((double) (f11 - par3 * f10 - par6 * f10), (double) (f12 - par4 * f10), (double) (f13 - par5 * f10 - par7 * f10), (double) f7, (double) f9);

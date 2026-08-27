@@ -55,8 +55,8 @@ public class MCH_EntityParticleExplode extends MCH_EntityParticleBase {
             tessellator.setBrightness(15728880);
             if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
                 OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-                GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
-                tessellator.setColorRGBA_F(1000F, 0F, 1000F, 1.0F);
+                GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
+                tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
             }
             tessellator.addVertexWithUV((double) (f11 - p_70539_3_ * f10 - p_70539_6_ * f10), (double) (f12 - p_70539_4_ * f10), (double) (f13 - p_70539_5_ * f10 - p_70539_7_ * f10), (double) f7, (double) f9);
             tessellator.addVertexWithUV((double) (f11 - p_70539_3_ * f10 + p_70539_6_ * f10), (double) (f12 + p_70539_4_ * f10), (double) (f13 - p_70539_5_ * f10 + p_70539_7_ * f10), (double) f7, (double) f8);

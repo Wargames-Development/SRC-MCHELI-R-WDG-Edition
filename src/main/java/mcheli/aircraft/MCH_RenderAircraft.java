@@ -59,6 +59,14 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     private static final ResourceLocation THERMAL_WHITE = new ResourceLocation(W_MOD.DOMAIN, "textures/test.png");
 
+    private static boolean shouldRenderAsThermalTarget(MCH_EntityAircraft ac) {
+        if (ac == null || MCH_Camera.currentCameraMode != MCH_Camera.MODE_THERMALVISION) {
+            return false;
+        }
+        Entity viewer = MCH_Lib.getClientPlayer();
+        return viewer == null || MCH_EntityAircraft.getAircraft_RiddenOrControl(viewer) != ac;
+    }
+
     public static boolean shouldSkipRender(Entity entity) {
         if (entity instanceof MCH_IEntityCanRideAircraft) {
             MCH_IEntityCanRideAircraft e = (MCH_IEntityCanRideAircraft) entity;
@@ -970,8 +978,8 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                     int color = 0x00ff00;
                                     if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
                                         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-                                        GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
-                                        tessellator.setColorRGBA_F(1000F, 0F, 1000F, 1.0F);
+                                        GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
+                                        tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
                                         color = 0xff00ff;
                                     }
                                     // 绘制矩形框，表示锁定范围
@@ -1118,10 +1126,10 @@ public abstract class MCH_RenderAircraft extends W_Render {
                     GL11.glColor4f(1F, 1F, 1F, 1.0F);
                 }
 
-                if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+                if (shouldRenderAsThermalTarget(ac)) {
                     RenderHelper.disableStandardItemLighting();
                     OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-                    GL11.glColor4f(1000F, 0F, 1000F, 1.0F);
+                    GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
                 }
 
                 if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_NIGHTVISION) {
@@ -1311,7 +1319,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     //@Override
     protected void bindTexture(String path, MCH_EntityAircraft ac) {
-        if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+        if (shouldRenderAsThermalTarget(ac)) {
             super.bindTexture(THERMAL_WHITE);
         } else {
             super.bindTexture(new ResourceLocation(W_MOD.DOMAIN, path));
