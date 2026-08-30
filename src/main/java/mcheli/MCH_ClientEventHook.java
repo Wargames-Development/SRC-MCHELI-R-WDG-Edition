@@ -1,7 +1,9 @@
 package mcheli;
 
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.aircraft.MCH_RenderAircraft;
@@ -21,6 +23,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
@@ -39,6 +42,7 @@ import java.util.List;
 
 public class MCH_ClientEventHook extends W_ClientEventHook {
 
+    private static final double MARKER_SNAPSHOT_DISCONTINUITY_SQ = 64.0D * 64.0D;
     private static final ResourceLocation ir_strobe = new ResourceLocation("mcheli", "textures/ir_strobe.png");
     public static List haveSearchLightAircraft = new ArrayList();
     public static float smoothing;
@@ -165,7 +169,7 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     public void renderPlayerPost(net.minecraftforge.client.event.RenderPlayerEvent.Post event) {
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void renderWorldLast(RenderWorldLastEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityClientPlayerMP clientPlayer = mc.thePlayer;
@@ -191,6 +195,54 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
                 + (double) target.height + 0.5D;
             double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * event.partialTicks - RenderManager.renderPosZ;
             MCH_GuiTargetMarker.addMarkEntityPos(2, target, x, y, z);
+        }
+
+        long now = System.currentTimeMillis();
+        MCH_EntityAircraft ownAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(clientPlayer);
+        for (MCH_EntityInfo info : MCH_EntityInfoClientTracker.getAllTrackedEntities()) {
+            if (info == null || info.destroyed || info.entityId <= 0
+                || info.entityId == clientPlayer.getEntityId()
+                || (ownAircraft != null && info.entityId == ownAircraft.getEntityId())
+                || !MCH_EntityInfoClientTracker.isEntityInLatestSnapshot(info.entityId)
+                || now - info.lastUpdateTime > MCH_EntityInfoClientTracker.EXPIRATION_MS) {
+                continue;
+            }
+
+            MCH_AircraftInfo aircraftInfo = MCH_AircraftInfo.allAircraftInfo.get(info.entityName);
+            double markerHeight;
+            if (aircraftInfo != null) {
+                markerHeight = aircraftInfo.markerHeight;
+            } else if (info.entityClassName != null && info.entityClassName.contains("EntityPlayer")) {
+                markerHeight = 2.3D;
+            } else {
+                continue;
+            }
+
+            Entity localEntity = mc.theWorld.getEntityByID(info.entityId);
+            double posX;
+            double posY;
+            double posZ;
+            if (localEntity != null && !localEntity.isDead) {
+                posX = localEntity.lastTickPosX + (localEntity.posX - localEntity.lastTickPosX) * event.partialTicks;
+                posY = localEntity.lastTickPosY + (localEntity.posY - localEntity.lastTickPosY) * event.partialTicks;
+                posZ = localEntity.lastTickPosZ + (localEntity.posZ - localEntity.lastTickPosZ) * event.partialTicks;
+                if (localEntity instanceof EntityPlayer) {
+                    markerHeight = localEntity.height + 0.5D;
+                }
+            } else {
+                double dx = info.posX - info.lastTickPosX;
+                double dy = info.posY - info.lastTickPosY;
+                double dz = info.posZ - info.lastTickPosZ;
+                boolean continuous = dx * dx + dy * dy + dz * dz <= MARKER_SNAPSHOT_DISCONTINUITY_SQ;
+                double partialTicks = continuous ? event.partialTicks : 1.0D;
+                posX = info.lastTickPosX + dx * partialTicks;
+                posY = info.lastTickPosY + dy * partialTicks;
+                posZ = info.lastTickPosZ + dz * partialTicks;
+            }
+            double x = posX - RenderManager.renderPosX;
+            double y = posY - RenderManager.renderPosY + markerHeight;
+            double z = posZ - RenderManager.renderPosZ;
+            MCH_GuiTargetMarker.addMarkEntityInfoPos(info, x, y, z);
         }
     }
 

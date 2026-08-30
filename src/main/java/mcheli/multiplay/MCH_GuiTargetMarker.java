@@ -3,6 +3,7 @@ package mcheli.multiplay;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
+import mcheli.MCH_EntityInfo;
 import mcheli.MCH_FMURUtil;
 import mcheli.MCH_MarkEntityPos;
 import mcheli.MCH_ServerSettings;
@@ -37,7 +38,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     private static IntBuffer matViewport = BufferUtils.createIntBuffer(16);
     private static ArrayList<MCH_MarkEntityPos> entityPos = new ArrayList<>();
     private static HashMap<Integer, Integer> spotedEntity = new HashMap<>();
-    private static HashSet<Integer> markedPlayerEntityIds = new HashSet<>();
+    private static HashSet<Integer> markedEntityIds = new HashSet<>();
     private static Minecraft s_minecraft;
     private static int spotedEntityCountdown = 0;
 
@@ -157,35 +158,87 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
             }
 
             if (spotType != MCH_TargetType.NONE) {
-                if (entity instanceof EntityPlayer && spotType != MCH_TargetType.POINT) {
-                    Integer entityId = Integer.valueOf(entity.getEntityId());
-                    if (!markedPlayerEntityIds.add(entityId)) {
+                Integer entityId = null;
+                if (spotType != MCH_TargetType.POINT) {
+                    entityId = Integer.valueOf(entity.getEntityId());
+                    if (markedEntityIds.contains(entityId)) {
                         return;
                     }
                 }
 
                 MCH_MarkEntityPos e1 = new MCH_MarkEntityPos(spotType.ordinal(), entity);
-                GL11.glGetFloat(2982, matModel);
-                GL11.glGetFloat(2983, matProjection);
-                GL11.glGetInteger(2978, matViewport);
-                if (nazo) {
-                    GLU.gluProject((float) z, (float) y, (float) x, matModel, matProjection, matViewport, e1.pos);
-                    float yy = e1.pos.get(1);
-                    GLU.gluProject((float) x, (float) y, (float) z, matModel, matProjection, matViewport, e1.pos);
-                    e1.pos.put(1, yy);
-                } else {
-                    GLU.gluProject((float) x, (float) y, (float) z, matModel, matProjection, matViewport, e1.pos);
+                if (!projectMarker(x, y, z, e1, nazo)
+                    || (spotType != MCH_TargetType.POINT && !isFrontProjection(e1))) {
+                    return;
                 }
-
+                if (entityId != null && !markedEntityIds.add(entityId)) {
+                    return;
+                }
                 entityPos.add(e1);
             }
 
         }
     }
 
+    public static void addMarkEntityInfoPos(MCH_EntityInfo info, double x, double y, double z) {
+        if (!isEnableEntityMarker() || info == null || info.entityId <= 0
+            || info.teamName == null || info.teamName.isEmpty()) {
+            return;
+        }
+        EntityClientPlayerMP clientPlayer = s_minecraft.thePlayer;
+        MCH_EntityAircraft ownAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(clientPlayer);
+        if (clientPlayer == null || clientPlayer.getTeam() == null
+            || info.entityId == clientPlayer.getEntityId()
+            || (ownAircraft != null && info.entityId == ownAircraft.getEntityId())
+            || !clientPlayer.getTeam().getRegisteredName().equals(info.teamName)
+            || markedEntityIds.contains(Integer.valueOf(info.entityId))) {
+            return;
+        }
+
+        MCH_MarkEntityPos marker = new MCH_MarkEntityPos(MCH_TargetType.SAME_TEAM_PLAYER.ordinal());
+        if (!projectMarker(x, y, z, marker, false) || !isFrontProjection(marker)
+            || !markedEntityIds.add(Integer.valueOf(info.entityId))) {
+            return;
+        }
+        entityPos.add(marker);
+    }
+
+    private static boolean projectMarker(double x, double y, double z, MCH_MarkEntityPos marker, boolean nazo) {
+        matModel.clear();
+        matProjection.clear();
+        matViewport.clear();
+        marker.pos.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, matModel);
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, matProjection);
+        GL11.glGetInteger(GL11.GL_VIEWPORT, matViewport);
+        if (nazo) {
+            if (!GLU.gluProject((float)z, (float)y, (float)x, matModel, matProjection, matViewport, marker.pos)) {
+                return false;
+            }
+            float projectedY = marker.pos.get(1);
+            marker.pos.clear();
+            if (!GLU.gluProject((float)x, (float)y, (float)z, matModel, matProjection, matViewport, marker.pos)) {
+                return false;
+            }
+            marker.pos.put(1, projectedY);
+        } else if (!GLU.gluProject((float)x, (float)y, (float)z, matModel, matProjection, matViewport, marker.pos)) {
+            return false;
+        }
+        return isFinite(marker.pos.get(0)) && isFinite(marker.pos.get(1)) && isFinite(marker.pos.get(2));
+    }
+
+    private static boolean isFrontProjection(MCH_MarkEntityPos marker) {
+        float depth = marker.pos.get(2);
+        return depth >= 0.0F && depth < 1.0F;
+    }
+
+    private static boolean isFinite(float value) {
+        return !Float.isNaN(value) && !Float.isInfinite(value);
+    }
+
     public static void clearMarkEntityPos() {
         entityPos.clear();
-        markedPlayerEntityIds.clear();
+        markedEntityIds.clear();
     }
 
     public static boolean isEnableEntityMarker() {
@@ -292,6 +345,10 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
                 x = e.pos.get(0) / (float) scale;
                 z = e.pos.get(2);
                 y = e.pos.get(1) / (float) scale;
+                if (!isFinite((float)x) || !isFinite((float)y) || !isFinite((float)z)
+                    || (e.type < MCH_TargetType.POINT.ordinal() && (z < 0.0D || z >= 1.0D))) {
+                    continue;
+                }
                 if (z < 1.0D) {
                     y = (double) DSH - y;
                 } else if (x < (double) (DW / 2)) {

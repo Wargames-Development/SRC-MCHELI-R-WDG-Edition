@@ -520,10 +520,9 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             || snapshot.altitudeAboveGround <= (double)getInfo().lockMinHeight) {
             return false;
         }
-        if (snapshot.worldName != null && prm.user.worldObj.getWorldInfo() != null
-            && !snapshot.worldName.equals(prm.user.worldObj.getWorldInfo().getWorldName())) {
-            return false;
-        }
+        // Do not compare WorldInfo names here: multiplayer clients commonly call the
+        // remote world "MpServer" while the authoritative server uses its save name.
+        // Entity snapshots are already sent per dimension and cleared on world unload.
         if (!isSnapshotVelocityGateValid(prm, snapshot)) {
             return false;
         }
@@ -532,7 +531,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (!acquiring) {
             range *= 1.0D - (double)getSnapshotStealth(snapshot);
         }
-        return snapshot.getDistanceSqToEntity(prm.entity) < range * range;
+        return snapshot.getDistanceSqToEntity(prm.entity) <= range * range;
     }
 
     private boolean isSnapshotVelocityGateValid(MCH_WeaponParam prm, MCH_EntityInfo snapshot) {

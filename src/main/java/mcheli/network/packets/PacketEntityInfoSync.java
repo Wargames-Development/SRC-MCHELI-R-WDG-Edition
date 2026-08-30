@@ -18,6 +18,7 @@ import java.util.List;
 public class PacketEntityInfoSync extends PacketBase {
 
     private static final int AGL_EXTENSION_MAGIC = 0x41474C31; // "AGL1"
+    private static final int TEAM_EXTENSION_MAGIC = 0x5445414D; // "TEAM"
 
     private List<MCH_EntityInfo> entities;
     private long snapshotSeq; // 新增：包级快照序号
@@ -61,6 +62,11 @@ public class PacketEntityInfoSync extends PacketBase {
         for (MCH_EntityInfo info : entities) {
             buf.writeDouble(info.altitudeAboveGround);
         }
+        buf.writeInt(TEAM_EXTENSION_MAGIC);
+        buf.writeInt(entities.size());
+        for (MCH_EntityInfo info : entities) {
+            writeUTF(buf, info.teamName != null ? info.teamName : "");
+        }
     }
 
     @Override
@@ -91,6 +97,7 @@ public class PacketEntityInfoSync extends PacketBase {
             ));
         }
         readAglExtension(buf);
+        readTeamExtension(buf);
     }
 
     private void readAglExtension(ByteBuf buf) {
@@ -104,6 +111,20 @@ public class PacketEntityInfoSync extends PacketBase {
         }
         for (int i = 0; i < aglCount; ++i) {
             entities.get(i).altitudeAboveGround = buf.readDouble();
+        }
+    }
+
+    private void readTeamExtension(ByteBuf buf) {
+        if (buf.readableBytes() < 8 || buf.getInt(buf.readerIndex()) != TEAM_EXTENSION_MAGIC) {
+            return;
+        }
+        buf.readInt();
+        int teamCount = buf.readInt();
+        if (teamCount != entities.size()) {
+            return;
+        }
+        for (int i = 0; i < teamCount; ++i) {
+            entities.get(i).teamName = readUTF(buf);
         }
     }
 

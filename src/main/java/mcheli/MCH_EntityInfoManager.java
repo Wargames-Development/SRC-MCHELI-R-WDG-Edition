@@ -5,8 +5,10 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.flare.MCH_EntityChaff;
 import mcheli.network.packets.PacketEntityInfoSync;
+import mcheli.uav.MCH_EntityUavStation;
 import mcheli.weapon.MCH_IEntityLockChecker;
 import mcheli.weapon.MCH_IMissile;
 import net.minecraft.entity.Entity;
@@ -158,7 +160,8 @@ public class MCH_EntityInfoManager {
             for (EntityPlayerMP player : players) {
                 List<MCH_EntityInfo> visibleEntities = null;
                 for (MCH_EntityInfo info : worldEntities) {
-                    if (info.getDistanceSqToEntity(player) <= ENTITY_INFO_SYNC_RANGE_SQ) {
+                    if (info.getDistanceSqToEntity(player) <= ENTITY_INFO_SYNC_RANGE_SQ
+                        && canSyncToPlayer(info, player)) {
                         if (visibleEntities == null) {
                             visibleEntities = new ArrayList<MCH_EntityInfo>();
                         }
@@ -226,6 +229,13 @@ public class MCH_EntityInfoManager {
         if (entity.isDead) {
             return false;
         }
+        // Same-team players use this stream for HUD markers beyond vanilla tracking range.
+        // Per-recipient filtering prevents disclosure of untracked enemy player positions.
+        if (entity instanceof EntityPlayerMP) {
+            return !(entity.ridingEntity instanceof MCH_EntityAircraft)
+                && !(entity.ridingEntity instanceof MCH_EntitySeat)
+                && !(entity.ridingEntity instanceof MCH_EntityUavStation);
+        }
         // Visual contacts are sensor-independent: every live aircraft must remain continuous.
         if (entity instanceof MCH_EntityAircraft) {
             return true;
@@ -239,5 +249,13 @@ public class MCH_EntityInfoManager {
             return true;
         }
         return false;
+    }
+
+    private boolean canSyncToPlayer(MCH_EntityInfo info, EntityPlayerMP player) {
+        if (!EntityPlayerMP.class.getName().equals(info.entityClassName)) {
+            return true;
+        }
+        return player.getTeam() != null && info.teamName != null
+            && player.getTeam().getRegisteredName().equals(info.teamName);
     }
 }

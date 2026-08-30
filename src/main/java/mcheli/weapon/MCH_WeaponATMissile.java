@@ -279,10 +279,14 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
             ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
         if (snapshot != null && System.currentTimeMillis() - snapshot.lastUpdateTime > SNAPSHOT_TARGET_STALE_MS) {
             snapshot = null;
-            targetId = 0;
         }
         setClientTarget(prm.user, targetId, target, snapshot);
-        if (targetId <= 0 || (target == null && snapshot == null)) {
+        if (targetId > 0 && target == null && snapshot == null) {
+            // A maintained radar track is sufficient launch intent even when the target is
+            // beyond the client's entity/snapshot range. The server validates the shot ID.
+            super.optionParameter1 = targetId;
+        }
+        if (targetId <= 0) {
             sendDenyMessage(prm.user, "weapon.deny.radar_lock_first");
             return true;
         }
@@ -432,17 +436,21 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                 return true;
             }
         }
-        Entity target = prm.user.worldObj.getEntityByID(targetId);
-        if (target != null && !target.isDead) {
-            if (!isTargetInMissileFov(prm.user, target)) {
-                sendDenyMessage(prm.user, "weapon.deny.lock_first");
-                return true;
-            }
-        } else {
-            MCH_EntityInfo snap = MCH_EntityInfoClientTracker.getEntityInfo(targetId);
-            if (!isSnapshotTargetUsable(prm.user, snap)) {
-                sendDenyMessage(prm.user, "weapon.deny.lock_first");
-                return true;
+        boolean maintainedFireControlTrack = targetId > 0 && targetId == trackingId
+            && requiresBvrRadarTrack(prm);
+        if (!maintainedFireControlTrack) {
+            Entity target = prm.user.worldObj.getEntityByID(targetId);
+            if (target != null && !target.isDead) {
+                if (!isTargetInMissileFov(prm.user, target)) {
+                    sendDenyMessage(prm.user, "weapon.deny.lock_first");
+                    return true;
+                }
+            } else {
+                MCH_EntityInfo snap = MCH_EntityInfoClientTracker.getEntityInfo(targetId);
+                if (!isSnapshotTargetUsable(prm.user, snap)) {
+                    sendDenyMessage(prm.user, "weapon.deny.lock_first");
+                    return true;
+                }
             }
         }
         super.optionParameter1 = targetId;

@@ -3,6 +3,8 @@ package mcheli;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.weapon.MCH_EntityBaseBullet;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.util.MathHelper;
 
 public class MCH_EntityInfo {
@@ -28,6 +30,8 @@ public class MCH_EntityInfo {
     public boolean destroyed;
     /** Server-calculated altitude above terrain; NaN when an older snapshot did not provide it. */
     public double altitudeAboveGround = Double.NaN;
+    /** Server-resolved crew/player team; empty when the entity has no team. */
+    public String teamName = "";
     public byte countermeasureFlags;
     public long countermeasureUntilTick;
     public long lastUpdateTime;
@@ -130,7 +134,29 @@ public class MCH_EntityInfo {
             countermeasureFlags, countermeasureUntilTick, rotationRoll, destroyed, turretYaw, turretPitch
         );
         info.altitudeAboveGround = computeServerAgl(e);
+        info.teamName = resolveTeamName(e, aircraft);
         return info;
+    }
+
+    private static String resolveTeamName(Entity entity, MCH_EntityAircraft aircraft) {
+        if (aircraft != null) {
+            for (int seatId = 0; seatId <= aircraft.getSeatNum(); ++seatId) {
+                Entity occupant = aircraft.getEntityBySeatId(seatId);
+                if (occupant instanceof EntityLivingBase) {
+                    Team team = ((EntityLivingBase)occupant).getTeam();
+                    if (team != null) {
+                        return team.getRegisteredName();
+                    }
+                }
+            }
+        }
+        if (entity instanceof EntityLivingBase) {
+            Team team = ((EntityLivingBase)entity).getTeam();
+            if (team != null) {
+                return team.getRegisteredName();
+            }
+        }
+        return "";
     }
 
     private static double computeServerAgl(Entity entity) {
