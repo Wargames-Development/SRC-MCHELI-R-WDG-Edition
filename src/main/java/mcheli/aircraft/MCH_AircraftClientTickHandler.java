@@ -8,6 +8,7 @@ import mcheli.network.packets.PacketUseWeapon;
 import mcheli.render.MCH_RenderLeadCircle;
 import mcheli.render.MCH_RenderRWR;
 import mcheli.weapon.MCH_EntityTvMissile;
+import mcheli.weapon.MCH_GPSPosition;
 import mcheli.weapon.MCH_WeaponBase;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
@@ -381,10 +382,17 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     ac.switchCurrentWeaponMode(player);
                 }
             } else if (this.KeyUseWeapon.isKeyPress()) {
+                int gpsRadarTargetId = prepareGpsRadarTarget(player, ac);
                 if (ac.useCurrentWeapon(player)) {
+                    int option2 = ac.getCurrentWeapon(player).getLastUsedOptionParameter2();
+                    if (gpsRadarTargetId > 0) {
+                        // Negative values tag this as a GPS ground-track request without
+                        // changing the existing weapon packet layout or positive option values.
+                        option2 = -gpsRadarTargetId;
+                    }
                     MCH_MOD.getPacketHandler().sendToServer(new PacketUseWeapon(
                         ac.getCurrentWeapon(player).getLastUsedOptionParameter1(),
-                        ac.getCurrentWeapon(player).getLastUsedOptionParameter2(),
+                        option2,
                         ac.prevPosX,
                         ac.prevPosY,
                         ac.prevPosZ
@@ -394,6 +402,27 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
 
         }
         return (send || player.ticksExisted % 100 == 0);
+    }
+
+    private int prepareGpsRadarTarget(EntityPlayer player, MCH_EntityAircraft ac) {
+        MCH_WeaponSet ws = ac != null && player != null ? ac.getCurrentWeapon(player) : null;
+        MCH_WeaponInfo info = ws != null ? ws.getInfo() : null;
+        if (info == null || !info.isGPSMissile) {
+            return -1;
+        }
+
+        int targetId = MCH_RenderRWR.getRadarTrackingTargetId(ac);
+        MCH_EntityInfo target = targetId > 0 ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
+        if (target == null || target.destroyed
+            || !MCH_EntityInfoClientTracker.isEntityInLatestSnapshot(targetId)
+            || target.entityClassName == null
+            || (!target.entityClassName.contains("MCH_EntityTank")
+                && !target.entityClassName.contains("MCH_EntityVehicle"))) {
+            return -1;
+        }
+
+        MCH_GPSPosition.clientSet(target.posX, target.posY, target.posZ, true, player);
+        return targetId;
     }
 
     private void syncTVMissileGuidance(EntityPlayer player, MCH_EntityAircraft ac) {

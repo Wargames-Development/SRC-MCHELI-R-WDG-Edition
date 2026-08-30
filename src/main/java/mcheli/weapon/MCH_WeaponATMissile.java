@@ -246,18 +246,10 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
         }
         MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
         MCH_AircraftInfo acInfo = ac.getAcInfo();
-        return acInfo != null && acInfo.enableRadar
-            && (acInfo.enableBVR || isGroundRadarSearchMode(acInfo.radarSearchType));
-    }
-
-    private boolean isGroundRadarSearchMode(String searchType) {
-        if (searchType == null) {
-            return false;
-        }
-        return "GMTI_SRC".equalsIgnoreCase(searchType)
-            || "GMTI_TWS".equalsIgnoreCase(searchType)
-            || "MULTI_SRC".equalsIgnoreCase(searchType)
-            || "MULTI_TWS".equalsIgnoreCase(searchType);
+        // The integrated radar's maintained red track is authoritative regardless of
+        // the display search-mode name. Some ground-radar aircraft use SRC/TWS while
+        // still producing valid ground tracks beyond the vanilla entity render range.
+        return acInfo != null && acInfo.enableRadar;
     }
 
     private boolean shouldBlockShotWithoutBvrRadarTrack(MCH_WeaponParam prm) {
