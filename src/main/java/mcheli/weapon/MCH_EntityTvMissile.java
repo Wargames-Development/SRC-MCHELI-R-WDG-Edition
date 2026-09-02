@@ -11,6 +11,9 @@ import java.util.List;
 
 public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEntityLockChecker, MCH_IMissile {
 
+    private static final double MAX_TV_MISSILE_RANGE = 2000.0D;
+    private static final double SACLOS_AIM_DISTANCE = MAX_TV_MISSILE_RANGE * 2.0D;
+
     public boolean isSpawnParticle = true;
     public boolean isTVMissile;
     public boolean targeting = true;
@@ -56,7 +59,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
             double x = super.posX - super.shootingEntity.posX;
             double y = super.posY - super.shootingEntity.posY;
             double z = super.posZ - super.shootingEntity.posZ;
-            if (x * x + y * y + z * z > 2000 * 2000.0D) {
+            if (x * x + y * y + z * z > MAX_TV_MISSILE_RANGE * MAX_TV_MISSILE_RANGE) {
                 this.setDead();
             }
 
@@ -79,7 +82,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
         if(!targeting) return;
 
         // Mode split by runtime missile mode:
-        // - isTVMissile=true  -> TV guidance (follow launcher view)
+        // - isTVMissile=true  -> SACLOS guidance (follow launcher line of sight)
         // - isTVMissile=false -> laser guidance/terminal attack (GPS/laser point)
         // Do not fall back to TV by weapon info flag here, otherwise fixed laser mode can be misrouted.
         boolean treatAsTvGuidance = e instanceof MCH_EntityGunner || this.isTVMissile;
@@ -90,11 +93,7 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
                     if (!isTVMissile || ac.getTVMissile() == this) {
                         float yaw = this.hasTVGuidanceAngles ? this.tvGuidanceYaw : e.rotationYaw;
                         float pitch = this.hasTVGuidanceAngles ? this.tvGuidancePitch : e.rotationPitch;
-                        double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-                        double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-                        double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
-                        this.setMotion(tX, tY, tZ);
-                        this.setRotation(yaw, pitch);
+                        this.guidanceToLauncherLineOfSight(e, yaw, pitch);
                     }
                 }
 
@@ -125,6 +124,23 @@ public class MCH_EntityTvMissile extends MCH_EntityBaseBullet implements MCH_IEn
             }
         }
 
+    }
+
+    private void guidanceToLauncherLineOfSight(Entity launcher, float yaw, float pitch) {
+        double sightX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+        double sightZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
+        double sightY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
+        double originX = launcher.posX;
+        double originY = launcher.posY + launcher.getEyeHeight();
+        double originZ = launcher.posZ;
+
+        // Aim ahead on the operator's sight line instead of copying the sight direction directly.
+        // The base guidance routine then applies the weapon's configured turning and seeker limits.
+        this.guidanceToPos(
+            originX + sightX * SACLOS_AIM_DISTANCE,
+            originY + sightY * SACLOS_AIM_DISTANCE,
+            originZ + sightZ * SACLOS_AIM_DISTANCE
+        );
     }
 
     private boolean isLaserPointJammed(double x, double y, double z) {

@@ -434,9 +434,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             || !W_Entity.isEqual(missile.shootingEntity, player)) {
             return;
         }
-        Entity view = ac.isMissileCameraMode(player) && this.mc.renderViewEntity != null
-            ? this.mc.renderViewEntity : player;
-        MCH_PacketTVMissileGuidance.send(missile.getEntityId(), view.rotationYaw, view.rotationPitch);
+        MCH_PacketTVMissileGuidance.send(missile.getEntityId(), player.rotationYaw, player.rotationPitch);
     }
 
     private boolean shouldKeepWeaponRightLock(MCH_EntityAircraft ac, EntityPlayer player) {

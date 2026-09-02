@@ -804,7 +804,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     p = MathHelper.wrapAngleTo180_float(var19.getRotRoll());
                     r = MathHelper.wrapAngleTo180_float(var19.getRotYaw() - var17.rotationYaw);
                     p *= MathHelper.cos((float) ((double) r * 3.141592653589793D / 180.0D));
-                    if (var19.getTVMissile() != null && W_Lib.isClientPlayer(var19.getTVMissile().shootingEntity) && var19.getIsGunnerMode(var17)) {
+                    if (var19.isMissileCameraMode(var17)) {
                         p = 0.0F;
                     }
 
@@ -870,7 +870,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         //System.out.println("yaw10");
                         roll *= MathHelper.cos((float) ((double) yaw * 3.141592653589793D / 180.0D));
                         //System.out.println("yaw11");
-                        if (var19.getTVMissile() != null && W_Lib.isClientPlayer(var19.getTVMissile().shootingEntity) && var19.getIsGunnerMode(var17)) {
+                        if (var19.isMissileCameraMode(var17)) {
                             roll = 0.0F;
                         }
 

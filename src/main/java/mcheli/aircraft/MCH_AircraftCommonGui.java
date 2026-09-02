@@ -113,6 +113,9 @@ public abstract class MCH_AircraftCommonGui extends MCH_Gui {
     }
 
     protected void drawTvMissileNoise(MCH_EntityAircraft ac, MCH_EntityTvMissile tvmissile) {
+        if (!ac.isMissileCameraMode(tvmissile.shootingEntity)) {
+            return;
+        }
         GL11.glEnable(3042);
         GL11.glColor4f(0.5F, 0.5F, 0.5F, 0.4F);
         int srcBlend = GL11.glGetInteger(3041);

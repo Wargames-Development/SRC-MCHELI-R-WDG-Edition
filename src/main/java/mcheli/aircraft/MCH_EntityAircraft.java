@@ -4124,7 +4124,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
         }
 
-        if (this.getTVMissile() != null && W_Lib.isClientPlayer(this.getTVMissile().shootingEntity)) {
+        if (this.isMissileCameraMode(player) && this.getTVMissile() != null
+            && W_Lib.isClientPlayer(this.getTVMissile().shootingEntity)) {
             MCH_EntityTvMissile var14 = this.getTVMissile();
             x = var14.prevPosX + (var14.posX - var14.prevPosX) * (double) tick;
             y = var14.prevPosY + (var14.posY - var14.prevPosY) * (double) tick;
@@ -5425,7 +5426,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean isRenderBullet(Entity entity, Entity rider) {
-        return !this.isCameraView(rider) || !W_Entity.isEqual(this.getTVMissile(), entity) || !W_Entity.isEqual(this.getTVMissile().shootingEntity, rider);
+        return !this.isMissileCameraMode(rider) || !W_Entity.isEqual(this.getTVMissile(), entity)
+            || !W_Entity.isEqual(this.getTVMissile().shootingEntity, rider);
     }
 
     public boolean isCameraView(Entity entity) {
@@ -5434,7 +5436,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void updateCamera(double x, double y, double z) {
         if (super.worldObj.isRemote) {
-            if (this.getTVMissile() != null) {
+            if (this.getTVMissile() != null && this.isMissileCameraMode(this.TVmissile.shootingEntity)) {
                 this.camera.setPosition(this.TVmissile.posX, this.TVmissile.posY, this.TVmissile.posZ);
                 this.camera.setCameraZoom(1.0F);
                 this.TVmissile.isSpawnParticle = !this.isMissileCameraMode(this.TVmissile.shootingEntity);
@@ -5854,8 +5856,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean isMissileCameraMode(Entity entity) {
-        MCH_EntityTvMissile tvMissile = this.getTVMissile();
-        return tvMissile != null && this.isCameraView(entity) && W_Entity.isEqual(tvMissile.shootingEntity, entity);
+        // TV missiles use SACLOS guidance, so the operator must retain the launcher's sight picture.
+        return false;
     }
 
     public boolean isPilotReloading() {
