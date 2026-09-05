@@ -417,7 +417,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         long now = System.currentTimeMillis();
 
         for (MCH_EntityInfo snapshot : MCH_EntityInfoClientTracker.getAllTrackedEntities()) {
-            if (!isSnapshotHeatSeekerTargetUsable(prm, snapshot, true, now)) {
+            if (!isSnapshotHeatSeekerTargetUsable(prm, snapshot, now)) {
                 continue;
             }
             // If a real entity is present, the normal seeker above owns it (including
@@ -427,8 +427,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                 continue;
             }
 
-            float heatFactor = 1.0F - getSnapshotStealth(snapshot);
-            float acquireAngle = (float)getInfo().maxLockOnAngle * (heatFactor / 2.0F + 0.5F);
+            float acquireAngle = (float)getInfo().maxLockOnAngle;
             if (!inSnapshotLockAngle(cueOrigin, cueYaw, cuePitch, snapshot, acquireAngle)
                 || !inSnapshotLockCone(prm.entity, launchYaw, launchPitch, snapshot,
                     (float)getInfo().getEffectiveMaxDegreeOfMissile(0))) {
@@ -451,14 +450,14 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         this.snapshotHeatSeekerTargetId = best.entityId;
         super.guidanceSystem.lockCount = 1;
         super.guidanceSystem.prevLockCount = 0;
-        super.optionParameter1 = getSnapshotLockCountMax(best) <= 1 ? best.entityId : 0;
+        super.optionParameter1 = getSnapshotLockCountMax() <= 1 ? best.entityId : 0;
         return true;
     }
 
     private boolean updateSnapshotHeatSeekerLock(MCH_WeaponParam prm) {
         MCH_EntityInfo snapshot = MCH_EntityInfoClientTracker.getEntityInfo(this.snapshotHeatSeekerTargetId);
         long now = System.currentTimeMillis();
-        if (!isSnapshotHeatSeekerTargetUsable(prm, snapshot, false, now)) {
+        if (!isSnapshotHeatSeekerTargetUsable(prm, snapshot, now)) {
             clearSnapshotHeatSeekerLock();
             return false;
         }
@@ -472,7 +471,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             && inSnapshotLockCone(prm.entity, launchYaw, launchPitch, snapshot,
                 (float)getInfo().getEffectiveMaxDegreeOfMissile(0));
 
-        int max = getSnapshotLockCountMax(snapshot);
+        int max = getSnapshotLockCountMax();
         if (inAngles) {
             if (super.guidanceSystem.lockCount < max) {
                 ++super.guidanceSystem.lockCount;
@@ -508,15 +507,14 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         return true;
     }
 
-    private boolean isSnapshotHeatSeekerTargetUsable(MCH_WeaponParam prm, MCH_EntityInfo snapshot,
-                                                       boolean acquiring, long now) {
+    private boolean isSnapshotHeatSeekerTargetUsable(MCH_WeaponParam prm, MCH_EntityInfo snapshot, long now) {
         if (snapshot == null || snapshot.entityId <= 0 || snapshot.entityId == prm.entity.getEntityId()
             || snapshot.destroyed || !MCH_EntityInfoClientTracker.isEntityInLatestSnapshot(snapshot.entityId)
             || now - snapshot.lastUpdateTime > SNAPSHOT_TARGET_STALE_MS) {
             return false;
         }
-        MCH_AircraftInfo targetInfo = MCH_AircraftInfo.allAircraftInfo.get(snapshot.entityName);
-        if (targetInfo == null || Double.isNaN(snapshot.altitudeAboveGround)
+        if (!isSnapshotAirTarget(snapshot) || Double.isNaN(snapshot.altitudeAboveGround)
+            || Double.isInfinite(snapshot.altitudeAboveGround)
             || snapshot.altitudeAboveGround <= (double)getInfo().lockMinHeight) {
             return false;
         }
@@ -528,10 +526,15 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         }
 
         double range = Math.max(1.0D, getInfo().maxLockOnRange);
-        if (!acquiring) {
-            range *= 1.0D - (double)getSnapshotStealth(snapshot);
-        }
         return snapshot.getDistanceSqToEntity(prm.entity) <= range * range;
+    }
+
+    private boolean isSnapshotAirTarget(MCH_EntityInfo snapshot) {
+        if (snapshot == null || snapshot.entityClassName == null) {
+            return false;
+        }
+        return snapshot.entityClassName.contains("MCP_EntityPlane")
+            || snapshot.entityClassName.contains("MCH_EntityHeli");
     }
 
     private boolean isSnapshotVelocityGateValid(MCH_WeaponParam prm, MCH_EntityInfo snapshot) {
@@ -559,15 +562,8 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         return Math.toDegrees(angle) <= (double)getInfo().pdHDNMaxDegree;
     }
 
-    private float getSnapshotStealth(MCH_EntityInfo snapshot) {
-        MCH_AircraftInfo info = snapshot != null ? MCH_AircraftInfo.allAircraftInfo.get(snapshot.entityName) : null;
-        float stealth = info != null ? info.stealth : 0.0F;
-        return Math.max(0.0F, Math.min(1.0F, stealth));
-    }
-
-    private int getSnapshotLockCountMax(MCH_EntityInfo snapshot) {
-        int base = Math.max(1, super.guidanceSystem.lockCountMax);
-        return Math.max(1, (int)((float)base + (float)base * getSnapshotStealth(snapshot)));
+    private int getSnapshotLockCountMax() {
+        return Math.max(1, super.guidanceSystem.lockCountMax);
     }
 
     private static boolean inSnapshotLockAngle(Entity origin, float yaw, float pitch,
@@ -761,7 +757,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (this.snapshotHeatSeekerTargetId > 0) {
             MCH_EntityInfo snapshot = MCH_EntityInfoClientTracker.getEntityInfo(this.snapshotHeatSeekerTargetId);
             if (snapshot != null) {
-                return getSnapshotLockCountMax(snapshot);
+                return getSnapshotLockCountMax();
             }
         }
         return super.getLockCountMax();

@@ -264,7 +264,7 @@ public class MCH_RenderBVRLockBox {
             return;
         MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
         MCH_AircraftInfo acInfo = ac.getAcInfo();
-        if (wi == null || acInfo == null || (!acInfo.enableBVR && !isGmtiMode(acInfo))) return;
+        if (wi == null || acInfo == null || (!acInfo.enableBVR && !isGroundTrackMode(acInfo))) return;
         if (!acInfo.enableRadar || !ac.isRadarEnabledRuntime()) return;
         this.captureActiveProjection(mc);
         if (wi.antiRadiationMissile) {
@@ -870,6 +870,7 @@ public class MCH_RenderBVRLockBox {
     private boolean canRenderEntity(MCH_EntityInfo entity, EntityPlayer player, MCH_WeaponInfo wi, MCH_AircraftInfo acInfo) {
         boolean result = false;
         boolean gmtiMode = isGmtiMode(acInfo);
+        boolean multiMode = isMultiMode(acInfo);
         double distSq = entity.getDistanceSqToEntity(player);
         if (acInfo != null && acInfo.radarMaxTargetRange > 0.0F) {
             double maxRangeSq = acInfo.radarMaxTargetRange * acInfo.radarMaxTargetRange;
@@ -882,8 +883,13 @@ public class MCH_RenderBVRLockBox {
                 return false;
             }
             float maxAgl = acInfo != null ? acInfo.radarMaxScanAltitude : 25.0F;
-            double agl = computeAgl(player.worldObj, entity.posX, entity.posY, entity.posZ);
-            return agl <= maxAgl;
+            double agl = resolveTrackedAgl(player.worldObj, entity);
+            return Double.isNaN(agl) || agl <= maxAgl;
+        }
+        if (multiMode && isGroundVehicle(entity.entityClassName)) {
+            float maxAgl = acInfo != null ? acInfo.radarMaxScanAltitude : 25.0F;
+            double agl = resolveTrackedAgl(player.worldObj, entity);
+            return Double.isNaN(agl) || agl <= maxAgl;
         }
         // minRangeBVR gates weapon employment, not whether a maintained radar contact is drawn.
         if (entity.entityClassName.contains("MCP_EntityPlane")) {
@@ -912,6 +918,40 @@ public class MCH_RenderBVRLockBox {
         }
         return "GMTI_SRC".equalsIgnoreCase(acInfo.radarSearchType)
             || "GMTI_TWS".equalsIgnoreCase(acInfo.radarSearchType);
+    }
+
+    private boolean isMultiMode(MCH_AircraftInfo acInfo) {
+        if (acInfo == null || acInfo.radarSearchType == null) {
+            return false;
+        }
+        return "MULTI_SRC".equalsIgnoreCase(acInfo.radarSearchType)
+            || "MULTI_TWS".equalsIgnoreCase(acInfo.radarSearchType);
+    }
+
+    private boolean isGroundTrackMode(MCH_AircraftInfo acInfo) {
+        return isGmtiMode(acInfo) || isMultiMode(acInfo);
+    }
+
+    private boolean isGroundVehicle(String className) {
+        return className != null && (className.contains("MCH_EntityTank")
+            || className.contains("MCH_EntityVehicle"));
+    }
+
+    private double resolveTrackedAgl(net.minecraft.world.World world, MCH_EntityInfo entity) {
+        if (entity != null && !Double.isNaN(entity.altitudeAboveGround)
+            && !Double.isInfinite(entity.altitudeAboveGround)) {
+            return entity.altitudeAboveGround;
+        }
+        if (world == null || entity == null) {
+            return Double.NaN;
+        }
+        int blockX = net.minecraft.util.MathHelper.floor_double(entity.posX);
+        int blockY = Math.max(0, Math.min(255, net.minecraft.util.MathHelper.floor_double(entity.posY)));
+        int blockZ = net.minecraft.util.MathHelper.floor_double(entity.posZ);
+        if (!world.blockExists(blockX, blockY, blockZ)) {
+            return Double.NaN;
+        }
+        return computeAgl(world, entity.posX, entity.posY, entity.posZ);
     }
 
     private double computeAgl(net.minecraft.world.World world, double x, double y, double z) {

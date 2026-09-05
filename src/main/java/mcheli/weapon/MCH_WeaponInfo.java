@@ -45,6 +45,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int round;
     public int suppliedNum;
     public int maxAmmo;
+    public boolean spawnWithAmmo;
     public List roundItems;
     public int soundDelay;
     public float soundVolume;
@@ -566,6 +567,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         this.suppliedNum = 1;
         this.roundItems = new ArrayList();
         this.maxAmmo = 0;
+        this.spawnWithAmmo = true;
         this.soundDelay = 0;
         this.soundPattern = 0;
         this.soundVolume = 1.0F;
@@ -1231,6 +1233,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.round = this.toInt(data, 1, 30000);
             } else if (item.equalsIgnoreCase("MaxAmmo")) {
                 this.maxAmmo = this.toInt(data, 0, 30000);
+            } else if (item.equalsIgnoreCase("SpawnWithAmmo")) {
+                this.spawnWithAmmo = this.toBool(data, this.spawnWithAmmo);
             } else if (item.equalsIgnoreCase("SuppliedNum")) {
                 this.suppliedNum = this.toInt(data, 1, 30000);
             } else if (item.equalsIgnoreCase("Item")) {

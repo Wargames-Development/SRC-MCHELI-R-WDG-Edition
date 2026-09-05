@@ -116,8 +116,14 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
 
     @Override
     public int getLockCountMax() {
-        float stealth = getEntityStealth(this.targetEntity);
+        float stealth = getApplicableTargetStealth(this.targetEntity);
         return (int) ((float) this.lockCountMax + (float) this.lockCountMax * stealth);
+    }
+
+    private float getApplicableTargetStealth(Entity entity) {
+        // Aircraft Stealth is a radar-signature value. Applying it to heat seekers
+        // silently shortens configured IR range and can make high-stealth targets impossible to lock.
+        return this.isHeatSeekerMissile ? 0.0F : getEntityStealth(entity);
     }
 
     public void setLockCountMax(int i) {
@@ -205,12 +211,12 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                         double dy = currentEntity.posY - cueOrigin.posY;
                         double dz1 = currentEntity.posZ - cueOrigin.posZ;
                         double distance = dz * dz + dy * dy + dz1 * dz1;
-                        float stealth1 = 1.0F - getEntityStealth(currentEntity);
+                        float stealth1 = 1.0F - getApplicableTargetStealth(currentEntity);
                         double range1 = this.lockRange;
                         // 计算锁定角度
                         float angle = (float) this.lockAngle * (stealth1 / 2.0F + 0.5F);
                         // 判断实体是否在锁定范围内
-                        if (distance < range1 * range1 && distance < dist
+                        if (distance <= range1 * range1 && distance < dist
                             && inLockAngle(cueOrigin, cueYaw, cuePitch, currentEntity, angle)
                             && inConstraintAngle(constraintOrigin, constraintYaw, constraintPitch, currentEntity, constraintAngle)) {
                             // 检测目标是否可见
@@ -219,6 +225,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                             MovingObjectPosition m = W_WorldFunc.clip(this.worldObj, v1, v2, false, true, false);
                             if (m == null || W_MovingObjectPosition.isHitTypeEntity(m)) {
                                 potentialTarget = currentEntity;  // 设置锁定目标
+                                dist = distance;
                             }
                         }
                     }
@@ -296,10 +303,10 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                     double dx = this.targetEntity.posX - cueOrigin.posX;
                     double dy = this.targetEntity.posY - cueOrigin.posY;
                     dz = this.targetEntity.posZ - cueOrigin.posZ;
-                    float stealth = 1.0F - getEntityStealth(this.targetEntity);
+                    float stealth = 1.0F - getApplicableTargetStealth(this.targetEntity);
                     double lockRange = this.lockRange * (double) stealth;
                     // 判断目标是否在锁定范围内
-                    if (dx * dx + dy * dy + dz * dz < lockRange * lockRange) {
+                    if (dx * dx + dy * dy + dz * dz <= lockRange * lockRange) {
                         if (this.worldObj.isRemote && this.lockSoundCount == 1) {
                             //MCH_PacketNotifyLock.send(this.getTargetEntity());
                         }

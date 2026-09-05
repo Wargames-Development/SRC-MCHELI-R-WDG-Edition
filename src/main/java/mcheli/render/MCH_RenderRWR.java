@@ -2508,7 +2508,9 @@ public class MCH_RenderRWR {
     }
 
     private static double resolveTrackedAgl(World world, MCH_EntityInfo info, double x, double y, double z, String searchType) {
-        if (!isGmtiMode(searchType)) {
+        boolean groundTrackMode = isGmtiMode(searchType)
+            || (isMultiMode(searchType) && isGroundRadarTargetEntity(info));
+        if (!groundTrackMode) {
             return computeAgl(world, x, y, z);
         }
         if (info != null && !Double.isNaN(info.altitudeAboveGround) && !Double.isInfinite(info.altitudeAboveGround)) {

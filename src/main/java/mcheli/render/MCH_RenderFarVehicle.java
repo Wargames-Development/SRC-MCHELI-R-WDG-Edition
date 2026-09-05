@@ -3,6 +3,7 @@ package mcheli.render;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.MCH_Camera;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.MCH_EntityInfoManager;
@@ -24,7 +25,9 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
 
@@ -46,6 +49,7 @@ public class MCH_RenderFarVehicle {
     private static final double SNAP_DISTANCE_SQ = 64.0D * 64.0D;
     private static final double MAX_CONTACT_DISTANCE_SQ = MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE
         * MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE;
+    private static final ResourceLocation THERMAL_WHITE = new ResourceLocation("mcheli", "textures/test.png");
     private static final Set<Integer> NORMAL_RENDERED_THIS_FRAME = new HashSet<Integer>();
 
     private final Map<String, RenderDefinition> definitions = new HashMap<String, RenderDefinition>();
@@ -82,28 +86,32 @@ public class MCH_RenderFarVehicle {
             }
 
             Entity localEntity = mc.theWorld.getEntityByID(contact.entityId);
-            boolean hasLiveEntity = localEntity instanceof MCH_EntityAircraft && !localEntity.isDead
-                && !((MCH_EntityAircraft)localEntity).isDestroyed();
-            if (localEntity instanceof MCH_EntityAircraft && !hasLiveEntity) {
+            MCH_EntityAircraft localAircraft = localEntity instanceof MCH_EntityAircraft
+                ? (MCH_EntityAircraft)localEntity : null;
+            if (localAircraft != null && localAircraft.isDestroyed()) {
                 continue;
             }
+            boolean hasLiveEntity = localAircraft != null && !localAircraft.isDead;
 
             SmoothedPose pose = this.getSmoothedPose(contact, now);
             double x = pose.x - RenderManager.instance.viewerPosX;
             double z = pose.z - RenderManager.instance.viewerPosZ;
             boolean normalRendered = NORMAL_RENDERED_THIS_FRAME.contains(Integer.valueOf(contact.entityId));
-            boolean inHandoffRegion = horizontalChunkDistance(x, z) >= getTransitionStart(mc);
-            if (hasLiveEntity && normalRendered && !inHandoffRegion) {
-                continue;
+            float alpha = 1.0F;
+            if (hasLiveEntity && normalRendered) {
+                alpha = getLodTransitionAlpha(mc, x, z);
+                if (alpha <= 0.0F) {
+                    continue;
+                }
             }
-            // Full opacity is deliberate: DH and entity culling may fade or omit the normal model independently.
-            this.renderContact(mc, pose, definition, 1.0F);
+            int lightmapBrightness = this.resolveLightmapBrightness(mc, pose, localAircraft, event.partialTicks);
+            this.renderContact(mc, pose, definition, alpha, lightmapBrightness);
         }
         this.removeUnusedPoses();
         NORMAL_RENDERED_THIS_FRAME.clear();
     }
 
-    private void renderContact(Minecraft mc, SmoothedPose pose, RenderDefinition definition, float alpha) {
+    private void renderContact(Minecraft mc, SmoothedPose pose, RenderDefinition definition, float alpha, int lightmapBrightness) {
         RenderManager renderManager = RenderManager.instance;
         double x = pose.x - renderManager.viewerPosX;
         double y = pose.y - renderManager.viewerPosY;
@@ -114,7 +122,9 @@ public class MCH_RenderFarVehicle {
         }
 
         // Equal position/model scaling preserves screen direction and angular size without replacing projection.
-        double safeDistance = getTransitionEnd(mc);
+        // RenderWorldLast is outside the normal fog pass. Keep the projected contact inside the fog end
+        // so enabling fog does not make every beyond-range contact completely invisible.
+        double safeDistance = getTransitionStart(mc);
         float projectionScale = distance > safeDistance ? (float)(safeDistance / distance) : 1.0F;
         x *= projectionScale;
         y *= projectionScale;
@@ -122,7 +132,8 @@ public class MCH_RenderFarVehicle {
 
         float oldBrightnessX = OpenGlHelper.lastBrightnessX;
         float oldBrightnessY = OpenGlHelper.lastBrightnessY;
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_POLYGON_BIT);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
+            | GL11.GL_TEXTURE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_POLYGON_BIT | GL11.GL_FOG_BIT);
         GL11.glPushMatrix();
         try {
             GL11.glTranslated(x, y, z);
@@ -133,6 +144,7 @@ public class MCH_RenderFarVehicle {
 
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glEnable(GL11.GL_FOG);
             GL11.glEnable(GL11.GL_LIGHTING);
             GL11.glEnable(GL11.GL_COLOR_MATERIAL);
             GL11.glColorMaterial(GL11.GL_FRONT_AND_BACK, GL11.GL_AMBIENT_AND_DIFFUSE);
@@ -144,9 +156,21 @@ public class MCH_RenderFarVehicle {
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                 GL11.glDepthMask(false);
             }
-            GL11.glColor4f(1.0F, 1.0F, 1.0F, alpha);
-            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 200.0F, 200.0F);
-            mc.getTextureManager().bindTexture(definition.texture);
+            boolean thermalVision = MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION;
+            if (thermalVision) {
+                // Match the normal aircraft thermal marker so the post-process maps the whole LOD to white.
+                GL11.glDisable(GL11.GL_FOG);
+                RenderHelper.disableStandardItemLighting();
+                OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240.0F, 240.0F);
+                GL11.glColor4f(1.0F, 0.0F, 1.0F, alpha);
+                mc.getTextureManager().bindTexture(THERMAL_WHITE);
+            } else {
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, alpha);
+                int blockLight = lightmapBrightness % 65536;
+                int skyLight = lightmapBrightness / 65536;
+                OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, blockLight, skyLight);
+                mc.getTextureManager().bindTexture(definition.texture);
+            }
             MCH_RenderAircraft.renderBody(definition.info.model);
             this.renderLightweightParts(definition.info, pose);
         } finally {
@@ -155,6 +179,25 @@ public class MCH_RenderFarVehicle {
             GL11.glPopMatrix();
             GL11.glPopAttrib();
         }
+    }
+
+    private int resolveLightmapBrightness(Minecraft mc, SmoothedPose pose, MCH_EntityAircraft localAircraft, float partialTicks) {
+        if (localAircraft != null && !localAircraft.isDead) {
+            return localAircraft.getBrightnessForRender(partialTicks);
+        }
+
+        int blockX = MathHelper.floor_double(pose.x);
+        int blockY = MathHelper.floor_double(pose.y);
+        int blockZ = MathHelper.floor_double(pose.z);
+        Chunk chunk = mc.theWorld.getChunkProvider().provideChunk(blockX >> 4, blockZ >> 4);
+        if (chunk != null && !chunk.isEmpty()) {
+            return mc.theWorld.getLightBrightnessForSkyBlocks(blockX, blockY, blockZ, 0);
+        }
+
+        // Unloaded chunks have no light data. Approximate exposed-sky light from the world's current
+        // day/night and weather subtraction instead of making every far contact permanently bright.
+        int skyLight = mc.theWorld.provider.hasNoSky ? 0 : Math.max(0, 15 - mc.theWorld.skylightSubtracted);
+        return skyLight << 20;
     }
 
     private void renderLightweightParts(MCH_AircraftInfo info, SmoothedPose pose) {

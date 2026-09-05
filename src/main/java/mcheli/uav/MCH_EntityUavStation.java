@@ -552,6 +552,7 @@ public class MCH_EntityUavStation extends W_EntityContainer {
                 }
 
                 if (ac != null) {
+                    ac.getAcDataFromItem(itemStack);
                     ac.rotationYaw = super.rotationYaw - 180.0F;
                     ac.prevRotationYaw = ac.rotationYaw;
                     user.rotationYaw = super.rotationYaw - 180.0F;

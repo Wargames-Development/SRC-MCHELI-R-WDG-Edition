@@ -90,6 +90,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private static final int CMN_ID_RADAR_ENABLED = 13;
     private static final int CMN_ID_MORTAR_RADAR_ENABLED = 14;
     private static final int CLIENT_TYPE_RESYNC_RETRY = 100;
+    private static final int PICKUP_REMAINING_HP = 10;
+    private static final String NBT_PICKUP_DAMAGED = "MCH_PickupDamaged";
 
     private static final MCH_EntitySeat[] seatsDummy = new MCH_EntitySeat[0];
     public final MCH_MissileDetector missileDetector;
@@ -1276,13 +1278,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 if (this.getAcInfo() != null && this.getAcInfo().getItem() != null) {
                                     if (isCreative) {
                                         if (MCH_Config.DropItemInCreativeMode.prmBool && !isSneaking) {
-                                            this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
+                                            this.dropDamagedPickupItem();
                                         }
                                         if (!MCH_Config.DropItemInCreativeMode.prmBool && isSneaking) {
-                                            this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
+                                            this.dropDamagedPickupItem();
                                         }
                                     } else {
-                                        this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
+                                        this.dropDamagedPickupItem();
                                     }
                                 }
                                 this.setDead(true);
@@ -1506,6 +1508,25 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.setDead(true);
     }
 
+    private void dropDamagedPickupItem() {
+        int maxHP = this.getMaxHP();
+        int remainingHP = Math.min(PICKUP_REMAINING_HP, maxHP);
+        int shutdownThreshold = this.getAcInfo().engineShutdownThreshold;
+        if (shutdownThreshold > 0) {
+            int shutdownHP = (maxHP * shutdownThreshold + 99) / 100 - 1;
+            remainingHP = Math.min(remainingHP, Math.max(1, shutdownHP));
+        }
+
+        this.setDamageTaken(Math.max(this.getDamageTaken(), maxHP - remainingHP));
+        EntityItem droppedItem = this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
+        if (droppedItem != null) {
+            ItemStack stack = droppedItem.getEntityItem();
+            stack.setItemDamage(this.getDamageTaken());
+            stack.getTagCompound().setBoolean(NBT_PICKUP_DAMAGED, true);
+            droppedItem.setEntityItemStack(stack);
+        }
+    }
+
     public EntityItem entityDropItem(ItemStack is, float par2) {
         if (is.stackSize == 0) {
             return null;
@@ -1530,6 +1551,20 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             is.setItemDamage(this.getDamageTaken());
         }
 
+        int weaponNum = this.getWeaponNum();
+        int[] ammoInMag = new int[weaponNum];
+        int[] restAmmo = new int[weaponNum];
+        int[] reloadWait = new int[weaponNum];
+        for (int i = 0; i < weaponNum; ++i) {
+            MCH_WeaponSet ws = this.getWeapon(i);
+            ammoInMag[i] = ws.getAmmoNum();
+            restAmmo[i] = ws.getRestAllAmmoNum();
+            reloadWait[i] = ws.countReloadWait;
+        }
+        nbt.setTag("AcWeaponsAmmoInMag", W_NBTTag.newTagIntArray("AcWeaponsAmmoInMag", ammoInMag));
+        nbt.setTag("AcWeaponsRestAmmo", W_NBTTag.newTagIntArray("AcWeaponsRestAmmo", restAmmo));
+        nbt.setTag("AcWeaponsReloadWait", W_NBTTag.newTagIntArray("AcWeaponsReloadWait", reloadWait));
+
     }
 
     public void getAcDataFromItem(ItemStack is) {
@@ -1540,8 +1575,27 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 this.setFuel(nbt.getInteger("MCH_Fuel"));
             }
 
-            if (MCH_Config.ItemDamage.prmBool) {
+            if (MCH_Config.ItemDamage.prmBool || nbt.getBoolean(NBT_PICKUP_DAMAGED)) {
                 this.setDamageTaken(is.getItemDamage());
+            }
+
+            if (nbt.hasKey("AcWeaponsAmmoInMag") || nbt.hasKey("AcWeaponsRestAmmo")) {
+                int[] ammoInMag = nbt.getIntArray("AcWeaponsAmmoInMag");
+                int[] restAmmo = nbt.getIntArray("AcWeaponsRestAmmo");
+                int[] reloadWait = nbt.getIntArray("AcWeaponsReloadWait");
+                for (int i = 0; i < this.getWeaponNum(); ++i) {
+                    MCH_WeaponSet ws = this.getWeapon(i);
+                    int savedInMag = i < ammoInMag.length ? Math.max(0, ammoInMag[i]) : 0;
+                    int savedRest = i < restAmmo.length ? Math.max(0, restAmmo[i]) : 0;
+                    int total = (int)Math.min((long)ws.getAllAmmoNum(), (long)savedInMag + (long)savedRest);
+                    int inMag = Math.min(savedInMag, ws.getAmmoNumMax());
+                    if (inMag > total) {
+                        inMag = total;
+                    }
+                    ws.setAmmoNum(inMag);
+                    ws.setRestAllAmmoNum(total - inMag);
+                    ws.countReloadWait = i < reloadWait.length ? Math.max(0, reloadWait[i]) : 0;
+                }
             }
 
         }
@@ -5512,9 +5566,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     var7[i].prevRotationYaw = var8;
                     var7[i].rotationYaw = var8;
                     var7[i].defaultRotationYaw = var8;
-                    // Initialize with full ammo state to avoid first-frame missile model hiding before sync.
-                    int mag = var7[i].getAmmoNumMax();
-                    int all = var7[i].getAllAmmoNum();
+                    // Fresh aircraft are loaded by default; strategic weapons can explicitly opt out.
+                    boolean spawnWithAmmo = var7[i].getInfo().spawnWithAmmo;
+                    int mag = spawnWithAmmo ? var7[i].getAmmoNumMax() : 0;
+                    int all = spawnWithAmmo ? var7[i].getAllAmmoNum() : 0;
                     var7[i].setAmmoNum(Math.max(0, mag));
                     var7[i].setRestAllAmmoNum(Math.max(0, all - mag));
                 }

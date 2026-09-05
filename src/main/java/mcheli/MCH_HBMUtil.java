@@ -21,7 +21,7 @@ public class MCH_HBMUtil {
     private static Class<?> explosionChaosClass;
     private static Class<?> explosionCreatorClass;
     private static Class<?> explosionSmallCreatorClass;
-    private static Class<?> explosionLargeClass;
+    private static Class<?> mediumBunkerBusterClass;
     private static Class<?> EntityBulletBaseMK4Class;
     private static Class<?> PacketThreading;
     private static Class<?> explosionVNTClass;
@@ -35,10 +35,7 @@ public class MCH_HBMUtil {
         explosionChaosClass = optionalClass("com.hbm.explosion.ExplosionChaos");
         explosionCreatorClass = optionalClass("com.hbm.particle.helper.ExplosionCreator");
         explosionSmallCreatorClass = optionalClass("com.hbm.particle.helper.ExplosionSmallCreator");
-        explosionLargeClass = optionalClass("com.hbm.explosion.ExplosionLarge");
-        if (explosionLargeClass == null) {
-            explosionLargeClass = optionalClass("com.hbm.particle.helper.ExplosionLarge");
-        }
+        mediumBunkerBusterClass = optionalClass("com.hbm.entity.missile.EntityMissileTier2$EntityMissileBusterStrong");
         EntityBulletBaseMK4Class = optionalClass("com.hbm.entity.projectile.EntityBulletBaseMK4");
         PacketThreading = optionalClass("com.hbm.handler.threading.PacketThreading");
         explosionVNTClass = optionalClass("com.hbm.explosion.vanillant.ExplosionVNT");
@@ -47,7 +44,7 @@ public class MCH_HBMUtil {
             || explosionChaosClass != null
             || explosionCreatorClass != null
             || explosionSmallCreatorClass != null
-            || explosionLargeClass != null
+            || mediumBunkerBusterClass != null
             || EntityBulletBaseMK4Class != null
             || PacketThreading != null
             || explosionVNTClass != null;
@@ -131,42 +128,6 @@ public class MCH_HBMUtil {
             warnOnce("Integrations.getContamProtectedChunksWGC", e);
         }
         return Collections.emptySet();
-    }
-
-    public static boolean canDetonateWGC(UUID ownerParty, World world, int x, int y, int z) {
-        if (!isHBMLoaded) {
-            return false;
-        }
-        try {
-            if (integrationsClass != null) {
-                Method method = integrationsClass.getMethod("canDetonateWGC", UUID.class, World.class, int.class, int.class, int.class);
-                Object result = method.invoke(null, ownerParty, world, x, y, z);
-                if (result instanceof Boolean) {
-                    return (Boolean) result;
-                }
-            }
-        } catch (Exception e) {
-            warnOnce("Integrations.canDetonateWGC", e);
-        }
-        return true;
-    }
-
-    public static boolean canTargetChunkWGC(UUID ownerParty, World world, ChunkCoordIntPair chunk) {
-        if (!isHBMLoaded) {
-            return false;
-        }
-        try {
-            if (integrationsClass != null) {
-                Method method = integrationsClass.getMethod("canTargetChunkWGC", UUID.class, World.class, ChunkCoordIntPair.class);
-                Object result = method.invoke(null, ownerParty, world, chunk);
-                if (result instanceof Boolean) {
-                    return (Boolean) result;
-                }
-            }
-        } catch (Exception e) {
-            warnOnce("Integrations.canTargetChunkWGC", e);
-        }
-        return true;
     }
 
     public static void ExplosionCreator_composeEffect(World world, double posX, double posY, double posZ, int explosionBlockSize) {
@@ -376,33 +337,67 @@ public class MCH_HBMUtil {
         }
     }
 
-    public static boolean spawnConcreteCrackerExplosion(World world, double posX, double posY, double posZ, UUID ownerParty) {
-        if (!isHBMLoaded) {
+    public static boolean spawnMediumBunkerBuster(World world, double posX, double posY, double posZ,
+                                                   double motionX, double motionY, double motionZ,
+                                                   UUID ownerParty) {
+        if (mediumBunkerBusterClass == null || world == null || world.isRemote) {
             return false;
         }
+
+        double speed = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
+        if (speed < 1.0E-6D) {
+            motionX = 0.0D;
+            motionY = -1.0D;
+            motionZ = 0.0D;
+            speed = 1.0D;
+        }
+
+        double dirX = motionX / speed;
+        double dirY = motionY / speed;
+        double dirZ = motionZ / speed;
+        double spawnX = posX - dirX * 0.05D;
+        double spawnY = posY - dirY * 0.05D;
+        double spawnZ = posZ - dirZ * 0.05D;
+        int targetX = (int)Math.floor(spawnX + dirX * 10000.0D);
+        int targetZ = (int)Math.floor(spawnZ + dirZ * 10000.0D);
+
+        Entity entity = null;
         try {
-            if (nukeExplosionMK5Class != null) {
-                Method statFacNoRadMethod = nukeExplosionMK5Class.getMethod("statFacNoRad", World.class, int.class, double.class, double.class, double.class, UUID.class);
-                Object explosion = statFacNoRadMethod.invoke(null, world, 45, posX, posY, posZ, ownerParty);
-                if (explosion instanceof Entity) {
-                    world.spawnEntityInWorld((Entity) explosion);
-                }
+            Constructor<?> constructor = mediumBunkerBusterClass.getConstructor(
+                World.class, float.class, float.class, float.class,
+                int.class, int.class, UUID.class
+            );
+            Object bunkerBuster = constructor.newInstance(
+                world, (float)spawnX, (float)spawnY, (float)spawnZ,
+                targetX, targetZ, ownerParty
+            );
+            if (!(bunkerBuster instanceof Entity)) {
+                return false;
             }
 
-            if (explosionLargeClass != null) {
-                explosionLargeClass.getMethod("spawnParticles", World.class, double.class, double.class, double.class, int.class)
-                    .invoke(null, world, posX, posY, posZ, 8);
-                explosionLargeClass.getMethod("spawnShrapnels", World.class, double.class, double.class, double.class, int.class, UUID.class)
-                    .invoke(null, world, posX, posY, posZ, 8, ownerParty);
-                explosionLargeClass.getMethod("spawnRubble", World.class, double.class, double.class, double.class, int.class)
-                    .invoke(null, world, posX, posY, posZ, 8);
-                explosionLargeClass.getMethod("jolt", World.class, double.class, double.class, double.class, double.class, int.class, double.class)
-                    .invoke(null, world, posX, posY, posZ, 10.0D, 50, 1.0D);
-            }
+            entity = (Entity)bunkerBuster;
+            entity.motionX = dirX;
+            entity.motionY = dirY;
+            entity.motionZ = dirZ;
+            entity.rotationYaw = (float)(Math.atan2(dirX, dirZ) * 180.0D / Math.PI);
+            entity.rotationPitch = (float)(Math.atan2(dirY, Math.sqrt(dirX * dirX + dirZ * dirZ)) * 180.0D / Math.PI) - 90.0F;
+            entity.prevRotationYaw = entity.rotationYaw;
+            entity.prevRotationPitch = entity.rotationPitch;
 
-            return true;
+            mediumBunkerBusterClass.getField("velocity").setDouble(bunkerBuster, speed);
+            mediumBunkerBusterClass.getField("decelY").setDouble(bunkerBuster, 0.0D);
+            mediumBunkerBusterClass.getField("accelXZ").setDouble(bunkerBuster, 0.0D);
+
+            boolean spawned = world.spawnEntityInWorld(entity);
+            if (!spawned) {
+                entity.setDead();
+            }
+            return spawned;
         } catch (Exception e) {
-            warnOnce("spawnConcreteCrackerExplosion", e);
+            if (entity != null) {
+                entity.setDead();
+            }
+            warnOnce("spawnMediumBunkerBuster", e);
         }
         return false;
     }
