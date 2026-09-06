@@ -8,7 +8,6 @@ import mcheli.MCH_FMURUtil;
 import mcheli.MCH_MarkEntityPos;
 import mcheli.MCH_ServerSettings;
 import mcheli.aircraft.MCH_EntityAircraft;
-import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.gui.MCH_Gui;
 import mcheli.mob.MCH_EntityGunner;
 import mcheli.particles.MCH_ParticlesUtil;
@@ -122,7 +121,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
                     spotType = MCH_TargetType.SAME_TEAM_PLAYER;
                 }
             } else if (entity instanceof EntityPlayer) {
-                if (entity == clientPlayer || entity.ridingEntity instanceof MCH_EntitySeat || entity.ridingEntity instanceof MCH_EntityAircraft) {
+                if (entity == clientPlayer || isPlayerMountedInAircraft(entity)) {
                     return;
                 }
 
@@ -187,9 +186,12 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         }
         EntityClientPlayerMP clientPlayer = s_minecraft.thePlayer;
         MCH_EntityAircraft ownAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(clientPlayer);
+        Entity localEntity = clientPlayer != null && clientPlayer.worldObj != null
+            ? clientPlayer.worldObj.getEntityByID(info.entityId) : null;
         if (clientPlayer == null || clientPlayer.getTeam() == null
             || info.entityId == clientPlayer.getEntityId()
             || (ownAircraft != null && info.entityId == ownAircraft.getEntityId())
+            || isPlayerMountedInAircraft(localEntity)
             || !clientPlayer.getTeam().getRegisteredName().equals(info.teamName)
             || markedEntityIds.contains(Integer.valueOf(info.entityId))) {
             return;
@@ -224,7 +226,38 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         } else if (!GLU.gluProject((float)x, (float)y, (float)z, matModel, matProjection, matViewport, marker.pos)) {
             return false;
         }
+        // Entity markers are HUD elements, so the camera's world far plane must not hide
+        // a valid contact. Keep rejecting points behind the camera, but clamp forward
+        // projections beyond the far plane into the visible window-depth range.
+        if (marker.pos.get(2) >= 1.0F && isInFrontOfCamera(x, y, z)) {
+            marker.pos.put(2, 0.999999F);
+        }
         return isFinite(marker.pos.get(0)) && isFinite(marker.pos.get(1)) && isFinite(marker.pos.get(2));
+    }
+
+    private static boolean isInFrontOfCamera(double x, double y, double z) {
+        double eyeZ = (double)matModel.get(2) * x
+            + (double)matModel.get(6) * y
+            + (double)matModel.get(10) * z
+            + (double)matModel.get(14);
+        return eyeZ < 0.0D;
+    }
+
+    private static boolean isPlayerMountedInAircraft(Entity entity) {
+        if (!(entity instanceof EntityPlayer)) {
+            return false;
+        }
+        if (MCH_EntityAircraft.getAircraft_RiddenOrControl(entity) != null) {
+            return true;
+        }
+        if (entity.worldObj != null) {
+            for (Object obj : entity.worldObj.loadedEntityList) {
+                if (obj instanceof MCH_EntityAircraft && ((MCH_EntityAircraft)obj).isMountedEntity(entity)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean isFrontProjection(MCH_MarkEntityPos marker) {
@@ -324,6 +357,8 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         GL11.glDisable(3553);
         GL11.glBlendFunc(770, 771);
         GL11.glColor4b((byte) -1, (byte) -1, (byte) -1, (byte) -1);
+        boolean depthTestEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
         int DW = super.mc.displayWidth;
         int DH = super.mc.displayHeight;
@@ -405,6 +440,9 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         }
 
         GL11.glDepthMask(true);
+        if (depthTestEnabled) {
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+        }
         GL11.glEnable(3553);
         GL11.glDisable(3042);
     }

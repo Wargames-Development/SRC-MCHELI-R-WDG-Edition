@@ -115,7 +115,6 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                         tgtEnt = null;
                     }
                 }
-                this.playSound(prm.entity);
                 double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                 double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                 double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
@@ -152,12 +151,13 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                         prm.option2);
                 }
                 e.guidanceType = prm.option2 & 0xFF;
-                super.worldObj.spawnEntityInWorld(e);
-                result = true;
+                result = super.worldObj.spawnEntityInWorld(e);
+                if (result) {
+                    this.playSound(prm.entity);
+                }
             } else {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
                 if (tgtEnt != null && !tgtEnt.isDead) {
-                    this.playSound(prm.entity);
                     if (prm.entity instanceof MCH_EntityTank) {
                         MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
                         yaw += prm.randYaw;
@@ -186,8 +186,10 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                     e.setDataLinkTwsSelectedOnly(false);
                     e.setTargetEntity(tgtEnt);
                     e.guidanceType = prm.option2 & 0xFF;
-                    super.worldObj.spawnEntityInWorld(e);
-                    result = true;
+                    result = super.worldObj.spawnEntityInWorld(e);
+                    if (result) {
+                        this.playSound(prm.entity);
+                    }
                 }
             }
         } else {

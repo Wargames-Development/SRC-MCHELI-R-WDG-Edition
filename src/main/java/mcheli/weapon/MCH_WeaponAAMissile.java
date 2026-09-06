@@ -124,7 +124,6 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                         tgtEnt = null;
                     }
                 }
-                this.playSound(prm.entity);
                 double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                 double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                 double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
@@ -160,8 +159,10 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                         String.valueOf(e.isDataLinkTwsSelectedOnly()),
                         prm.option2);
                 }
-                super.worldObj.spawnEntityInWorld(e);
-                result = true;
+                result = super.worldObj.spawnEntityInWorld(e);
+                if (result) {
+                    this.playSound(prm.entity);
+                }
             } else {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
                 boolean validTarget = tgtEnt != null && !tgtEnt.isDead;
@@ -169,7 +170,6 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                     validTarget = isValidServerHeatSeekerTarget(prm, tgtEnt);
                 }
                 if (validTarget) {
-                    this.playSound(prm.entity);
                     double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                     double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
                     double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
@@ -183,8 +183,10 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
                     e.setParameterFromWeapon(this, prm.entity, prm.user);
                     e.setDataLinkTwsSelectedOnly(false);
                     e.setTargetEntity(tgtEnt);
-                    super.worldObj.spawnEntityInWorld(e);
-                    result = true;
+                    result = super.worldObj.spawnEntityInWorld(e);
+                    if (result) {
+                        this.playSound(prm.entity);
+                    }
                 }
             }
         } else {

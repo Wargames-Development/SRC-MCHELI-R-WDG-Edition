@@ -137,9 +137,11 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
             e.setInfoByName(super.name);
             e.setTVMissile(isTVGuided);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
+            if (!super.worldObj.spawnEntityInWorld(e)) {
+                return false;
+            }
             this.lastShotEntity = prm.entity;
             this.lastShotTvMissile = e;
-            super.worldObj.spawnEntityInWorld(e);
             this.playSound(prm.entity);
         } else {
             super.optionParameter2 = 0;

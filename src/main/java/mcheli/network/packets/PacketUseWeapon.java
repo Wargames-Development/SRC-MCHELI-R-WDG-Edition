@@ -19,6 +19,9 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 public class PacketUseWeapon extends PacketBase {
 
+    private static final long AMMO_MASK = 0x7FFFL;
+    private static final long HEAT_MASK = 0x1FFFFL;
+
     public int useWeaponOption1 = 0;
     public int useWeaponOption2 = 0;
     public double useWeaponPosX = 0.0D;
@@ -71,10 +74,12 @@ public class PacketUseWeapon extends PacketBase {
         }
         if (ac != null) {
             MCH_WeaponSet currentWeapon = ac.getCurrentWeapon(player);
+            int weaponId = ac.getCurrentWeaponID(player);
             MCH_WeaponInfo weaponInfo = currentWeapon != null ? currentWeapon.getInfo() : null;
             if (weaponInfo != null && weaponInfo.isGPSMissile && useWeaponOption2 < 0) {
                 int radarTargetId = -useWeaponOption2;
                 if (radarTargetId <= 0 || !applyGpsRadarTarget(ac, player, radarTargetId)) {
+                    sendWeaponState(ac, player, weaponId, currentWeapon);
                     return;
                 }
             }
@@ -85,8 +90,27 @@ public class PacketUseWeapon extends PacketBase {
             param.setPosAndRot(ac.posX, ac.posY, ac.posZ, 0.0F, 0.0F);
             param.option1 = useWeaponOption1;
             param.option2 = useWeaponOption2;
-            ac.useCurrentWeapon(param);
+            boolean used = ac.useCurrentWeapon(param);
+            if (used || currentWeapon == null || !currentWeapon.hasPendingServerUseFor(player)) {
+                sendWeaponState(ac, player, weaponId, currentWeapon);
+            }
         }
+    }
+
+    public static void sendWeaponState(MCH_EntityAircraft ac, EntityPlayerMP player, int weaponId, MCH_WeaponSet weapon) {
+        if (ac == null || player == null || weapon == null || weaponId < 0) {
+            return;
+        }
+        // This packet already has a fixed request layout. Server-to-client instances reuse
+        // the same fields as an authoritative response without changing the wire format.
+        int packedWeaponState = (weaponId & 0xFFFF) | ((weapon.getCurrentWeaponIndex() & 0xFFFF) << 16);
+        long packedAmmoState = ((long)weapon.getAmmoNum() & AMMO_MASK)
+            | (((long)weapon.getRestAllAmmoNum() & AMMO_MASK) << 15)
+            | (((long)weapon.currentHeat & HEAT_MASK) << 30);
+        MCH_MOD.getPacketHandler().sendTo(new PacketUseWeapon(
+            ac.getEntityId(), packedWeaponState,
+            (double)packedAmmoState, weapon.countWait, weapon.countReloadWait
+        ), player);
     }
 
     private boolean applyGpsRadarTarget(MCH_EntityAircraft ac, EntityPlayerMP player, int targetId) {
@@ -124,6 +148,23 @@ public class PacketUseWeapon extends PacketBase {
 
     @Override
     public void handleClientSide(EntityPlayer clientPlayer) {
-
+        if (clientPlayer == null || clientPlayer.worldObj == null) {
+            return;
+        }
+        Entity entity = clientPlayer.worldObj.getEntityByID(useWeaponOption1);
+        if (entity instanceof MCH_EntityAircraft) {
+            int weaponId = useWeaponOption2 & 0xFFFF;
+            int weaponIndex = useWeaponOption2 >>> 16;
+            long packedAmmoState = (long)useWeaponPosX;
+            ((MCH_EntityAircraft)entity).applyServerWeaponUseState(
+                weaponId,
+                (int)(packedAmmoState & AMMO_MASK),
+                (int)((packedAmmoState >>> 15) & AMMO_MASK),
+                (int)((packedAmmoState >>> 30) & HEAT_MASK),
+                weaponIndex,
+                (int)useWeaponPosY,
+                (int)useWeaponPosZ
+            );
+        }
     }
 }

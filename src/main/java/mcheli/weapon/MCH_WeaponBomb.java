@@ -106,7 +106,6 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
             if (super.worldObj.isRemote) {
                 return true;
             }
-            this.playSound(prm.entity);
             MCH_EntityBomb e = new MCH_EntityBomb(super.worldObj, prm.posX, prm.posY, prm.posZ, prm.entity.motionX, prm.entity.motionY, prm.entity.motionZ, prm.entity.rotationYaw, 0.0F, (double) super.acceleration);
             e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
@@ -116,7 +115,10 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
             e.motionX = prm.entity.motionX;
             e.motionY = prm.entity.motionY;
             e.motionZ = prm.entity.motionZ;
-            super.worldObj.spawnEntityInWorld(e);
+            if (!super.worldObj.spawnEntityInWorld(e)) {
+                return false;
+            }
+            this.playSound(prm.entity);
         }
 
         return true;

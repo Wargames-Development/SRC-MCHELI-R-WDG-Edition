@@ -268,7 +268,6 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             }
 
             if (!super.worldObj.isRemote) {
-                this.playSound(prm.entity);
                 if (prm.entity instanceof MCH_EntityTank) {
                     MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
                     yaw += prm.randYaw;
@@ -333,7 +332,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                         missile.targeting = true;
                     }
                 }
-                this.worldObj.spawnEntityInWorld(missile);
+                if (!this.worldObj.spawnEntityInWorld(missile)) {
+                    return false;
+                }
                 playSound(prm.entity);
             } else {
                 super.optionParameter1 = this.getCurrentMode();
@@ -382,7 +383,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 missile.originTargetPosY = hitResult.hitVec.yCoord;
                 missile.originTargetPosZ = hitResult.hitVec.zCoord;
                 missile.targeting = true;
-                this.worldObj.spawnEntityInWorld(missile);
+                if (!this.worldObj.spawnEntityInWorld(missile)) {
+                    return false;
+                }
                 playSound(prm.entity);
             } else {
                 if (prm.user instanceof EntityPlayer) {

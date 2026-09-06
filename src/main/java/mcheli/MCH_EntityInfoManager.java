@@ -232,9 +232,7 @@ public class MCH_EntityInfoManager {
         // Same-team players use this stream for HUD markers beyond vanilla tracking range.
         // Per-recipient filtering prevents disclosure of untracked enemy player positions.
         if (entity instanceof EntityPlayerMP) {
-            return !(entity.ridingEntity instanceof MCH_EntityAircraft)
-                && !(entity.ridingEntity instanceof MCH_EntitySeat)
-                && !(entity.ridingEntity instanceof MCH_EntityUavStation);
+            return !isPlayerMountedInAircraft(w, entity);
         }
         // Visual contacts are sensor-independent: every live aircraft must remain continuous.
         if (entity instanceof MCH_EntityAircraft) {
@@ -247,6 +245,20 @@ public class MCH_EntityInfoManager {
                 return false;
             }
             return true;
+        }
+        return false;
+    }
+
+    private boolean isPlayerMountedInAircraft(WorldServer world, Entity player) {
+        if (player.ridingEntity instanceof MCH_EntityAircraft
+            || player.ridingEntity instanceof MCH_EntitySeat
+            || player.ridingEntity instanceof MCH_EntityUavStation) {
+            return true;
+        }
+        for (Object obj : world.loadedEntityList) {
+            if (obj instanceof MCH_EntityAircraft && ((MCH_EntityAircraft)obj).isMountedEntity(player)) {
+                return true;
+            }
         }
         return false;
     }

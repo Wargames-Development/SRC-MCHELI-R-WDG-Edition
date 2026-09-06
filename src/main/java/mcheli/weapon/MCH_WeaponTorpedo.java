@@ -42,7 +42,9 @@ public class MCH_WeaponTorpedo extends MCH_WeaponBase {
             e.motionY = my;
             e.motionZ = mz;
             e.accelerationInWater = this.getInfo() != null ? (double) this.getInfo().accelerationInWater : 1.0D;
-            super.worldObj.spawnEntityInWorld(e);
+            if (!super.worldObj.spawnEntityInWorld(e)) {
+                return false;
+            }
             this.playSound(prm.entity);
             return true;
         }
@@ -88,7 +90,9 @@ public class MCH_WeaponTorpedo extends MCH_WeaponBase {
                 e.motionY = my;
                 e.motionZ = mz;
                 e.accelerationInWater = this.getInfo() != null ? (double) this.getInfo().accelerationInWater : 1.0D;
-                super.worldObj.spawnEntityInWorld(e);
+                if (!super.worldObj.spawnEntityInWorld(e)) {
+                    return false;
+                }
                 this.playSound(prm.entity);
             }
 

@@ -156,6 +156,10 @@ public class MCH_WeaponSet {
         return this.pendingServerUseUser != null;
     }
 
+    public boolean hasPendingServerUseFor(Entity user) {
+        return this.pendingServerUseUser == user;
+    }
+
     public synchronized void queueServerUse(MCH_WeaponParam prm) {
         if (prm == null || prm.user == null || this.pendingServerUseUser != null) {
             return;
@@ -433,10 +437,13 @@ public class MCH_WeaponSet {
 
                 prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
                 prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
+                int ammoBeforeClientPrediction = this.getAmmoNum();
+                int restAmmoBeforeClientPrediction = this.getRestAllAmmoNum();
+                int heatBeforeClientPrediction = this.currentHeat;
+                int cooldownSpeedBeforeClientPrediction = this.cooldownSpeed;
                 if (crtWpn.use(prm)) {
-                    // Apply ammunition, heat, cooldown and reload state on both logical sides.
-                    // The client predicts the shot for responsive controls, while the server must
-                    // also consume ammo so its authoritative state cannot restore a full load later.
+                    // Predict timing and visuals locally, but keep ammo and heat unchanged until
+                    // the server confirms that it accepted and spawned the projectile.
                     boolean applyShotState = prm.entity.worldObj.isRemote
                         || prm.user instanceof EntityPlayer
                         || prm.user instanceof MCH_EntityGunner;
@@ -477,6 +484,12 @@ public class MCH_WeaponSet {
                         }
 
                         prm.result = true;
+                        if (prm.entity.worldObj.isRemote) {
+                            this.setAmmoNum(ammoBeforeClientPrediction);
+                            this.setRestAllAmmoNum(restAmmoBeforeClientPrediction);
+                            this.currentHeat = heatBeforeClientPrediction;
+                            this.cooldownSpeed = cooldownSpeedBeforeClientPrediction;
+                        }
                     } else {
                         if (prm.user instanceof EntityPlayer) {
                             this.lastUsedCount[this.currentWeaponIndex] = crtWpn.interval > 0 ? crtWpn.interval : -crtWpn.interval;
@@ -547,6 +560,17 @@ public class MCH_WeaponSet {
 
     public int getCurrentWeaponIndex() {
         return this.currentWeaponIndex;
+    }
+
+    public void applyServerUseState(int ammo, int restAmmo, int heat, int weaponIndex, int wait, int reloadWait) {
+        this.setAmmoNum(ammo);
+        this.setRestAllAmmoNum(restAmmo);
+        this.currentHeat = Math.max(0, heat);
+        this.countWait = wait;
+        this.countReloadWait = Math.max(0, reloadWait);
+        if (this.weapons != null && this.weapons.length > 0) {
+            this.currentWeaponIndex = MathHelper.clamp_int(weaponIndex, 0, this.weapons.length - 1);
+        }
     }
 
     public MCH_WeaponBase getCurrentWeapon() {

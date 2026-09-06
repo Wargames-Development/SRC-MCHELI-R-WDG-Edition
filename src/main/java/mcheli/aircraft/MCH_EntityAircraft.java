@@ -16,6 +16,7 @@ import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketBoundingBoxHit;
 import mcheli.network.packets.PacketCountermeasureState;
 import mcheli.network.packets.PacketDamageIndicator;
+import mcheli.network.packets.PacketUseWeapon;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
@@ -5585,7 +5586,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         int sid = getSeatIdByEntity(entity);
         if (!isValidSeatID(sid))
             return;
-        int beforeWeaponID = this.currentWeaponID[sid];
         if (getWeaponNum() <= 0 || this.currentWeaponID.length <= 0)
             return;
         if (id < 0)
@@ -5593,7 +5593,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (id >= getWeaponNum())
             id = getWeaponNum() - 1;
         MCH_Lib.DbgLog(this.worldObj, "switchWeapon:" + W_Entity.getEntityId(entity) + " -> " + id, new Object[0]);
-        getCurrentWeapon(entity).reload();
+        // Switching selection must not force the outgoing weapon's partial magazine to reload.
+        // Empty magazines already enter reload state in MCH_WeaponSet.use().
         this.currentWeaponID[sid] = id;
         MCH_WeaponSet ws = getCurrentWeapon(entity);
         ws.onSwitchWeapon(this.worldObj.isRemote, isInfinityAmmo(entity));
@@ -5697,6 +5698,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (id < 0 || this.weapons.length <= 0 || id >= this.weapons.length)
             return this.dummyWeapon;
         return this.weapons[id];
+    }
+
+    public void applyServerWeaponUseState(int weaponId, int ammo, int restAmmo, int heat, int weaponIndex, int wait, int reloadWait) {
+        if (weaponId >= 0 && weaponId < this.weapons.length) {
+            this.weapons[weaponId].applyServerUseState(ammo, restAmmo, heat, weaponIndex, wait, reloadWait);
+        }
     }
 
     public int getWeaponIDBySeatID(int sid) {
@@ -6045,6 +6052,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         MCH_WeaponParam pendingUse = w.consumePendingServerUse(this);
                         if (pendingUse != null && this.getCurrentWeapon(pendingUse.user) == w) {
                             this.useCurrentWeapon(pendingUse);
+                        }
+                        if (pendingUse != null && pendingUse.user instanceof EntityPlayerMP) {
+                            PacketUseWeapon.sendWeaponState(this, (EntityPlayerMP)pendingUse.user, wid, w);
                         }
                     }
                     MCH_AircraftInfo.Weapon wi = this.getAcInfo().getWeaponById(wid);
