@@ -1003,6 +1003,12 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     }
                 }
 
+                // Plane mouse control is render-frame based; keep the custom chase camera
+                // on that same final rotation instead of letting its 20 TPS update catch up later.
+                if (var19 instanceof MCP_EntityPlane && camera instanceof MCH_3rdCamera && super.mc.renderViewEntity == camera) {
+                    ((MCH_3rdCamera) camera).syncRotationForRender(var17);
+                }
+
                 prevTick = partialTicks;
             }
         }

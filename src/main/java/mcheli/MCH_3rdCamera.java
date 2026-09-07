@@ -73,6 +73,26 @@ public class MCH_3rdCamera extends EntityLivingBase {
         for (; rotationYaw - prevRotationYaw <  -180F; rotationYaw += 360F) ;
     }
 
+    /**
+     * Plane mouse flight controls update every render frame, while this camera's
+     * normal onUpdate() runs at 20 TPS. Sync only the view rotation here so the
+     * aircraft cannot visually rotate ahead of the chase camera and snap back.
+     */
+    public void syncRotationForRender(EntityPlayer player) {
+        if (player == null || this.isDead) {
+            return;
+        }
+
+        float yaw = player.rotationYaw;
+        float pitch = clampPitch(player.rotationPitch + 2.0F);
+
+        // Do not interpolate a 20 Hz camera angle over a per-frame mouse angle.
+        this.rotationYaw = yaw;
+        this.prevRotationYaw = yaw;
+        this.rotationPitch = pitch;
+        this.prevRotationPitch = pitch;
+    }
+
     public void hardSnap(String reason) {
         if (this.entity == null) {
             return;
