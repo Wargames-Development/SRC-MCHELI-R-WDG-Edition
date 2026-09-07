@@ -1,5 +1,7 @@
 package mcheli;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.plane.MCP_EntityPlane;
@@ -13,9 +15,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
+@SideOnly(Side.CLIENT)
 public class MCH_3rdCamera extends EntityLivingBase {
 
     public static float lerpAmount = 0.3F;
+    private static final double HARD_SNAP_DISTANCE_SQ = 64.0D * 64.0D;
     public MCH_EntityAircraft entity;
 
     public MCH_3rdCamera(World w) {
@@ -26,20 +30,70 @@ public class MCH_3rdCamera extends EntityLivingBase {
     public MCH_3rdCamera(World world, MCH_EntityAircraft ac) {
         this(world);
         entity = ac;
-        setPosition(ac.posX, ac.posY, ac.posZ);
+        hardSnap("create");
     }
 
     @Override
     public void onUpdate() {
+        lastTickPosX = posX;
+        lastTickPosY = posY;
+        lastTickPosZ = posZ;
         prevPosX = posX;
         prevPosY = posY;
         prevPosZ = posZ;
+        prevRotationYaw = rotationYaw;
+        prevRotationPitch = rotationPitch;
 
-        if (entity == null || entity.isDead) {
+        if (entity == null || entity.isDead || entity.worldObj != this.worldObj) {
             setDead();
             return;
         }
 
+        Vec3 target = getTargetPosition();
+        double dX = target.xCoord - posX;
+        double dY = target.yCoord - posY;
+        double dZ = target.zCoord - posZ;
+        double distanceSq = dX * dX + dY * dY + dZ * dZ;
+        if (distanceSq > HARD_SNAP_DISTANCE_SQ) {
+            hardSnap("distance");
+        } else {
+            setPosition(posX + dX * lerpAmount, posY + dY * lerpAmount, posZ + dZ * lerpAmount);
+        }
+
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        if (player != null) {
+            rotationYaw   = player.rotationYaw;
+            rotationPitch = clampPitch(player.rotationPitch + 2.0F);
+        } else {
+            rotationYaw   = entity.rotationYaw;
+            rotationPitch = clampPitch(entity.rotationPitch + 2.0F);
+        }
+
+        for (; rotationYaw - prevRotationYaw >= 180F; rotationYaw -= 360F) ;
+        for (; rotationYaw - prevRotationYaw <  -180F; rotationYaw += 360F) ;
+    }
+
+    public void hardSnap(String reason) {
+        if (this.entity == null) {
+            return;
+        }
+        Vec3 target = getTargetPosition();
+        double dx = target.xCoord - this.posX;
+        double dy = target.yCoord - this.posY;
+        double dz = target.zCoord - this.posZ;
+        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        setPosition(target.xCoord, target.yCoord, target.zCoord);
+        this.prevPosX = this.lastTickPosX = this.posX;
+        this.prevPosY = this.lastTickPosY = this.posY;
+        this.prevPosZ = this.lastTickPosZ = this.posZ;
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        MCH_Lib.DbgTrace(this.worldObj,
+            "event=third_camera_snap reason=%s distance=%.2f camera=%s player=%s riding=%s aircraft=%s",
+            reason, Double.valueOf(distance), describe(this), describe(player),
+            describe(player != null ? player.ridingEntity : null), describe(this.entity));
+    }
+
+    private Vec3 getTargetPosition() {
         Vec3 camCfg = getCameraPositions(entity);
         final double upHeight = camCfg.yCoord;
         final double yawRad   = Math.toRadians(entity.rotationYaw);
@@ -56,26 +110,13 @@ public class MCH_3rdCamera extends EntityLivingBase {
         Vec3 u = r.crossProduct(f).normalize();
         Vec3 uRoll = rotateAroundAxis(u, f, rollRad).normalize();
 
-        double targetX = entity.posX + uRoll.xCoord * upHeight;
-        double targetY = entity.posY + uRoll.yCoord * upHeight;
-        double targetZ = entity.posZ + uRoll.zCoord * upHeight;
+        return Vec3.createVectorHelper(entity.posX + uRoll.xCoord * upHeight,
+            entity.posY + uRoll.yCoord * upHeight, entity.posZ + uRoll.zCoord * upHeight);
+    }
 
-        double dX = targetX - posX;
-        double dY = targetY - posY;
-        double dZ = targetZ - posZ;
-        setPosition(posX + dX * lerpAmount, posY + dY * lerpAmount, posZ + dZ * lerpAmount);
-
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
-        if (player != null) {
-            rotationYaw   = player.rotationYaw;
-            rotationPitch = clampPitch(player.rotationPitch + 2.0F);
-        } else {
-            rotationYaw   = entity.rotationYaw;
-            rotationPitch = clampPitch(entity.rotationPitch + 2.0F);
-        }
-
-        for (; rotationYaw - prevRotationYaw >= 180F; rotationYaw -= 360F) ;
-        for (; rotationYaw - prevRotationYaw <  -180F; rotationYaw += 360F) ;
+    private static String describe(Entity value) {
+        return value == null ? "null" : value.getClass().getSimpleName() + "#" + value.getEntityId()
+            + "@" + System.identityHashCode(value);
     }
 
     private static Vec3 rotateAroundAxis(Vec3 v, Vec3 kUnit, double angle) {

@@ -101,6 +101,7 @@ public class MCH_Config {
     public static MCH_ConfigPrm Collision_DestroyBlock;
     public static MCH_ConfigPrm Explosion_DestroyBlock;
     public static MCH_ConfigPrm Explosion_FlamingBlock;
+    public static MCH_ConfigPrm NTMExplosionDamageMultiplier;
     public static MCH_ConfigPrm BulletBreakableBlock;
     public static MCH_ConfigPrm Collision_Car_BreakableBlock;
     public static MCH_ConfigPrm Collision_Car_NoBreakableBlock;
@@ -295,6 +296,8 @@ public class MCH_Config {
         Explosion_DestroyBlock = new MCH_ConfigPrm("Explosion_DestroyBlock", true);
         Explosion_DestroyBlock.desc = ";Explosion_DestroyBlock = false: keep explosion damage/effects but disable all MCHeli/HBM terrain destruction";
         Explosion_FlamingBlock = new MCH_ConfigPrm("Explosion_FlamingBlock", true);
+        NTMExplosionDamageMultiplier = new MCH_ConfigPrm("NTMExplosionDamageMultiplier", 2.5D);
+        NTMExplosionDamageMultiplier.desc = ";Multiplier applied to NTM explosion damage received by MCHeli aircraft and vehicles";
         Collision_Car_BreakableBlock = new MCH_ConfigPrm("Collision_Car_BreakableBlock", "double_plant, glass_pane,stained_glass_pane");
         Collision_Car_NoBreakableBlock = new MCH_ConfigPrm("Collision_Car_NoBreakBlock", "torch");
         Collision_Car_BreakableMaterial = new MCH_ConfigPrm("Collision_Car_BreakableMaterial", "cactus, cake, gourd, leaves, vine, plants");
@@ -420,7 +423,7 @@ public class MCH_Config {
         ItemID_StingerMissile = new MCH_ConfigPrm("ItemID_StingerMissile", 28901);
         BlockID_DraftingTableOFF = new MCH_ConfigPrm("BlockID_DraftingTable", 3450);
         BlockID_DraftingTableON = new MCH_ConfigPrm("BlockID_DraftingTableON", 3451);
-        General = new MCH_ConfigPrm[]{TestMode, EnableCommand, EnableTechTreeGameplay, EnableWGCoreIntegration, EconomyKeepOnDeath, null, PlaceableOnSpongeOnly, ItemDamage, ItemFuel, AutoRepairHP, Explosion_DestroyBlock, Explosion_FlamingBlock, BulletBreakableBlock, Collision_DestroyBlock, Collision_Car_BreakableBlock, Collision_Car_BreakableMaterial, Collision_Tank_BreakableBlock, Collision_Tank_BreakableMaterial, Collision_EntityDamage, Collision_EntityTankDamage, InfinityAmmo, InfinityFuel, DismountAll, MountMinecartHeli, MountMinecartPlane, MountMinecartVehicle, MountMinecartTank, PreventingBroken, DropItemInCreativeMode, BreakableOnlyPickaxe, AllHeliSpeed, AllPlaneSpeed, AllTankSpeed, HurtResistantTime, StingerLockRange, delayrangeloader, bombletloader, wrenchdropitem, RangeFinderSpotDist, RangeFinderSpotTime, RangeFinderConsume, EnablePutRackInFlying, EnableDebugBoundingBox, null, InvertMouse, MouseSensitivity, MouseControlStickModeHeli, MouseControlStickModePlane, MouseControlFlightSimMode, AutoThrottleDownHeli, AutoThrottleDownPlane, AutoThrottleDownTank, SwitchWeaponWithMouseWheel, LWeaponAutoFire, DisableItemRender, HideKeybind, RenderDistanceWeight, MobRenderDistanceWeight, CreativeTabIcon, CreativeTabIconHeli, CreativeTabIconPlane, CreativeTabIconTank, CreativeTabIconVehicle, DisableShader, DefaultExplosionParticle, AliveTimeOfCartridge, HitMarkColor, HitBoxDelayTick, GunnerPlaneSearchRadiusAir, GunnerPlaneSearchRadiusGround, GunnerPlaneSearchAltitudeWindow, GunnerPlaneStateSearchMin, GunnerPlaneStateSearchMax, GunnerPlaneStateFocusMin, GunnerPlaneStateFocusMax, GunnerPlaneStateAttackMin, GunnerPlaneStateAttackMax, GunnerPlaneStateDisengageMin, GunnerPlaneStateDisengageMax, SmoothShading, EnableModEntityRender, DisableRenderLivingSpecials, DisplayHUDThirdPerson, DisableCameraDistChange, EnableReplaceTextureManager, DisplayEntityMarker, EntityMarkerSize, BlockMarkerSize, ReplaceRenderViewEntity, null, ItemRecipe_Fuel, ItemRecipe_GLTD, ItemRecipe_Chain, ItemRecipe_Parachute, ItemRecipe_Container, ItemRecipe_UavStation[0], ItemRecipe_UavStation[1], ItemRecipe_DraftingTable, ItemRecipe_Wrench, ItemRecipe_RangeFinder, ItemRecipe_Stinger, ItemRecipe_StingerMissile, ItemRecipe_Javelin, ItemRecipe_JavelinMissile, ItemRecipe_Rpg, ItemRecipe_RpgMissile};
+        General = new MCH_ConfigPrm[]{TestMode, EnableCommand, EnableTechTreeGameplay, EnableWGCoreIntegration, EconomyKeepOnDeath, null, PlaceableOnSpongeOnly, ItemDamage, ItemFuel, AutoRepairHP, Explosion_DestroyBlock, Explosion_FlamingBlock, NTMExplosionDamageMultiplier, BulletBreakableBlock, Collision_DestroyBlock, Collision_Car_BreakableBlock, Collision_Car_BreakableMaterial, Collision_Tank_BreakableBlock, Collision_Tank_BreakableMaterial, Collision_EntityDamage, Collision_EntityTankDamage, InfinityAmmo, InfinityFuel, DismountAll, MountMinecartHeli, MountMinecartPlane, MountMinecartVehicle, MountMinecartTank, PreventingBroken, DropItemInCreativeMode, BreakableOnlyPickaxe, AllHeliSpeed, AllPlaneSpeed, AllTankSpeed, HurtResistantTime, StingerLockRange, delayrangeloader, bombletloader, wrenchdropitem, RangeFinderSpotDist, RangeFinderSpotTime, RangeFinderConsume, EnablePutRackInFlying, EnableDebugBoundingBox, null, InvertMouse, MouseSensitivity, MouseControlStickModeHeli, MouseControlStickModePlane, MouseControlFlightSimMode, AutoThrottleDownHeli, AutoThrottleDownPlane, AutoThrottleDownTank, SwitchWeaponWithMouseWheel, LWeaponAutoFire, DisableItemRender, HideKeybind, RenderDistanceWeight, MobRenderDistanceWeight, CreativeTabIcon, CreativeTabIconHeli, CreativeTabIconPlane, CreativeTabIconTank, CreativeTabIconVehicle, DisableShader, DefaultExplosionParticle, AliveTimeOfCartridge, HitMarkColor, HitBoxDelayTick, GunnerPlaneSearchRadiusAir, GunnerPlaneSearchRadiusGround, GunnerPlaneSearchAltitudeWindow, GunnerPlaneStateSearchMin, GunnerPlaneStateSearchMax, GunnerPlaneStateFocusMin, GunnerPlaneStateFocusMax, GunnerPlaneStateAttackMin, GunnerPlaneStateAttackMax, GunnerPlaneStateDisengageMin, GunnerPlaneStateDisengageMax, SmoothShading, EnableModEntityRender, DisableRenderLivingSpecials, DisplayHUDThirdPerson, DisableCameraDistChange, EnableReplaceTextureManager, DisplayEntityMarker, EntityMarkerSize, BlockMarkerSize, ReplaceRenderViewEntity, null, ItemRecipe_Fuel, ItemRecipe_GLTD, ItemRecipe_Chain, ItemRecipe_Parachute, ItemRecipe_Container, ItemRecipe_UavStation[0], ItemRecipe_UavStation[1], ItemRecipe_DraftingTable, ItemRecipe_Wrench, ItemRecipe_RangeFinder, ItemRecipe_Stinger, ItemRecipe_StingerMissile, ItemRecipe_Javelin, ItemRecipe_JavelinMissile, ItemRecipe_Rpg, ItemRecipe_RpgMissile};
         DamageVsEntity = new MCH_Config.DamageFactor("DamageVsEntity");
         DamageVsLiving = new MCH_Config.DamageFactor("DamageVsLiving");
         DamageVsPlayer = new MCH_Config.DamageFactor("DamageVsPlayer");
@@ -576,6 +579,8 @@ public class MCH_Config {
         if (HurtResistantTime.prmDouble > 10000.0D) {
             HurtResistantTime.prmDouble = 10000.0D;
         }
+
+        NTMExplosionDamageMultiplier.prmDouble = MCH_Lib.RNG(NTMExplosionDamageMultiplier.prmDouble, 0.0D, 100.0D);
 
         if (MobRenderDistanceWeight.prmDouble < 0.1D) {
             MobRenderDistanceWeight.prmDouble = 0.1D;

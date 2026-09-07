@@ -1,10 +1,8 @@
 package mcheli.hud;
 
-import mcheli.MCH_Lib;
 import mcheli.MCH_Vector2;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 public class MCH_HudItemRadar extends MCH_HudItem {
 
@@ -14,6 +12,7 @@ public class MCH_HudItemRadar extends MCH_HudItem {
     private final String width;
     private final String height;
     private final boolean isEntityRadar;
+    private double[] pointBuffer = new double[0];
 
 
     public MCH_HudItemRadar(int fileLine, boolean isEntityRadar, String rot, String left, String top, String width, String height) {
@@ -44,25 +43,36 @@ public class MCH_HudItemRadar extends MCH_HudItem {
         double h2 = h / 2.0D;
         double w_factor = w / 64.0D;
         double h_factor = h / 64.0D;
-        double[] list = new double[src.size() * 2];
+        int requiredLength = src.size() * 2;
+        if (this.pointBuffer.length < requiredLength) {
+            this.pointBuffer = new double[requiredLength];
+        }
         int idx = 0;
 
-        for (Iterator drawList = src.iterator(); drawList.hasNext(); idx += 2) {
-            MCH_Vector2 i = (MCH_Vector2) drawList.next();
-            list[idx + 0] = i.x / 2.0D * w_factor;
-            list[idx + 1] = i.y / 2.0D * h_factor;
+        for (Object point : src) {
+            MCH_Vector2 radarPoint = (MCH_Vector2) point;
+            this.pointBuffer[idx++] = radarPoint.x / 2.0D * w_factor;
+            this.pointBuffer[idx++] = radarPoint.y / 2.0D * h_factor;
         }
 
-        MCH_Lib.rotatePoints(list, r);
-        ArrayList drawList1 = new ArrayList();
+        double radians = Math.toRadians(r);
+        double cos = Math.cos(radians);
+        double sin = Math.sin(radians);
+        for (int i = 0; i + 1 < requiredLength; i += 2) {
+            double x = this.pointBuffer[i];
+            double y = this.pointBuffer[i + 1];
+            this.pointBuffer[i] = x * cos - y * sin;
+            this.pointBuffer[i + 1] = x * sin + y * cos;
+        }
+        int visiblePointCount = 0;
 
-        for (int i1 = 0; i1 + 1 < list.length; i1 += 2) {
-            if (list[i1 + 0] > w1 && list[i1 + 0] < w2 && list[i1 + 1] > h1 && list[i1 + 1] < h2) {
-                drawList1.add(Double.valueOf(list[i1 + 0] + left + w / 2.0D));
-                drawList1.add(Double.valueOf(list[i1 + 1] + top + h / 2.0D));
+        for (int i = 0; i + 1 < requiredLength; i += 2) {
+            if (this.pointBuffer[i] > w1 && this.pointBuffer[i] < w2 && this.pointBuffer[i + 1] > h1 && this.pointBuffer[i + 1] < h2) {
+                this.pointBuffer[visiblePointCount++] = this.pointBuffer[i] + left + w / 2.0D;
+                this.pointBuffer[visiblePointCount++] = this.pointBuffer[i + 1] + top + h / 2.0D;
             }
         }
 
-        this.drawPoints(drawList1, MCH_HudItem.colorSetting, MCH_HudItem.scaleFactor * 2);
+        this.drawPoints(this.pointBuffer, visiblePointCount, MCH_HudItem.colorSetting, MCH_HudItem.scaleFactor * 2);
     }
 }

@@ -249,6 +249,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private long gunnerPilotMountTick = -1L;
     private int clientTypeResolutionFailures;
     private String clientUnresolvedType = "";
+    private String pendingSeatCreationId = "";
+    private Entity clientLastDirectRider;
 
     public MCH_EntityAircraft(World world) {
         super(world);
@@ -334,6 +336,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.isParachuting = false;
         this.prevPosition = new MCH_Queue(10, Vec3.createVectorHelper(0.0D, 0.0D, 0.0D));
         this.lastSearchLightYaw = this.lastSearchLightPitch = 0.0F;
+        if (world != null && world.isRemote) {
+            MCH_Lib.DbgTrace(world,
+                "event=aircraft_client_construct id=%d object=%d type=%s currentThrottle=%.3f watchedThrottle=%.3f",
+                Integer.valueOf(this.getEntityId()), Integer.valueOf(System.identityHashCode(this)),
+                this.getTypeName(), Double.valueOf(this.getCurrentThrottle()), Double.valueOf(this.getThrottle()));
+        }
     }
 
     @SideOnly(Side.CLIENT)
@@ -671,6 +679,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return this.isUAV() && this.uavStation != null ? this.uavStation.riddenByEntity : super.riddenByEntity;
     }
 
+    public Entity getDirectRiddenByEntity() {
+        return super.riddenByEntity;
+    }
+
     public boolean getCommonStatus(int bit) {
         return (this.commonStatus >> bit & 1) != 0;
     }
@@ -920,6 +932,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 additionalData.readBytes(dst);
                 changeType(new String(dst));
             }
+            this.currentThrottle = this.getThrottle();
+            this.prevCurrentThrottle = this.currentThrottle;
+            MCH_Lib.DbgTrace(super.worldObj,
+                "event=aircraft_client_spawn id=%d object=%d type=%s currentThrottle=%.3f watchedThrottle=%.3f",
+                Integer.valueOf(this.getEntityId()), Integer.valueOf(System.identityHashCode(this)),
+                this.getTypeName(), Double.valueOf(this.getCurrentThrottle()), Double.valueOf(this.getThrottle()));
         } catch (Exception var4) {
             MCH_Lib.Log((Entity) this, "readSpawnData error!", new Object[0]);
             var4.printStackTrace();
@@ -1098,11 +1116,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         }
                         this.timeSinceHit = 0;
                     }
-                    if (dmt.startsWith("explosion") || MCH_FMURUtil.isFMURExplosion(damageSource)) {
+                    boolean isHBMExplosion = MCH_HBMUtil.isHBMExplosionDamage(damageSource);
+                    boolean isExplosion = dmt.startsWith("explosion") || MCH_FMURUtil.isFMURExplosion(damageSource) || isHBMExplosion;
+                    if (isExplosion) {
                         if (!this.isDestroyed()) {
                             damageExplosion = true;
                             this.timeSinceHit = 0;
                             //触发载具伤害事件
+                            if (isHBMExplosion) {
+                                damage *= (float) MCH_Config.NTMExplosionDamageMultiplier.prmDouble;
+                            }
                             damage *= getAcInfo().armorExplosionDamageMultiplier;
                             String name = (String) getAcInfo().displayNameLang.get("en_US");
                             postEconomyAircraftDamageEvent(name, damage, attackerEntity);
@@ -1946,6 +1969,15 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public abstract void onUpdateAircraft();
 
     public void onUpdate() {
+        if (!super.worldObj.isRemote && !this.pendingSeatCreationId.isEmpty()) {
+            if (!this.finishSeatCreationAfterSpawn()) {
+                MCH_Lib.Log(this, "[Placement] Removing aircraft after dependent seat creation failed: id=%d, type=%s",
+                    Integer.valueOf(W_Entity.getEntityId(this)), this.getTypeName());
+                this.setDead();
+                return;
+            }
+        }
+
         if (super.worldObj.isRemote && this.getAcInfo() == null) {
             this.changeType(this.getTypeName());
             if (this.getAcInfo() == null) {
@@ -2133,6 +2165,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.autoRepair();
         if (!super.worldObj.isRemote && this.getCountOnUpdate() % 40 == 0 && this.hasCountermeasureOperator()) {
             this.syncCountermeasureState();
+        }
+
+        if (super.worldObj.isRemote && this.clientLastDirectRider != super.riddenByEntity) {
+            MCH_Lib.DbgTrace(super.worldObj,
+                "event=aircraft_direct_mount_transition aircraftId=%d aircraftObj=%d type=%s previous=%s current=%s",
+                Integer.valueOf(this.getEntityId()), Integer.valueOf(System.identityHashCode(this)), this.getTypeName(),
+                describeDebugEntity(this.clientLastDirectRider), describeDebugEntity(super.riddenByEntity));
+            this.clientLastDirectRider = super.riddenByEntity;
         }
         int ft = this.getFlareTick();
         this.flareDv.update();
@@ -4305,21 +4345,59 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void createSeats(String uuid) {
-        if (!super.worldObj.isRemote) {
-            if (!uuid.isEmpty()) {
-                this.setCommonUniqueId(uuid);
-                this.seats = new MCH_EntitySeat[this.getSeatNum()];
+        if (super.worldObj.isRemote || uuid == null || uuid.isEmpty()) {
+            return;
+        }
 
-                for (int i = 0; i < this.seats.length; ++i) {
-                    this.seats[i] = new MCH_EntitySeat(super.worldObj, super.posX, super.posY, super.posZ);
-                    this.seats[i].parentUniqueID = this.getCommonUniqueId();
-                    this.seats[i].seatID = i;
-                    this.seats[i].setParent(this);
-                    super.worldObj.spawnEntityInWorld(this.seats[i]);
-                }
+        this.setCommonUniqueId(uuid);
+        if (super.worldObj.getEntityByID(W_Entity.getEntityId(this)) != this) {
+            // EntityJoinWorldEvent fires before WorldServer registers the parent.
+            // Defer children so their tracker packets cannot overtake the aircraft.
+            this.pendingSeatCreationId = uuid;
+            return;
+        }
 
+        this.pendingSeatCreationId = "";
+        this.seats = new MCH_EntitySeat[this.getSeatNum()];
+        for (int i = 0; i < this.seats.length; ++i) {
+            this.spawnSeat(i);
+        }
+    }
+
+    public boolean finishSeatCreationAfterSpawn() {
+        if (super.worldObj.isRemote || this.pendingSeatCreationId.isEmpty()) {
+            return this.hasAllSeats();
+        }
+
+        String uuid = this.pendingSeatCreationId;
+        this.createSeats(uuid);
+        return this.pendingSeatCreationId.isEmpty() && this.hasAllSeats();
+    }
+
+    private boolean hasAllSeats() {
+        for (MCH_EntitySeat seat : this.seats) {
+            if (seat == null || seat.isDead || seat.getParent() != this) {
+                return false;
             }
         }
+        return true;
+    }
+
+    private boolean spawnSeat(int seatId) {
+        MCH_EntitySeat seat = new MCH_EntitySeat(super.worldObj, super.posX, super.posY, super.posZ);
+        seat.parentUniqueID = this.getCommonUniqueId();
+        seat.seatID = seatId;
+        seat.setParent(this);
+        if (!super.worldObj.spawnEntityInWorld(seat)) {
+            seat.setParent(null);
+            seat.setDead();
+            this.seats[seatId] = null;
+            MCH_Lib.Log(this, "[Placement] Failed to spawn seat: aircraft=%d, type=%s, seat=%d",
+                Integer.valueOf(W_Entity.getEntityId(this)), this.getTypeName(), Integer.valueOf(seatId));
+            return false;
+        }
+        this.seats[seatId] = seat;
+        return true;
     }
 
     public boolean interactFirstSeat(EntityPlayer player) {
@@ -4348,6 +4426,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void onMountPlayerSeat(MCH_EntitySeat seat, Entity entity) {
         if (seat != null && (entity instanceof EntityPlayer || entity instanceof MCH_EntityGunner)) {
+            if (super.worldObj.isRemote) {
+                MCH_Lib.DbgTrace(super.worldObj,
+                    "event=aircraft_seat_mount_transition aircraftId=%d aircraftObj=%d type=%s seatId=%d seatObj=%d occupant=%s parentId=%d parentObj=%d",
+                    Integer.valueOf(this.getEntityId()), Integer.valueOf(System.identityHashCode(this)), this.getTypeName(),
+                    Integer.valueOf(seat.seatID), Integer.valueOf(System.identityHashCode(seat)), describeDebugEntity(entity),
+                    Integer.valueOf(seat.getParent() != null ? seat.getParent().getEntityId() : 0),
+                    Integer.valueOf(seat.getParent() != null ? System.identityHashCode(seat.getParent()) : 0));
+            }
             if (super.worldObj.isRemote && MCH_Lib.getClientPlayer() == entity) {
                 this.switchGunnerFreeLookMode(false);
             }
@@ -4445,6 +4531,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void onUnmountPlayerSeat(MCH_EntitySeat seat, Entity entity) {
+        if (super.worldObj.isRemote) {
+            MCH_Lib.DbgTrace(super.worldObj,
+                "event=aircraft_seat_mount_transition aircraftId=%d aircraftObj=%d type=%s seatId=%d seatObj=%d occupant=%s action=unmount parentId=%d parentObj=%d",
+                Integer.valueOf(this.getEntityId()), Integer.valueOf(System.identityHashCode(this)), this.getTypeName(),
+                Integer.valueOf(seat != null ? seat.seatID : -1), Integer.valueOf(seat != null ? System.identityHashCode(seat) : 0),
+                describeDebugEntity(entity), Integer.valueOf(seat != null && seat.getParent() != null ? seat.getParent().getEntityId() : 0),
+                Integer.valueOf(seat != null && seat.getParent() != null ? System.identityHashCode(seat.getParent()) : 0));
+        }
         MCH_Lib.DbgLog(super.worldObj, "onUnmountPlayerSeat:%d", W_Entity.getEntityId(entity));
         int sid = this.getSeatIdByEntity(entity);
         this.camera.initCamera(sid, entity);
@@ -4468,11 +4562,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         boolean b = false;
 
         for (int i = 0; i < this.seats.length; ++i) {
-            if (this.seats[i] != null) {
-                if (!this.seats[i].isDead) {
-                    this.seats[i].fallDistance = 0.0F;
-                }
+            if (this.seats[i] != null && !this.seats[i].isDead && this.seats[i].getParent() == this) {
+                this.seats[i].fallDistance = 0.0F;
             } else {
+                this.seats[i] = null;
                 b = true;
             }
         }
@@ -4483,6 +4576,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     MCH_PacketSeatListRequest.requestSeatList(this);
                 } else {
                     this.searchSeat();
+                    for (int i = 0; i < this.seats.length; ++i) {
+                        if (this.seats[i] == null) {
+                            this.spawnSeat(i);
+                        }
+                    }
                 }
 
                 this.seatSearchCount = 0;
@@ -4519,6 +4617,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void setDead(boolean dropItems) {
+        boolean wasDead = super.isDead;
+        if (!wasDead && super.worldObj != null && super.worldObj.isRemote) {
+            MCH_Lib.DbgTrace(super.worldObj,
+                "event=aircraft_client_destroy id=%d object=%d type=%s currentThrottle=%.3f watchedThrottle=%.3f directRider=%s",
+                Integer.valueOf(this.getEntityId()), Integer.valueOf(System.identityHashCode(this)), this.getTypeName(),
+                Double.valueOf(this.getCurrentThrottle()), Double.valueOf(this.getThrottle()),
+                describeDebugEntity(super.riddenByEntity));
+        }
         super.dropContentsWhenDead = dropItems;
         super.setDead();
         if (this.getRiddenByEntity() != null) {
@@ -4557,6 +4663,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         MCH_Lib.DbgLog(super.worldObj, "setDead:" + (this.getAcInfo() != null ? this.getAcInfo().name : "null"), new Object[0]);
+    }
+
+    private static String describeDebugEntity(Entity entity) {
+        return entity == null ? "null" : entity.getClass().getSimpleName() + "#" + entity.getEntityId()
+            + "@" + System.identityHashCode(entity);
     }
 
     public void unmountEntity() {

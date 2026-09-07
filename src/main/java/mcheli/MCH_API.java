@@ -57,8 +57,9 @@ public class MCH_API {
                 } else {
                     ac.initRotationYaw((float) (((MathHelper.floor_double((double) (rotationYaw * 4.0F / 360.0F) + 0.5D) & 3) - 1) * 90));
                     if (!((World) world).isRemote) {
-                        ac.getAcDataFromItem(itemStack);
-                        ((World) world).spawnEntityInWorld(ac);
+                        if (!MCH_ItemAircraft.spawnAircraftEntity(itemStack, (World) world, ac)) {
+                            return null;
+                        }
                     }
                     return ac;
                 }

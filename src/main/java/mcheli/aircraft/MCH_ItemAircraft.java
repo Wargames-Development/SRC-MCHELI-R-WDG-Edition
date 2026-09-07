@@ -3,6 +3,7 @@ package mcheli.aircraft;
 import mcheli.MCH_Achievement;
 import mcheli.MCH_Config;
 import mcheli.MCH_I18n;
+import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponInfoManager;
@@ -241,16 +242,42 @@ public abstract class MCH_ItemAircraft extends W_Item {
                 ac = null;
             } else {
                 if (!world.isRemote) {
-                    ac.getAcDataFromItem(itemStack);
-                    world.spawnEntityInWorld(ac);
+                    if (!spawnAircraftEntity(itemStack, world, ac)) {
+                        return null;
+                    }
                     MCH_Achievement.addStat(player, MCH_Achievement.welcome, 1);
-                }
-                if (!player.capabilities.isCreativeMode) {
-                    --itemStack.stackSize;
+                    if (!player.capabilities.isCreativeMode) {
+                        --itemStack.stackSize;
+                    }
                 }
             }
         }
         return ac;
+    }
+
+    public static boolean spawnAircraftEntity(ItemStack itemStack, World world, MCH_EntityAircraft ac) {
+        if (world == null) {
+            return false;
+        }
+        if (world.isRemote || ac == null || itemStack == null || ac.worldObj != world
+            || ac.isDead || ac.getAcInfo() == null || ac.getTypeName().isEmpty()) {
+            MCH_Lib.Log(world, "[Placement] Rejected invalid aircraft spawn: aircraft=%s, type=%s",
+                ac != null ? ac.getClass().getName() : "null", ac != null ? ac.getTypeName() : "null");
+            return false;
+        }
+
+        ac.getAcDataFromItem(itemStack);
+        if (!world.spawnEntityInWorld(ac)) {
+            MCH_Lib.Log(world, "[Placement] World rejected aircraft spawn: type=%s", ac.getTypeName());
+            return false;
+        }
+        if (!ac.finishSeatCreationAfterSpawn()) {
+            MCH_Lib.Log(world, "[Placement] Rolling back aircraft with incomplete seats: id=%d, type=%s",
+                Integer.valueOf(ac.getEntityId()), ac.getTypeName());
+            ac.setDead();
+            return false;
+        }
+        return true;
     }
 
     public void rideEntity(ItemStack item, Entity target, EntityPlayer player) {

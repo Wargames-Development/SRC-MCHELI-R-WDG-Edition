@@ -35,7 +35,10 @@ import net.minecraftforge.client.event.RenderLivingEvent.Specials.Pre;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent.Unload;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
+import org.lwjgl.BufferUtils;
 
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,12 +51,18 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     public static float smoothing;
     private static boolean cancelRender = true;
     MCH_TextureManagerDummy dummyTextureManager = null;
+    private static final FloatBuffer THERMAL_PLAYER_COLOR = (FloatBuffer) BufferUtils.createFloatBuffer(4)
+        .put(new float[] {1.0F, 0.0F, 1.0F, 1.0F}).flip();
+    private EntityLivingBase thermalPlayer;
+    private float thermalPlayerBrightnessX;
+    private float thermalPlayerBrightnessY;
 
     public static void setCancelRender(boolean cancel) {
         cancelRender = cancel;
     }
 
     public void renderLivingEventSpecialsPre(Pre event) {
+        endThermalPlayer(event.entity);
         MCH_Config var10000 = MCH_MOD.config;
         if (MCH_Config.DisableRenderLivingSpecials.prmBool) {
             MCH_EntityAircraft ac = MCH_EntityAircraft.getAircraft_RiddenOrControl(Minecraft.getMinecraft().thePlayer);
@@ -148,6 +157,7 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     }
 
     public void renderLivingEventPost(net.minecraftforge.client.event.RenderLivingEvent.Post event) {
+        endThermalPlayer(event.entity);
         MCH_GuiTargetMarker.addMarkEntityPos(2, event.entity, event.x, event.y + (double) event.entity.height + 0.5D, event.z);
         MCH_ClientLightWeaponTickHandler.markEntity(event.entity, event.x, event.y + (double) (event.entity.height / 2.0F), event.z);
         MCH_RenderAircraft.renderEntityMarker(event.entity);
@@ -167,6 +177,70 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     }
 
     public void renderPlayerPost(net.minecraftforge.client.event.RenderPlayerEvent.Post event) {
+        endThermalPlayer(event.entity);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void beginThermalPlayer(net.minecraftforge.client.event.RenderLivingEvent.Pre event) {
+        if (event.isCanceled() || thermalPlayer != null || !(event.entity instanceof EntityPlayer)
+            || event.entity.isInvisible()
+            || !shouldRenderPlayerAsThermalTarget((EntityPlayer) event.entity)) {
+            return;
+        }
+
+        // This hook runs only for models Minecraft already chose to render; never use BVR snapshots.
+        thermalPlayer = event.entity;
+        thermalPlayerBrightnessX = OpenGlHelper.lastBrightnessX;
+        thermalPlayerBrightnessY = OpenGlHelper.lastBrightnessY;
+        GL11.glPushAttrib(GL11.GL_TEXTURE_BIT | GL11.GL_FOG_BIT);
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+        GL11.glDisable(GL11.GL_FOG);
+        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240.0F, 240.0F);
+
+        // Override RGB only: keep skin/armor alpha and vanilla poses, but ignore skin color and lighting.
+        // The thermal post-process recognizes this same magenta marker on vehicles.
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL13.GL_COMBINE);
+        GL11.glTexEnv(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_COLOR, THERMAL_PLAYER_COLOR);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_COMBINE_RGB, GL11.GL_REPLACE);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_SOURCE0_RGB, GL13.GL_CONSTANT);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_OPERAND0_RGB, GL11.GL_SRC_COLOR);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_RGB_SCALE, 1);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_COMBINE_ALPHA, GL11.GL_MODULATE);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_SOURCE0_ALPHA, GL11.GL_TEXTURE);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_SOURCE1_ALPHA, GL13.GL_PRIMARY_COLOR);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_OPERAND0_ALPHA, GL11.GL_SRC_ALPHA);
+        GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL13.GL_OPERAND1_ALPHA, GL11.GL_SRC_ALPHA);
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public void endThermalPlayerEquipment(net.minecraftforge.client.event.RenderPlayerEvent.Specials.Pre event) {
+        endThermalPlayer(event.entity);
+    }
+
+    private void endThermalPlayer(Entity entity) {
+        if (thermalPlayer == entity && thermalPlayer != null) {
+            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit,
+                thermalPlayerBrightnessX, thermalPlayerBrightnessY);
+            GL11.glPopAttrib();
+            thermalPlayer = null;
+        }
+    }
+
+    private boolean shouldRenderPlayerAsThermalTarget(EntityPlayer target) {
+        if (MCH_Camera.currentCameraMode != MCH_Camera.MODE_THERMALVISION
+            || MCH_RenderAircraft.renderingEntity) {
+            return false;
+        }
+
+        EntityPlayer viewer = Minecraft.getMinecraft().thePlayer;
+        if (viewer == null || target == viewer) {
+            return false;
+        }
+
+        MCH_EntityAircraft viewerAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(viewer);
+        return viewerAircraft == null
+            || MCH_EntityAircraft.getAircraft_RiddenOrControl(target) != viewerAircraft;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -264,6 +338,7 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
 
     public void worldEventUnload(Unload event) {
         if (event.world != null && event.world.isRemote) {
+            MCH_ClientCommonTickHandler.cleanupClientState("world_unload");
             MCH_RadarDisplayTextureManager.clear();
             MCH_RWRDisplayTextureManager.clear();
         }

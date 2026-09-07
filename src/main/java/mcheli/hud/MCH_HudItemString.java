@@ -4,10 +4,10 @@ import mcheli.MCH_Config;
 import mcheli.MCH_KeyName;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.MathHelper;
 
 import java.util.Date;
+import java.util.Formatter;
 
 public class MCH_HudItemString extends MCH_HudItem {
 
@@ -15,7 +15,11 @@ public class MCH_HudItemString extends MCH_HudItem {
     private final String posY;
     private final String format;
     private final MCH_HudItemStringArgs[] args;
+    private final Object[] parameters;
     private final boolean isCenteredString;
+    private final boolean usesDate;
+    private final StringBuilder formatBuffer = new StringBuilder();
+    private final Formatter formatter = new Formatter(this.formatBuffer);
 
 
     public MCH_HudItemString(int fileLine, String posx, String posy, String fmt, String[] args, boolean centered) {
@@ -26,6 +30,8 @@ public class MCH_HudItemString extends MCH_HudItem {
 
         int argLength = Math.max(0, args.length - 3);
         this.args = new MCH_HudItemStringArgs[argLength];
+        this.parameters = new Object[argLength];
+        boolean hasDate = false;
 
         for (int i = 0; i < argLength; ++i) {
             try {
@@ -33,7 +39,9 @@ public class MCH_HudItemString extends MCH_HudItem {
             } catch (ArrayIndexOutOfBoundsException e) {
                 this.args[i] = MCH_HudItemStringArgs.NONE;
             }
+            hasDate |= this.args[i] == MCH_HudItemStringArgs.DATE;
         }
+        this.usesDate = hasDate;
         this.isCenteredString = centered;
     }
 
@@ -41,19 +49,18 @@ public class MCH_HudItemString extends MCH_HudItem {
     public void execute() {
         int x = (int) (MCH_HudItem.centerX + calc(this.posX));
         int y = (int) (MCH_HudItem.centerY + calc(this.posY));
-        long dateCount = Minecraft.getMinecraft().thePlayer.worldObj.getTotalWorldTime();
         int worldTime = (int) ((MCH_HudItem.ac.worldObj.getWorldTime() + 6000L) % 24000L);
-        Date date = new Date();
-        Object[] prm = new Object[this.args.length];
+        Date date = this.usesDate ? new Date() : null;
 
         double hp_per = MCH_HudItem.ac.getMaxHP() > 0 ? (double) MCH_HudItem.ac.getHP() / (double) MCH_HudItem.ac.getMaxHP() : 0.0D;
 
-        for (int i = 0; i < prm.length; ++i) {
+        for (int i = 0; i < this.parameters.length; ++i) {
             MCH_HudItemStringArgs arg = this.args[i];
-            prm[i] = getParameterValue(arg, date, worldTime, hp_per);
+            this.parameters[i] = getParameterValue(arg, date, worldTime, hp_per);
         }
 
-        String formattedString = String.format(this.format, prm);
+        this.formatBuffer.setLength(0);
+        String formattedString = this.formatter.format(this.format, this.parameters).toString();
         if (this.isCenteredString) {
             this.drawCenteredString(formattedString, x, y, MCH_HudItem.colorSetting);
         } else {

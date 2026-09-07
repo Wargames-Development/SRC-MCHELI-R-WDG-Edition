@@ -9,7 +9,6 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.weapon.*;
-import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_OpenGlHelper;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.client.Minecraft;
@@ -17,6 +16,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
@@ -55,7 +55,9 @@ public abstract class MCH_HudItem extends Gui {
     protected static int countFuelWarn;
     protected static ArrayList EntityList;
     protected static ArrayList EnemyList;
-    protected static Map varMap = null;
+    protected static final Map varMap = new LinkedHashMap();
+    private static final Map<String, Expression> expressionCache = new HashMap<String, Expression>();
+    private static final MapVariable hudVariable = new MapVariable(varMap);
     protected static float partialTicks;
     protected static String railgunPer;
     protected static String airburstDist;
@@ -85,15 +87,21 @@ public abstract class MCH_HudItem extends Gui {
     }
 
     public static double calc(String s) {
-        Expression exp = ExpRuleFactory.getDefaultRule().parse(s);
-        exp.setVariable(new MapVariable(varMap));
-        return exp.evalDouble();
+        return getExpression(s).evalDouble();
     }
 
     public static long calcLong(String s) {
-        Expression exp = ExpRuleFactory.getDefaultRule().parse(s);
-        exp.setVariable(new MapVariable(varMap));
-        return exp.evalLong();
+        return getExpression(s).evalLong();
+    }
+
+    private static Expression getExpression(String formula) {
+        Expression expression = expressionCache.get(formula);
+        if (expression == null) {
+            expression = ExpRuleFactory.getDefaultRule().parse(formula);
+            expression.setVariable(hudVariable);
+            expressionCache.put(formula, expression);
+        }
+        return expression;
     }
 
     public static void drawRect(double par0, double par1, double par2, double par3, int par4) {
@@ -130,10 +138,6 @@ public abstract class MCH_HudItem extends Gui {
     }
 
     public static void updateVarMap(MCH_EntityAircraft ac, MCH_WeaponSet ws) {
-        if (varMap == null) {
-            varMap = new LinkedHashMap();
-        }
-
         updateVarMapItem("color", getColor());
         updateVarMapItem("center_x", centerX);
         updateVarMapItem("center_y", centerY);
@@ -194,17 +198,14 @@ public abstract class MCH_HudItem extends Gui {
         updateVarMapItem("is_engine_shutdown", ac.getHP() * 100 / ac.getMaxHP() < ac.getAcInfo().engineShutdownThreshold ? 1.0D : 0.0D);
         updateVarMapItem("hud_type", ac.getAcInfo().hudType);
         updateVarMapItem("weapon_group_type", ac.getAcInfo().weaponGroupType);
-        updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
+        updateVarMapItem("third_person", mc.gameSettings.thirdPersonView);
         boolean haveRwrLikeCapability = ac.getAcInfo().hasRWR || ac.getAcInfo().enableRadar || ac.getAcInfo().enableBVR;
         updateVarMapItem("have_rwr", haveRwrLikeCapability ? 1.0D : 0.0D);
         updateVarMapItem("missile_lock_type", ac.missileDetector != null ? ac.missileDetector.missileLockType : 0.0D);
         updateVarMapItem("vehicle_lock_type", ac.missileDetector != null ? ac.missileDetector.vehicleLockType : 0.0D);
         updateVarMapItem("missile_lock_dist", ac.missileDetector != null ? ac.missileDetector.missileLockDist : 0.0D);
-        updateVarMapItem("third_person", Minecraft.getMinecraft().gameSettings.thirdPersonView);
-        updateVarMapItem("have_rwr", haveRwrLikeCapability ? 1.0D : 0.0D);
         updateVarMapItem("have_dircm", ac.getAcInfo().hasDIRCM ? 1.0D : 0.0D);
         updateVarMapItem("is_jammed", ac.jammingTick > 0 ? 1.0D : 0.0D);
-        updateVarMapItem("ecm_jammer_type", ac.getAcInfo() != null ? ac.getAcInfo().ecmJammerType : 0.0D);
         if (ac instanceof MCP_EntityPlane) {
             MCP_PlaneInfo info = ((MCP_EntityPlane) ac).getPlaneInfo();
             updateVarMapItem("have_sweepwing", info.isVariableSweepWing ? 1.0D : 0.0D);
@@ -553,7 +554,7 @@ public abstract class MCH_HudItem extends Gui {
         this.drawString(mc.fontRenderer, s, x, y, color);
     }
 
-    public void drawTexture(String name, double left, double top, double width, double height, double uLeft, double vTop, double uWidth, double vHeight, float rot, int textureWidth, int textureHeight) {
+    public void drawTexture(ResourceLocation texture, double left, double top, double width, double height, double uLeft, double vTop, double uWidth, double vHeight, float rot, int textureWidth, int textureHeight) {
         GL11.glPushMatrix();
         GL11.glTranslated(left + width / 2.0D, top + height / 2.0D, 0.0D);
         GL11.glRotatef(rot, 0.0F, 0.0F, 1.0F);
@@ -564,7 +565,7 @@ public abstract class MCH_HudItem extends Gui {
         GL11.glDepthMask(false);
         GL11.glBlendFunc(770, 771);
         GL11.glDisable(3008 /* GL_ALPHA_TEST */);
-        W_McClient.MOD_bindTexture("textures/gui/" + name + ".png");
+        mc.getTextureManager().bindTexture(texture);
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawingQuads();
         tessellator.addVertexWithUV(-width / 2.0D, height / 2.0D, -90, uLeft * (double) fx, (vTop + vHeight) * (double) fy);
@@ -609,8 +610,7 @@ public abstract class MCH_HudItem extends Gui {
         GL11.glDisable(2852);
     }
 
-    public void drawPoints(ArrayList points, int color, int pointWidth) {
-        int prevWidth = GL11.glGetInteger(2833);
+    public void drawPoints(double[] points, int pointCount, int color, int pointWidth) {
         GL11.glPushMatrix();
         GL11.glEnable(3042);
         GL11.glDisable(3553);
@@ -620,8 +620,8 @@ public abstract class MCH_HudItem extends Gui {
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawing(0);
 
-        for (int i = 0; i < points.size(); i += 2) {
-            tessellator.addVertex((Double) points.get(i), (Double) points.get(i + 1), 0.0D);
+        for (int i = 0; i < pointCount; i += 2) {
+            tessellator.addVertex(points[i], points[i + 1], 0.0D);
         }
 
         tessellator.draw();
@@ -629,7 +629,7 @@ public abstract class MCH_HudItem extends Gui {
         GL11.glDisable(3042);
         GL11.glPopMatrix();
         GL11.glColor4b((byte) -1, (byte) -1, (byte) -1, (byte) -1);
-        GL11.glPointSize((float) prevWidth);
+        GL11.glPointSize(1.0F);
     }
 
 }

@@ -3,6 +3,7 @@ package mcheli;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -15,6 +16,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
 import net.minecraft.entity.EntityTrackerEntry;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.Packet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.IntHashMap;
 import net.minecraft.world.WorldServer;
@@ -45,6 +47,7 @@ public class MCH_EntityInfoManager {
     private long tickCounter;
     private long snapshotSeq = 0L; // 递增的全局快照序号
     private final Queue<TrackerResyncRequest> trackerResyncRequests = new ConcurrentLinkedQueue<>();
+    private final List<TrackerResyncRequest> pendingTrackerRestarts = new ArrayList<>();
     private final Map<EntityPlayerMP, Long> lastTrackerResyncRequest = new WeakHashMap<>();
     private final Map<EntityPlayerMP, PlayerSyncState> playerSyncStates = new WeakHashMap<>();
 
@@ -58,7 +61,9 @@ public class MCH_EntityInfoManager {
             tickCounter++;
             snapshotSeq++; // 每个服务端 Tick 递增一次
             processTrackerResyncRequests();
-            serverTick();
+            if (tickCounter % ACTIVE_SYNC_INTERVAL_TICKS == 0L) {
+                serverTick();
+            }
         }
     }
 
@@ -82,23 +87,138 @@ public class MCH_EntityInfoManager {
     }
 
     private void processTrackerResyncRequests() {
+        for (int i = this.pendingTrackerRestarts.size() - 1; i >= 0; --i) {
+            TrackerResyncRequest request = this.pendingTrackerRestarts.get(i);
+            if (request.restartAfterTick <= this.tickCounter) {
+                restartTrackerEntry(request);
+                this.pendingTrackerRestarts.remove(i);
+            }
+        }
+
         for (int i = 0; i < MAX_TRACKER_RESYNCS_PER_TICK; ++i) {
             TrackerResyncRequest request = this.trackerResyncRequests.poll();
             if (request == null) {
                 return;
             }
-            refreshTrackerEntry(request.player, request.entityId);
+            resendTrackerEntry(request);
         }
     }
 
-    private void refreshTrackerEntry(EntityPlayerMP player, int entityId) {
-        if (player == null || player.isDead || !(player.worldObj instanceof WorldServer)) {
+    private void resendTrackerEntry(TrackerResyncRequest request) {
+        EntityPlayerMP player = request.player;
+        if (player == null || player.isDead || player.dimension != request.dimension
+            || !(player.worldObj instanceof WorldServer)) {
             return;
+        }
+
+        Entity entity = player.worldObj.getEntityByID(request.entityId);
+        if (!(entity instanceof MCH_EntityAircraft) || entity.isDead) {
+            return;
+        }
+
+        MCH_EntityAircraft aircraft = (MCH_EntityAircraft)entity;
+        if (isRequesterCurrentAircraft(player, aircraft)) {
+            MCH_Lib.DbgTrace(player.worldObj,
+                "event=tracker_resync_rejected reason=current_aircraft player=%s playerId=%d aircraftId=%d aircraftObj=%d type=%s mount=%s",
+                player.getCommandSenderName(), Integer.valueOf(player.getEntityId()), Integer.valueOf(aircraft.getEntityId()),
+                Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName(), describeEntity(player.ridingEntity));
+            return;
+        }
+
+        EntityTracker tracker = ((WorldServer)player.worldObj).getEntityTracker();
+        try {
+            IntHashMap entries = ReflectionHelper.getPrivateValue(EntityTracker.class, tracker,
+                new String[]{"trackedEntityIDs", "field_72794_c"});
+            EntityTrackerEntry entry = entries != null ? (EntityTrackerEntry)entries.lookup(request.entityId) : null;
+            if (entry == null) {
+                return;
+            }
+
+            if (!entry.trackingPlayers.contains(player)) {
+                entry.tryStartWachingThis(player);
+                MCH_Lib.DbgTrace(player.worldObj,
+                    "event=tracker_resync_transition action=start_watching player=%s aircraftId=%d aircraftObj=%d type=%s watching=%s",
+                    player.getCommandSenderName(), Integer.valueOf(aircraft.getEntityId()),
+                    Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName(),
+                    Boolean.valueOf(entry.trackingPlayers.contains(player)));
+                return;
+            }
+
+            double dx = player.posX - entity.posX;
+            double dz = player.posZ - entity.posZ;
+            if (Math.abs(dx) > entry.blocksDistanceThreshold || Math.abs(dz) > entry.blocksDistanceThreshold) {
+                MCH_Lib.DbgTrace(player.worldObj,
+                    "event=tracker_resync_rejected reason=out_of_range player=%s aircraftId=%d aircraftObj=%d type=%s dx=%.2f dz=%.2f threshold=%d",
+                    player.getCommandSenderName(), Integer.valueOf(aircraft.getEntityId()),
+                    Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName(),
+                    Double.valueOf(dx), Double.valueOf(dz), Integer.valueOf(entry.blocksDistanceThreshold));
+                return;
+            }
+
+            Packet spawnPacket = FMLNetworkHandler.getEntitySpawningPacket(entity);
+            if (spawnPacket != null) {
+                player.playerNetServerHandler.sendPacket(spawnPacket);
+                MCH_Lib.DbgTrace(player.worldObj,
+                    "event=tracker_resync_transition action=targeted_spawn player=%s aircraftId=%d aircraftObj=%d type=%s packet=%s",
+                    player.getCommandSenderName(), Integer.valueOf(aircraft.getEntityId()),
+                    Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName(),
+                    spawnPacket.getClass().getSimpleName());
+                return;
+            }
+
+            // Preserve the delayed remove/restart recovery for entities which do
+            // not expose an FML spawn packet. Recheck before mutating the tracker.
+            if (isRequesterCurrentAircraft(player, aircraft)) {
+                MCH_Lib.DbgTrace(player.worldObj,
+                    "event=tracker_resync_rejected reason=current_aircraft_before_fallback player=%s aircraftId=%d aircraftObj=%d type=%s",
+                    player.getCommandSenderName(), Integer.valueOf(aircraft.getEntityId()),
+                    Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName());
+                return;
+            }
+            if (removeTrackerEntry(player, request.entityId)) {
+                request.restartAfterTick = this.tickCounter + 1L;
+                this.pendingTrackerRestarts.add(request);
+                MCH_Lib.DbgTrace(player.worldObj,
+                    "event=tracker_resync_transition action=delayed_restart_queued player=%s aircraftId=%d aircraftObj=%d type=%s restartTick=%d",
+                    player.getCommandSenderName(), Integer.valueOf(aircraft.getEntityId()),
+                    Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName(),
+                    Long.valueOf(request.restartAfterTick));
+            }
+        } catch (RuntimeException ex) {
+            MCH_Lib.Log(entity, "[EntitySync] Failed tracker resend: player=%s, id=%d, error=%s",
+                player.getCommandSenderName(), Integer.valueOf(request.entityId), ex.getMessage());
+        }
+    }
+
+    private boolean isRequesterCurrentAircraft(EntityPlayerMP player, MCH_EntityAircraft aircraft) {
+        MCH_EntityAircraft controlled = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        return controlled == aircraft
+            || controlled != null && controlled.getEntityId() == aircraft.getEntityId()
+            || aircraft.isMountedEntity(player);
+    }
+
+    private static String describeEntity(Entity entity) {
+        return entity == null ? "null" : entity.getClass().getSimpleName() + "#" + entity.getEntityId()
+            + "@" + System.identityHashCode(entity);
+    }
+
+    private boolean removeTrackerEntry(EntityPlayerMP player, int entityId) {
+        if (player == null || player.isDead || !(player.worldObj instanceof WorldServer)) {
+            return false;
         }
 
         Entity entity = player.worldObj.getEntityByID(entityId);
         if (!(entity instanceof MCH_EntityAircraft) || entity.isDead) {
-            return;
+            return false;
+        }
+
+        MCH_EntityAircraft aircraft = (MCH_EntityAircraft)entity;
+        if (isRequesterCurrentAircraft(player, aircraft)) {
+            MCH_Lib.DbgTrace(player.worldObj,
+                "event=tracker_resync_rejected reason=current_aircraft_in_remove player=%s aircraftId=%d aircraftObj=%d type=%s",
+                player.getCommandSenderName(), Integer.valueOf(aircraft.getEntityId()),
+                Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName());
+            return false;
         }
 
         WorldServer world = (WorldServer) player.worldObj;
@@ -108,25 +228,56 @@ public class MCH_EntityInfoManager {
                 new String[]{"trackedEntityIDs", "field_72794_c"});
             EntityTrackerEntry entry = entries != null ? (EntityTrackerEntry) entries.lookup(entityId) : null;
             if (entry == null) {
-                return;
+                return false;
             }
 
             double dx = player.posX - entity.posX;
             double dz = player.posZ - entity.posZ;
             if (Math.abs(dx) > entry.blocksDistanceThreshold || Math.abs(dz) > entry.blocksDistanceThreshold) {
+                return false;
+            }
+
+            // EntityPlayerMP queues destroy IDs until its next update. Restarting
+            // here would send the new spawn before that queued destroy is flushed.
+            entry.removePlayerFromTracker(player);
+            return true;
+        } catch (RuntimeException ex) {
+            MCH_Lib.Log(entity, "[EntitySync] Failed to remove tracker entry: player=%s, id=%d, error=%s",
+                player.getCommandSenderName(), Integer.valueOf(entityId), ex.getMessage());
+            return false;
+        }
+    }
+
+    private void restartTrackerEntry(TrackerResyncRequest request) {
+        EntityPlayerMP player = request.player;
+        int entityId = request.entityId;
+        if (player == null || player.isDead || player.dimension != request.dimension
+            || !(player.worldObj instanceof WorldServer)) {
+            return;
+        }
+
+        Entity entity = player.worldObj.getEntityByID(entityId);
+        if (!(entity instanceof MCH_EntityAircraft) || entity.isDead) {
+            return;
+        }
+
+        EntityTracker tracker = ((WorldServer) player.worldObj).getEntityTracker();
+        try {
+            IntHashMap entries = ReflectionHelper.getPrivateValue(EntityTracker.class, tracker,
+                new String[]{"trackedEntityIDs", "field_72794_c"});
+            EntityTrackerEntry entry = entries != null ? (EntityTrackerEntry) entries.lookup(entityId) : null;
+            if (entry == null) {
                 return;
             }
 
-            // This method also checks that the player watches the entity's chunk,
-            // so the recovery does not force chunk loads or bypass normal limits.
-            entry.removePlayerFromTracker(player);
+            // This also checks chunk visibility and normal tracking distance.
             entry.tryStartWachingThis(player);
             if (entry.trackingPlayers.contains(player)) {
-                MCH_Lib.Log(entity, "[EntitySync] Refreshed tracker entry for player=%s, id=%d, type=%s",
+                MCH_Lib.Log(entity, "[EntitySync] Restarted tracker entry for player=%s, id=%d, type=%s",
                     player.getCommandSenderName(), Integer.valueOf(entityId), ((MCH_EntityAircraft) entity).getTypeName());
             }
         } catch (RuntimeException ex) {
-            MCH_Lib.Log(entity, "[EntitySync] Failed to refresh tracker entry: player=%s, id=%d, error=%s",
+            MCH_Lib.Log(entity, "[EntitySync] Failed to restart tracker entry: player=%s, id=%d, error=%s",
                 player.getCommandSenderName(), Integer.valueOf(entityId), ex.getMessage());
         }
     }
@@ -134,10 +285,13 @@ public class MCH_EntityInfoManager {
     private static final class TrackerResyncRequest {
         private final EntityPlayerMP player;
         private final int entityId;
+        private final int dimension;
+        private long restartAfterTick;
 
         private TrackerResyncRequest(EntityPlayerMP player, int entityId) {
             this.player = player;
             this.entityId = entityId;
+            this.dimension = player.dimension;
         }
     }
 

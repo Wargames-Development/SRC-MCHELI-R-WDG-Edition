@@ -260,9 +260,10 @@ public class MCH_RenderBVRLockBox {
         } else if (player.ridingEntity instanceof MCH_EntityUavStation) {
             ac = ((MCH_EntityUavStation) player.ridingEntity).getControlAircract();
         }
-        if (ac == null || ac.getCurrentWeapon(player) == null || ac.getCurrentWeapon(player).getCurrentWeapon() == null)
+        MCH_WeaponSet weaponSet = ac != null ? ac.getCurrentWeapon(player) : null;
+        if (weaponSet == null || weaponSet.getCurrentWeapon() == null)
             return;
-        MCH_WeaponInfo wi = ac.getCurrentWeapon(player).getCurrentWeapon().getInfo();
+        MCH_WeaponInfo wi = weaponSet.getCurrentWeapon().getInfo();
         MCH_AircraftInfo acInfo = ac.getAcInfo();
         if (wi == null || acInfo == null || (!acInfo.enableBVR && !isGroundTrackMode(acInfo))) return;
         if (!acInfo.enableRadar || !ac.isRadarEnabledRuntime()) return;
@@ -276,7 +277,7 @@ public class MCH_RenderBVRLockBox {
         final double camZ = rm.viewerPosZ;
         float partialTicks = event.partialTicks;
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
-        List<MCH_EntityInfo> entities = new ArrayList<>(getServerLoadedEntity());
+        List<MCH_EntityInfo> entities = getServerLoadedEntity();
         currentLockedEntities.clear();
         int fireControlLockedId = MCH_RenderLeadCircle.getLeadLockedTargetId(ac);
         int radarTrackingId = MCH_RenderRWR.getRadarTrackingTargetId(ac);

@@ -42,6 +42,7 @@ import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.RenderHelper;
@@ -64,7 +65,9 @@ import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 import mcheli.network.packets.PacketLockTargetBVR;
 import mcheli.render.MCH_RenderRWR;
@@ -105,6 +108,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public static boolean showVehicleCrossHair = false;
     @SideOnly(Side.CLIENT)
     public static EntityLivingBase camera;
+    private static Entity cameraPlayer;
+    private static Entity cameraMount;
+    private static World cameraWorld;
+    private static final Map<Entity, RenderPositionSnapshot> riderRenderPositionSnapshots =
+        new IdentityHashMap<Entity, RenderPositionSnapshot>();
     private static double prevMouseDeltaX;
     private static double prevMouseDeltaY;
     private static double mouseDeltaX = 0.0D;
@@ -515,23 +523,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             }
         }
 
-        //第三人称摄像机视角
-        if (enableNew3rdCamera
-            && minecraft.thePlayer.ridingEntity instanceof MCH_EntityAircraft
-            && minecraft.gameSettings.thirdPersonView != 0) {
-            if (camera == null) {
-                camera = new MCH_3rdCamera(minecraft.theWorld, (MCH_EntityAircraft) minecraft.thePlayer.ridingEntity);
-                minecraft.thePlayer.worldObj.spawnEntityInWorld(camera);
-            }
-            minecraft.renderViewEntity = camera;
-            showVehicleCrossHair = true;
-        } else {
-            if (camera != null) {
-                camera.setDead();
-                camera = null;
-            }
-            showVehicleCrossHair = false;
-        }
+        updateThirdPersonCamera(minecraft);
 
         // GPS cleanup: avoid one-tick flicker around shot/reload transitions for handheld laser guidance.
         boolean holdingLightWeapon = minecraft.thePlayer.getHeldItem() != null
@@ -552,8 +544,95 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public void onTickPre() {
         if (super.mc.thePlayer != null && super.mc.theWorld != null) {
             this.onTick();
+        } else {
+            cleanupClientState("client_tick_invalid");
         }
 
+    }
+
+    private static void updateThirdPersonCamera(Minecraft minecraft) {
+        EntityClientPlayerMP player = minecraft != null ? minecraft.thePlayer : null;
+        WorldClient world = minecraft != null ? minecraft.theWorld : null;
+        if (!enableNew3rdCamera || player == null || world == null || player.isDead
+            || player.worldObj != world || minecraft.gameSettings.thirdPersonView == 0) {
+            teardownThirdPersonCamera("view_invalid");
+            return;
+        }
+
+        MCH_EntityAircraft aircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        if (aircraft == null || aircraft.isDead || aircraft.worldObj != world) {
+            teardownThirdPersonCamera("target_invalid");
+            return;
+        }
+
+        Entity resolved = world.getEntityByID(aircraft.getEntityId());
+        if (resolved != aircraft) {
+            if (!(resolved instanceof MCH_EntityAircraft) || resolved.isDead) {
+                teardownThirdPersonCamera("target_not_in_world");
+                return;
+            }
+            MCH_Lib.DbgTrace(world,
+                "event=third_camera_target_replacement old=%s replacement=%s player=%s riding=%s",
+                describeCameraEntity(aircraft), describeCameraEntity(resolved), describeCameraEntity(player),
+                describeCameraEntity(player.ridingEntity));
+            aircraft = (MCH_EntityAircraft)resolved;
+        }
+
+        Entity mount = player.ridingEntity;
+        boolean replaced = !(camera instanceof MCH_3rdCamera) || camera.isDead
+            || ((MCH_3rdCamera)camera).entity != aircraft || cameraWorld != world
+            || cameraPlayer != player || cameraMount != mount;
+        if (replaced) {
+            teardownThirdPersonCamera("target_or_mount_replaced");
+            camera = new MCH_3rdCamera(world, aircraft);
+            cameraWorld = world;
+            cameraPlayer = player;
+            cameraMount = mount;
+            MCH_Lib.DbgTrace(world,
+                "event=third_camera_transition action=create camera=%s player=%s riding=%s aircraft=%s",
+                describeCameraEntity(camera), describeCameraEntity(player), describeCameraEntity(mount),
+                describeCameraEntity(aircraft));
+        }
+
+        MCH_3rdCamera thirdCamera = (MCH_3rdCamera)camera;
+        minecraft.renderViewEntity = thirdCamera;
+        thirdCamera.onUpdate();
+        if (thirdCamera.isDead) {
+            teardownThirdPersonCamera("camera_update_invalid");
+            return;
+        }
+        showVehicleCrossHair = true;
+    }
+
+    public static void cleanupClientState(String reason) {
+        restoreRiderRenderPositions(reason);
+        teardownThirdPersonCamera(reason);
+    }
+
+    private static void teardownThirdPersonCamera(String reason) {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        EntityLivingBase oldCamera = camera;
+        if (oldCamera != null) {
+            MCH_Lib.DbgTrace(oldCamera.worldObj,
+                "event=third_camera_transition action=destroy reason=%s camera=%s player=%s riding=%s aircraft=%s",
+                reason, describeCameraEntity(oldCamera), describeCameraEntity(cameraPlayer),
+                describeCameraEntity(cameraMount),
+                describeCameraEntity(oldCamera instanceof MCH_3rdCamera ? ((MCH_3rdCamera)oldCamera).entity : null));
+            oldCamera.setDead();
+        }
+        if (minecraft != null && minecraft.renderViewEntity == oldCamera) {
+            minecraft.renderViewEntity = minecraft.thePlayer;
+        }
+        camera = null;
+        cameraPlayer = null;
+        cameraMount = null;
+        cameraWorld = null;
+        showVehicleCrossHair = false;
+    }
+
+    private static String describeCameraEntity(Entity entity) {
+        return entity == null ? "null" : entity.getClass().getSimpleName() + "#" + entity.getEntityId()
+            + "@" + System.identityHashCode(entity);
     }
 
     private int getExpectedCameraMode(EntityPlayer player) {
@@ -696,6 +775,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPre(float partialTicks) {
+        restoreRiderRenderPositions("next_render_start");
         MCH_GuiTargetMarker.clearMarkEntityPos();
         if (!MCH_ServerSettings.enableDebugBoundingBox) {
             RenderManager.debugBoundingBox = false;
@@ -718,6 +798,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         if (!W_McClient.isGamePaused()) {
             EntityClientPlayerMP var17 = super.mc.thePlayer;
             if (var17 != null) {
+                MCH_EntityAircraft controlledAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(var17);
+                if (controlledAircraft != null && !controlledAircraft.isDead
+                    && controlledAircraft.worldObj == super.mc.theWorld) {
+                    captureRiderRenderPositions(controlledAircraft);
+                }
                 ItemStack var18 = var17.getCurrentEquippedItem();
                 if (var18 != null && var18.getItem() instanceof MCH_ItemWrench && var17.getItemInUseCount() > 0) {
                     W_Reflection.setItemRendererProgress(1.0F);
@@ -734,6 +819,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         var19 = ((MCH_EntityUavStation) var17.ridingEntity).getControlAircract();
                     } else if (var17.ridingEntity instanceof MCH_EntityVehicle) {
                         MCH_EntityAircraft stickMode = (MCH_EntityAircraft) var17.ridingEntity;
+                        refreshRiderRenderRotations(stickMode);
                         stickMode.setupAllRiderRenderPosition(partialTicks, var17);
                     }
                 } else {
@@ -794,6 +880,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         var19.setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, controlTickDelta);
                     }
 
+                    refreshRiderRenderRotations(var19);
                     var19.setupAllRiderRenderPosition(partialTicks, var17);
                     double var29 = MathHelper.sqrt_double(mouseRollDeltaX * mouseRollDeltaX + mouseRollDeltaY * mouseRollDeltaY);
                     if (!var20 || var29 < getMaxStickLength() * 0.1D) {
@@ -858,6 +945,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                             }
                         }
 
+                        refreshRiderRenderRotations(var19);
                         var19.setupAllRiderRenderPosition(partialTicks, var17);
                         var19.setRotYaw(y);
                         //System.out.println("yaw9");
@@ -1226,6 +1314,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPost(float partialTicks) {
+        restoreRiderRenderPositions("render_end");
         if (this.mc.thePlayer != null) {
             MCH_ClientTickHandlerBase.applyRotLimit(this.mc.thePlayer);
             MCH_ViewEntityDummy mCH_ViewEntityDummy = MCH_ViewEntityDummy.getInstance(this.mc.thePlayer.worldObj);
@@ -1248,6 +1337,120 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 //            MCH_GuiScoreboard.drawList(this.mc, this.mc.fontRenderer, false);
 //         drawGui(this.gui_Title, partialTicks);
 //      }
+    }
+
+    private static void captureRiderRenderPositions(MCH_EntityAircraft aircraft) {
+        captureRiderRenderPosition(aircraft.getDirectRiddenByEntity());
+        for (Entity part : aircraft.getParts()) {
+            captureRiderRenderPosition(part);
+        }
+        for (MCH_EntitySeat seat : aircraft.getSeats()) {
+            if (seat == null || seat.isDead || seat.getParent() != aircraft) {
+                continue;
+            }
+            captureRiderRenderPosition(seat);
+            captureRiderRenderPosition(seat.riddenByEntity);
+        }
+    }
+
+    private static void refreshRiderRenderRotations(MCH_EntityAircraft aircraft) {
+        refreshRiderRenderRotation(aircraft.getDirectRiddenByEntity());
+        for (Entity part : aircraft.getParts()) {
+            refreshRiderRenderRotation(part);
+        }
+        for (MCH_EntitySeat seat : aircraft.getSeats()) {
+            if (seat == null || seat.isDead || seat.getParent() != aircraft) {
+                continue;
+            }
+            refreshRiderRenderRotation(seat);
+            refreshRiderRenderRotation(seat.riddenByEntity);
+        }
+    }
+
+    private static void refreshRiderRenderRotation(Entity entity) {
+        RenderPositionSnapshot snapshot = riderRenderPositionSnapshots.get(entity);
+        if (snapshot != null && entity != null && !entity.isDead && entity.worldObj == snapshot.world) {
+            snapshot.captureRotation(entity);
+        }
+    }
+
+    private static void captureRiderRenderPosition(Entity entity) {
+        if (entity != null && !entity.isDead && entity.worldObj != null
+            && !riderRenderPositionSnapshots.containsKey(entity)) {
+            riderRenderPositionSnapshots.put(entity, new RenderPositionSnapshot(entity));
+        }
+    }
+
+    private static void restoreRiderRenderPositions(String reason) {
+        if (riderRenderPositionSnapshots.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<Entity, RenderPositionSnapshot> entry : riderRenderPositionSnapshots.entrySet()) {
+            Entity entity = entry.getKey();
+            RenderPositionSnapshot snapshot = entry.getValue();
+            if (entity == null || entity.isDead || entity.worldObj != snapshot.world) {
+                continue;
+            }
+            entity.setPosition(snapshot.posX, snapshot.posY, snapshot.posZ);
+            entity.prevPosX = snapshot.prevPosX;
+            entity.prevPosY = snapshot.prevPosY;
+            entity.prevPosZ = snapshot.prevPosZ;
+            entity.lastTickPosX = snapshot.lastTickPosX;
+            entity.lastTickPosY = snapshot.lastTickPosY;
+            entity.lastTickPosZ = snapshot.lastTickPosZ;
+            entity.motionX = snapshot.motionX;
+            entity.motionY = snapshot.motionY;
+            entity.motionZ = snapshot.motionZ;
+            entity.rotationYaw = snapshot.rotationYaw;
+            entity.rotationPitch = snapshot.rotationPitch;
+            entity.prevRotationYaw = snapshot.prevRotationYaw;
+            entity.prevRotationPitch = snapshot.prevRotationPitch;
+        }
+        riderRenderPositionSnapshots.clear();
+    }
+
+    private static final class RenderPositionSnapshot {
+        private final World world;
+        private final double posX;
+        private final double posY;
+        private final double posZ;
+        private final double prevPosX;
+        private final double prevPosY;
+        private final double prevPosZ;
+        private final double lastTickPosX;
+        private final double lastTickPosY;
+        private final double lastTickPosZ;
+        private final double motionX;
+        private final double motionY;
+        private final double motionZ;
+        private float rotationYaw;
+        private float rotationPitch;
+        private float prevRotationYaw;
+        private float prevRotationPitch;
+
+        private RenderPositionSnapshot(Entity entity) {
+            this.world = entity.worldObj;
+            this.posX = entity.posX;
+            this.posY = entity.posY;
+            this.posZ = entity.posZ;
+            this.prevPosX = entity.prevPosX;
+            this.prevPosY = entity.prevPosY;
+            this.prevPosZ = entity.prevPosZ;
+            this.lastTickPosX = entity.lastTickPosX;
+            this.lastTickPosY = entity.lastTickPosY;
+            this.lastTickPosZ = entity.lastTickPosZ;
+            this.motionX = entity.motionX;
+            this.motionY = entity.motionY;
+            this.motionZ = entity.motionZ;
+            this.captureRotation(entity);
+        }
+
+        private void captureRotation(Entity entity) {
+            this.rotationYaw = entity.rotationYaw;
+            this.rotationPitch = entity.rotationPitch;
+            this.prevRotationYaw = entity.prevRotationYaw;
+            this.prevRotationPitch = entity.prevRotationPitch;
+        }
     }
 
     public boolean drawGui(MCH_Gui gui, float partialTicks) {

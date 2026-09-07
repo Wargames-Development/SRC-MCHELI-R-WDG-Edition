@@ -17,13 +17,10 @@ public class MCH_ItemAircraftDispenseBehavior extends BehaviorDefaultDispenseIte
         if (itemStack.getItem() instanceof MCH_ItemAircraft) {
             MCH_EntityAircraft ac = ((MCH_ItemAircraft) itemStack.getItem()).onTileClick(itemStack, bs.getWorld(), 0.0F, (int) x, (int) y, (int) z);
             if (ac != null && !ac.isUAV()) {
-                if (!bs.getWorld().isRemote) {
-                    ac.getAcDataFromItem(itemStack);
-                    bs.getWorld().spawnEntityInWorld(ac);
+                if (!bs.getWorld().isRemote && MCH_ItemAircraft.spawnAircraftEntity(itemStack, bs.getWorld(), ac)) {
+                    itemStack.splitStack(1);
+                    MCH_Lib.DbgLog(bs.getWorld(), "dispenseStack:x=%.1f,y=%.1f,z=%.1f;dir=%s:item=" + itemStack.getDisplayName(), new Object[]{Double.valueOf(x), Double.valueOf(y), Double.valueOf(z), enumfacing.toString()});
                 }
-
-                itemStack.splitStack(1);
-                MCH_Lib.DbgLog(bs.getWorld(), "dispenseStack:x=%.1f,y=%.1f,z=%.1f;dir=%s:item=" + itemStack.getDisplayName(), new Object[]{Double.valueOf(x), Double.valueOf(y), Double.valueOf(z), enumfacing.toString()});
             }
         }
 

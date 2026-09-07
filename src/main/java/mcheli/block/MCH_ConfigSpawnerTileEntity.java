@@ -226,8 +226,7 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
         if (!this.worldObj.getCollidingBoundingBoxes(aircraft, aircraft.boundingBox.expand(-0.1D, -0.1D, -0.1D)).isEmpty()) {
             return false;
         }
-        aircraft.getAcDataFromItem(itemStack);
-        if (!this.worldObj.spawnEntityInWorld(aircraft)) {
+        if (!MCH_ItemAircraft.spawnAircraftEntity(itemStack, this.worldObj, aircraft)) {
             return false;
         }
         this.attachInitialWaypoint(aircraft, info);

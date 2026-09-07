@@ -2,6 +2,7 @@ package mcheli;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.DamageSource;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 
@@ -400,5 +401,35 @@ public class MCH_HBMUtil {
             warnOnce("spawnMediumBunkerBuster", e);
         }
         return false;
+    }
+
+    public static boolean isHBMExplosionDamage(DamageSource damageSource) {
+        if (!isHBMLoaded || damageSource == null || !damageSource.isExplosion()) {
+            return false;
+        }
+
+        if (damageSource.getClass().getName().startsWith("com.hbm.")
+            || isHBMEntity(damageSource.getEntity()) || isHBMEntity(damageSource.getSourceOfDamage())) {
+            return true;
+        }
+
+        String damageType = damageSource.getDamageType();
+        if ("nuclearBlast".equals(damageType) || "tauBlast".equals(damageType)) {
+            return true;
+        }
+
+        // NTM's ExplosionVNT loses its missile reference when it creates the vanilla
+        // DamageSource, so source-less explosion damage can only be identified here.
+        for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+            String className = element.getClassName();
+            if (className.startsWith("com.hbm.")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isHBMEntity(Entity entity) {
+        return entity != null && entity.getClass().getName().startsWith("com.hbm.");
     }
 }

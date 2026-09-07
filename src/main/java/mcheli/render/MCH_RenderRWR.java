@@ -744,9 +744,6 @@ public class MCH_RenderRWR {
     }
 
     private void restoreRenderState() {
-        int srcBlend = GL11.glGetInteger(3041);
-        int dstBlend = GL11.glGetInteger(3040);
-        GL11.glBlendFunc(srcBlend, dstBlend);
         GL11.glDisable(3042);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
     }

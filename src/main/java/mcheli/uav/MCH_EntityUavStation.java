@@ -4,6 +4,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.*;
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.aircraft.MCH_ItemAircraft;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.helicopter.MCH_ItemHeli;
@@ -552,25 +553,23 @@ public class MCH_EntityUavStation extends W_EntityContainer {
                 }
 
                 if (ac != null) {
-                    ac.getAcDataFromItem(itemStack);
                     ac.rotationYaw = super.rotationYaw - 180.0F;
                     ac.prevRotationYaw = ac.rotationYaw;
                     user.rotationYaw = super.rotationYaw - 180.0F;
                     if (super.worldObj.getCollidingBoundingBoxes(ac, ac.boundingBox.expand(-0.1D, -0.1D, -0.1D)).isEmpty()) {
-                        --itemStack.stackSize;
-                        MCH_Lib.DbgLog(super.worldObj, "Create UAV: %s : %s", item.getUnlocalizedName(), item);
-                        user.rotationYaw = super.rotationYaw - 180.0F;
                         if (!ac.isTargetDrone()) {
                             ac.setUavStation(this);
-                            this.setControlAircract(ac);
                         }
-
-                        super.worldObj.spawnEntityInWorld(ac);
-                        if (!ac.isTargetDrone()) {
-                            ac.setFuel((int) ((float) ac.getMaxFuel() * 0.05F));
-                            W_EntityPlayer.closeScreen(user);
-                        } else {
-                            ac.setFuel(ac.getMaxFuel());
+                        if (MCH_ItemAircraft.spawnAircraftEntity(itemStack, super.worldObj, ac)) {
+                            --itemStack.stackSize;
+                            MCH_Lib.DbgLog(super.worldObj, "Create UAV: %s : %s", item.getUnlocalizedName(), item);
+                            if (!ac.isTargetDrone()) {
+                                this.setControlAircract(ac);
+                                ac.setFuel((int) ((float) ac.getMaxFuel() * 0.05F));
+                                W_EntityPlayer.closeScreen(user);
+                            } else {
+                                ac.setFuel(ac.getMaxFuel());
+                            }
                         }
                     } else {
                         ac.setDead();
