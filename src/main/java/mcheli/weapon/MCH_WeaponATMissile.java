@@ -157,7 +157,7 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                 }
             } else {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
-                if (tgtEnt != null && !tgtEnt.isDead) {
+                if (isValidServerTarget(prm, tgtEnt)) {
                     if (prm.entity instanceof MCH_EntityTank) {
                         MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
                         yaw += prm.randYaw;
@@ -222,7 +222,9 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
             return false;
         }
         double maxRange = Math.max(1.0D, getInfo().maxLockOnRange);
-        if (prm.entity instanceof MCH_EntityAircraft) {
+        boolean radarGuided = getInfo().isRadarMissile || getInfo().activeRadar
+            || getInfo().passiveRadar || getInfo().semiActiveRadar;
+        if (radarGuided && prm.entity instanceof MCH_EntityAircraft) {
             MCH_EntityAircraft ac = (MCH_EntityAircraft)prm.entity;
             if (ac.getAcInfo() != null && ac.getAcInfo().enableRadar) {
                 if (!ac.isRadarEnabledRuntime()) {

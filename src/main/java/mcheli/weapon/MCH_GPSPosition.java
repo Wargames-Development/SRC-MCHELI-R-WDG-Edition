@@ -75,6 +75,42 @@ public class MCH_GPSPosition {
         return owner != null ? currentGPSPositions.get(owner.getEntityId()) : null;
     }
 
+    /**
+     * Returns the GPS target that should be used for a weapon fire attempt.
+     * The client keeps one local target, while the server stores targets by owner.
+     */
+    public static MCH_GPSPosition getForWeaponUse(Entity owner) {
+        if (owner == null || owner.worldObj == null) {
+            return null;
+        }
+        if (!owner.worldObj.isRemote) {
+            return get(owner);
+        }
+
+        MCH_GPSPosition position = currentClientGPSPosition;
+        return position != null
+            && position.owner != null
+            && position.owner.getEntityId() == owner.getEntityId()
+            ? position : null;
+    }
+
+    /**
+     * GPS weapon range is intentionally horizontal-only. Altitude difference must
+     * not shorten the usable standoff range of aircraft-launched GPS weapons.
+     */
+    public static boolean isWithinHorizontalRange(Entity origin, MCH_GPSPosition position, double maxRange) {
+        if (origin == null || !isUsableTarget(position)) {
+            return false;
+        }
+        if (maxRange <= 0.0D) {
+            return true;
+        }
+
+        double dx = position.x - origin.posX;
+        double dz = position.z - origin.posZ;
+        return dx * dx + dz * dz <= maxRange * maxRange;
+    }
+
     public static boolean isUsableTarget(MCH_GPSPosition position) {
         return position != null
             && position.isActive

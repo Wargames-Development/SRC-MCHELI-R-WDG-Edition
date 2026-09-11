@@ -4,6 +4,7 @@ import mcheli.MCH_Lib;
 import mcheli.mob.MCH_EntityGunner;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.wrapper.W_McClient;
+import mcheli.wrapper.W_EntityPlayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
@@ -423,6 +424,19 @@ public class MCH_WeaponSet {
         MCH_WeaponBase crtWpn = this.getCurrentWeapon();
         if (crtWpn != null && crtWpn.getInfo() != null && prm.entity != null) {
             MCH_WeaponInfo info = crtWpn.getInfo();
+
+            // Reject an out-of-range GPS shot before any weapon state or visuals are changed.
+            if (info.isGPSMissile) {
+                MCH_GPSPosition gpsPosition = MCH_GPSPosition.getForWeaponUse(prm.user);
+                if (MCH_GPSPosition.isUsableTarget(gpsPosition)
+                    && !MCH_GPSPosition.isWithinHorizontalRange(prm.entity, gpsPosition, info.maxLockOnRange)) {
+                    if (prm.user instanceof EntityPlayer) {
+                        W_EntityPlayer.addChatMessage((EntityPlayer)prm.user, "GPS target is not in range.");
+                    }
+                    return false;
+                }
+            }
+
             if ((this.getAmmoNumMax() <= 0 || this.getAmmoNum() > 0) && (info.maxHeatCount <= 0 || this.currentHeat < info.maxHeatCount)) {
                 crtWpn.canPlaySound = this.soundWait == 0;
                 setWeaponRotation(prm, crtWpn);

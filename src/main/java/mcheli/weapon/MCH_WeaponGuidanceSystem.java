@@ -431,6 +431,11 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
         if (entity == null || entity.isDead || entity instanceof EntityPlayer) {
             return false;
         } else {
+            // Ground-attack IR seekers are vehicle seekers. Reject every living
+            // entity before compatibility class-name checks can admit modded mobs.
+            if (this.isHeatSeekerMissile && this.canLockOnGround && W_Lib.isEntityLivingBase(entity)) {
+                return false;
+            }
             // 获取实体的类名
             String className = entity.getClass().getName();
 

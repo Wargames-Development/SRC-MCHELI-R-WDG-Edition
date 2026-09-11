@@ -13,13 +13,10 @@ import mcheli.plane.MCP_EntityPlane;
 import mcheli.render.MCH_RenderRWR;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_Entity;
-import mcheli.wrapper.W_MovingObjectPosition;
-import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.MathHelper;
-import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
@@ -27,7 +24,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
     private static final int OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY = 1 << 9;
     private static final int OPTION_FLAG_ARM_NARROW_BAND = 1 << 10;
     private static final long SNAPSHOT_TARGET_STALE_MS = 1500L;
+    private static final int SNAPSHOT_ACQUIRE_INTERVAL_TICKS = 3;
+    private static final double LOCAL_HEAT_SEEKER_SCAN_RANGE = 256.0D;
     private int snapshotHeatSeekerTargetId;
+    private boolean snapshotHeatSeekerLockActive;
+    private int snapshotHeatSeekerAcquireCooldown;
 
     public MCH_WeaponAAMissile(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
@@ -41,6 +42,8 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             && wi.isHeatSeekerMissile && !wi.activeRadar && !wi.passiveRadar
             && !wi.semiActiveRadar && !wi.antiRadiationMissile);
         this.snapshotHeatSeekerTargetId = 0;
+        this.snapshotHeatSeekerLockActive = false;
+        this.snapshotHeatSeekerAcquireCooldown = 0;
     }
 
     public boolean isCooldownCountReloadTime() {
@@ -54,6 +57,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         if (super.worldObj.isRemote && this.snapshotHeatSeekerTargetId > 0
             && super.guidanceSystem.lockCount == 0 && super.guidanceSystem.prevLockCount == 0) {
             this.snapshotHeatSeekerTargetId = 0;
+            this.snapshotHeatSeekerLockActive = false;
             super.optionParameter1 = 0;
         }
     }
@@ -301,13 +305,11 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             return false;
         }
 
-        // Validate LOS from the actual launch/muzzle position. For handheld AAMs the packet
-        // handler rebuilds this at shoulder/eye height instead of the player's feet.
-        Vec3 from = W_WorldFunc.getWorldVec3(super.worldObj, prm.posX, prm.posY, prm.posZ);
-        Vec3 to = W_WorldFunc.getWorldVec3(super.worldObj, target.posX,
-            target.posY + (double)(target.height * 0.5F), target.posZ);
-        MovingObjectPosition hit = W_WorldFunc.clip(super.worldObj, from, to, false, true, false);
-        return hit == null || W_MovingObjectPosition.isHitTypeEntity(hit);
+        // Pure IR BVR locks use the sensor-independent entity snapshot stream. Do not ray
+        // trace across distant terrain here: that would reintroduce chunk/render-distance
+        // dependence and can force expensive world traversal. The server still validates
+        // target identity, air/ground state, configured range, and seeker geometry above.
+        return true;
     }
 
     private float getLaunchYaw(MCH_WeaponParam prm) {
@@ -381,9 +383,14 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             return;
         }
 
-        // Once a far snapshot has started a lock, keep using its stable entity ID so
-        // crossing the vanilla entity-render boundary does not reset lock progress.
-        if (this.snapshotHeatSeekerTargetId > 0) {
+        if (this.snapshotHeatSeekerAcquireCooldown > 0) {
+            --this.snapshotHeatSeekerAcquireCooldown;
+        }
+
+        // Once snapshot tracking begins, keep the stable entity ID even if the normal
+        // Minecraft entity appears again. This prevents lock progress from resetting at
+        // the vanilla tracking/render boundary.
+        if (this.snapshotHeatSeekerLockActive && this.snapshotHeatSeekerTargetId > 0) {
             if (updateSnapshotHeatSeekerLock(prm)) {
                 return;
             }
@@ -394,18 +401,57 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         Entity cueOrigin = getInfo().enableHMS ? prm.user : prm.entity;
         float cueYaw = getInfo().enableHMS ? prm.user.rotationYaw : launchYaw;
         float cuePitch = getInfo().enableHMS ? prm.user.rotationPitch : launchPitch;
-        boolean complete = super.guidanceSystem.lock(prm.user, cueOrigin, cueYaw, cuePitch,
-            prm.entity, launchYaw, launchPitch, (float)getInfo().getEffectiveMaxDegreeOfMissile(0));
+
+        int previousTargetId = this.snapshotHeatSeekerTargetId;
+        int previousLockCount = super.guidanceSystem.lockCount;
+        int previousContinueLockCount = super.guidanceSystem.continueLockCount;
+
+        // Keep the normal seeker for close targets so dogfight tracking stays responsive,
+        // but cap its AABB scan so a 1000+ block MaxLockOnRange does not cause a huge
+        // client-world entity query every tick. Far targets are handled by snapshots.
+        double configuredLockRange = super.guidanceSystem.lockRange;
+        super.guidanceSystem.lockRange = Math.min(configuredLockRange, LOCAL_HEAT_SEEKER_SCAN_RANGE);
+        boolean complete;
+        try {
+            complete = super.guidanceSystem.lock(prm.user, cueOrigin, cueYaw, cuePitch,
+                prm.entity, launchYaw, launchPitch, (float)getInfo().getEffectiveMaxDegreeOfMissile(0));
+        } finally {
+            super.guidanceSystem.lockRange = configuredLockRange;
+        }
+
         Entity localTarget = super.guidanceSystem.getLockingEntity();
         if (localTarget != null) {
-            this.snapshotHeatSeekerTargetId = 0;
+            this.snapshotHeatSeekerTargetId = W_Entity.getEntityId(localTarget);
+            this.snapshotHeatSeekerLockActive = false;
             super.optionParameter1 = complete && super.guidanceSystem.lastLockEntity != null
                 ? W_Entity.getEntityId(super.guidanceSystem.lastLockEntity) : 0;
             return;
         }
 
-        // Vanilla's client entity list ends near normal render/tracking distance. Fall
-        // back to the sensor-independent snapshots already used by far vehicle LODs.
+        // If the same target just disappeared from the local entity list (or moved beyond
+        // the deliberately bounded local scan), continue the existing lock count against
+        // its snapshot instead of starting over at one tick. This also makes the transition
+        // robust when terrain LOS causes the local seeker path to drop the entity.
+        if (previousTargetId > 0 && previousLockCount > 0) {
+            this.snapshotHeatSeekerTargetId = previousTargetId;
+            this.snapshotHeatSeekerLockActive = true;
+            super.guidanceSystem.lockCount = previousLockCount;
+            super.guidanceSystem.continueLockCount = previousContinueLockCount;
+            super.guidanceSystem.prevLockCount = Math.max(0, previousLockCount - 1);
+            if (updateSnapshotHeatSeekerLock(prm)) {
+                return;
+            }
+        }
+
+        // Snapshot acquisition is intentionally throttled. The snapshot stream itself only
+        // updates every two server ticks, so scanning its small cached collection every
+        // client tick adds work without providing fresher target information.
+        if (this.snapshotHeatSeekerAcquireCooldown > 0) {
+            super.optionParameter1 = 0;
+            return;
+        }
+        this.snapshotHeatSeekerAcquireCooldown = SNAPSHOT_ACQUIRE_INTERVAL_TICKS;
+
         if (!acquireSnapshotHeatSeekerTarget(prm, cueOrigin, cueYaw, cuePitch, launchYaw, launchPitch)) {
             super.optionParameter1 = 0;
         }
@@ -422,13 +468,6 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             if (!isSnapshotHeatSeekerTargetUsable(prm, snapshot, now)) {
                 continue;
             }
-            // If a real entity is present, the normal seeker above owns it (including
-            // client LOS and decoy behavior). Snapshots are only for genuinely far targets.
-            Entity localEntity = prm.user.worldObj.getEntityByID(snapshot.entityId);
-            if (localEntity != null && !localEntity.isDead) {
-                continue;
-            }
-
             float acquireAngle = (float)getInfo().maxLockOnAngle;
             if (!inSnapshotLockAngle(cueOrigin, cueYaw, cuePitch, snapshot, acquireAngle)
                 || !inSnapshotLockCone(prm.entity, launchYaw, launchPitch, snapshot,
@@ -450,6 +489,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
         super.guidanceSystem.clearLock();
         super.guidanceSystem.lastLockEntity = null;
         this.snapshotHeatSeekerTargetId = best.entityId;
+        this.snapshotHeatSeekerLockActive = true;
         super.guidanceSystem.lockCount = 1;
         super.guidanceSystem.prevLockCount = 0;
         super.optionParameter1 = getSnapshotLockCountMax() <= 1 ? best.entityId : 0;
@@ -608,6 +648,7 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
 
     private void clearSnapshotHeatSeekerLock() {
         this.snapshotHeatSeekerTargetId = 0;
+        this.snapshotHeatSeekerLockActive = false;
         super.optionParameter1 = 0;
         super.guidanceSystem.clearLock();
         super.guidanceSystem.lastLockEntity = null;

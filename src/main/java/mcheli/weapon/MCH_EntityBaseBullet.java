@@ -506,7 +506,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
         // Guided projectiles must never track an individual player entity. Players
         // riding vehicles are targeted through the vehicle entity instead.
-        if (entity instanceof EntityPlayer) {
+        if (entity instanceof EntityPlayer || this.isForbiddenAirToGroundIrTarget(entity)) {
             entity = null;
         }
         this.targetEntity = entity;
@@ -534,7 +534,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public void clientSetTargetEntity(Entity entity) {
         if (super.worldObj.isRemote) {
-            if (entity instanceof EntityPlayer) {
+            if (entity instanceof EntityPlayer || this.isForbiddenAirToGroundIrTarget(entity)) {
                 entity = null;
             }
             this.targetEntity = entity;
@@ -545,6 +545,16 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
         }
 
+    }
+
+    private boolean isForbiddenAirToGroundIrTarget(Entity entity) {
+        // Air-to-ground IR seekers target vehicles, not living entities. Keep this
+        // guard at the projectile boundary so launch packets and terminal reacquisition
+        // cannot redirect a dual-mode weapon onto a player, animal, or other mob.
+        return entity instanceof EntityLivingBase
+            && this instanceof MCH_EntityATMissile
+            && this.getInfo() != null
+            && this.getInfo().isHeatSeekerMissile;
     }
 
     public int getTargetEntityID() {
@@ -2605,7 +2615,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                             closestAngle = angle;
                             closestTarget = entity;
                         }
-                    } else if (!getInfo().ridableOnly && entity instanceof EntityLivingBase && entity.ridingEntity == null) {
+                    } else if (!getInfo().isHeatSeekerMissile && !getInfo().ridableOnly
+                        && entity instanceof EntityLivingBase && entity.ridingEntity == null) {
                         if (W_Entity.isEqual(entity, shootingEntity)) continue;
                         if (shootingEntity instanceof EntityLivingBase && ((EntityLivingBase) entity).isOnSameTeam((EntityLivingBase) shootingEntity)) {
                             continue;
@@ -2623,7 +2634,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                             closestTarget = entity;
                         }
                     }
-                    // NOTE: no EntityLivingBase fallback anymore = no players/mobs ever targeted actively
+                    // IR AT terminal seekers deliberately have no living-entity fallback.
                 }
             }
             // ARM always prioritizes radiating emitters once detected.

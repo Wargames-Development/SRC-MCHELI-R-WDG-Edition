@@ -878,6 +878,13 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                             this.lastPlaneControlNanos = 0L;
                         }
                         var19.setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, controlTickDelta);
+                        if (var19 instanceof MCP_EntityPlane) {
+                            // Plane mouse input changes yaw every render frame. The base angle
+                            // update retains the previous 20 TPS yaw while mounted, causing the
+                            // renderer to jump backward whenever partialTicks wraps to zero.
+                            // Pitch and roll are already synchronized this way in setAngles().
+                            var19.prevRotationYaw = var19.getRotYaw();
+                        }
                     }
 
                     refreshRiderRenderRotations(var19);
