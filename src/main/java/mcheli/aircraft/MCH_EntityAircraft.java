@@ -1129,15 +1129,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                             damage *= getAcInfo().armorExplosionDamageMultiplier;
                             String name = (String) getAcInfo().displayNameLang.get("en_US");
                             postEconomyAircraftDamageEvent(name, damage, attackerEntity);
-                            if (lastAttackedEntity instanceof EntityPlayerMP) {
-                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "message.mcheli.overpressure", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) lastAttackedEntity);
-                            } else if (lastAttackedEntity instanceof MCH_DummyEntityPlayer) {
-                                EntityPlayer mp = worldObj.getPlayerEntityByName(lastAttackedEntity.getCommandSenderName());
-                                if (mp instanceof EntityPlayerMP) {
-                                    MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), "message.mcheli.overpressure", damage * 100 / getMaxHP(), (byte) 1), (EntityPlayerMP) mp);
-                                }
-                            }
+                            int hpBefore = this.getHP();
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
+                            this.notifyAppliedDamage(attackerEntity, "message.mcheli.overpressure", hpBefore, (byte) 1, -1.0F);
                         }
                     } else if (this.isMountedEntity(damageSource.getEntity())) {
                         return false;
@@ -1258,10 +1252,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                     relDir.xCoord, relDir.yCoord, relDir.zCoord,
                                     weaponName, bbName, damage * 100 / getMaxHP(), getEntityId()));
                             }
-                            if (bbName != null && lastAttackedEntity instanceof EntityPlayer) {
-                                MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(getEntityId(), bbName, damage * 100 / getMaxHP(), (byte) 0, impactAngleForDisplay), (EntityPlayerMP) lastAttackedEntity);
-                            }
+                            int hpBefore = this.getHP();
                             this.setDamageTaken(this.getDamageTaken() + (int) damage);
+                            this.notifyAppliedDamage(attackerEntity, bbName == null ? "" : bbName, hpBefore, (byte) 0, impactAngleForDisplay);
                         }
                         this.setBeenAttacked();
                         if (this.getDamageTaken() >= this.getMaxHP() || isDamageSourcePlayer) {
@@ -1323,6 +1316,22 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     return true;
                 }
             }
+        }
+    }
+
+    private void notifyAppliedDamage(EntityLivingBase attacker, String hitName, int hpBefore, byte damageType, float impactAngle) {
+        // Report the integer HP actually removed, including lethal-hit clamping, in percent of maximum HP.
+        int hpLost = Math.max(0, hpBefore - this.getHP());
+        if (hpLost == 0 || this.getMaxHP() <= 0) {
+            return;
+        }
+        EntityPlayer recipient = attacker instanceof EntityPlayer ? (EntityPlayer) attacker : null;
+        if (attacker instanceof MCH_DummyEntityPlayer) {
+            recipient = this.worldObj.getPlayerEntityByName(attacker.getCommandSenderName());
+        }
+        if (recipient instanceof EntityPlayerMP) {
+            MCH_MOD.getPacketHandler().sendTo(new PacketBoundingBoxHit(this.getEntityId(), hitName,
+                hpLost * 100.0F / this.getMaxHP(), damageType, impactAngle), (EntityPlayerMP) recipient);
         }
     }
 

@@ -28,6 +28,8 @@ import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_McClient;
 import mcheli.wrapper.W_MOD;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.audio.ISound;
+import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.Entity;
@@ -73,6 +75,7 @@ public class MCH_RenderRWR {
     private static final int RWR_EVENT_MAX_ROWS = 4;
     private static final String RWR_SCAN_SOUND = "rwr_scan";
     private static final String RWR_LOCK_SOUND = "rwr_lock";
+    private static final float RWR_LOCK_SOUND_VOLUME = 3.0F;
     private static final String RWR_SCAN_SOUND_FALLBACK = "alert";
     private static final String RWR_LOCK_SOUND_FALLBACK = "locked";
     private static final int RWR_LOCK_BLINK_TICK = 5;
@@ -472,15 +475,16 @@ public class MCH_RenderRWR {
     }
 
     private static boolean playRwrSoundWithFallback(MCH_EntityAircraft ac, String primary, String fallback) {
+        boolean lockWarning = RWR_LOCK_SOUND.equals(primary);
         try {
-            W_McClient.MOD_playSoundFX(primary, 1.0F, 1.0F);
+            playRwrSound(primary, lockWarning);
             return true;
         } catch (Throwable primaryEx) {
             MCH_RadarDebug.traceVerbose(ac != null ? ac.worldObj : null, ac, "RWR sound missing primary=%s", primary);
         }
         if (fallback != null && !fallback.isEmpty()) {
             try {
-                W_McClient.MOD_playSoundFX(fallback, 1.0F, 1.0F);
+                playRwrSound(fallback, lockWarning);
                 MCH_RadarDebug.traceVerbose(ac != null ? ac.worldObj : null, ac, "RWR sound fallback=%s", fallback);
                 return true;
             } catch (Throwable fallbackEx) {
@@ -488,6 +492,22 @@ public class MCH_RenderRWR {
             }
         }
         return false;
+    }
+
+    private static void playRwrSound(String name, boolean lockWarning) {
+        if (!lockWarning) {
+            W_McClient.MOD_playSoundFX(name, 1.0F, 1.0F);
+            return;
+        }
+        // Cockpit warnings must not fade as the aircraft leaves the sound's start position.
+        // Minecraft still applies the user's sound settings and its final volume cap.
+        Minecraft.getMinecraft().getSoundHandler().playSound(new PositionedSoundRecord(
+            new ResourceLocation(W_MOD.DOMAIN, name), RWR_LOCK_SOUND_VOLUME, 1.0F, 0.0F, 0.0F, 0.0F) {
+            @Override
+            public ISound.AttenuationType getAttenuationType() {
+                return ISound.AttenuationType.NONE;
+            }
+        });
     }
 
     private static String normalizeRwrSourceName(String sourceName) {
@@ -3650,6 +3670,10 @@ public class MCH_RenderRWR {
             }
             MCH_EntityInfo info = MCH_EntityInfoClientTracker.getEntityInfo(id);
             if (info == null) {
+                continue;
+            }
+            // CAPSLOCK cycles vehicle targets; missiles remain in the radar display cache.
+            if (isMissileClassName(info.entityClassName)) {
                 continue;
             }
             if (isSelfTarget(ac, player, info) || isOwnLaunchedMissile(ac, player, info)) {

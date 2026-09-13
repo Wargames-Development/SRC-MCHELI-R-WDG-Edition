@@ -334,9 +334,11 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
             ? MCH_EntityInfoClientTracker.getEntityInfo(targetId) : null;
         if (snapshot != null && System.currentTimeMillis() - snapshot.lastUpdateTime > SNAPSHOT_TARGET_STALE_MS) {
             snapshot = null;
-            targetId = 0;
         }
         setClientTarget(prm.user, targetId, target, snapshot);
+        if (requiresBvrRadarTrack(prm) && targetId == trackingId) {
+            super.optionParameter1 = targetId;
+        }
         return true;
     }
 

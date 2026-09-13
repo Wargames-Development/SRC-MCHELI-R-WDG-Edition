@@ -493,13 +493,14 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                     return false;
                 }
             }
-            if (targetEntity instanceof MCH_EntityAircraft) {
-                if (isRadarMissile && ((MCH_EntityAircraft) targetEntity).chaffUseTime > 0) {
+            // Validate this candidate, not the seeker's previous lock.
+            if (entity instanceof MCH_EntityAircraft) {
+                if (isRadarMissile && ((MCH_EntityAircraft) entity).chaffUseTime > 0) {
                     return false;
                 }
             }
-            if (targetEntity instanceof MCH_EntityTank || targetEntity instanceof MCH_EntityVehicle) {
-                if (((MCH_EntityAircraft) targetEntity).isFlareUsing()) {
+            if (entity instanceof MCH_EntityTank || entity instanceof MCH_EntityVehicle) {
+                if (((MCH_EntityAircraft) entity).isFlareUsing()) {
                     return false;
                 }
             }

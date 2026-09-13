@@ -55,6 +55,11 @@ public class PacketBoundingBoxHit extends PacketBase {
 
     @Override
     public void handleClientSide(EntityPlayer clientPlayer) {
+        if (Float.isNaN(damage) || Float.isInfinite(damage) || damage < 0.0F
+            || damageType < 0 || damageType > 2) {
+            return;
+        }
+        MCH_ClientCommonTickHandler.beginHitReport(targetID);
         MCH_ClientCommonTickHandler.hitDisplayCountdown = 40;
         MCH_ClientCommonTickHandler.hitTotalDamageClearCountdown = 60;
         MCH_ClientCommonTickHandler.HitMessage hitMessage = new MCH_ClientCommonTickHandler.HitMessage();
@@ -72,6 +77,9 @@ public class PacketBoundingBoxHit extends PacketBase {
     }
 
     private String formatNormalHitMessage(String hitName, float angle) {
+        if (hitName == null || hitName.trim().isEmpty()) {
+            hitName = isEnglishLocale() ? "Direct hit" : "直接命中";
+        }
         if (angle < 0.0F) {
             return hitName;
         }

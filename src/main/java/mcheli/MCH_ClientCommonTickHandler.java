@@ -97,6 +97,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public static int lockedSoundCount = 0;
     public static int hitDisplayCountdown;
     public static float hitTotalDamage;
+    private static int hitTargetID = -1;
     public static int hitTotalDamageClearCountdown;
     public static float hitTotalDamageScale = 2.0f;
     public static List<HitMessage> hitList = new ArrayList<>();
@@ -312,6 +313,16 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     public static double getMaxStickLength() {
         return 40.0D;
+    }
+
+    public static void beginHitReport(int targetID) {
+        // Percentages from different vehicles cannot meaningfully be added together.
+        if (hitTargetID != targetID || hitDisplayCountdown <= 0) {
+            hitList.clear();
+            hitTotalDamage = 0.0F;
+            hitTotalDamageScale = hitTotalDamageScaleOrigin;
+        }
+        hitTargetID = targetID;
     }
 
     public static void addHitMessage(HitMessage message) {
@@ -1154,22 +1165,24 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             if (!hitList.isEmpty() && hitTotalDamage > 0) {
                 int x = (int) (i * 0.6f);
                 int y = (int) (j * 0.4f);
+                mc.fontRenderer.drawString("Recent damage dealt", x, y - 12, 0xffffff, true);
                 GL11.glPushMatrix();
-                float scale = hitTotalDamageScale;
+                String totalText = String.format("-%.1f%% HP", hitTotalDamage);
+                float scale = Math.min(hitTotalDamageScale,
+                    (i - x - 4.0F) / Math.max(1, mc.fontRenderer.getStringWidth(totalText)));
                 GL11.glScalef(scale, scale, scale);
-                mc.fontRenderer.drawString(-(int) hitTotalDamage + "", (int) (x / scale), (int) (y / scale), 0xffffff, true);
+                mc.fontRenderer.drawString(totalText, (int) (x / scale), (int) (y / scale), 0xffffff, true);
                 GL11.glPopMatrix();
             }
             int baseX = (int) (i * 0.6f);
             for (int idx = hitList.size() - 1, pos = 0; idx >= 0; idx--, pos++) {
                 HitMessage message = hitList.get(idx);
                 if (message.hitDisplay != null && (message.hitDamage > 0 || message.hitDamageType == 2)) {
-                    float yOffset = 0.45f + pos * 0.025f;
-                    int y = (int) (j * yOffset);
+                    int y = (int) (j * 0.4f) + 28 + pos * (mc.fontRenderer.FONT_HEIGHT + 3);
                     float alpha = Math.max(0.0f, 1.0f - pos * 0.15f);
                     int a = ((int) (alpha * 255)) << 24;
                     int color = a | 0x00FFFFFF;
-                    String display = message.hitDamageType == 2 ? message.hitDisplay : String.format("%.1f %s", -message.hitDamage, message.hitDisplay);
+                    String display = message.hitDamageType == 2 ? message.hitDisplay : String.format("-%.1f%% HP  %s", message.hitDamage, message.hitDisplay);
                     mc.fontRenderer.drawString(
                         display,
                         baseX,
