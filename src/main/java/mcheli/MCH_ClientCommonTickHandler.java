@@ -1340,6 +1340,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPost(float partialTicks) {
+        // Generic vehicles intentionally use vanilla mouse-look instead of the aircraft mouse handler.
+        // RenderTick START snapshots pre-input rotation, so keep the vanilla rotation applied later in the frame.
+        if (this.mc.thePlayer != null && this.mc.thePlayer.ridingEntity instanceof MCH_EntityVehicle) {
+            refreshRiderRenderRotation(this.mc.thePlayer);
+        }
         restoreRiderRenderPositions("render_end");
         if (this.mc.thePlayer != null) {
             MCH_ClientTickHandlerBase.applyRotLimit(this.mc.thePlayer);
