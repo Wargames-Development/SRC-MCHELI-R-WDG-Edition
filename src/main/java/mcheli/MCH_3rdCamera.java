@@ -74,7 +74,7 @@ public class MCH_3rdCamera extends EntityLivingBase {
     }
 
     /**
-     * Plane mouse flight controls update every render frame, while this camera's
+     * Plane and helicopter flight controls update every render frame, while this camera's
      * normal onUpdate() runs at 20 TPS. Sync only the view rotation here so the
      * aircraft cannot visually rotate ahead of the chase camera and snap back.
      */

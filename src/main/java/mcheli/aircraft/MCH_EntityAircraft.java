@@ -1761,8 +1761,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void setAngles(Entity player, boolean fixRot, float fixYaw, float fixPitch, float deltaX, float deltaY, float x, float y, float partialTicks) {
         partialTicks = this.normalizeControlTickDelta(partialTicks);
-        this.lowPassPartialTicks.put(partialTicks);
-        partialTicks = this.lowPassPartialTicks.getAvg();
+        // Filtering elapsed time changes the simulated duration when frame times change.
+        // Smooth presentation and input instead; mobility limits must use the actual step.
         float ac_pitch = this.getRotPitch();
         float ac_yaw = this.getRotYaw();
         float ac_roll = this.getRotRoll();
@@ -1777,44 +1777,17 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         double m_add;
         if (this.canUpdateYaw(player)) {
             m_add = this.getAddRotationYawLimit();
-            yaw = this.getControlRotYaw(x, y, partialTicks);
-            if ((double) yaw < -m_add) {
-                yaw = (float) (-m_add);
-            }
-
-            if ((double) yaw > m_add) {
-                yaw = (float) m_add;
-            }
-
-            yaw = (float) ((double) (yaw * this.getYawFactor()) * 0.06D * (double) partialTicks);
+            yaw = MCH_AircraftControlMath.rotationStep(this.getControlRotYaw(x, y, partialTicks), m_add, this.getYawFactor(), partialTicks);
         }
 
         if (this.canUpdatePitch(player)) {
             m_add = this.getAddRotationPitchLimit();
-            pitch = this.getControlRotPitch(x, y, partialTicks);
-            if ((double) pitch < -m_add) {
-                pitch = (float) (-m_add);
-            }
-
-            if ((double) pitch > m_add) {
-                pitch = (float) m_add;
-            }
-
-            pitch = (float) ((double) (-pitch * this.getPitchFactor()) * 0.06D * (double) partialTicks);
+            pitch = -MCH_AircraftControlMath.rotationStep(this.getControlRotPitch(x, y, partialTicks), m_add, this.getPitchFactor(), partialTicks);
         }
 
         if (this.canUpdateRoll(player)) {
             m_add = this.getAddRotationRollLimit();
-            roll = this.getControlRotRoll(x, y, partialTicks);
-            if ((double) roll < -m_add) {
-                roll = (float) (-m_add);
-            }
-
-            if ((double) roll > m_add) {
-                roll = (float) m_add;
-            }
-
-            roll = roll * this.getRollFactor() * 0.06F * partialTicks;
+            roll = MCH_AircraftControlMath.rotationStep(this.getControlRotRoll(x, y, partialTicks), m_add, this.getRollFactor(), partialTicks);
         }
 
         MCH_Math.FMatrix m_add1 = MCH_Math.newMatrix();
@@ -1900,15 +1873,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     protected float normalizeControlTickDelta(float partialTicks) {
-        if (partialTicks < 0.03F) {
-            partialTicks = 0.4F;
-        }
-
-        if (partialTicks > 0.9F) {
-            partialTicks = 0.6F;
-        }
-
-        return partialTicks;
+        return MCH_AircraftControlMath.tickDelta(partialTicks);
     }
 
     public boolean canSwitchSearchLight(Entity entity) {

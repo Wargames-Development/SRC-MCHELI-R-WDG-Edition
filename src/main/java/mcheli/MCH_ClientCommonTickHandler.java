@@ -122,7 +122,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private static double mouseRollDeltaY = 0.0D;
     private static boolean isRideAircraft = false;
     private static float prevTick = 0.0F;
-    private long lastPlaneControlNanos = 0L;
+    private long lastAircraftControlNanos = 0L;
+    private MCH_EntityAircraft lastControlledAircraft;
+    private static MCH_RenderMouseHelper renderMouseHelper;
+    private static boolean ownsRenderMouse;
+    private static boolean savedSmoothCamera;
     private final RenderItem economyHudItemRenderer = new RenderItem();
     public MCH_GuiCommon gui_Common;
     public MCH_Gui gui_Heli;
@@ -553,6 +557,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onTickPre() {
+        restoreRenderMouse();
         if (super.mc.thePlayer != null && super.mc.theWorld != null) {
             this.onTick();
         } else {
@@ -616,6 +621,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public static void cleanupClientState(String reason) {
+        restoreRenderMouse();
         restoreRiderRenderPositions(reason);
         teardownThirdPersonCamera(reason);
     }
@@ -731,11 +737,11 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         if (super.mc.inGameHasFocus && Display.isActive() && super.mc.currentScreen == null) {
             if (stickMode) {
                 if (Math.abs(mouseRollDeltaX) < getMaxStickLength() * 0.2D) {
-                    mouseRollDeltaX *= 1.0F - 0.15F * partialTicks;
+                    mouseRollDeltaX *= MCH_AircraftControlMath.retention(0.85F, partialTicks);
                 }
 
                 if (Math.abs(mouseRollDeltaY) < getMaxStickLength() * 0.2D) {
-                    mouseRollDeltaY *= 1.0F - 0.15F * partialTicks;
+                    mouseRollDeltaY *= MCH_AircraftControlMath.retention(0.85F, partialTicks);
                 }
             }
 
@@ -745,6 +751,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             double ms = MCH_Config.MouseSensitivity.prmDouble * 0.1D;
             mouseDeltaX = ms * (double) super.mc.mouseHelper.deltaX * (double) f2;
             mouseDeltaY = ms * (double) super.mc.mouseHelper.deltaY * (double) f2;
+            this.claimRenderMouse();
             byte inv = 1;
             if (super.mc.gameSettings.invertMouse) {
                 inv = -1;
@@ -773,19 +780,47 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     }
 
-    private float getPlaneControlTickDelta() {
+    private void claimRenderMouse() {
+        if (ownsRenderMouse) {
+            return;
+        }
+        if (renderMouseHelper == null || renderMouseHelper.delegate != this.mc.mouseHelper) {
+            renderMouseHelper = new MCH_RenderMouseHelper(this.mc.mouseHelper);
+        }
+        this.mc.mouseHelper = renderMouseHelper;
+        savedSmoothCamera = this.mc.gameSettings.smoothCamera;
+        // Vanilla's cinematic filter can rotate the player even with a zero mouse sample.
+        this.mc.gameSettings.smoothCamera = false;
+        ownsRenderMouse = true;
+    }
+
+    private static void restoreRenderMouse() {
+        if (!ownsRenderMouse) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft.mouseHelper == renderMouseHelper) {
+            minecraft.mouseHelper = renderMouseHelper.delegate;
+        }
+        minecraft.gameSettings.smoothCamera = savedSmoothCamera;
+        ownsRenderMouse = false;
+    }
+
+    private float getAircraftControlTickDelta(MCH_EntityAircraft aircraft) {
         long now = System.nanoTime();
-        if (this.lastPlaneControlNanos == 0L) {
-            this.lastPlaneControlNanos = now;
-            return 1.0F / 3.0F;
+        if (this.lastAircraftControlNanos == 0L || this.lastControlledAircraft != aircraft) {
+            this.lastAircraftControlNanos = now;
+            this.lastControlledAircraft = aircraft;
+            return 0.0F;
         }
 
-        float tickDelta = (float) (now - this.lastPlaneControlNanos) / 50000000.0F;
-        this.lastPlaneControlNanos = now;
+        float tickDelta = (float) (now - this.lastAircraftControlNanos) / 50000000.0F;
+        this.lastAircraftControlNanos = now;
         return MathHelper.clamp_float(tickDelta, 0.0F, 1.0F);
     }
 
     public void onRenderTickPre(float partialTicks) {
+        restoreRenderMouse();
         restoreRiderRenderPositions("next_render_start");
         MCH_GuiTargetMarker.clearMarkEntityPos();
         if (!MCH_ServerSettings.enableDebugBoundingBox) {
@@ -802,6 +837,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
 
         if (super.mc == null || super.mc.thePlayer == null || super.mc.theWorld == null) {
+            this.lastAircraftControlNanos = 0L;
+            this.lastControlledAircraft = null;
             applyLocalCameraMode(0);
             return;
         }
@@ -852,13 +889,21 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
                 float p;
                 float r;
+                boolean flightControl = var19 instanceof MCP_EntityPlane || var19 instanceof MCH_EntityHeli;
+                float controlTickDelta = partialTicks - prevTick;
+                if ((flightControl || var19 instanceof MCH_EntityTank) && var19.canMouseRot()) {
+                    controlTickDelta = this.getAircraftControlTickDelta(var19);
+                } else {
+                    this.lastAircraftControlNanos = 0L;
+                    this.lastControlledAircraft = null;
+                }
                 if (var19 != null && var19.canMouseRot()) {
                     if (!isRideAircraft) {
                         var19.onInteractFirst(var17);
                     }
 
                     isRideAircraft = true;
-                    this.updateMouseDelta(var20, partialTicks);
+                    this.updateMouseDelta(var20, flightControl ? controlTickDelta : partialTicks);
                     boolean var22 = false;
                     float var23 = 0.0F;
                     float var25 = 0.0F;
@@ -882,18 +927,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     if (var19.getAcInfo() == null) {
                         var17.setAngles((float) mouseDeltaX, (float) mouseDeltaY);
                     } else {
-                        float controlTickDelta = partialTicks - prevTick;
-                        if (var19 instanceof MCP_EntityPlane) {
-                            controlTickDelta = this.getPlaneControlTickDelta();
-                        } else {
-                            this.lastPlaneControlNanos = 0L;
-                        }
                         var19.setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, controlTickDelta);
-                        if (var19 instanceof MCP_EntityPlane) {
-                            // Plane mouse input changes yaw every render frame. The base angle
-                            // update retains the previous 20 TPS yaw while mounted, causing the
-                            // renderer to jump backward whenever partialTicks wraps to zero.
-                            // Pitch and roll are already synchronized this way in setAngles().
+                        if (flightControl) {
+                            // Both aircraft use per-frame controls. Render their final yaw,
+                            // matching pitch/roll, rather than interpolating it a second time.
                             var19.prevRotationYaw = var19.getRotYaw();
                         }
                     }
@@ -902,8 +939,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     var19.setupAllRiderRenderPosition(partialTicks, var17);
                     double var29 = MathHelper.sqrt_double(mouseRollDeltaX * mouseRollDeltaX + mouseRollDeltaY * mouseRollDeltaY);
                     if (!var20 || var29 < getMaxStickLength() * 0.1D) {
-                        mouseRollDeltaX *= 0.95D;
-                        mouseRollDeltaY *= 0.95D;
+                        // Keep the 60 FPS centering feel without making it stronger at high FPS.
+                        double retention = flightControl ? Math.pow(0.95D, controlTickDelta * 3.0D) : 0.95D;
+                        mouseRollDeltaX *= retention;
+                        mouseRollDeltaY *= retention;
                     }
 
                     p = MathHelper.wrapAngleTo180_float(var19.getRotRoll());
@@ -983,7 +1022,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         W_Reflection.setCameraRoll(roll + revRoll);
                         this.correctViewEntityDummy(var17);
                     } else {
-                        this.lastPlaneControlNanos = 0L;
                         if (isRideAircraft) {
                             W_Reflection.setCameraRoll(0.0F);
                             isRideAircraft = false;
@@ -1012,6 +1050,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     var24.rotationYaw = var17.rotationYaw;
                     //System.out.println("yaw14");
                     var24.prevRotationYaw = var17.prevRotationYaw;
+                    var24.rotationPitch = var17.rotationPitch;
+                    var24.prevRotationPitch = var17.prevRotationPitch;
                     //System.out.println("yaw15");
                     if (var19 != null) {
                         MCH_WeaponSet var27 = var19.getCurrentWeapon(var17);
@@ -1021,14 +1061,18 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     }
                 }
 
-                // Plane mouse control is render-frame based; keep the custom chase camera
+                // Plane and helicopter controls update per frame; keep the chase camera
                 // on that same final rotation instead of letting its 20 TPS update catch up later.
-                if (var19 instanceof MCP_EntityPlane && camera instanceof MCH_3rdCamera && super.mc.renderViewEntity == camera) {
+                if ((var19 instanceof MCP_EntityPlane || var19 instanceof MCH_EntityHeli)
+                        && camera instanceof MCH_3rdCamera && super.mc.renderViewEntity == camera) {
                     ((MCH_3rdCamera) camera).syncRotationForRender(var17);
                 }
 
                 prevTick = partialTicks;
             }
+        } else {
+            this.lastAircraftControlNanos = 0L;
+            this.lastControlledAircraft = null;
         }
     }
 
@@ -1340,6 +1384,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPost(float partialTicks) {
+        restoreRenderMouse();
         // Generic vehicles intentionally use vanilla mouse-look instead of the aircraft mouse handler.
         // RenderTick START snapshots pre-input rotation, so keep the vanilla rotation applied later in the frame.
         if (this.mc.thePlayer != null && this.mc.thePlayer.ridingEntity instanceof MCH_EntityVehicle) {

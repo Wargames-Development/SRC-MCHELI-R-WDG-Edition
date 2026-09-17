@@ -5,6 +5,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.aircraft.MCH_AircraftInfo;
+import mcheli.aircraft.MCH_AircraftControlMath;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_PacketStatusRequest;
 import mcheli.aircraft.MCH_Parts;
@@ -27,8 +28,6 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraft.util.AxisAlignedBB;
 public class MCP_EntityPlane extends MCH_EntityAircraft {
-
-    private static final float ROLL_REFERENCE_FRAMES_PER_TICK = 3.0F;
 
     public float soundVolume;
     public MCH_Parts partNozzle;
@@ -304,11 +303,6 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         return roll * 0.8F;
     }
 
-    protected float normalizeControlTickDelta(float partialTicks) {
-        // Preserve real sub-frame timing at high FPS instead of replacing it with a fixed large step.
-        return MathHelper.clamp_float(partialTicks, 0.0F, 1.0F);
-    }
-
     public boolean isOverridePlayerPitch() {
         return super.isOverridePlayerPitch() && !this.isHovering();
     }
@@ -331,7 +325,18 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public float getControlRotRoll(float mouseX, float mouseY, float tick) {
-        return MCH_Config.MouseControlFlightSimMode.prmBool ? mouseX * 2.0F : (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX);
+        if (MCH_Config.MouseControlFlightSimMode.prmBool) {
+            return mouseX * 2.0F;
+        }
+        float key = 0.0F;
+        if (MCH_Lib.getBlockIdY(this, 3, -3) == 0 && !this.isFreeLookMode() && !super.isGunnerMode
+                && (!this.getAcInfo().isFloat || this.getWaterDepth() <= 0.0D)) {
+            this.rotationByKey(tick);
+            // Normal-flight factor is 0.8: preserve the 0.5 degree/tick key rate,
+            // then clamp the combined mouse/key demand through MobilityRoll.
+            key = this.addkeyRotValue * this.getAcInfo().mobilityRoll * (0.5F / 0.048F);
+        }
+        return (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX) + key;
     }
 
     private void rotationByKey(float partialTicks) {
@@ -353,23 +358,19 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     public void onUpdateAngles(float partialTicks) {
         if (!this.isDestroyed()) {
             if (super.isGunnerMode) {
-                this.setRotPitch(this.getRotPitch() * 0.95F);
-                this.setRotYaw(this.getRotYaw() + this.getAcInfo().autoPilotRot * 0.2F);
+                this.setRotPitch(this.getRotPitch() * MCH_AircraftControlMath.retention(0.95F, partialTicks));
+                this.setRotYaw(this.getRotYaw() + this.getAcInfo().autoPilotRot * 0.2F * partialTicks);
                 if (MathHelper.abs(this.getRotRoll()) > 20.0F) {
-                    this.setRotRoll(this.getRotRoll() * 0.95F);
+                    this.setRotRoll(this.getRotRoll() * MCH_AircraftControlMath.retention(0.95F, partialTicks));
                 }
             }
 
             boolean isFly = MCH_Lib.getBlockIdY(this, 3, -3) == 0;
             float rot;
-            if (isFly && !this.isFreeLookMode() && !super.isGunnerMode && (!this.getAcInfo().isFloat || this.getWaterDepth() <= 0.0D)) {
-                if (!MCH_Config.MouseControlFlightSimMode.prmBool) {
-                    this.rotationByKey(partialTicks);
-                    this.setRotRoll(this.getRotRoll() + this.addkeyRotValue * 0.5F * this.getAcInfo().mobilityRoll
-                            * partialTicks * ROLL_REFERENCE_FRAMES_PER_TICK);
-                }
-            } else {
-                rot = 1.0F;
+            boolean keyboardRoll = isFly && !this.isFreeLookMode() && !super.isGunnerMode
+                    && (!this.getAcInfo().isFloat || this.getWaterDepth() <= 0.0D);
+            if (!keyboardRoll) {
+                rot = this.getAcInfo().mobilityYaw * (this.getVtolMode() > 0 ? this.getPlaneInfo().vtolYaw : 1.0F);
                 if (!isFly) {
                     rot = this.getAcInfo().mobilityYawOnGround;
                     if (!this.getAcInfo().canRotOnGround) {
@@ -389,15 +390,15 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
                 }
             }
 
-            this.addkeyRotValue = (float) ((double) this.addkeyRotValue * (1.0D - (double) (0.1F * partialTicks)));
+            this.addkeyRotValue *= MCH_AircraftControlMath.retention(0.9F, partialTicks);
             if (!isFly && MathHelper.abs(this.getRotPitch()) < 40.0F) {
-                this.applyOnGroundPitch(0.97F);
+                this.applyOnGroundPitch(MCH_AircraftControlMath.retention(0.97F, partialTicks));
             }
 
             if (this.getNozzleRotation() > 0.001F) {
-                rot = 1.0F - 0.03F * partialTicks;
+                rot = MCH_AircraftControlMath.retention(0.97F, partialTicks);
                 this.setRotPitch(this.getRotPitch() * rot);
-                rot = 1.0F - 0.1F * partialTicks;
+                rot = MCH_AircraftControlMath.retention(0.9F, partialTicks);
                 this.setRotRoll(this.getRotRoll() * rot);
             }
 

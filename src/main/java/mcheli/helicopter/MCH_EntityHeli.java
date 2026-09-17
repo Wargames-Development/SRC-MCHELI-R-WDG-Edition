@@ -4,6 +4,7 @@ import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.aircraft.MCH_AircraftControlMath;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.aircraft.MCH_PacketStatusRequest;
 import mcheli.aircraft.MCH_Rotor;
@@ -390,13 +391,15 @@ public class MCH_EntityHeli extends MCH_EntityAircraft {
     }
 
     public float getControlRotRoll(float mouseX, float mouseY, float tick) {
-        return mouseX;
+        // Combine mouse and keyboard before the shared mobility clamp.
+        float key = super.moveLeft == super.moveRight || MCH_Lib.getBlockIdY(this, 3, -3) != 0
+                ? 0.0F : (super.moveLeft ? -20.0F : 20.0F);
+        return mouseX + key * this.getAcInfo().mobilityRoll;
     }
 
     public void onUpdateAngles(float partialTicks) {
         if (!this.isDestroyed()) {
-            float rotRoll = !this.isHovering() ? 0.04F : 0.07F;
-            rotRoll = 1.0F - rotRoll * partialTicks;
+            float rotRoll = MCH_AircraftControlMath.retention(!this.isHovering() ? 0.96F : 0.93F, partialTicks);
             if ((double) this.getRotRoll() > 0.1D && this.getRotRoll() < 65.0F) {
                 this.setRotRoll(this.getRotRoll() * rotRoll);
             }
@@ -406,25 +409,25 @@ public class MCH_EntityHeli extends MCH_EntityAircraft {
             }
 
             if (MCH_Lib.getBlockIdY(this, 3, -3) == 0) {
-                if (super.moveLeft && !super.moveRight) {
-                    this.setRotRoll(this.getRotRoll() - 1.2F * partialTicks);
-                }
-
-                if (super.moveRight && !super.moveLeft) {
-                    this.setRotRoll(this.getRotRoll() + 1.2F * partialTicks);
+                // Hover mode disables mouse roll but still permits keyboard strafing.
+                if (this.isHovering()) {
+                    float key = super.moveLeft == super.moveRight ? 0.0F : (super.moveLeft ? -20.0F : 20.0F);
+                    this.setRotRoll(this.getRotRoll() + MCH_AircraftControlMath.rotationStep(
+                            key * this.getAcInfo().mobilityRoll, this.getAddRotationRollLimit(), this.getRollFactor(), partialTicks));
                 }
             } else {
                 if (MathHelper.abs(this.getRotPitch()) < 40.0F) {
-                    this.applyOnGroundPitch(0.97F);
+                    this.applyOnGroundPitch(MCH_AircraftControlMath.retention(0.97F, partialTicks));
                 }
 
-                if (this.heliInfo.isEnableFoldBlade && this.rotors.length > 0 && this.getFoldBladeStat() == 0 && !this.isDestroyed()) {
+                if (this.heliInfo.isEnableFoldBlade && this.rotors.length > 0 && this.getFoldBladeStat() == 0
+                        && this.getAcInfo().canRotOnGround) {
                     if (super.moveLeft && !super.moveRight) {
-                        this.setRotYaw(this.getRotYaw() - 0.5F * partialTicks);
+                        this.setRotYaw(this.getRotYaw() - 0.5F * this.getAcInfo().mobilityYawOnGround * partialTicks);
                     }
 
                     if (super.moveRight && !super.moveLeft) {
-                        this.setRotYaw(this.getRotYaw() + 0.5F * partialTicks);
+                        this.setRotYaw(this.getRotYaw() + 0.5F * this.getAcInfo().mobilityYawOnGround * partialTicks);
                     }
                 }
             }
