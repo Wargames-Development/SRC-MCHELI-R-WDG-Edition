@@ -25,6 +25,7 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.chunk.Chunk;
@@ -104,11 +105,41 @@ public class MCH_RenderFarVehicle {
                     continue;
                 }
             }
+            if (this.shouldSuppressForTerrain(mc, pose, definition, event.partialTicks)) {
+                continue;
+            }
             int lightmapBrightness = this.resolveLightmapBrightness(mc, pose, localAircraft, event.partialTicks);
             this.renderContact(mc, pose, definition, alpha, lightmapBrightness);
         }
         this.removeUnusedPoses();
         NORMAL_RENDERED_THIS_FRAME.clear();
+    }
+
+    private boolean shouldSuppressForTerrain(Minecraft mc, SmoothedPose pose, RenderDefinition definition, float partialTicks) {
+        if (mc.theWorld == null || mc.theWorld.provider == null || mc.renderViewEntity == null) {
+            return false;
+        }
+
+        Entity viewer = mc.renderViewEntity;
+        double cameraX = viewer.lastTickPosX + (viewer.posX - viewer.lastTickPosX) * partialTicks;
+        double cameraY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * partialTicks;
+        double cameraZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * partialTicks;
+        if (viewer instanceof EntityLivingBase) {
+            cameraY += ((EntityLivingBase)viewer).getEyeHeight();
+        }
+
+        MCH_AircraftInfo info = definition.info;
+        double halfHorizontal = Math.max(0.5D, Math.max(info.bodyWidth * 0.5D, info.markerWidth));
+        halfHorizontal = Math.max(halfHorizontal, Math.abs((double)info.bbZmin));
+        halfHorizontal = Math.max(halfHorizontal, Math.abs((double)info.bbZmax));
+        double height = Math.max(0.5D, Math.max(info.bodyHeight, info.markerHeight));
+
+        MCH_WGMapOcclusion.Result result = MCH_WGMapOcclusion.traceBounds(
+            mc.theWorld.provider.dimensionId,
+            cameraX, cameraY, cameraZ,
+            pose.x - halfHorizontal, pose.y, pose.z - halfHorizontal,
+            pose.x + halfHorizontal, pose.y + height, pose.z + halfHorizontal);
+        return MCH_WGMapOcclusion.shouldSuppress(result);
     }
 
     private void renderContact(Minecraft mc, SmoothedPose pose, RenderDefinition definition, float alpha, int lightmapBrightness) {
