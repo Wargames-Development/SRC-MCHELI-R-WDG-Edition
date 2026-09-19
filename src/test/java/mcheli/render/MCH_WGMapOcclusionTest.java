@@ -18,10 +18,11 @@ public class MCH_WGMapOcclusionTest {
     }
 
     @Test
-    public void onlyAuthoritativeBlockedSuppressesTheFarVehicle() {
+    public void authoritativeBlockedAndUnknownSuppressButUnavailableDoesNot() {
         assertTrue(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.BLOCKED));
+        assertTrue(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.UNKNOWN));
         assertFalse(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.CLEAR));
-        assertFalse(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.UNKNOWN));
+        assertFalse(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.UNAVAILABLE));
         assertFalse(MCH_WGMapOcclusion.shouldSuppress(null));
     }
 }

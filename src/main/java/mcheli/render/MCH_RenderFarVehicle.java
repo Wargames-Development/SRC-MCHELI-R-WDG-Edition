@@ -25,7 +25,6 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.chunk.Chunk;
@@ -52,6 +51,8 @@ public class MCH_RenderFarVehicle {
         * MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE;
     private static final ResourceLocation THERMAL_WHITE = new ResourceLocation("mcheli", "textures/test.png");
     private static final Set<Integer> NORMAL_RENDERED_THIS_FRAME = new HashSet<Integer>();
+    private static final Set<Integer> TERRAIN_SUPPRESSED_THIS_FRAME = new HashSet<Integer>();
+    private static final Set<Integer> TERRAIN_VISIBLE_THIS_FRAME = new HashSet<Integer>();
 
     private final Map<String, RenderDefinition> definitions = new HashMap<String, RenderDefinition>();
     private final Map<Integer, SmoothedPose> smoothedPoses = new HashMap<Integer, SmoothedPose>();
@@ -62,14 +63,14 @@ public class MCH_RenderFarVehicle {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) {
             this.smoothedPoses.clear();
-            NORMAL_RENDERED_THIS_FRAME.clear();
+            clearFrameDecisions();
             return;
         }
 
         Collection<MCH_EntityInfo> contacts = MCH_EntityInfoClientTracker.getAllTrackedEntities();
         if (contacts.isEmpty()) {
             this.smoothedPoses.clear();
-            NORMAL_RENDERED_THIS_FRAME.clear();
+            clearFrameDecisions();
             return;
         }
 
@@ -79,6 +80,10 @@ public class MCH_RenderFarVehicle {
             if (!MCH_EntityInfoClientTracker.isEntityInLatestSnapshot(contact.entityId)
                 || contact.destroyed
                 || contact.getDistanceSqToEntity(mc.thePlayer) > MAX_CONTACT_DISTANCE_SQ) {
+                continue;
+            }
+            Integer entityId = Integer.valueOf(contact.entityId);
+            if (TERRAIN_SUPPRESSED_THIS_FRAME.contains(entityId)) {
                 continue;
             }
             RenderDefinition definition = this.resolveDefinition(contact);
@@ -97,7 +102,7 @@ public class MCH_RenderFarVehicle {
             SmoothedPose pose = this.getSmoothedPose(contact, now);
             double x = pose.x - RenderManager.instance.viewerPosX;
             double z = pose.z - RenderManager.instance.viewerPosZ;
-            boolean normalRendered = NORMAL_RENDERED_THIS_FRAME.contains(Integer.valueOf(contact.entityId));
+            boolean normalRendered = NORMAL_RENDERED_THIS_FRAME.contains(entityId);
             float alpha = 1.0F;
             if (hasLiveEntity && normalRendered) {
                 alpha = getLodTransitionAlpha(mc, x, z);
@@ -105,41 +110,16 @@ public class MCH_RenderFarVehicle {
                     continue;
                 }
             }
-            if (this.shouldSuppressForTerrain(mc, pose, definition, event.partialTicks)) {
+            if (!TERRAIN_VISIBLE_THIS_FRAME.contains(entityId)
+                    && MCH_WGMapOcclusion.shouldSuppressBounds(mc, definition.info,
+                    pose.x, pose.y, pose.z, event.partialTicks)) {
                 continue;
             }
             int lightmapBrightness = this.resolveLightmapBrightness(mc, pose, localAircraft, event.partialTicks);
             this.renderContact(mc, pose, definition, alpha, lightmapBrightness);
         }
         this.removeUnusedPoses();
-        NORMAL_RENDERED_THIS_FRAME.clear();
-    }
-
-    private boolean shouldSuppressForTerrain(Minecraft mc, SmoothedPose pose, RenderDefinition definition, float partialTicks) {
-        if (mc.theWorld == null || mc.theWorld.provider == null || mc.renderViewEntity == null) {
-            return false;
-        }
-
-        Entity viewer = mc.renderViewEntity;
-        double cameraX = viewer.lastTickPosX + (viewer.posX - viewer.lastTickPosX) * partialTicks;
-        double cameraY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * partialTicks;
-        double cameraZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * partialTicks;
-        if (viewer instanceof EntityLivingBase) {
-            cameraY += ((EntityLivingBase)viewer).getEyeHeight();
-        }
-
-        MCH_AircraftInfo info = definition.info;
-        double halfHorizontal = Math.max(0.5D, Math.max(info.bodyWidth * 0.5D, info.markerWidth));
-        halfHorizontal = Math.max(halfHorizontal, Math.abs((double)info.bbZmin));
-        halfHorizontal = Math.max(halfHorizontal, Math.abs((double)info.bbZmax));
-        double height = Math.max(0.5D, Math.max(info.bodyHeight, info.markerHeight));
-
-        MCH_WGMapOcclusion.Result result = MCH_WGMapOcclusion.traceBounds(
-            mc.theWorld.provider.dimensionId,
-            cameraX, cameraY, cameraZ,
-            pose.x - halfHorizontal, pose.y, pose.z - halfHorizontal,
-            pose.x + halfHorizontal, pose.y + height, pose.z + halfHorizontal);
-        return MCH_WGMapOcclusion.shouldSuppress(result);
+        clearFrameDecisions();
     }
 
     private void renderContact(Minecraft mc, SmoothedPose pose, RenderDefinition definition, float alpha, int lightmapBrightness) {
@@ -380,6 +360,17 @@ public class MCH_RenderFarVehicle {
 
     public static void markNormalRender(int entityId) {
         NORMAL_RENDERED_THIS_FRAME.add(Integer.valueOf(entityId));
+    }
+
+    public static void markTerrainDecision(int entityId, boolean suppressed) {
+        Integer key = Integer.valueOf(entityId);
+        (suppressed ? TERRAIN_SUPPRESSED_THIS_FRAME : TERRAIN_VISIBLE_THIS_FRAME).add(key);
+    }
+
+    private static void clearFrameDecisions() {
+        NORMAL_RENDERED_THIS_FRAME.clear();
+        TERRAIN_SUPPRESSED_THIS_FRAME.clear();
+        TERRAIN_VISIBLE_THIS_FRAME.clear();
     }
 
     public static boolean shouldSuppressNormalRender(MCH_EntityAircraft aircraft, double cameraRelativeX, double cameraRelativeZ) {

@@ -12,6 +12,7 @@ import mcheli.render.MCH_RadarDisplayTextureManager;
 import mcheli.render.MCH_RenderFarVehicle;
 import mcheli.render.MCH_RWRDisplayTextureManager;
 import mcheli.render.MCH_TextureRenderUtil;
+import mcheli.render.MCH_WGMapOcclusion;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vehicle.MCH_EntityVehicle;
@@ -1110,6 +1111,13 @@ public abstract class MCH_RenderAircraft extends W_Render {
         //}
         MCH_AircraftInfo info = ac.getAcInfo();
         if (info != null) {
+            boolean skipNormalRender = shouldSkipRender(entity);
+            boolean farRenderOwnsModel = MCH_RenderFarVehicle.shouldSuppressNormalRender(ac, posX, posZ);
+            if (!skipNormalRender) {
+                boolean terrainSuppressed = MCH_WGMapOcclusion.shouldSuppressAircraft(ac, tickTime);
+                MCH_RenderFarVehicle.markTerrainDecision(ac.getEntityId(), terrainSuppressed);
+                if (terrainSuppressed) return;
+            }
             GL11.glPushMatrix();
             float yaw = this.calcRot(ac.getRotYaw(), ac.prevRotationYaw, tickTime);
             float pitch = ac.calcRotPitch(tickTime);
@@ -1118,7 +1126,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 this.renderRiddenEntity(ac, tickTime, yaw, pitch + info.entityPitch, roll + info.entityRoll, info.entityWidth, info.entityHeight);
             }
 
-            if (!shouldSkipRender(entity) && !MCH_RenderFarVehicle.shouldSuppressNormalRender(ac, posX, posZ)) {
+            if (!skipNormalRender && !farRenderOwnsModel) {
                 MCH_RenderFarVehicle.markNormalRender(ac.getEntityId());
                 this.setCommonRenderParam(info.smoothShading, ac.getBrightnessForRender(tickTime));
                 if (ac.isDestroyed()) {
