@@ -36,8 +36,8 @@ public class MCH_GPSPosition {
      * Reserves the next client GPS waypoint update. Repeated right-click lock
      * calls are ignored until ten client ticks (0.5 seconds) have elapsed.
      *
-     * Call this before ray tracing, reading JourneyMap files, playing the mark
-     * sound, or sending the GPS packet so the expensive work is throttled too.
+     * Call this before ray tracing, playing the mark sound, or sending the GPS
+     * packet so the work is throttled too.
      */
     @SideOnly(Side.CLIENT)
     public static boolean tryBeginClientWaypointUpdate(Entity owner) {

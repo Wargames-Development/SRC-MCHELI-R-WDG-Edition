@@ -58,9 +58,7 @@ Further changes are being made in the act of connection with our Wargames Editio
 
 ### GPS Missile Integration
 
-- GPS / air-to-surface missiles can use JourneyMap waypoints
-  - Reads waypoint coordinates directly
-  - Enables navigation-based targeting workflows
+- GPS / air-to-surface missiles support in-game GPS marking
 
 ---
 

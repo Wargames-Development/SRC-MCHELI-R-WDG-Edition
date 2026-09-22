@@ -9,7 +9,6 @@ import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
-import mcheli.weapon.MCH_JourneyMapGPSCache;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_MOD;
@@ -136,38 +135,6 @@ public class MCH_RenderMortarRadar {
 
             drawTexture(mc, TARGET, markerX, markerY, targetSize);
             String label = getRadarName(entity, ac) + "[" + (int)distance + "]";
-            int textWidth = mc.fontRenderer.getStringWidth(label);
-            mc.fontRenderer.drawString(label, (int)(markerX - textWidth / 2.0D), (int)markerY, 0xFFFFFF, true);
-        }
-
-        // JourneyMap GPS waypoints use the same black contact marker as vehicles.
-        // The cache performs filesystem work at most once per second; this render loop
-        // only projects already-cached coordinates onto the radar.
-        for (MCH_JourneyMapGPSCache.Waypoint waypoint : MCH_JourneyMapGPSCache.getWaypoints()) {
-            double deltaX = waypoint.x - playerX;
-            double deltaZ = waypoint.z - playerZ;
-            double distanceSq = deltaX * deltaX + deltaZ * deltaZ;
-            if (distanceSq > maxDistanceSq) {
-                continue;
-            }
-
-            double distance = Math.sqrt(distanceSq);
-            Vec3 targetHorizontal = distance > 1.0E-6D
-                ? Vec3.createVectorHelper(deltaX / distance, 0.0D, deltaZ / distance)
-                : lookHorizontal;
-            double dot = lookHorizontal.dotProduct(targetHorizontal);
-            double angle = Math.toDegrees(Math.acos(Math.max(-1.0D, Math.min(1.0D, dot))));
-            if (lookHorizontal.crossProduct(targetHorizontal).yCoord < 0.0D) {
-                angle = -angle;
-            }
-
-            double renderRadius = radarRadius * clampDistanceRatio(distance, maxDistance);
-            double radians = Math.toRadians(angle);
-            double markerX = centerX + renderRadius * Math.sin(-radians);
-            double markerY = centerY - renderRadius * Math.cos(radians);
-
-            drawTexture(mc, TARGET, markerX, markerY, targetSize);
-            String label = "GPS[" + (int)distance + "]";
             int textWidth = mc.fontRenderer.getStringWidth(label);
             mc.fontRenderer.drawString(label, (int)(markerX - textWidth / 2.0D), (int)markerY, 0xFFFFFF, true);
         }
