@@ -6,6 +6,7 @@ import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 import mcheli.mob.MCH_TechNpcVillageSpawner;
 import cpw.mods.fml.common.network.internal.FMLProxyPacket;
 import mcheli.structure.MCH_StructureDebugLogger;
+import mcheli.network.packets.PacketUseWeapon;
 import mcheli.wrapper.W_Reflection;
 import net.minecraft.network.NetworkManager;
 
@@ -25,6 +26,7 @@ public class MCH_ServerTickHandler {
             this.onServerTickPre();
         }
         if (event.phase == Phase.END) {
+            PacketUseWeapon.drainWaypointShots();
             MCH_StructureDebugLogger.onServerTick();
             this.onServerTickPost();
         }

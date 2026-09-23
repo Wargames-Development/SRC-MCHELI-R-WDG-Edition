@@ -33,6 +33,7 @@
 # Packaging / generated archives
 *.zip
 !gradle/wrapper/gradle-wrapper.jar
+/dev-deps/WGMap-dev-local.jar
 
 # OS files
 .DS_Store

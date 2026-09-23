@@ -2,6 +2,8 @@ package mcheli.aircraft;
 
 import mcheli.*;
 import mcheli.gui.MCH_GuiGPSInput;
+import mcheli.integration.wgmap.WGMapGpsTarget;
+import mcheli.integration.wgmap.client.WGMapGpsClientBridge;
 import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketRadarSwitchState;
 import mcheli.network.packets.PacketUseWeapon;
@@ -19,6 +21,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.Vec3;
+import cpw.mods.fml.common.Loader;
 import org.lwjgl.input.Keyboard;
 
 public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandlerBase {
@@ -382,10 +385,24 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     ac.switchCurrentWeaponMode(player);
                 }
             } else if (this.KeyUseWeapon.isKeyPress()) {
-                int gpsRadarTargetId = prepareGpsRadarTarget(player, ac);
-                if (ac.useCurrentWeapon(player)) {
+                MCH_GPSPosition previousGps = MCH_GPSPosition.currentClientGPSPosition;
+                double previousX = previousGps.x, previousY = previousGps.y, previousZ = previousGps.z;
+                boolean previousActive = previousGps.isActive;
+                Entity previousOwner = previousGps.owner;
+                WGMapGpsTarget waypointTarget = prepareGpsWaypointTarget(player, ac);
+                int gpsRadarTargetId = waypointTarget == null ? prepareGpsRadarTarget(player, ac) : -1;
+                boolean used;
+                try { used = ac.useCurrentWeapon(player); }
+                finally {
+                    if (waypointTarget != null) MCH_GPSPosition.clientSet(previousX, previousY, previousZ,
+                            previousActive, previousOwner);
+                }
+                if (used) {
                     int option2 = ac.getCurrentWeapon(player).getLastUsedOptionParameter2();
-                    if (gpsRadarTargetId > 0) {
+                    if (waypointTarget != null) {
+                        option2 = waypointTarget.shared
+                                ? PacketUseWeapon.WGM_SHARED_GPS : PacketUseWeapon.WGM_LOCAL_GPS;
+                    } else if (gpsRadarTargetId > 0) {
                         // Negative values tag this as a GPS ground-track request without
                         // changing the existing weapon packet layout or positive option values.
                         option2 = -gpsRadarTargetId;
@@ -393,15 +410,23 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     MCH_MOD.getPacketHandler().sendToServer(new PacketUseWeapon(
                         ac.getCurrentWeapon(player).getLastUsedOptionParameter1(),
                         option2,
-                        ac.prevPosX,
-                        ac.prevPosY,
-                        ac.prevPosZ
+                        waypointTarget == null ? ac.prevPosX : waypointTarget.x,
+                        waypointTarget == null ? ac.prevPosY : waypointTarget.y,
+                        waypointTarget == null ? ac.prevPosZ : waypointTarget.z
                     ));
                 }
             }
 
         }
         return (send || player.ticksExisted % 100 == 0);
+    }
+
+    private WGMapGpsTarget prepareGpsWaypointTarget(EntityPlayer player, MCH_EntityAircraft ac) {
+        MCH_WeaponSet ws = ac != null && player != null ? ac.getCurrentWeapon(player) : null;
+        MCH_WeaponInfo info = ws != null ? ws.getInfo() : null;
+        if (info == null || !info.isGPSMissile || !Loader.isModLoaded("wgmap")) return null;
+        try { return WGMapGpsClientBridge.select(player, ac.posX, ac.posZ); }
+        catch (LinkageError incompatible) { return null; }
     }
 
     private int prepareGpsRadarTarget(EntityPlayer player, MCH_EntityAircraft ac) {

@@ -46,6 +46,7 @@ public class MCH_WeaponSet {
     private volatile Entity pendingServerUseUser;
     private int pendingServerUseOption1;
     private int pendingServerUseOption2;
+    private MCH_GPSPosition pendingServerGpsTarget;
 
 
     public MCH_WeaponSet(MCH_WeaponBase[] weapon) {
@@ -55,6 +56,7 @@ public class MCH_WeaponSet {
         this.pendingServerUseUser = null;
         this.pendingServerUseOption1 = 0;
         this.pendingServerUseOption2 = 0;
+        this.pendingServerGpsTarget = null;
         this.name = weapon[0].name;
         this.weapons = weapon;
         this.currentWeaponIndex = 0;
@@ -168,6 +170,7 @@ public class MCH_WeaponSet {
         this.pendingServerUseUser = prm.user;
         this.pendingServerUseOption1 = prm.option1;
         this.pendingServerUseOption2 = prm.option2;
+        this.pendingServerGpsTarget = prm.gpsTarget;
     }
 
     public synchronized MCH_WeaponParam consumePendingServerUse(Entity shooter) {
@@ -179,10 +182,12 @@ public class MCH_WeaponSet {
         prm.user = this.pendingServerUseUser;
         prm.option1 = this.pendingServerUseOption1;
         prm.option2 = this.pendingServerUseOption2;
+        prm.gpsTarget = this.pendingServerGpsTarget;
         prm.setPosition(shooter.posX, shooter.posY, shooter.posZ);
         this.pendingServerUseUser = null;
         this.pendingServerUseOption1 = 0;
         this.pendingServerUseOption2 = 0;
+        this.pendingServerGpsTarget = null;
         return prm;
     }
 
@@ -427,7 +432,8 @@ public class MCH_WeaponSet {
 
             // Reject an out-of-range GPS shot before any weapon state or visuals are changed.
             if (info.isGPSMissile) {
-                MCH_GPSPosition gpsPosition = MCH_GPSPosition.getForWeaponUse(prm.user);
+                MCH_GPSPosition gpsPosition = prm.gpsTarget != null
+                    ? prm.gpsTarget : MCH_GPSPosition.getForWeaponUse(prm.user);
                 if (MCH_GPSPosition.isUsableTarget(gpsPosition)
                     && !MCH_GPSPosition.isWithinHorizontalRange(prm.entity, gpsPosition, info.maxLockOnRange)) {
                     if (prm.user instanceof EntityPlayer) {

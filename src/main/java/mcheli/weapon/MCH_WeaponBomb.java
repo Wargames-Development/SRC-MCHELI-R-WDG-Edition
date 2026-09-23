@@ -98,7 +98,8 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
         } else {
             MCH_GPSPosition gpsPosition = null;
             if (this.getInfo() != null && this.getInfo().isGPSMissile) {
-                gpsPosition = super.worldObj.isRemote ? MCH_GPSPosition.currentClientGPSPosition : MCH_GPSPosition.get(prm.user);
+                gpsPosition = prm.gpsTarget != null ? prm.gpsTarget
+                    : (super.worldObj.isRemote ? MCH_GPSPosition.currentClientGPSPosition : MCH_GPSPosition.get(prm.user));
                 if (!MCH_GPSPosition.isUsableTarget(gpsPosition)) {
                     return false;
                 }

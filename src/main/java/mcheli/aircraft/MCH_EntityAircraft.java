@@ -17,6 +17,8 @@ import mcheli.network.packets.PacketBoundingBoxHit;
 import mcheli.network.packets.PacketCountermeasureState;
 import mcheli.network.packets.PacketDamageIndicator;
 import mcheli.network.packets.PacketUseWeapon;
+import mcheli.integration.wgmap.WGMapGpsServerBridge;
+import cpw.mods.fml.common.Loader;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
@@ -5885,6 +5887,14 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean useCurrentWeapon(MCH_WeaponParam prm) {
+        if (!super.worldObj.isRemote && prm != null && prm.option2 == PacketUseWeapon.WGM_SHARED_GPS) {
+            if (!(prm.user instanceof EntityPlayerMP) || prm.gpsTarget == null
+                    || !Loader.isModLoaded("wgmap")) return false;
+            try {
+                if (!WGMapGpsServerBridge.matchesShared((EntityPlayerMP)prm.user,
+                        prm.gpsTarget.x, prm.gpsTarget.y, prm.gpsTarget.z)) return false;
+            } catch (LinkageError incompatible) { return false; }
+        }
         prm.isInfinity = this.isInfinityAmmo(prm.user);
         if (prm.user != null) {
             MCH_WeaponSet currentWs = this.getCurrentWeapon(prm.user);

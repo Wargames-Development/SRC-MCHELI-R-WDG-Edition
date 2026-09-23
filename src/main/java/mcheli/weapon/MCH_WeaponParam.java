@@ -17,6 +17,8 @@ public class MCH_WeaponParam {
     public float rotRoll = 0.0F;
     public int option1 = 0;
     public int option2 = 0;
+    /** Server-side fire-intent snapshot; survives a short queued cooldown. */
+    public MCH_GPSPosition gpsTarget;
     public boolean isInfinity = false;
     public boolean isTurret = false;
     public boolean result;

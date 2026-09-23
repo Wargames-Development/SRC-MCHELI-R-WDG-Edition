@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
+import mcheli.integration.wgmap.WGMapGpsServerBridge;
 import mcheli.network.PacketBase;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
@@ -16,8 +17,16 @@ import mcheli.weapon.MCH_WeaponSet;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import cpw.mods.fml.common.Loader;
+import java.lang.ref.WeakReference;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class PacketUseWeapon extends PacketBase {
+
+    /** Reserved negative option values; the five-field wire layout stays unchanged. */
+    public static final int WGM_LOCAL_GPS = Integer.MIN_VALUE;
+    public static final int WGM_SHARED_GPS = Integer.MIN_VALUE + 1;
+    private static final ArrayBlockingQueue<WaypointShot> WAYPOINT_SHOTS = new ArrayBlockingQueue<WaypointShot>(128);
 
     private static final long AMMO_MASK = 0x7FFFL;
     private static final long HEAT_MASK = 0x1FFFFL;
@@ -59,6 +68,29 @@ public class PacketUseWeapon extends PacketBase {
 
     @Override
     public void handleServerSide(EntityPlayerMP player) {
+        if (useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS) {
+            if (player != null && Loader.isModLoaded("wgmap"))
+                WAYPOINT_SHOTS.offer(new WaypointShot(this, player));
+            return;
+        }
+        handleServerOnWorldThread(player);
+    }
+
+    /** WGMap reads world-saved faction state, so waypoint fire intents cross to the server tick. */
+    public static void drainWaypointShots() {
+        for (int i = 0; i < 32; i++) {
+            WaypointShot next = WAYPOINT_SHOTS.poll();
+            if (next == null) break;
+            EntityPlayerMP player = next.player.get();
+            if (player == null || player.worldObj == null || player.worldObj.isRemote
+                    || !player.worldObj.playerEntities.contains(player)
+                    || System.nanoTime() - next.receivedAt > 2_000_000_000L) continue;
+            next.packet.handleServerOnWorldThread(player);
+        }
+    }
+
+    private void handleServerOnWorldThread(EntityPlayerMP player) {
+        if (player == null) return;
         MCH_EntityAircraft ac = null;
         if (player.ridingEntity instanceof MCH_EntityAircraft) {
             ac = (MCH_EntityAircraft) player.ridingEntity;
@@ -76,7 +108,17 @@ public class PacketUseWeapon extends PacketBase {
             MCH_WeaponSet currentWeapon = ac.getCurrentWeapon(player);
             int weaponId = ac.getCurrentWeaponID(player);
             MCH_WeaponInfo weaponInfo = currentWeapon != null ? currentWeapon.getInfo() : null;
-            if (weaponInfo != null && weaponInfo.isGPSMissile && useWeaponOption2 < 0) {
+            boolean waypointShot = weaponInfo != null && weaponInfo.isGPSMissile
+                    && (useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS);
+            if (!waypointShot && (useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS)) {
+                sendWeaponState(ac, player, weaponId, currentWeapon);
+                return;
+            }
+            MCH_GPSPosition waypointPosition = waypointShot ? applyGpsWaypointTarget(player) : null;
+            if (waypointShot && waypointPosition == null) {
+                sendWeaponState(ac, player, weaponId, currentWeapon); return;
+            }
+            if (weaponInfo != null && weaponInfo.isGPSMissile && useWeaponOption2 < 0 && !waypointShot) {
                 int radarTargetId = -useWeaponOption2;
                 if (radarTargetId <= 0 || !applyGpsRadarTarget(ac, player, radarTargetId)) {
                     sendWeaponState(ac, player, weaponId, currentWeapon);
@@ -86,15 +128,50 @@ public class PacketUseWeapon extends PacketBase {
             MCH_WeaponParam param = new MCH_WeaponParam();
             param.entity = ac;
             param.user = player;
-            // Keep packet coordinates for protocol compatibility, but do not trust them as the spawn origin.
+            // Packet coordinates are GPS intent only for the reserved waypoint options;
+            // never trust them as the weapon's spawn origin.
             param.setPosAndRot(ac.posX, ac.posY, ac.posZ, 0.0F, 0.0F);
             param.option1 = useWeaponOption1;
             param.option2 = useWeaponOption2;
+            if (waypointPosition != null) {
+                param.gpsTarget = waypointPosition;
+            } else if (weaponInfo != null && weaponInfo.isGPSMissile) {
+                MCH_GPSPosition current = MCH_GPSPosition.get(player);
+                if (MCH_GPSPosition.isUsableTarget(current)) {
+                    param.gpsTarget = new MCH_GPSPosition(current.x, current.y, current.z);
+                    param.gpsTarget.owner = player;
+                    param.gpsTarget.isActive = true;
+                }
+            }
             boolean used = ac.useCurrentWeapon(param);
             if (used || currentWeapon == null || !currentWeapon.hasPendingServerUseFor(player)) {
                 sendWeaponState(ac, player, weaponId, currentWeapon);
             }
         }
+    }
+
+    private static final class WaypointShot {
+        private final PacketUseWeapon packet;
+        private final WeakReference<EntityPlayerMP> player;
+        private final long receivedAt = System.nanoTime();
+        private WaypointShot(PacketUseWeapon packet, EntityPlayerMP player) {
+            this.packet = packet; this.player = new WeakReference<EntityPlayerMP>(player);
+        }
+    }
+
+    private MCH_GPSPosition applyGpsWaypointTarget(EntityPlayerMP player) {
+        if (!Loader.isModLoaded("wgmap")) return null;
+        MCH_GPSPosition position = new MCH_GPSPosition(useWeaponPosX, useWeaponPosY, useWeaponPosZ);
+        position.owner = player;
+        position.isActive = true;
+        if (!MCH_GPSPosition.isUsableTarget(position)) return null;
+        if (useWeaponOption2 == WGM_SHARED_GPS) {
+            try {
+                if (!WGMapGpsServerBridge.matchesShared(player, position.x, position.y, position.z)) return null;
+            } catch (LinkageError incompatible) { return null; }
+        }
+        // Local waypoints are private client data, like MCHR's existing manual GPS input.
+        return position;
     }
 
     public static void sendWeaponState(MCH_EntityAircraft ac, EntityPlayerMP player, int weaponId, MCH_WeaponSet weapon) {

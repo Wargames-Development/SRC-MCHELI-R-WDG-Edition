@@ -52,7 +52,9 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         }
     }
 
-    private MCH_GPSPosition getGpsPositionForShot(Entity user) {
+    private MCH_GPSPosition getGpsPositionForShot(MCH_WeaponParam prm) {
+        if (prm.gpsTarget != null) return prm.gpsTarget;
+        Entity user = prm.user;
         if (user != null && user.worldObj != null && user.worldObj.isRemote) {
             MCH_GPSPosition clientPosition = MCH_GPSPosition.currentClientGPSPosition;
             if (clientPosition != null && clientPosition.owner != null && clientPosition.owner.getEntityId() == user.getEntityId()) {
@@ -78,7 +80,7 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             pitch = prm.entity.rotationPitch + super.fixRotationPitch;
         }
         if (getInfo().isGPSMissile) {
-            MCH_GPSPosition gpsPosition = getGpsPositionForShot(prm.user);
+            MCH_GPSPosition gpsPosition = getGpsPositionForShot(prm);
             if (!canReachGpsTarget(prm, gpsPosition)) {
                 return false;
             }
