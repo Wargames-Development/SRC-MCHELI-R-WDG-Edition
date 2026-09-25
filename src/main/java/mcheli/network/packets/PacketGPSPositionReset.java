@@ -55,6 +55,13 @@ public class PacketGPSPositionReset extends PacketBase {
             return;
         }
 
+        // Clearing an unsafe or missing mark must not be suppressed by the
+        // creation cooldown; otherwise the server can retain a stale target.
+        if (!isActive) {
+            MCH_GPSPosition.currentGPSPositions.remove(playerEntity.getEntityId());
+            return;
+        }
+
         long now = playerEntity.worldObj.getTotalWorldTime();
         if (playerEntity.getEntityData().hasKey(LAST_UPDATE_TICK_KEY)) {
             long lastUpdate = playerEntity.getEntityData().getLong(LAST_UPDATE_TICK_KEY);
@@ -65,14 +72,11 @@ public class PacketGPSPositionReset extends PacketBase {
         }
         playerEntity.getEntityData().setLong(LAST_UPDATE_TICK_KEY, now);
 
-        if (!isActive) {
-            MCH_GPSPosition.currentGPSPositions.remove(playerEntity.getEntityId());
-            return;
-        }
         MCH_GPSPosition gpsPosition = new MCH_GPSPosition(targetPosX, targetPosY, targetPosZ);
         gpsPosition.isActive = isActive;
         gpsPosition.owner = playerEntity;
         if (!MCH_GPSPosition.isUsableTarget(gpsPosition)) {
+            MCH_GPSPosition.currentGPSPositions.remove(playerEntity.getEntityId());
             return;
         }
         MCH_GPSPosition.currentGPSPositions.put(playerEntity.getEntityId(), gpsPosition);

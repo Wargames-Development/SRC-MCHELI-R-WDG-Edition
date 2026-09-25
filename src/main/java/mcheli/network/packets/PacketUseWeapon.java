@@ -69,7 +69,9 @@ public class PacketUseWeapon extends PacketBase {
     @Override
     public void handleServerSide(EntityPlayerMP player) {
         if (useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS) {
-            if (player != null && Loader.isModLoaded("wgmap"))
+            // Personal points are client-owned, so the server need not have WGMap.
+            // Shared points still need WGMap's authoritative visibility check.
+            if (player != null && (useWeaponOption2 == WGM_LOCAL_GPS || Loader.isModLoaded("wgmap")))
                 WAYPOINT_SHOTS.offer(new WaypointShot(this, player));
             return;
         }
@@ -160,7 +162,7 @@ public class PacketUseWeapon extends PacketBase {
     }
 
     private MCH_GPSPosition applyGpsWaypointTarget(EntityPlayerMP player) {
-        if (!Loader.isModLoaded("wgmap")) return null;
+        if (useWeaponOption2 == WGM_SHARED_GPS && !Loader.isModLoaded("wgmap")) return null;
         MCH_GPSPosition position = new MCH_GPSPosition(useWeaponPosX, useWeaponPosY, useWeaponPosZ);
         position.owner = player;
         position.isActive = true;

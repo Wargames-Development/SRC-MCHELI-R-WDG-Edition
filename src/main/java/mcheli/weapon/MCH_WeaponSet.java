@@ -437,7 +437,8 @@ public class MCH_WeaponSet {
                 if (MCH_GPSPosition.isUsableTarget(gpsPosition)
                     && !MCH_GPSPosition.isWithinHorizontalRange(prm.entity, gpsPosition, info.maxLockOnRange)) {
                     if (prm.user instanceof EntityPlayer) {
-                        W_EntityPlayer.addChatMessage((EntityPlayer)prm.user, "GPS target is not in range.");
+                        W_EntityPlayer.addChatMessage((EntityPlayer)prm.user,
+                            "GPS target is not in range. Max range is " + info.maxLockOnRange + "m.");
                     }
                     return false;
                 }

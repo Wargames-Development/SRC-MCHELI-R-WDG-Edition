@@ -57,7 +57,7 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
         Entity user = prm.user;
         if (user != null && user.worldObj != null && user.worldObj.isRemote) {
             MCH_GPSPosition clientPosition = MCH_GPSPosition.currentClientGPSPosition;
-            if (clientPosition != null && clientPosition.owner != null && clientPosition.owner.getEntityId() == user.getEntityId()) {
+            if (clientPosition != null && clientPosition.owner == user) {
                 return clientPosition;
             }
             return null;
@@ -66,7 +66,16 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
     }
 
     private boolean canReachGpsTarget(MCH_WeaponParam prm, MCH_GPSPosition gpsPosition) {
-        return MCH_GPSPosition.isUsableTarget(gpsPosition);
+        if (!MCH_GPSPosition.isUsableTarget(gpsPosition)) {
+            return false;
+        }
+        if (!getInfo().ballisticApexGpsGuidance) {
+            return true;
+        }
+        return prm.entity != null
+            && MCH_GPSPosition.isSafeApexTarget(prm.entity.posX, prm.entity.posZ,
+                gpsPosition.x, gpsPosition.z)
+            && MCH_GPSPosition.isWithinHorizontalRange(prm.entity, gpsPosition, getInfo().maxLockOnRange);
     }
 
     @Override
@@ -118,7 +127,8 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 missile.cruiseMode = (this.getCurrentMode() == 1) && getInfo().armCruiseEnable;
                 boolean targetAssigned = false;
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
-                if (prm.user instanceof MCH_EntityGunner && tgtEnt != null && !tgtEnt.isDead) {
+                if (!getInfo().ballisticApexGpsGuidance
+                    && prm.user instanceof MCH_EntityGunner && tgtEnt != null && !tgtEnt.isDead) {
                     missile.targetPosX = tgtEnt.posX;
                     missile.targetPosY = tgtEnt.posY + tgtEnt.height / 2.0D;
                     missile.targetPosZ = tgtEnt.posZ;
@@ -220,9 +230,6 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             return;
         }
 
-        Minecraft.getMinecraft().getSoundHandler().playSound(
-            new PositionedSoundRecord(new ResourceLocation("mcheli:mark"), 10.0F, 1.0F,
-                (float) prm.user.posX, (float) prm.user.posY, (float) prm.user.posZ));
         float yaw = prm.user.rotationYaw;
         float pitch = prm.user.rotationPitch;
         if(Minecraft.getMinecraft().gameSettings.thirdPersonView != 0) {
@@ -250,6 +257,12 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                 posX + targetX * i / numSegments,
                 posY + targetY * i / numSegments,
                 posZ + targetZ * i / numSegments);
+            if (getInfo().ballisticApexGpsGuidance
+                && !this.worldObj.blockExists(MathHelper.floor_double(currentDst.xCoord), 0,
+                    MathHelper.floor_double(currentDst.zCoord))) {
+                MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
+                return;
+            }
             List<MovingObjectPosition> hitResults = MCH_RayTracer.rayTraceAllBlocks(this.worldObj, src, currentDst, false, true, true);
             if (hitResults != null && !hitResults.isEmpty()) {
                 hitResult = hitResults.get(0);
@@ -257,9 +270,22 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             }
             src = currentDst;
         }
-        if (hitResult == null) {
+        if (hitResult == null || hitResult.hitVec == null) {
+            if (getInfo().ballisticApexGpsGuidance) {
+                MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
+                return;
+            }
             hitResult = new MovingObjectPosition(null, src.addVector(targetX, targetY, targetZ));
         }
+        if (getInfo().ballisticApexGpsGuidance
+            && !MCH_GPSPosition.isSafeApexTarget(prm.entity.posX, prm.entity.posZ,
+                hitResult.hitVec.xCoord, hitResult.hitVec.zCoord)) {
+            MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
+            return;
+        }
+        Minecraft.getMinecraft().getSoundHandler().playSound(
+            new PositionedSoundRecord(new ResourceLocation("mcheli:mark"), 10.0F, 1.0F,
+                (float) prm.user.posX, (float) prm.user.posY, (float) prm.user.posZ));
         MCH_GPSPosition.set(hitResult.hitVec.xCoord, hitResult.hitVec.yCoord, hitResult.hitVec.zCoord, true, prm.user);
     }
 

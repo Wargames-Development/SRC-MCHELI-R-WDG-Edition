@@ -404,6 +404,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      * GPS导弹弹道模式
      */
     public boolean ballisticMissile = false;
+    public boolean ballisticApexGpsGuidance = false;
+    public double ballisticApexPitchDownPerTick = 0.025D;
     public double ballisticArcFactor = 0.20D;
     public double ballisticArcMinHeight = 20.0D;
     public double ballisticArcMaxHeight = 400.0D;
@@ -763,6 +765,9 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         if (this.ballisticArcFactor < 0.0D) {
             this.ballisticArcFactor = 0.0D;
         }
+        if (!Double.isFinite(this.ballisticApexPitchDownPerTick) || this.ballisticApexPitchDownPerTick <= 0.0D) {
+            this.ballisticApexPitchDownPerTick = 0.025D;
+        }
         if (this.ballisticArcMinHeight < 0.0D) {
             this.ballisticArcMinHeight = 0.0D;
         }
@@ -1108,6 +1113,10 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.isGPSMissile = this.toBool(data);
             } else if (item.equalsIgnoreCase("BallisticMissile")) {
                 this.ballisticMissile = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticApexGpsGuidance")) {
+                this.ballisticApexGpsGuidance = this.toBool(data);
+            } else if (item.equalsIgnoreCase("BallisticApexPitchDownPerTick")) {
+                this.ballisticApexPitchDownPerTick = this.toDouble(data);
             } else if (item.equalsIgnoreCase("BallisticArcFactor")) {
                 this.ballisticArcFactor = this.toDouble(data);
             } else if (item.equalsIgnoreCase("BallisticArcMinHeight")) {

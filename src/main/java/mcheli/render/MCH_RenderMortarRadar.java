@@ -1,10 +1,15 @@
 package mcheli.render;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.Loader;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
+import mcheli.integration.wgmap.WGMapGpsTarget;
+import mcheli.integration.wgmap.client.WGMapGpsClientBridge;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -38,6 +43,12 @@ public class MCH_RenderMortarRadar {
     private static final double SCREEN_HEIGHT_REFERENCE = 520.0D;
     private static final double MIN_DISTANCE = 20.0D;
     private static final double DEFAULT_MAX_DISTANCE = 300.0D;
+    private WeakReference<World> gpsCacheWorld = new WeakReference<World>(null);
+    private int gpsCachePlayerId = Integer.MIN_VALUE;
+    private int gpsCacheAircraftId = Integer.MIN_VALUE;
+    private long gpsCacheTick = Long.MIN_VALUE;
+    private double gpsCacheRange = Double.NaN;
+    private List<WGMapGpsTarget> cachedGps = Collections.emptyList();
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
@@ -144,8 +155,49 @@ public class MCH_RenderMortarRadar {
             drawTexture(mc, CROSS, centerX, centerY - renderRadius, crossSize);
         }
 
+        // GPS points beyond the vehicle's scan range stay visible at the radar rim.
+        for (WGMapGpsTarget gps : currentGpsPoints(world, player, ac, maxDistance)) {
+            double dx = gps.x - playerX;
+            double dz = gps.z - playerZ;
+            double distanceSq = dx * dx + dz * dz;
+            if (!Double.isNaN(distanceSq) && !Double.isInfinite(distanceSq)) {
+                double distance = Math.sqrt(distanceSq);
+                double markerX = centerX;
+                double markerY = centerY;
+                if (distance > 0.000001D) {
+                    Vec3 direction = Vec3.createVectorHelper(dx, 0.0D, dz).normalize();
+                    double dot = lookHorizontal.dotProduct(direction);
+                    double angle = Math.toDegrees(Math.acos(Math.max(-1.0D, Math.min(1.0D, dot))));
+                    if (lookHorizontal.crossProduct(direction).yCoord < 0.0D) angle = -angle;
+                    double radius = radarRadius * clampDistanceRatio(distance, maxDistance);
+                    markerX += radius * Math.sin(-Math.toRadians(angle));
+                    markerY -= radius * Math.cos(Math.toRadians(angle));
+                }
+                drawTexture(mc, TARGET, markerX, markerY, Math.max(3.0D, targetSize * 2.0D));
+            }
+        }
+
         GL11.glPopAttrib();
         GL11.glPopMatrix();
+    }
+
+    private List<WGMapGpsTarget> currentGpsPoints(World world, EntityPlayer player,
+            MCH_EntityAircraft ac, double maxDistance) {
+        if (!Loader.isModLoaded("wgmap")) return Collections.emptyList();
+        long tick = world.getTotalWorldTime();
+        if (gpsCacheWorld.get() != world || gpsCachePlayerId != player.getEntityId()
+                || gpsCacheAircraftId != ac.getEntityId() || gpsCacheTick != tick
+                || gpsCacheRange != maxDistance) {
+            if (gpsCacheWorld.get() != world) gpsCacheWorld = new WeakReference<World>(world);
+            gpsCachePlayerId = player.getEntityId();
+            gpsCacheAircraftId = ac.getEntityId();
+            gpsCacheTick = tick;
+            gpsCacheRange = maxDistance;
+            cachedGps = Collections.emptyList();
+            try { cachedGps = WGMapGpsClientBridge.radarPoints(player, player.posX, player.posZ, maxDistance); }
+            catch (LinkageError incompatible) { /* WGMap is optional and may have an incompatible API. */ }
+        }
+        return cachedGps;
     }
 
     private MCH_EntityAircraft getAircraft(EntityPlayer player) {

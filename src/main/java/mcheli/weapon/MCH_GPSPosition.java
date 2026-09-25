@@ -11,6 +11,8 @@ import java.util.Map;
 
 public class MCH_GPSPosition {
 
+    static final double APEX_GPS_MIN_SAFE_HORIZONTAL_DISTANCE = 64.0D;
+
     public static Map<Integer, MCH_GPSPosition> currentGPSPositions = new HashMap<>();
 
     public static MCH_GPSPosition currentClientGPSPosition = new MCH_GPSPosition(0, 0, 0);
@@ -72,7 +74,11 @@ public class MCH_GPSPosition {
     }
 
     public static MCH_GPSPosition get(Entity owner) {
-        return owner != null ? currentGPSPositions.get(owner.getEntityId()) : null;
+        if (owner == null) {
+            return null;
+        }
+        MCH_GPSPosition position = currentGPSPositions.get(owner.getEntityId());
+        return position != null && position.owner == owner ? position : null;
     }
 
     /**
@@ -89,8 +95,7 @@ public class MCH_GPSPosition {
 
         MCH_GPSPosition position = currentClientGPSPosition;
         return position != null
-            && position.owner != null
-            && position.owner.getEntityId() == owner.getEntityId()
+            && position.owner == owner
             ? position : null;
     }
 
@@ -125,6 +130,16 @@ public class MCH_GPSPosition {
 
     public static boolean isFinite(double value) {
         return !Double.isNaN(value) && !Double.isInfinite(value);
+    }
+
+    static boolean isSafeApexTarget(double launchX, double launchZ, double targetX, double targetZ) {
+        if (!isFinite(launchX) || !isFinite(launchZ) || !isFinite(targetX) || !isFinite(targetZ)) {
+            return false;
+        }
+        double dx = targetX - launchX;
+        double dz = targetZ - launchZ;
+        return dx * dx + dz * dz > APEX_GPS_MIN_SAFE_HORIZONTAL_DISTANCE
+            * APEX_GPS_MIN_SAFE_HORIZONTAL_DISTANCE;
     }
 
     @SideOnly(Side.CLIENT)
