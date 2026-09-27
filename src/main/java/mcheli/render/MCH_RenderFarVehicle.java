@@ -1,6 +1,7 @@
 package mcheli.render;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Camera;
@@ -37,7 +38,9 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.BufferUtils;
 
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -69,10 +72,18 @@ public class MCH_RenderFarVehicle {
     private final Map<UUID, MCH_EntityInfo> newestByUuid = new HashMap<UUID, MCH_EntityInfo>();
     private final Map<UUID, MCH_EntityAircraft> loadedByUuid = new HashMap<UUID, MCH_EntityAircraft>();
     private final List<MCH_EntityAircraft> loadedAircraft = new ArrayList<MCH_EntityAircraft>();
+    private final List<RenderCandidate> candidates = new ArrayList<RenderCandidate>();
+    private double[] depthTargets = new double[24];
+    private double[] depthRadii = new double[8];
+    private final FloatBuffer depthModelview = BufferUtils.createFloatBuffer(16);
+    private final FloatBuffer depthProjection = BufferUtils.createFloatBuffer(16);
+    private int candidateCount;
+    private int lastBvrCount = -1, lastGpuReadyCount = -1;
+    private boolean lastDepthAvailable;
     private World lastWorld;
     private int renderFrame;
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onRenderWorldLast(RenderWorldLastEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) {
@@ -81,6 +92,7 @@ public class MCH_RenderFarVehicle {
             this.newestByUuid.clear();
             this.loadedByUuid.clear();
             this.loadedAircraft.clear();
+            this.candidates.clear();
             this.lastWorld = null;
             return;
         }
@@ -90,6 +102,7 @@ public class MCH_RenderFarVehicle {
             this.newestByUuid.clear();
             this.loadedByUuid.clear();
             this.loadedAircraft.clear();
+            this.candidates.clear();
             this.lastWorld = mc.theWorld;
         }
 
@@ -208,12 +221,21 @@ public class MCH_RenderFarVehicle {
         if (this.smoothedPoses.isEmpty()) {
             return;
         }
+        this.candidateCount = 0;
+        double transitionStart = getTransitionStart(mc);
+        boolean depthAvailable = MCH_WGMapDepth.isAvailable();
         Frustrum frustum = new Frustrum();
         frustum.setPosition(RenderManager.instance.viewerPosX,
                 RenderManager.instance.viewerPosY, RenderManager.instance.viewerPosZ);
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT);
         mc.entityRenderer.enableLightmap(event.partialTicks);
         try {
+            if (depthAvailable) {
+                depthModelview.clear();
+                depthProjection.clear();
+                GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, depthModelview);
+                GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, depthProjection);
+            }
             Iterator<Map.Entry<Integer, SmoothedPose>> iterator = this.smoothedPoses.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<Integer, SmoothedPose> entry = iterator.next();
@@ -275,36 +297,94 @@ public class MCH_RenderFarVehicle {
                 // Test terrain at the true world pose. The projected draw position is only for
                 // frustum/depth placement; bounds corners would expose too much of a distant model.
                 double trueDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                boolean projectedBvr = trueDistance > getTransitionStart(mc);
+                boolean projectedBvr = trueDistance > transitionStart;
                 pose.projectedBvr = projectedBvr;
+                double projectedDistance = projectedBvr && depthAvailable
+                        ? MCH_CompressedDepthProjection.projected(trueDistance, transitionStart)
+                        : transitionStart;
                 if (!couldContributeToFrame(frustum, definition.info, dx, dy, dz,
-                        projectedBvr ? getTransitionStart(mc) / trueDistance : 1.0D)) {
+                        projectedBvr ? projectedDistance / trueDistance : 1.0D)) {
                     pose.report("OUTSIDE_FRUSTUM", entry.getKey().intValue());
                     continue;
                 }
-                // Loaded nearby aircraft render at their true position, so the world's depth buffer
-                // handles terrain. WGMap coverage may be incomplete during chunk handoff.
-                long terrainGeneration = current != null && !projectedBvr
-                        ? 0L : MCH_WGMapOcclusion.terrainGeneration();
-                MCH_WGMapOcclusion.Result terrainResult = current != null && !projectedBvr
-                    ? MCH_WGMapOcclusion.Result.CLEAR
-                    : pose.queryTerrain(mc, definition.info, event.partialTicks, projectedBvr,
-                            now, terrainGeneration,
-                            RenderManager.instance.viewerPosX, RenderManager.instance.viewerPosY,
-                            RenderManager.instance.viewerPosZ);
-                if (pose.shouldSuppressForTerrain(terrainResult, now,
-                        terrainGeneration,
-                        RenderManager.instance.viewerPosX, RenderManager.instance.viewerPosY,
-                        RenderManager.instance.viewerPosZ)) {
-                    if (MCH_Config.DebugLog) pose.report(terrainReason(pose, terrainResult, true,
-                            now, terrainGeneration), entry.getKey().intValue());
+                RenderCandidate candidate;
+                if (candidateCount == candidates.size()) {
+                    candidate = new RenderCandidate();
+                    candidates.add(candidate);
+                } else candidate = candidates.get(candidateCount);
+                candidateCount++;
+                candidate.pose = pose;
+                candidate.definition = definition;
+                candidate.aircraft = current;
+                candidate.id = entry.getKey().intValue();
+                candidate.brightness = pose.lightmapBrightness;
+                candidate.projected = projectedBvr;
+                candidate.depthIndex = -1;
+                candidate.depthConfigured = !projectedBvr || !depthAvailable
+                        || configureVehicleDepth(candidate, dx, dy, dz, trueDistance, transitionStart);
+            }
+
+            int projectedCount = 0;
+            if (depthAvailable) for (int i = 0; i < candidateCount; i++)
+                if (!candidates.get(i).depthConfigured) { depthAvailable = false; break; }
+            for (int i = 0; i < candidateCount; i++) if (candidates.get(i).projected) projectedCount++;
+            if (depthAvailable) {
+                if (depthTargets.length < projectedCount * 3) depthTargets = new double[projectedCount * 3];
+                if (depthRadii.length < projectedCount) depthRadii = new double[projectedCount];
+            }
+            int nextDepth = 0;
+            if (depthAvailable) for (int i = 0; i < candidateCount; i++) {
+                RenderCandidate candidate = candidates.get(i);
+                if (!candidate.projected) continue;
+                candidate.depthIndex = nextDepth;
+                depthTargets[nextDepth * 3] = candidate.pose.x;
+                depthTargets[nextDepth * 3 + 1] = candidate.pose.y;
+                depthTargets[nextDepth * 3 + 2] = candidate.pose.z;
+                MCH_AircraftInfo info = candidate.definition.info;
+                depthRadii[nextDepth] = Math.max(0.5D, Math.max(info.bodyWidth * 0.5D,
+                        Math.max(info.markerWidth, Math.max(Math.abs(info.bbZmin), Math.abs(info.bbZmax)))));
+                nextDepth++;
+            }
+            boolean[] ready = depthAvailable && projectedCount > 0 ? MCH_WGMapDepth.prepare(
+                    mc.theWorld.provider.dimensionId, RenderManager.instance.viewerPosX,
+                    RenderManager.instance.viewerPosY, RenderManager.instance.viewerPosZ,
+                    transitionStart, depthTargets, depthRadii, projectedCount) : null;
+            if (projectedCount > 0 && ready == null) depthAvailable = false;
+            int gpuReadyCount = 0;
+            if (ready != null) for (boolean covered : ready) if (covered) gpuReadyCount++;
+            if (MCH_Config.DebugLog && (projectedCount != lastBvrCount
+                    || gpuReadyCount != lastGpuReadyCount || depthAvailable != lastDepthAvailable)) {
+                MCH_Lib.DbgLog(true, "[FarVehicle] gpuDepthAvailable=%s bvr=%d gpuReady=%d cpuFallback=%d",
+                        Boolean.valueOf(depthAvailable), Integer.valueOf(projectedCount),
+                        Integer.valueOf(gpuReadyCount), Integer.valueOf(projectedCount - gpuReadyCount));
+                lastBvrCount = projectedCount;
+                lastGpuReadyCount = gpuReadyCount;
+                lastDepthAvailable = depthAvailable;
+            }
+            boolean anyReady = false;
+            for (int i = 0; i < candidateCount; i++) {
+                RenderCandidate candidate = candidates.get(i);
+                if (ready != null && candidate.depthIndex >= 0 && ready[candidate.depthIndex]) {
+                    anyReady = true;
                     continue;
                 }
-                if (MCH_Config.DebugLog) pose.report(current != null && !projectedBvr ? "NORMAL_DEPTH_RENDER"
-                        : terrainReason(pose, terrainResult, false, now, terrainGeneration), entry.getKey().intValue());
-                int brightness = pose.lightmapBrightness >= 0 ? pose.lightmapBrightness
-                    : this.resolveLightmapBrightness(mc, pose, null, event.partialTicks);
-                this.renderContact(mc, pose, definition, current, event.partialTicks, brightness);
+                renderCpuCandidate(mc, candidate, event.partialTicks, now,
+                        depthAvailable && candidate.projected);
+            }
+            if (anyReady) {
+                boolean drawn = MCH_WGMapDepth.draw();
+                for (int i = 0; i < candidateCount; i++) {
+                    RenderCandidate candidate = candidates.get(i);
+                    if (ready == null || candidate.depthIndex < 0 || !ready[candidate.depthIndex]) continue;
+                    if (drawn) {
+                        if (MCH_Config.DebugLog) candidate.pose.report("GPU_DEPTH_READY", candidate.id);
+                        if (candidate.brightness < 0) candidate.brightness = resolveLightmapBrightness(
+                                mc, candidate.pose, null, event.partialTicks);
+                        renderContact(mc, candidate.pose, candidate.definition, candidate.aircraft,
+                                event.partialTicks, candidate.brightness, true,
+                                candidate.depthNear, candidate.depthFar);
+                    } else renderCpuCandidate(mc, candidate, event.partialTicks, now, false);
+                }
             }
         } finally {
             mc.entityRenderer.disableLightmap(event.partialTicks);
@@ -312,8 +392,77 @@ public class MCH_RenderFarVehicle {
         }
     }
 
+    private boolean configureVehicleDepth(RenderCandidate candidate, double x, double y, double z,
+            double distance, double transitionStart) {
+        double scale = MCH_CompressedDepthProjection.projected(distance, transitionStart) / distance;
+        double eyeRate = (depthModelview.get(2) * x + depthModelview.get(6) * y
+                + depthModelview.get(10) * z) / distance;
+        if (eyeRate >= -0.0001D) return false;
+        MCH_AircraftInfo info = candidate.definition.info;
+        double extent = Math.max(16.0D, Math.max(info.bodyHeight,
+                Math.max(info.bodyWidth, Math.max(Math.abs(info.bbZmin), Math.abs(info.bbZmax)))));
+        double low = Math.max(0.001D, distance - extent);
+        double high = Math.min(MCH_CompressedDepthProjection.MAX_DISTANCE, distance + extent);
+        if (high <= low) return false;
+        double actualLow = windowDepth(depthModelview.get(14) + eyeRate * low * scale);
+        double actualHigh = windowDepth(depthModelview.get(14) + eyeRate * high * scale);
+        double desiredLow = mappedDepth(low, eyeRate, transitionStart);
+        double desiredHigh = mappedDepth(high, eyeRate, transitionStart);
+        double slope = (desiredHigh - desiredLow) / (actualHigh - actualLow);
+        double near = desiredLow - slope * actualLow;
+        double far = near + slope;
+        if (!Double.isFinite(near) || !Double.isFinite(far)
+                || near < 0.0D || far > 1.0D || near >= far) return false;
+        candidate.depthNear = near;
+        candidate.depthFar = far;
+        return true;
+    }
+
+    private double mappedDepth(double distance, double eyeRate, double transitionStart) {
+        if (distance <= transitionStart)
+            return windowDepth(depthModelview.get(14) + eyeRate * distance);
+        double startDepth = windowDepth(depthModelview.get(14) + eyeRate * transitionStart);
+        return startDepth + (1.0D - startDepth)
+                * MCH_CompressedDepthProjection.depthFraction(distance, transitionStart);
+    }
+
+    private double windowDepth(double eyeZ) {
+        double clipZ = depthProjection.get(10) * eyeZ + depthProjection.get(14);
+        double clipW = depthProjection.get(11) * eyeZ + depthProjection.get(15);
+        return (clipZ / clipW + 1.0D) * 0.5D;
+    }
+
+    private void renderCpuCandidate(Minecraft mc, RenderCandidate candidate,
+            float partialTicks, long now, boolean partialDepth) {
+        SmoothedPose pose = candidate.pose;
+        boolean normalLoaded = candidate.aircraft != null && !candidate.projected;
+        long generation = normalLoaded ? 0L : MCH_WGMapOcclusion.terrainGeneration();
+        MCH_WGMapOcclusion.Result result = normalLoaded ? MCH_WGMapOcclusion.Result.CLEAR
+                : pose.queryTerrain(mc, candidate.definition.info, partialTicks, candidate.projected,
+                        now, generation, RenderManager.instance.viewerPosX,
+                        RenderManager.instance.viewerPosY, RenderManager.instance.viewerPosZ);
+        boolean hidden = pose.shouldSuppressForTerrain(result, now, generation,
+                RenderManager.instance.viewerPosX, RenderManager.instance.viewerPosY,
+                RenderManager.instance.viewerPosZ);
+        if (MCH_Config.DebugLog) {
+            String reason = normalLoaded ? "NORMAL_DEPTH_RENDER"
+                    : terrainReason(pose, result, hidden, now, generation);
+            pose.report(candidate.projected
+                    ? (partialDepth ? "GPU_DEPTH_PARTIAL_CPU_FALLBACK " : "GPU_DEPTH_UNAVAILABLE_CPU_FALLBACK ") + reason
+                    : reason, candidate.id);
+        }
+        if (!hidden) {
+            if (candidate.brightness < 0) candidate.brightness = resolveLightmapBrightness(
+                    mc, pose, null, partialTicks);
+            renderContact(mc, pose, candidate.definition, candidate.aircraft,
+                    partialTicks, candidate.brightness, partialDepth && candidate.projected,
+                    candidate.depthNear, candidate.depthFar);
+        }
+    }
+
     private void renderContact(Minecraft mc, SmoothedPose pose, RenderDefinition definition,
-            MCH_EntityAircraft localAircraft, float partialTicks, int lightmapBrightness) {
+            MCH_EntityAircraft localAircraft, float partialTicks, int lightmapBrightness,
+            boolean gpuDepth, double depthNear, double depthFar) {
         RenderManager renderManager = RenderManager.instance;
         double x = pose.x - renderManager.viewerPosX;
         double y = pose.y - renderManager.viewerPosY;
@@ -323,7 +472,9 @@ public class MCH_RenderFarVehicle {
         // RenderWorldLast is outside the normal fog pass. Keep the projected contact inside the fog end
         // so enabling fog does not make every beyond-range contact completely invisible.
         double safeDistance = getTransitionStart(mc);
-        float projectionScale = distance > safeDistance ? (float)(safeDistance / distance) : 1.0F;
+        double projectionScale = distance > safeDistance
+                ? (gpuDepth ? MCH_CompressedDepthProjection.projected(distance, safeDistance)
+                        : safeDistance) / distance : 1.0D;
         x *= projectionScale;
         y *= projectionScale;
         z *= projectionScale;
@@ -331,12 +482,14 @@ public class MCH_RenderFarVehicle {
         float oldBrightnessX = OpenGlHelper.lastBrightnessX;
         float oldBrightnessY = OpenGlHelper.lastBrightnessY;
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
-            | GL11.GL_TEXTURE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_POLYGON_BIT | GL11.GL_FOG_BIT);
+            | GL11.GL_TEXTURE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_POLYGON_BIT | GL11.GL_FOG_BIT
+            | GL11.GL_VIEWPORT_BIT);
         RenderHelper.enableStandardItemLighting();
         GL11.glPushMatrix();
         try {
+            if (gpuDepth) GL11.glDepthRange(depthNear, depthFar);
             GL11.glTranslated(x, y, z);
-            GL11.glScalef(projectionScale, projectionScale, projectionScale);
+            GL11.glScaled(projectionScale, projectionScale, projectionScale);
 
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_DEPTH_TEST);
@@ -400,6 +553,18 @@ public class MCH_RenderFarVehicle {
             GL11.glPopMatrix();
             GL11.glPopAttrib();
         }
+    }
+
+    private static final class RenderCandidate {
+        SmoothedPose pose;
+        RenderDefinition definition;
+        MCH_EntityAircraft aircraft;
+        int id;
+        int brightness;
+        int depthIndex;
+        boolean projected;
+        boolean depthConfigured;
+        double depthNear, depthFar;
     }
 
     private int resolveLightmapBrightness(Minecraft mc, SmoothedPose pose, MCH_EntityAircraft localAircraft, float partialTicks) {
