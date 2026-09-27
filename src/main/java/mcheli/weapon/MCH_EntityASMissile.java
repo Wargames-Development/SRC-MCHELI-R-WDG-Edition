@@ -3,6 +3,7 @@ package mcheli.weapon;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
@@ -184,26 +185,26 @@ public class MCH_EntityASMissile extends MCH_EntityBaseBullet implements MCH_IEn
         double dz = originTargetPosZ - posZ;
         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (distance < 1.0E-6D) {
-            gpsGuidanceReleased = true;
-            targeting = false;
+            // The waypoint may be in air. Finish at its exact position instead of
+            // releasing guidance and letting the rocket coast to a distant block.
+            this.onImpact(new MovingObjectPosition((int)Math.floor(originTargetPosX),
+                (int)Math.floor(originTargetPosY), (int)Math.floor(originTargetPosZ), 1,
+                Vec3.createVectorHelper(originTargetPosX, originTargetPosY, originTargetPosZ)), 1.0F);
             return;
         }
 
         double speed = Math.max(0.1D, this.acceleration);
-        this.motionX = dx * speed / distance;
-        this.motionY = dy * speed / distance;
-        this.motionZ = dz * speed / distance;
+        double step = Math.min(speed * this.accelerationFactor, distance);
+        this.motionX = dx * step / distance / this.accelerationFactor;
+        this.motionY = dy * step / distance / this.accelerationFactor;
+        this.motionZ = dz * step / distance / this.accelerationFactor;
         double yaw = Math.atan2(this.motionZ, this.motionX);
         this.rotationYaw = (float) (yaw * 180.0D / Math.PI) - 90.0F;
         this.rotationPitch = -((float) (Math.atan2(this.motionY,
             Math.sqrt(this.motionX * this.motionX + this.motionZ * this.motionZ)) * 180.0D / Math.PI));
 
-        // One final, exactly targeted segment crosses the waypoint. The ordinary
-        // five-block GPS release would leave a steep missile flying short.
-        if (distance <= speed) {
-            gpsGuidanceReleased = true;
-            targeting = false;
-        }
+        // Keep guidance active through the final segment; the next tick handles
+        // terrain collision first, then detonates at a clear waypoint.
     }
 
     private Vec3 computeBallisticAimPoint(double targetX, double targetY, double targetZ) {

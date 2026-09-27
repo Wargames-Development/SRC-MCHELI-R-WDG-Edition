@@ -57,10 +57,10 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                 }
             }
         }
-        if (shouldBlockShotWithoutBvrRadarTrack(prm)) {
+        if (shouldBlockShotByDataLink(prm)) {
             return false;
         }
-        if (shouldBlockShotByDataLink(prm)) {
+        if (shouldBlockShotWithoutBvrRadarTrack(prm)) {
             return false;
         }
         if (shouldBlockShotByHeatSeekerDatalink(prm)) {
@@ -234,7 +234,7 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                     maxRange = Math.min(maxRange, ac.getAcInfo().radarMaxTargetRange);
                 }
             }
-            if (requiresBvrRadarTrack(prm)
+            if (requiresBvrRadarTrack(prm) && !isValidTwsSelectedDataLinkTarget(prm, ac, target)
                 && !MCH_MOD.rwrThreatManager.isEmitterTrackingTarget(ac.getEntityId(), target.getEntityId(),
                     MCH_MOD.rwrThreatManager.getCurrentTick())) {
                 return false;
@@ -256,8 +256,28 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
         return acInfo != null && acInfo.enableRadar;
     }
 
+    private boolean isValidTwsSelectedDataLinkTarget(MCH_WeaponParam prm, MCH_EntityAircraft ac, Entity target) {
+        int requiredFlags = OPTION_FLAG_DATALINK | OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY;
+        return prm.user != null && target != null && getInfo().activeRadar
+            && !getInfo().passiveRadar && !getInfo().semiActiveRadar && !getInfo().antiRadiationMissile
+            && getInfo().enableDataLink && ac.getAcInfo() != null
+            && isTwsSearchType(ac.getAcInfo().radarSearchType)
+            && (prm.option2 & requiredFlags) == requiredFlags
+            && isTargetInMissileFov(prm.user, target);
+    }
+
+    private static boolean isTwsSearchType(String searchType) {
+        return "TWS".equals(searchType) || "GMTI_TWS".equals(searchType)
+            || "MULTI_TWS".equals(searchType);
+    }
+
     private boolean shouldBlockShotWithoutBvrRadarTrack(MCH_WeaponParam prm) {
         if (!super.worldObj.isRemote || !requiresBvrRadarTrack(prm)) {
+            return false;
+        }
+        int selectedOnlyFlags = OPTION_FLAG_DATALINK | OPTION_FLAG_DATALINK_TWS_SELECTED_ONLY;
+        if (getInfo().activeRadar && (super.optionParameter2 & selectedOnlyFlags) == selectedOnlyFlags) {
+            // The data-link check already validated the selected TWS contact for this shot.
             return false;
         }
         if (prm.user == null || prm.user.worldObj == null) {
@@ -422,12 +442,11 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
                 return true;
             }
         } else if (getInfo().activeRadar) {
-            boolean srcLike = "SRC".equals(searchType) || "GMTI_SRC".equals(searchType);
-            if (srcLike) {
-                targetId = trackingId;
-            } else {
+            if (isTwsSearchType(searchType)) {
                 targetId = trackingId > 0 ? trackingId : selectedId;
                 twsSelectedOnlyLaunch = trackingId <= 0 && selectedId > 0;
+            } else {
+                targetId = trackingId;
             }
             if (targetId <= 0) {
                 sendDenyMessage(prm.user, "weapon.deny.select_or_lock");

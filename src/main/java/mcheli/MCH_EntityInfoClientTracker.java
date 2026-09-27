@@ -23,8 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MCH_EntityInfoClientTracker {
 
-    private static final long RESYNC_MISSING_GRACE_MS = 2_000L;
-    private static final long RESYNC_ENTITY_COOLDOWN_MS = 10_000L;
+    private static final long RESYNC_ENTITY_COOLDOWN_MS = 2_000L;
     private static final long RESYNC_GLOBAL_COOLDOWN_MS = 2_000L;
     private static final double RESYNC_MAX_HORIZONTAL_DISTANCE_SQ = 256.0D * 256.0D;
 
@@ -145,24 +144,17 @@ public class MCH_EntityInfoClientTracker {
                 continue;
             }
 
-            Entity localEntity = player.worldObj.getEntityByID(info.entityId);
-            if (localEntity instanceof MCH_EntityAircraft && !localEntity.isDead) {
-                trackedEntity.missingSinceMillis = 0L;
-                continue;
-            }
-
             if (info.getHorizonalDistanceSqToEntity(player) > RESYNC_MAX_HORIZONTAL_DISTANCE_SQ) {
-                trackedEntity.missingSinceMillis = 0L;
                 continue;
             }
 
-            if (trackedEntity.missingSinceMillis == 0L) {
-                trackedEntity.missingSinceMillis = now;
+            Entity localEntity = player.worldObj.getEntityByID(info.entityId);
+            if (localEntity instanceof MCH_EntityAircraft && !localEntity.isDead
+                && player.worldObj.loadedEntityList.contains(localEntity)) {
                 continue;
             }
 
-            if (now - trackedEntity.missingSinceMillis < RESYNC_MISSING_GRACE_MS
-                || now - trackedEntity.lastResyncRequestMillis < RESYNC_ENTITY_COOLDOWN_MS
+            if (now - trackedEntity.lastResyncRequestMillis < RESYNC_ENTITY_COOLDOWN_MS
                 || now - lastTrackerResyncRequestMillis < RESYNC_GLOBAL_COOLDOWN_MS) {
                 continue;
             }
@@ -177,7 +169,7 @@ public class MCH_EntityInfoClientTracker {
     }
 
     private static boolean isAircraftInfo(MCH_EntityInfo info) {
-        if (info == null || info.entityClassName == null) {
+        if (info == null || info.destroyed || info.entityClassName == null) {
             return false;
         }
         String className = info.entityClassName;
@@ -200,14 +192,12 @@ public class MCH_EntityInfoClientTracker {
         MCH_EntityInfo info;
         long lastSeenMillis;
         long lastSeenSeq;
-        long missingSinceMillis;
         long lastResyncRequestMillis;
 
         Tracked(MCH_EntityInfo info, long now, long seq) {
             this.info = info;
             this.lastSeenMillis = now;
             this.lastSeenSeq = seq;
-            this.missingSinceMillis = 0L;
             this.lastResyncRequestMillis = 0L;
         }
     }

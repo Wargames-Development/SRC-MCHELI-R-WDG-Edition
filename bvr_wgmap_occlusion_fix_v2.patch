@@ -1,0 +1,124 @@
+--- a/src/main/java/mcheli/render/MCH_WGMapOcclusion.java
++++ b/src/main/java/mcheli/render/MCH_WGMapOcclusion.java
+@@ -83,6 +83,61 @@
+             targetX + halfHorizontal, targetY + height, targetZ + halfHorizontal);
+     }
+ 
++    /**
++     * BVR-specific visibility query. The projected far renderer cannot rely on partial model
++     * visibility because a single clear model corner would draw the entire projected vehicle.
++     * Trace the physical vehicle core instead, at its true world-space position.
++     */
++    static Result traceTargetCore(Minecraft mc, MCH_AircraftInfo info,
++            double targetX, double targetY, double targetZ, float partialTicks) {
++        if (mc == null || mc.theWorld == null || mc.theWorld.provider == null
++                || mc.renderViewEntity == null || info == null) {
++            return Result.UNAVAILABLE;
++        }
++        Entity viewer = mc.renderViewEntity;
++        double cameraX = viewer.lastTickPosX + (viewer.posX - viewer.lastTickPosX) * partialTicks;
++        double cameraY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * partialTicks;
++        double cameraZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * partialTicks;
++        if (viewer instanceof EntityLivingBase) {
++            cameraY += ((EntityLivingBase)viewer).getEyeHeight();
++        }
++
++        // Entity Y is the vehicle base. Aim through the body rather than marker/model extents;
++        // markerHeight can include tall decorative/weapon geometry and is too permissive for BVR.
++        double coreY = targetY + Math.max(0.25D, info.bodyHeight * 0.5D);
++        return traceSegment(mc.theWorld.provider.dimensionId,
++            cameraX, cameraY, cameraZ, targetX, coreY, targetZ);
++    }
++
++    static Result traceSegment(int dimension,
++            double cameraX, double cameraY, double cameraZ,
++            double targetX, double targetY, double targetZ) {
++        Binding current = getBinding();
++        if (current == null) {
++            return bindingFailed ? Result.UNKNOWN : Result.UNAVAILABLE;
++        }
++        try {
++            Object available = current.isAvailable.invoke(null);
++            if (!Boolean.TRUE.equals(available)) {
++                return Result.UNAVAILABLE;
++            }
++            Object result = current.traceSegment.invoke(null,
++                Integer.valueOf(dimension),
++                Double.valueOf(cameraX), Double.valueOf(cameraY), Double.valueOf(cameraZ),
++                Double.valueOf(targetX), Double.valueOf(targetY), Double.valueOf(targetZ));
++            return mapApiResult(result);
++        } catch (IllegalAccessException e) {
++            disableBinding();
++        } catch (InvocationTargetException e) {
++            disableBinding();
++        } catch (RuntimeException e) {
++            disableBinding();
++        } catch (LinkageError e) {
++            disableBinding();
++        }
++        return Result.UNKNOWN;
++    }
++
+     static Result traceBounds(int dimension,
+             double cameraX, double cameraY, double cameraZ,
+             double minX, double minY, double minZ,
+@@ -146,12 +201,16 @@
+                 return null;
+             }
+             Method isAvailable = api.getMethod("isAvailable");
++            Method traceSegment = api.getMethod("traceSegment",
++                Integer.TYPE,
++                Double.TYPE, Double.TYPE, Double.TYPE,
++                Double.TYPE, Double.TYPE, Double.TYPE);
+             Method traceBounds = api.getMethod("traceBounds",
+                 Integer.TYPE,
+                 Double.TYPE, Double.TYPE, Double.TYPE,
+                 Double.TYPE, Double.TYPE, Double.TYPE,
+                 Double.TYPE, Double.TYPE, Double.TYPE);
+-            binding = new Binding(isAvailable, traceBounds);
++            binding = new Binding(isAvailable, traceSegment, traceBounds);
+         } catch (ClassNotFoundException e) {
+             binding = null;
+         } catch (NoSuchFieldException e) {
+@@ -176,10 +235,12 @@
+ 
+     private static final class Binding {
+         final Method isAvailable;
++        final Method traceSegment;
+         final Method traceBounds;
+ 
+-        Binding(Method isAvailable, Method traceBounds) {
++        Binding(Method isAvailable, Method traceSegment, Method traceBounds) {
+             this.isAvailable = isAvailable;
++            this.traceSegment = traceSegment;
+             this.traceBounds = traceBounds;
+         }
+     }
+--- a/src/main/java/mcheli/render/MCH_RenderFarVehicle.java
++++ b/src/main/java/mcheli/render/MCH_RenderFarVehicle.java
+@@ -204,10 +204,21 @@
+                 if (definition == null || definition.info.model == null) {
+                     continue;
+                 }
+-                // Test visibility at the contact's true world-space position. renderContact() may
+-                // project a BVR model toward the vanilla far plane, which is only a draw-space transform.
+-                MCH_WGMapOcclusion.Result terrainResult = MCH_WGMapOcclusion.traceTargetBounds(
+-                    mc, definition.info, pose.x, pose.y, pose.z, event.partialTicks);
++                // Once a contact is projected toward the vanilla far plane, whole-bounds occlusion
++                // is too permissive: one clear corner makes WGMap return CLEAR, then the entire
++                // projected model is drawn. Use a core ray for projected BVR contacts and retain
++                // conservative whole-model bounds only while the model remains at its true depth.
++                double terrainDx = pose.x - RenderManager.instance.viewerPosX;
++                double terrainDy = pose.y - RenderManager.instance.viewerPosY;
++                double terrainDz = pose.z - RenderManager.instance.viewerPosZ;
++                double trueDistanceSq = terrainDx * terrainDx + terrainDy * terrainDy + terrainDz * terrainDz;
++                double projectionStart = getTransitionStart(mc);
++                boolean projectedBvr = trueDistanceSq > projectionStart * projectionStart;
++                MCH_WGMapOcclusion.Result terrainResult = projectedBvr
++                    ? MCH_WGMapOcclusion.traceTargetCore(mc, definition.info,
++                        pose.x, pose.y, pose.z, event.partialTicks)
++                    : MCH_WGMapOcclusion.traceTargetBounds(mc, definition.info,
++                        pose.x, pose.y, pose.z, event.partialTicks);
+                 if (pose.shouldSuppressForTerrain(terrainResult, now)) {
+                     continue;
+                 }

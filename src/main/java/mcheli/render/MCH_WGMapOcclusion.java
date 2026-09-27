@@ -29,7 +29,6 @@ public final class MCH_WGMapOcclusion {
     }
 
     private static boolean bindingResolved;
-    private static boolean bindingFailed;
     private static Binding binding;
 
     private MCH_WGMapOcclusion() {
@@ -41,7 +40,7 @@ public final class MCH_WGMapOcclusion {
         if (aircraft == null || mc.theWorld == null || aircraft.worldObj != mc.theWorld) {
             return false;
         }
-        return shouldSuppressBounds(mc, aircraft.getAcInfo(),
+        return shouldSuppressConfirmedBounds(mc, aircraft.getAcInfo(),
             aircraft.lastTickPosX + (aircraft.posX - aircraft.lastTickPosX) * partialTicks,
             aircraft.lastTickPosY + (aircraft.posY - aircraft.lastTickPosY) * partialTicks,
             aircraft.lastTickPosZ + (aircraft.posZ - aircraft.lastTickPosZ) * partialTicks,
@@ -50,9 +49,47 @@ public final class MCH_WGMapOcclusion {
 
     static boolean shouldSuppressBounds(Minecraft mc, MCH_AircraftInfo info,
             double targetX, double targetY, double targetZ, float partialTicks) {
+        return shouldSuppress(traceTargetBounds(mc, info, targetX, targetY, targetZ, partialTicks));
+    }
+
+    static boolean shouldSuppressConfirmedBounds(Minecraft mc, MCH_AircraftInfo info,
+            double targetX, double targetY, double targetZ, float partialTicks) {
+        // Terrain outside WGMap's shadow coverage is unknown, not confirmed occlusion.
+        return shouldSuppress(traceTargetBounds(mc, info, targetX, targetY, targetZ, partialTicks));
+    }
+
+    /**
+     * BVR/projected-render occlusion query. Unlike traceTargetBounds(), this traces only the
+     * physical vehicle core so one exposed model corner cannot make an otherwise mountain-hidden
+     * projected contact visible. The target coordinates remain true world-space coordinates.
+     */
+    static Result traceTargetCore(Minecraft mc, MCH_AircraftInfo info,
+            double targetX, double targetY, double targetZ, float partialTicks) {
         if (mc == null || mc.theWorld == null || mc.theWorld.provider == null
                 || mc.renderViewEntity == null || info == null) {
-            return false;
+            return Result.UNAVAILABLE;
+        }
+        Entity viewer = mc.renderViewEntity;
+        double cameraX = viewer.lastTickPosX + (viewer.posX - viewer.lastTickPosX) * partialTicks;
+        double cameraY = viewer.lastTickPosY + (viewer.posY - viewer.lastTickPosY) * partialTicks;
+        double cameraZ = viewer.lastTickPosZ + (viewer.posZ - viewer.lastTickPosZ) * partialTicks;
+        if (viewer instanceof EntityLivingBase) {
+            cameraY += ((EntityLivingBase)viewer).getEyeHeight();
+        }
+
+        // Aim at the physical center of the vehicle body, not markerHeight or a projected draw-space
+        // position. A small positive minimum keeps ground vehicles from tracing exactly at their feet.
+        double bodyHeight = Math.max(0.5D, (double)info.bodyHeight);
+        double coreY = targetY + bodyHeight * 0.5D;
+        return traceSegment(mc.theWorld.provider.dimensionId,
+            cameraX, cameraY, cameraZ, targetX, coreY, targetZ);
+    }
+
+    static Result traceTargetBounds(Minecraft mc, MCH_AircraftInfo info,
+            double targetX, double targetY, double targetZ, float partialTicks) {
+        if (mc == null || mc.theWorld == null || mc.theWorld.provider == null
+                || mc.renderViewEntity == null || info == null) {
+            return Result.UNAVAILABLE;
         }
         Entity viewer = mc.renderViewEntity;
         double cameraX = viewer.lastTickPosX + (viewer.posX - viewer.lastTickPosX) * partialTicks;
@@ -66,10 +103,39 @@ public final class MCH_WGMapOcclusion {
         halfHorizontal = Math.max(halfHorizontal, Math.abs((double)info.bbZmin));
         halfHorizontal = Math.max(halfHorizontal, Math.abs((double)info.bbZmax));
         double height = Math.max(0.5D, Math.max(info.bodyHeight, info.markerHeight));
-        return shouldSuppress(traceBounds(mc.theWorld.provider.dimensionId,
+        return traceBounds(mc.theWorld.provider.dimensionId,
             cameraX, cameraY, cameraZ,
             targetX - halfHorizontal, targetY, targetZ - halfHorizontal,
-            targetX + halfHorizontal, targetY + height, targetZ + halfHorizontal));
+            targetX + halfHorizontal, targetY + height, targetZ + halfHorizontal);
+    }
+
+    static Result traceSegment(int dimension,
+            double cameraX, double cameraY, double cameraZ,
+            double targetX, double targetY, double targetZ) {
+        Binding current = getBinding();
+        if (current == null) {
+            return Result.UNAVAILABLE;
+        }
+        try {
+            Object available = current.isAvailable.invoke(null);
+            if (!Boolean.TRUE.equals(available)) {
+                return Result.UNAVAILABLE;
+            }
+            Object result = current.traceSegment.invoke(null,
+                Integer.valueOf(dimension),
+                Double.valueOf(cameraX), Double.valueOf(cameraY), Double.valueOf(cameraZ),
+                Double.valueOf(targetX), Double.valueOf(targetY), Double.valueOf(targetZ));
+            return mapApiResult(result);
+        } catch (IllegalAccessException e) {
+            disableBinding();
+        } catch (InvocationTargetException e) {
+            disableBinding();
+        } catch (RuntimeException e) {
+            disableBinding();
+        } catch (LinkageError e) {
+            disableBinding();
+        }
+        return Result.UNAVAILABLE;
     }
 
     static Result traceBounds(int dimension,
@@ -78,7 +144,7 @@ public final class MCH_WGMapOcclusion {
             double maxX, double maxY, double maxZ) {
         Binding current = getBinding();
         if (current == null) {
-            return bindingFailed ? Result.UNKNOWN : Result.UNAVAILABLE;
+            return Result.UNAVAILABLE;
         }
         try {
             Object available = current.isAvailable.invoke(null);
@@ -100,10 +166,10 @@ public final class MCH_WGMapOcclusion {
         } catch (LinkageError e) {
             disableBinding();
         }
-        return Result.UNKNOWN;
+        return Result.UNAVAILABLE;
     }
 
-    /** Once authoritative WGMap queries are available, missing terrain fails closed. */
+    /** Missing WGMap terrain coverage must not reveal a projected contact. */
     static boolean shouldSuppress(Result result) {
         return result == Result.BLOCKED || result == Result.UNKNOWN;
     }
@@ -135,12 +201,16 @@ public final class MCH_WGMapOcclusion {
                 return null;
             }
             Method isAvailable = api.getMethod("isAvailable");
+            Method traceSegment = api.getMethod("traceSegment",
+                Integer.TYPE,
+                Double.TYPE, Double.TYPE, Double.TYPE,
+                Double.TYPE, Double.TYPE, Double.TYPE);
             Method traceBounds = api.getMethod("traceBounds",
                 Integer.TYPE,
                 Double.TYPE, Double.TYPE, Double.TYPE,
                 Double.TYPE, Double.TYPE, Double.TYPE,
                 Double.TYPE, Double.TYPE, Double.TYPE);
-            binding = new Binding(isAvailable, traceBounds);
+            binding = new Binding(isAvailable, traceSegment, traceBounds);
         } catch (ClassNotFoundException e) {
             binding = null;
         } catch (NoSuchFieldException e) {
@@ -159,16 +229,17 @@ public final class MCH_WGMapOcclusion {
 
     private static void disableBinding() {
         bindingResolved = true;
-        bindingFailed = true;
         binding = null;
     }
 
     private static final class Binding {
         final Method isAvailable;
+        final Method traceSegment;
         final Method traceBounds;
 
-        Binding(Method isAvailable, Method traceBounds) {
+        Binding(Method isAvailable, Method traceSegment, Method traceBounds) {
             this.isAvailable = isAvailable;
+            this.traceSegment = traceSegment;
             this.traceBounds = traceBounds;
         }
     }

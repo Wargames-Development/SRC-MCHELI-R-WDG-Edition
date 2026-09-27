@@ -1,0 +1,100 @@
+--- a/src/main/java/mcheli/render/MCH_WGMapOcclusion.java
++++ b/src/main/java/mcheli/render/MCH_WGMapOcclusion.java
+@@ -59,7 +59,7 @@
+         return shouldSuppress(traceTargetBounds(mc, info, targetX, targetY, targetZ, partialTicks));
+     }
+ 
+-    private static Result traceTargetBounds(Minecraft mc, MCH_AircraftInfo info,
++    static Result traceTargetBounds(Minecraft mc, MCH_AircraftInfo info,
+             double targetX, double targetY, double targetZ, float partialTicks) {
+         if (mc == null || mc.theWorld == null || mc.theWorld.provider == null
+                 || mc.renderViewEntity == null || info == null) {
+--- a/src/main/java/mcheli/render/MCH_RenderFarVehicle.java
++++ b/src/main/java/mcheli/render/MCH_RenderFarVehicle.java
+@@ -51,6 +51,7 @@
+     private static final double TRANSITION_WIDTH = CHUNK_SIZE;
+     private static final double POSITION_SMOOTHING_MILLIS = 100.0D;
+     private static final double SNAP_DISTANCE_SQ = 64.0D * 64.0D;
++    private static final long OCCLUSION_UNKNOWN_HOLD_MILLIS = 1000L;
+     private static final double MAX_CONTACT_DISTANCE_SQ = MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE
+         * MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE;
+     private static final ResourceLocation THERMAL_WHITE = new ResourceLocation("mcheli", "textures/test.png");
+@@ -203,8 +204,11 @@
+                 if (definition == null || definition.info.model == null) {
+                     continue;
+                 }
+-                if (MCH_WGMapOcclusion.shouldSuppressConfirmedBounds(mc, definition.info,
+-                        pose.x, pose.y, pose.z, event.partialTicks)) {
++                // Test visibility at the contact's true world-space position. renderContact() may
++                // project a BVR model toward the vanilla far plane, which is only a draw-space transform.
++                MCH_WGMapOcclusion.Result terrainResult = MCH_WGMapOcclusion.traceTargetBounds(
++                    mc, definition.info, pose.x, pose.y, pose.z, event.partialTicks);
++                if (pose.shouldSuppressForTerrain(terrainResult, now)) {
+                     continue;
+                 }
+                 int brightness = pose.lightmapBrightness >= 0 ? pose.lightmapBrightness
+@@ -655,6 +659,8 @@
+         private UUID aircraftUuid;
+         private MCH_EntityAircraft visualAircraft;
+         private int lightmapBrightness = -1;
++        private boolean terrainBlocked;
++        private long terrainBlockedConfirmedMillis;
+         private long lastUpdateMillis;
+         private int lastRenderFrame;
+         private boolean initialized;
+@@ -668,6 +674,7 @@
+                 this.contact = null;
+                 this.visualAircraft = null;
+                 this.lightmapBrightness = -1;
++                this.clearTerrainOcclusion();
+                 this.initialized = false;
+             }
+             this.aircraftUuid = contact.aircraftUuid;
+@@ -749,10 +756,36 @@
+                 this.aircraftUuid = null;
+                 this.visualAircraft = null;
+                 this.lightmapBrightness = -1;
++                this.clearTerrainOcclusion();
+                 this.initialized = false;
+             }
+         }
+ 
++        private boolean shouldSuppressForTerrain(MCH_WGMapOcclusion.Result result, long nowMillis) {
++            if (result == MCH_WGMapOcclusion.Result.BLOCKED) {
++                this.terrainBlocked = true;
++                this.terrainBlockedConfirmedMillis = nowMillis;
++                return true;
++            }
++            if (result == MCH_WGMapOcclusion.Result.CLEAR) {
++                this.clearTerrainOcclusion();
++                return false;
++            }
++            if (!this.terrainBlocked) {
++                return false;
++            }
++            if (nowMillis - this.terrainBlockedConfirmedMillis <= OCCLUSION_UNKNOWN_HOLD_MILLIS) {
++                return true;
++            }
++            this.clearTerrainOcclusion();
++            return false;
++        }
++
++        private void clearTerrainOcclusion() {
++            this.terrainBlocked = false;
++            this.terrainBlockedConfirmedMillis = 0L;
++        }
++
+         private static float interpolateAngle(float current, float target, float factor) {
+             float delta = (target - current) % 360.0F;
+             if (delta > 180.0F) delta -= 360.0F;
+--- a/src/test/java/mcheli/render/MCH_WGMapOcclusionTest.java
++++ b/src/test/java/mcheli/render/MCH_WGMapOcclusionTest.java
+@@ -18,7 +18,7 @@
+     }
+ 
+     @Test
+-    public void authoritativeBlockedAndUnknownSuppressButUnavailableDoesNot() {
++    public void onlyAuthoritativeBlockedSuppressesImmediately() {
+         assertTrue(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.BLOCKED));
+         assertFalse(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.UNKNOWN));
+         assertFalse(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.CLEAR));

@@ -1112,10 +1112,9 @@ public abstract class MCH_RenderAircraft extends W_Render {
         MCH_AircraftInfo info = ac.getAcInfo();
         if (info != null) {
             boolean skipNormalRender = shouldSkipRender(entity);
-            boolean farRenderOwnsModel = MCH_RenderFarVehicle.shouldSuppressNormalRender(ac, posX, posZ);
-            if (!skipNormalRender) {
+            boolean farRenderOwnsModel = MCH_RenderFarVehicle.usesUnifiedRender(ac);
+            if (!skipNormalRender && !farRenderOwnsModel) {
                 boolean terrainSuppressed = MCH_WGMapOcclusion.shouldSuppressAircraft(ac, tickTime);
-                MCH_RenderFarVehicle.markTerrainDecision(ac.getEntityId(), terrainSuppressed);
                 if (terrainSuppressed) return;
             }
             GL11.glPushMatrix();
@@ -1127,7 +1126,6 @@ public abstract class MCH_RenderAircraft extends W_Render {
             }
 
             if (!skipNormalRender && !farRenderOwnsModel) {
-                MCH_RenderFarVehicle.markNormalRender(ac.getEntityId());
                 this.setCommonRenderParam(info.smoothShading, ac.getBrightnessForRender(tickTime));
                 if (ac.isDestroyed()) {
                     GL11.glColor4f(0.15F, 0.15F, 0.15F, 1.0F);

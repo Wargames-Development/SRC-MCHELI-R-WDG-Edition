@@ -6,6 +6,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.EnumSkyBlock;
+import net.minecraft.world.World;
+
+import java.util.UUID;
 
 public class MCH_EntityInfo {
     public static final byte CM_FLAG_CHAFF = 1;
@@ -28,6 +32,10 @@ public class MCH_EntityInfo {
     public float turretYaw;
     public float turretPitch;
     public boolean destroyed;
+    /** Stable across chunk reloads even when the numeric entity ID changes. */
+    public UUID aircraftUuid;
+    /** Packed block/sky light from the server; -1 for older snapshot packets. */
+    public int packedLight = -1;
     /** Server-calculated altitude above terrain; NaN when an older snapshot did not provide it. */
     public double altitudeAboveGround = Double.NaN;
     /** Server-resolved crew/player team; empty when the entity has no team. */
@@ -133,9 +141,38 @@ public class MCH_EntityInfo {
             e.rotationYaw, e.rotationPitch,
             countermeasureFlags, countermeasureUntilTick, rotationRoll, destroyed, turretYaw, turretPitch
         );
+        if (aircraft != null) {
+            info.aircraftUuid = e.getUniqueID();
+        }
         info.altitudeAboveGround = computeServerAgl(e);
+        if (!e.worldObj.isRemote && aircraft != null) {
+            int x = MathHelper.floor_double(e.posX);
+            int y = MathHelper.floor_double(e.posY - e.yOffset
+                + (e.boundingBox.maxY - e.boundingBox.minY) * 0.66D);
+            int z = MathHelper.floor_double(e.posZ);
+            // World.getLightBrightnessForSkyBlocks is client-only in 1.7.10 and is
+            // absent on dedicated servers, including Crucible. Pack its two light
+            // components from the server's saved values instead.
+            int sky = e.worldObj.provider.hasNoSky ? 0
+                : getServerLightComponent(e.worldObj, EnumSkyBlock.Sky, x, y, z);
+            int block = getServerLightComponent(e.worldObj, EnumSkyBlock.Block, x, y, z);
+            info.packedLight = aircraft.haveSearchLight() && aircraft.isSearchLightON()
+                ? 15728880 : sky << 20 | block << 4;
+        }
         info.teamName = resolveTeamName(e, aircraft);
         return info;
+    }
+
+    private static int getServerLightComponent(World world, EnumSkyBlock type, int x, int y, int z) {
+        int light = world.getSavedLightValue(type, x, y, z);
+        if (world.getBlock(x, y, z).getUseNeighborBrightness()) {
+            light = world.getSavedLightValue(type, x, y + 1, z);
+            light = Math.max(light, world.getSavedLightValue(type, x + 1, y, z));
+            light = Math.max(light, world.getSavedLightValue(type, x - 1, y, z));
+            light = Math.max(light, world.getSavedLightValue(type, x, y, z + 1));
+            light = Math.max(light, world.getSavedLightValue(type, x, y, z - 1));
+        }
+        return light;
     }
 
     private static String resolveTeamName(Entity entity, MCH_EntityAircraft aircraft) {

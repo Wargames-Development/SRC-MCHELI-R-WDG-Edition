@@ -199,8 +199,10 @@ public class MCH_WeaponAAMissile extends MCH_WeaponEntitySeeker {
             } else if ((getInfo().passiveRadar || getInfo().semiActiveRadar)
                 && (getInfo().antiRadiationMissile || super.optionParameter1 > 0)) {
                 result = true;
-            } else if (isPureHeatSeeker() && super.optionParameter1 > 0) {
-                result = true;
+            } else if (isPureHeatSeeker()) {
+                // Snapshot-only IR locks have no local guidance target. An early fire
+                // attempt must not run the local seeker and erase their progress.
+                result = super.optionParameter1 > 0;
             } else if (super.guidanceSystem.lock(prm.user) && super.guidanceSystem.lastLockEntity != null) {
                 result = true;
                 super.optionParameter1 = W_Entity.getEntityId(super.guidanceSystem.lastLockEntity);

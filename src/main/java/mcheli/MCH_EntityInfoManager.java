@@ -3,7 +3,6 @@ package mcheli;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -16,14 +15,15 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
 import net.minecraft.entity.EntityTrackerEntry;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.Packet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.IntHashMap;
 import net.minecraft.world.WorldServer;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -50,9 +50,26 @@ public class MCH_EntityInfoManager {
     private final List<TrackerResyncRequest> pendingTrackerRestarts = new ArrayList<>();
     private final Map<EntityPlayerMP, Long> lastTrackerResyncRequest = new WeakHashMap<>();
     private final Map<EntityPlayerMP, PlayerSyncState> playerSyncStates = new WeakHashMap<>();
+    private final Map<WorldServer, Map<Integer, Tombstone>> destroyedAircraft = new WeakHashMap<>();
 
     public MCH_EntityInfoManager() {
         FMLCommonHandler.instance().bus().register(this);
+    }
+
+    /** Chunk unloading does not call setDead; this records only actual aircraft removal. */
+    public void queueDestroyedAircraft(MCH_EntityAircraft aircraft) {
+        if (aircraft == null || !(aircraft.worldObj instanceof WorldServer)) {
+            return;
+        }
+        WorldServer world = (WorldServer)aircraft.worldObj;
+        Map<Integer, Tombstone> byId = this.destroyedAircraft.get(world);
+        if (byId == null) {
+            byId = new HashMap<Integer, Tombstone>();
+            this.destroyedAircraft.put(world, byId);
+        }
+        MCH_EntityInfo info = MCH_EntityInfo.createInfo(aircraft, world.getTotalWorldTime());
+        info.destroyed = true;
+        byId.put(Integer.valueOf(info.entityId), new Tombstone(info));
     }
 
     @SubscribeEvent
@@ -155,19 +172,8 @@ public class MCH_EntityInfoManager {
                 return;
             }
 
-            Packet spawnPacket = FMLNetworkHandler.getEntitySpawningPacket(entity);
-            if (spawnPacket != null) {
-                player.playerNetServerHandler.sendPacket(spawnPacket);
-                MCH_Lib.DbgTrace(player.worldObj,
-                    "event=tracker_resync_transition action=targeted_spawn player=%s aircraftId=%d aircraftObj=%d type=%s packet=%s",
-                    player.getCommandSenderName(), Integer.valueOf(aircraft.getEntityId()),
-                    Integer.valueOf(System.identityHashCode(aircraft)), aircraft.getTypeName(),
-                    spawnPacket.getClass().getSimpleName());
-                return;
-            }
-
-            // Preserve the delayed remove/restart recovery for entities which do
-            // not expose an FML spawn packet. Recheck before mutating the tracker.
+            // A bare spawn leaves the tracker believing its old client copy is
+            // still valid. Restart its watch so metadata and attachments follow.
             if (isRequesterCurrentAircraft(player, aircraft)) {
                 MCH_Lib.DbgTrace(player.worldObj,
                     "event=tracker_resync_rejected reason=current_aircraft_before_fallback player=%s aircraftId=%d aircraftObj=%d type=%s",
@@ -308,6 +314,24 @@ public class MCH_EntityInfoManager {
                     worldEntities.add(info);
                 }
             }
+            Map<Integer, Tombstone> tombstones = this.destroyedAircraft.get(world);
+            if (tombstones != null) {
+                Iterator<Map.Entry<Integer, Tombstone>> iterator = tombstones.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<Integer, Tombstone> entry = iterator.next();
+                    Tombstone tombstone = entry.getValue();
+                    Entity replacement = world.getEntityByID(entry.getKey().intValue());
+                    if (replacement == null || replacement.isDead) {
+                        worldEntities.add(tombstone.info);
+                    }
+                    if (--tombstone.remainingSyncs <= 0 || replacement != null && !replacement.isDead) {
+                        iterator.remove();
+                    }
+                }
+                if (tombstones.isEmpty()) {
+                    this.destroyedAircraft.remove(world);
+                }
+            }
 
             @SuppressWarnings("unchecked")
             List<EntityPlayerMP> players = world.playerEntities;
@@ -376,6 +400,15 @@ public class MCH_EntityInfoManager {
                 ids.add(Integer.valueOf(info.entityId));
             }
             this.visibleEntityIds = ids;
+        }
+    }
+
+    private static final class Tombstone {
+        final MCH_EntityInfo info;
+        int remainingSyncs = 2;
+
+        Tombstone(MCH_EntityInfo info) {
+            this.info = info;
         }
     }
 

@@ -4594,6 +4594,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void setDead(boolean dropItems) {
         boolean wasDead = super.isDead;
+        if (!wasDead && super.worldObj != null && !super.worldObj.isRemote) {
+            MCH_MOD.entityInfoManager.queueDestroyedAircraft(this);
+        }
         if (!wasDead && super.worldObj != null && super.worldObj.isRemote) {
             MCH_Lib.DbgTrace(super.worldObj,
                 "event=aircraft_client_destroy id=%d object=%d type=%s currentThrottle=%.3f watchedThrottle=%.3f directRider=%s",

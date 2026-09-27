@@ -97,6 +97,12 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
             if (!super.worldObj.isRemote) {
                 if (prm.entity instanceof MCH_EntityTank) {
                     MCH_EntityTank tank = (MCH_EntityTank) prm.entity;
+                    if (getInfo().ballisticApexGpsGuidance) {
+                        // The apex phase flies along the launch vector before terminal
+                        // guidance. Use the launcher rotation, not the tank hull rotation.
+                        yaw = prm.rotYaw;
+                        pitch = prm.rotPitch;
+                    }
                     yaw += prm.randYaw;
                     pitch += prm.randPitch;
                     int wid = tank.getCurrentWeaponID(prm.user);

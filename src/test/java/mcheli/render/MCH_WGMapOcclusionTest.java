@@ -18,7 +18,7 @@ public class MCH_WGMapOcclusionTest {
     }
 
     @Test
-    public void authoritativeBlockedAndUnknownSuppressButUnavailableDoesNot() {
+    public void missingWgmapCoverageSuppressesButUnavailableBridgeDoesNot() {
         assertTrue(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.BLOCKED));
         assertTrue(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.UNKNOWN));
         assertFalse(MCH_WGMapOcclusion.shouldSuppress(MCH_WGMapOcclusion.Result.CLEAR));

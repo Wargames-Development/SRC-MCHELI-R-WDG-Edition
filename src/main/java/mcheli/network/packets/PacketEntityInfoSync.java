@@ -10,6 +10,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 仅包含：快照序号 + 本帧全量实体信息。
@@ -19,6 +20,8 @@ public class PacketEntityInfoSync extends PacketBase {
 
     private static final int AGL_EXTENSION_MAGIC = 0x41474C31; // "AGL1"
     private static final int TEAM_EXTENSION_MAGIC = 0x5445414D; // "TEAM"
+    private static final int LIGHT_EXTENSION_MAGIC = 0x4C495431; // "LIT1"
+    private static final int VEHICLE_ID_EXTENSION_MAGIC = 0x56494431; // "VID1"
 
     private List<MCH_EntityInfo> entities;
     private long snapshotSeq; // 新增：包级快照序号
@@ -67,6 +70,18 @@ public class PacketEntityInfoSync extends PacketBase {
         for (MCH_EntityInfo info : entities) {
             writeUTF(buf, info.teamName != null ? info.teamName : "");
         }
+        buf.writeInt(LIGHT_EXTENSION_MAGIC);
+        buf.writeInt(entities.size());
+        for (MCH_EntityInfo info : entities) {
+            buf.writeInt(info.packedLight);
+        }
+        buf.writeInt(VEHICLE_ID_EXTENSION_MAGIC);
+        buf.writeInt(entities.size());
+        for (MCH_EntityInfo info : entities) {
+            UUID uuid = info.aircraftUuid;
+            buf.writeLong(uuid != null ? uuid.getMostSignificantBits() : 0L);
+            buf.writeLong(uuid != null ? uuid.getLeastSignificantBits() : 0L);
+        }
     }
 
     @Override
@@ -98,6 +113,8 @@ public class PacketEntityInfoSync extends PacketBase {
         }
         readAglExtension(buf);
         readTeamExtension(buf);
+        readLightExtension(buf);
+        readVehicleIdExtension(buf);
     }
 
     private void readAglExtension(ByteBuf buf) {
@@ -125,6 +142,38 @@ public class PacketEntityInfoSync extends PacketBase {
         }
         for (int i = 0; i < teamCount; ++i) {
             entities.get(i).teamName = readUTF(buf);
+        }
+    }
+
+    private void readLightExtension(ByteBuf buf) {
+        if (buf.readableBytes() < 8 || buf.getInt(buf.readerIndex()) != LIGHT_EXTENSION_MAGIC) {
+            return;
+        }
+        buf.readInt();
+        int count = buf.readInt();
+        if (count != entities.size() || count < 0 || count > buf.readableBytes() / 4) {
+            return;
+        }
+        for (int i = 0; i < count; ++i) {
+            entities.get(i).packedLight = buf.readInt();
+        }
+    }
+
+    private void readVehicleIdExtension(ByteBuf buf) {
+        if (buf.readableBytes() < 8 || buf.getInt(buf.readerIndex()) != VEHICLE_ID_EXTENSION_MAGIC) {
+            return;
+        }
+        buf.readInt();
+        int count = buf.readInt();
+        if (count != entities.size() || count < 0 || count > buf.readableBytes() / 16) {
+            return;
+        }
+        for (int i = 0; i < count; ++i) {
+            long most = buf.readLong();
+            long least = buf.readLong();
+            if (most != 0L || least != 0L) {
+                entities.get(i).aircraftUuid = new UUID(most, least);
+            }
         }
     }
 
