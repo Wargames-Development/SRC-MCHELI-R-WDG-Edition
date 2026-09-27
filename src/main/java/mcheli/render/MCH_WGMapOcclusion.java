@@ -19,11 +19,13 @@ public final class MCH_WGMapOcclusion {
 
     private static final String MOD_ID = "wgmap";
     private static final String API_CLASS_NAME = "com.wdg.wgmap.client.occlusion.TerrainOcclusionApi";
-    private static final int SUPPORTED_API_VERSION = 1;
+    private static final int MAX_API_VERSION = 2;
 
     enum Result {
         CLEAR,
         BLOCKED,
+        MISSING_DATA,
+        UNCERTAIN_BLOCK,
         UNKNOWN,
         UNAVAILABLE
     }
@@ -39,6 +41,12 @@ public final class MCH_WGMapOcclusion {
         Minecraft mc = Minecraft.getMinecraft();
         if (aircraft == null || mc.theWorld == null || aircraft.worldObj != mc.theWorld) {
             return false;
+        }
+        if (mc.renderViewEntity != null && mc.gameSettings != null) {
+            double dx = aircraft.posX - mc.renderViewEntity.posX;
+            double dz = aircraft.posZ - mc.renderViewEntity.posZ;
+            double nearRange = Math.max(16.0D, (mc.gameSettings.renderDistanceChunks - 1) * 16.0D);
+            if (Math.max(Math.abs(dx), Math.abs(dz)) <= nearRange) return false;
         }
         return shouldSuppressConfirmedBounds(mc, aircraft.getAcInfo(),
             aircraft.lastTickPosX + (aircraft.posX - aircraft.lastTickPosX) * partialTicks,
@@ -58,12 +66,9 @@ public final class MCH_WGMapOcclusion {
         return shouldSuppress(traceTargetBounds(mc, info, targetX, targetY, targetZ, partialTicks));
     }
 
-    /**
-     * BVR/projected-render occlusion query. Unlike traceTargetBounds(), this traces only the
-     * physical vehicle core so one exposed model corner cannot make an otherwise mountain-hidden
-     * projected contact visible. The target coordinates remain true world-space coordinates.
-     */
-    static Result traceTargetCore(Minecraft mc, MCH_AircraftInfo info,
+    /** Four physical body samples. Two clear rays expose meaningful geometry; three blocked rays
+     * hide the model. Ambiguous combinations retain the previous decision briefly in the renderer. */
+    static Result traceProjectedSamples(Minecraft mc, MCH_AircraftInfo info,
             double targetX, double targetY, double targetZ, float partialTicks) {
         if (mc == null || mc.theWorld == null || mc.theWorld.provider == null
                 || mc.renderViewEntity == null || info == null) {
@@ -77,12 +82,41 @@ public final class MCH_WGMapOcclusion {
             cameraY += ((EntityLivingBase)viewer).getEyeHeight();
         }
 
-        // Aim at the physical center of the vehicle body, not markerHeight or a projected draw-space
-        // position. A small positive minimum keeps ground vehicles from tracing exactly at their feet.
         double bodyHeight = Math.max(0.5D, (double)info.bodyHeight);
-        double coreY = targetY + bodyHeight * 0.5D;
-        return traceSegment(mc.theWorld.provider.dimensionId,
-            cameraX, cameraY, cameraZ, targetX, coreY, targetZ);
+        double width = Math.max(0.5D, info.bodyWidth * 0.35D);
+        double horizontal = Math.hypot(targetX - cameraX, targetZ - cameraZ);
+        double sideX = horizontal > 0.001D ? -(targetZ - cameraZ) / horizontal * width : width;
+        double sideZ = horizontal > 0.001D ? (targetX - cameraX) / horizontal * width : 0.0D;
+        int clear = 0, blocked = 0;
+        boolean missing = false, uncertain = false, unknown = false;
+        int dimension = mc.theWorld.provider.dimensionId;
+        for (int sample = 0; sample < 4; sample++) {
+            double sx = targetX + (sample == 2 ? sideX : sample == 3 ? -sideX : 0.0D);
+            double sy = targetY + bodyHeight * (sample == 0 ? 0.45D : 0.85D);
+            double sz = targetZ + (sample == 2 ? sideZ : sample == 3 ? -sideZ : 0.0D);
+            Result result = traceSegment(dimension, cameraX, cameraY, cameraZ, sx, sy, sz);
+            if (result == Result.UNAVAILABLE) return Result.UNAVAILABLE;
+            if (result == Result.CLEAR) clear++;
+            else if (result == Result.BLOCKED) blocked++;
+            else if (result == Result.MISSING_DATA) missing = true;
+            else if (result == Result.UNCERTAIN_BLOCK) uncertain = true;
+            else unknown = true;
+            if (clear >= 2) return Result.CLEAR;
+            if (blocked >= 3) return Result.BLOCKED;
+        }
+        return missing ? Result.MISSING_DATA : uncertain ? Result.UNCERTAIN_BLOCK
+                : unknown ? Result.UNKNOWN : blocked > clear ? Result.BLOCKED : Result.CLEAR;
+    }
+
+    static long terrainGeneration() {
+        Binding current = getBinding();
+        if (current == null || current.generation == null) return 0L;
+        try {
+            return ((Long)current.generation.invoke(null)).longValue();
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
+            disableBinding();
+            return 0L;
+        }
     }
 
     static Result traceTargetBounds(Minecraft mc, MCH_AircraftInfo info,
@@ -121,7 +155,7 @@ public final class MCH_WGMapOcclusion {
             if (!Boolean.TRUE.equals(available)) {
                 return Result.UNAVAILABLE;
             }
-            Object result = current.traceSegment.invoke(null,
+            Object result = (current.detailedSegment != null ? current.detailedSegment : current.traceSegment).invoke(null,
                 Integer.valueOf(dimension),
                 Double.valueOf(cameraX), Double.valueOf(cameraY), Double.valueOf(cameraZ),
                 Double.valueOf(targetX), Double.valueOf(targetY), Double.valueOf(targetZ));
@@ -169,14 +203,16 @@ public final class MCH_WGMapOcclusion {
         return Result.UNAVAILABLE;
     }
 
-    /** Missing WGMap terrain coverage must not reveal a projected contact. */
+    /** Only confirmed obstruction can establish a hidden state without prior evidence. */
     static boolean shouldSuppress(Result result) {
-        return result == Result.BLOCKED || result == Result.UNKNOWN;
+        return result == Result.BLOCKED;
     }
 
     static Result mapApiResultName(String name) {
         if ("CLEAR".equals(name)) return Result.CLEAR;
         if ("BLOCKED".equals(name)) return Result.BLOCKED;
+        if ("MISSING_DATA".equals(name)) return Result.MISSING_DATA;
+        if ("UNCERTAIN_BLOCK".equals(name)) return Result.UNCERTAIN_BLOCK;
         return Result.UNKNOWN;
     }
 
@@ -197,7 +233,8 @@ public final class MCH_WGMapOcclusion {
         try {
             Class<?> api = Class.forName(API_CLASS_NAME, false, MCH_WGMapOcclusion.class.getClassLoader());
             Field versionField = api.getField("API_VERSION");
-            if (versionField.getInt(null) != SUPPORTED_API_VERSION) {
+            int apiVersion = versionField.getInt(null);
+            if (apiVersion < 1 || apiVersion > MAX_API_VERSION) {
                 return null;
             }
             Method isAvailable = api.getMethod("isAvailable");
@@ -210,7 +247,17 @@ public final class MCH_WGMapOcclusion {
                 Double.TYPE, Double.TYPE, Double.TYPE,
                 Double.TYPE, Double.TYPE, Double.TYPE,
                 Double.TYPE, Double.TYPE, Double.TYPE);
-            binding = new Binding(isAvailable, traceSegment, traceBounds);
+            Method detailedSegment = null;
+            Method generation = null;
+            try {
+                detailedSegment = api.getMethod("traceSegmentDetailed",
+                    Integer.TYPE, Double.TYPE, Double.TYPE, Double.TYPE,
+                    Double.TYPE, Double.TYPE, Double.TYPE);
+                generation = api.getMethod("getTerrainGeneration");
+            } catch (NoSuchMethodException legacyApi) {
+                // WGMap v1 remains usable with its coarse UNKNOWN result and short retry.
+            }
+            binding = new Binding(isAvailable, traceSegment, traceBounds, detailedSegment, generation);
         } catch (ClassNotFoundException e) {
             binding = null;
         } catch (NoSuchFieldException e) {
@@ -236,11 +283,16 @@ public final class MCH_WGMapOcclusion {
         final Method isAvailable;
         final Method traceSegment;
         final Method traceBounds;
+        final Method detailedSegment;
+        final Method generation;
 
-        Binding(Method isAvailable, Method traceSegment, Method traceBounds) {
+        Binding(Method isAvailable, Method traceSegment, Method traceBounds,
+                Method detailedSegment, Method generation) {
             this.isAvailable = isAvailable;
             this.traceSegment = traceSegment;
             this.traceBounds = traceBounds;
+            this.detailedSegment = detailedSegment;
+            this.generation = generation;
         }
     }
 }

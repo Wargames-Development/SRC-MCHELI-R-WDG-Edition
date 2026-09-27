@@ -28,6 +28,7 @@ public class MCH_EntityInfoClientTracker {
     private static final double RESYNC_MAX_HORIZONTAL_DISTANCE_SQ = 256.0D * 256.0D;
 
     private static final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
+    private static volatile Collection<MCH_EntityInfo> renderSnapshot = Collections.emptyList();
     private static volatile Set<Integer> latestSnapshotEntityIds = Collections.emptySet();
     /**
      * 可调：心跳缺席的毫秒阈值（例如 5s）
@@ -78,6 +79,7 @@ public class MCH_EntityInfoClientTracker {
 
         latestSnapshotEntityIds = Collections.unmodifiableSet(snapshotEntityIds);
         lastAppliedSeq = snapshotSeq;
+        publishRenderSnapshot();
     }
 
     /**
@@ -88,6 +90,7 @@ public class MCH_EntityInfoClientTracker {
         for (MCH_EntityInfo info : infos) {
             tracked.remove(info.entityId);
         }
+        publishRenderSnapshot();
     }
 
     public static MCH_EntityInfo getEntityInfo(int entityId) {
@@ -100,11 +103,14 @@ public class MCH_EntityInfoClientTracker {
     }
 
     public static Collection<MCH_EntityInfo> getAllTrackedEntities() {
-        List<MCH_EntityInfo> out = new ArrayList<>(tracked.size());
-        for (Tracked t : tracked.values()) {
-            out.add(t.info);
-        }
-        return Collections.unmodifiableCollection(out);
+        return renderSnapshot;
+    }
+
+    /** Packet/tick publication owns the copy; render readers reuse it without allocating. */
+    private static void publishRenderSnapshot() {
+        List<MCH_EntityInfo> out = new ArrayList<MCH_EntityInfo>(tracked.size());
+        for (Tracked entry : tracked.values()) out.add(entry.info);
+        renderSnapshot = Collections.unmodifiableList(out);
     }
 
     /**
@@ -117,6 +123,7 @@ public class MCH_EntityInfoClientTracker {
         long seqNow = latestSeqObserved;
 
         Iterator<Map.Entry<Integer, Tracked>> it = tracked.entrySet().iterator();
+        boolean changed = false;
         while (it.hasNext()) {
             Map.Entry<Integer, Tracked> e = it.next();
             Tracked t = e.getValue();
@@ -126,8 +133,10 @@ public class MCH_EntityInfoClientTracker {
 
             if (timeExpired || seqExpired) {
                 it.remove();
+                changed = true;
             }
         }
+        if (changed) publishRenderSnapshot();
     }
 
     private static void requestMissingAircraftResync() {
@@ -181,6 +190,7 @@ public class MCH_EntityInfoClientTracker {
 
     public static void resetTracker() {
         tracked.clear();
+        renderSnapshot = Collections.emptyList();
         latestSnapshotEntityIds = Collections.emptySet();
         lastAppliedSeq = -1L;
         latestSeqObserved = -1L;
@@ -189,7 +199,7 @@ public class MCH_EntityInfoClientTracker {
     }
 
     private static final class Tracked {
-        MCH_EntityInfo info;
+        volatile MCH_EntityInfo info;
         long lastSeenMillis;
         long lastSeenSeq;
         long lastResyncRequestMillis;

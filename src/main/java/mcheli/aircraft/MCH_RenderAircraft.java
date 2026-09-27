@@ -1112,9 +1112,13 @@ public abstract class MCH_RenderAircraft extends W_Render {
         MCH_AircraftInfo info = ac.getAcInfo();
         if (info != null) {
             boolean skipNormalRender = shouldSkipRender(entity);
-            boolean farRenderOwnsModel = MCH_RenderFarVehicle.usesUnifiedRender(ac);
+            // A carried aircraft is drawn recursively by its parent. The unified pass skips it
+            // outside that recursion, so the nested call must retain normal model ownership.
+            boolean nestedCarriedRender = renderingEntity && ac.isSkipNormalRender();
+            boolean farRenderOwnsModel = MCH_RenderFarVehicle.usesUnifiedRender(ac) && !nestedCarriedRender;
             if (!skipNormalRender && !farRenderOwnsModel) {
-                boolean terrainSuppressed = MCH_WGMapOcclusion.shouldSuppressAircraft(ac, tickTime);
+                boolean terrainSuppressed = !nestedCarriedRender
+                    && MCH_WGMapOcclusion.shouldSuppressAircraft(ac, tickTime);
                 if (terrainSuppressed) return;
             }
             GL11.glPushMatrix();

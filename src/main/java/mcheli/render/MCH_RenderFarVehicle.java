@@ -9,6 +9,7 @@ import mcheli.MCH_Config;
 import mcheli.MCH_EntityInfo;
 import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.MCH_EntityInfoManager;
+import mcheli.MCH_Lib;
 import mcheli.MCH_ModelManager;
 import mcheli.aircraft.MCH_AircraftInfo;
 import mcheli.aircraft.MCH_EntityAircraft;
@@ -27,6 +28,7 @@ import mcheli.vehicle.MCH_VehicleInfoManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.renderer.culling.Frustrum;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.util.MathHelper;
@@ -36,9 +38,11 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,7 +55,11 @@ public class MCH_RenderFarVehicle {
     private static final double TRANSITION_WIDTH = CHUNK_SIZE;
     private static final double POSITION_SMOOTHING_MILLIS = 100.0D;
     private static final double SNAP_DISTANCE_SQ = 64.0D * 64.0D;
-    private static final long OCCLUSION_UNAVAILABLE_HOLD_MILLIS = 1000L;
+    private static final long OCCLUSION_RESULT_CACHE_MILLIS = 160L;
+    private static final long OCCLUSION_RETRY_MILLIS = 80L;
+    private static final long MISSING_HOLD_MILLIS = 500L;
+    private static final long UNCERTAIN_HOLD_MILLIS = 220L;
+    private static final long TRACKER_EXIT_GRACE_MILLIS = 300L;
     private static final double MAX_CONTACT_DISTANCE_SQ = MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE
         * MCH_EntityInfoManager.ENTITY_INFO_SYNC_RANGE;
     private static final ResourceLocation THERMAL_WHITE = new ResourceLocation("mcheli", "textures/test.png");
@@ -59,6 +67,8 @@ public class MCH_RenderFarVehicle {
     private final Map<Integer, SmoothedPose> smoothedPoses = new HashMap<Integer, SmoothedPose>();
     private final Map<Integer, UUID> retiredEntityIds = new HashMap<Integer, UUID>();
     private final Map<UUID, MCH_EntityInfo> newestByUuid = new HashMap<UUID, MCH_EntityInfo>();
+    private final Map<UUID, MCH_EntityAircraft> loadedByUuid = new HashMap<UUID, MCH_EntityAircraft>();
+    private final List<MCH_EntityAircraft> loadedAircraft = new ArrayList<MCH_EntityAircraft>();
     private World lastWorld;
     private int renderFrame;
 
@@ -69,6 +79,8 @@ public class MCH_RenderFarVehicle {
             this.smoothedPoses.clear();
             this.retiredEntityIds.clear();
             this.newestByUuid.clear();
+            this.loadedByUuid.clear();
+            this.loadedAircraft.clear();
             this.lastWorld = null;
             return;
         }
@@ -76,11 +88,22 @@ public class MCH_RenderFarVehicle {
             this.smoothedPoses.clear();
             this.retiredEntityIds.clear();
             this.newestByUuid.clear();
+            this.loadedByUuid.clear();
+            this.loadedAircraft.clear();
             this.lastWorld = mc.theWorld;
         }
 
         ++this.renderFrame;
         long now = System.currentTimeMillis();
+        this.loadedByUuid.clear();
+        this.loadedAircraft.clear();
+        for (Object object : mc.theWorld.loadedEntityList) {
+            if (object instanceof MCH_EntityAircraft && !((MCH_EntityAircraft)object).isDead) {
+                MCH_EntityAircraft aircraft = (MCH_EntityAircraft)object;
+                this.loadedAircraft.add(aircraft);
+                this.loadedByUuid.put(aircraft.getUniqueID(), aircraft);
+            }
+        }
         Collection<MCH_EntityInfo> contacts = MCH_EntityInfoClientTracker.getAllTrackedEntities();
         this.newestByUuid.clear();
         for (MCH_EntityInfo contact : contacts) {
@@ -100,10 +123,25 @@ public class MCH_RenderFarVehicle {
                 continue;
             }
             if (contact.destroyed) {
-                this.smoothedPoses.remove(Integer.valueOf(contact.entityId));
+                SmoothedPose destroyed = this.smoothedPoses.remove(Integer.valueOf(contact.entityId));
+                if (destroyed != null) destroyed.report("DESTROYED", contact.entityId);
                 continue;
             }
             UUID uuid = contact.aircraftUuid;
+            MCH_EntityAircraft loaded = uuid != null ? this.loadedByUuid.get(uuid) : null;
+            if (loaded != null && loaded.getEntityId() != contact.entityId) {
+                this.retiredEntityIds.put(Integer.valueOf(contact.entityId), uuid);
+                SmoothedPose old = this.smoothedPoses.remove(Integer.valueOf(contact.entityId));
+                if (old != null) {
+                    old.report("RETIRED", contact.entityId);
+                    Integer loadedId = Integer.valueOf(loaded.getEntityId());
+                    SmoothedPose destination = this.smoothedPoses.get(loadedId);
+                    if (destination == null || !uuid.equals(destination.aircraftUuid)) {
+                        this.smoothedPoses.put(loadedId, old);
+                    }
+                }
+                continue;
+            }
             if (uuid != null && this.newestByUuid.get(uuid) != contact) {
                 this.retiredEntityIds.put(Integer.valueOf(contact.entityId), uuid);
                 continue;
@@ -130,7 +168,7 @@ public class MCH_RenderFarVehicle {
             } else if (!this.smoothedPoses.containsKey(Integer.valueOf(contact.entityId))) {
                 this.smoothedPoses.put(Integer.valueOf(contact.entityId), pose);
             }
-            pose.observe(contact);
+            pose.observe(contact, now);
         }
 
         Iterator<Map.Entry<Integer, UUID>> retired = this.retiredEntityIds.entrySet().iterator();
@@ -142,11 +180,7 @@ public class MCH_RenderFarVehicle {
 
         // RenderGlobal can skip an entity during tracker/chunk handoff. WorldClient's loaded list
         // supplies the model directly even on a frame with no snapshot or normal render call.
-        for (Object object : mc.theWorld.loadedEntityList) {
-            if (!(object instanceof MCH_EntityAircraft)) {
-                continue;
-            }
-            MCH_EntityAircraft aircraft = (MCH_EntityAircraft)object;
+        for (MCH_EntityAircraft aircraft : this.loadedAircraft) {
             Integer entityId = Integer.valueOf(aircraft.getEntityId());
             UUID retiredUuid = this.retiredEntityIds.get(entityId);
             if (retiredUuid != null) {
@@ -163,9 +197,10 @@ public class MCH_RenderFarVehicle {
             if (definition == null) {
                 continue;
             }
-            SmoothedPose pose = this.getSmoothedPose(aircraft.getEntityId());
+            SmoothedPose pose = this.getSmoothedPose(aircraft);
             pose.updateFromAircraft(aircraft, definition, now, this.renderFrame, event.partialTicks);
             pose.visualAircraft = aircraft;
+            pose.visualSeenFrame = this.renderFrame;
             pose.lightmapBrightness = pose.contact != null && pose.contact.packedLight >= 0
                 ? pose.contact.packedLight : aircraft.getBrightnessForRender(event.partialTicks);
         }
@@ -173,6 +208,9 @@ public class MCH_RenderFarVehicle {
         if (this.smoothedPoses.isEmpty()) {
             return;
         }
+        Frustrum frustum = new Frustrum();
+        frustum.setPosition(RenderManager.instance.viewerPosX,
+                RenderManager.instance.viewerPosY, RenderManager.instance.viewerPosZ);
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT);
         mc.entityRenderer.enableLightmap(event.partialTicks);
         try {
@@ -182,13 +220,23 @@ public class MCH_RenderFarVehicle {
                 SmoothedPose pose = entry.getValue();
                 if (pose.lastRenderFrame != this.renderFrame
                     && !MCH_EntityInfoClientTracker.isEntityInLatestSnapshot(entry.getKey().intValue())
-                    && isOverlappedByLoadedAircraft(mc.theWorld, pose, entry.getKey().intValue())) {
+                    && this.isOverlappedByLoadedAircraft(pose, entry.getKey().intValue())) {
                     continue;
+                }
+                if (pose.contact != null && MCH_EntityInfoClientTracker.getEntityInfo(entry.getKey().intValue()) == null
+                        && now - pose.lastContactSeenMillis > TRACKER_EXIT_GRACE_MILLIS) {
+                    pose.contact = null;
+                    pose.report("TRACKER_EXPIRED", entry.getKey().intValue());
+                }
+                if (pose.visualAircraft != null && pose.visualSeenFrame != this.renderFrame) {
+                    pose.visualAircraft = null;
+                    pose.report("STALE_VISUAL_ENTITY", entry.getKey().intValue());
                 }
                 if (pose.lastRenderFrame != this.renderFrame) {
                     if (pose.contact != null) {
                         pose.update(pose.contact, now, this.renderFrame);
                     } else if (pose.visualAircraft == null) {
+                        pose.report("RETIRED", entry.getKey().intValue());
                         iterator.remove();
                         continue;
                     }
@@ -201,46 +249,59 @@ public class MCH_RenderFarVehicle {
                     continue;
                 }
                 MCH_EntityAircraft current = pose.visualAircraft;
-                if (current != null && current.worldObj != mc.theWorld) {
+                if (current != null && (current.worldObj != mc.theWorld || current.isDead)) {
                     pose.visualAircraft = null;
                     current = null;
                 }
                 if (current != null && current.isDestroyed()) {
+                    pose.report("DESTROYED", entry.getKey().intValue());
                     iterator.remove();
                     continue;
                 }
                 if (current != null && MCH_RenderAircraft.shouldSkipRender(current)) {
+                    pose.report("SKIP_RENDER_STATE", entry.getKey().intValue());
                     continue;
                 }
                 RenderDefinition definition = current != null
                     ? this.resolveDefinition(current) : this.resolveDefinition(pose.entityClassName, pose.entityName);
-                if (definition == null || definition.info.model == null) {
+                if (definition == null) {
+                    pose.report("NO_DEFINITION", entry.getKey().intValue());
                     continue;
                 }
-                // Test terrain at the contact's true world-space position. Once renderContact()
-                // projects a distant contact toward the vanilla far plane, whole-model traceBounds()
-                // becomes too permissive: one clear corner can reveal the entire projected model.
-                // Use a single physical-core ray for projected BVR contacts, while retaining the
-                // conservative bounds query for contacts still rendered at their true distance.
+                if (definition.info.model == null) {
+                    pose.report("NO_MODEL", entry.getKey().intValue());
+                    continue;
+                }
+                // Test terrain at the true world pose. The projected draw position is only for
+                // frustum/depth placement; bounds corners would expose too much of a distant model.
                 double trueDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
                 boolean projectedBvr = trueDistance > getTransitionStart(mc);
-                // Loaded nearby aircraft render at their true position, so the world's depth buffer
-                // handles terrain. WGMap coverage may be incomplete during chunk handoff.
-                MCH_WGMapOcclusion.Result terrainResult = current != null
-                    ? MCH_WGMapOcclusion.Result.CLEAR : MCH_WGMapOcclusion.Result.UNAVAILABLE;
-                if (projectedBvr) {
-                    terrainResult = MCH_WGMapOcclusion.traceTargetCore(
-                        mc, definition.info, pose.x, pose.y, pose.z, event.partialTicks);
-                } else if (current == null) {
-                    terrainResult = MCH_WGMapOcclusion.traceTargetBounds(
-                        mc, definition.info, pose.x, pose.y, pose.z, event.partialTicks);
-                }
-                if (!projectedBvr && terrainResult == MCH_WGMapOcclusion.Result.UNKNOWN) {
-                    terrainResult = MCH_WGMapOcclusion.Result.UNAVAILABLE;
-                }
-                if (pose.shouldSuppressForTerrain(terrainResult, now)) {
+                pose.projectedBvr = projectedBvr;
+                if (!couldContributeToFrame(frustum, definition.info, dx, dy, dz,
+                        projectedBvr ? getTransitionStart(mc) / trueDistance : 1.0D)) {
+                    pose.report("OUTSIDE_FRUSTUM", entry.getKey().intValue());
                     continue;
                 }
+                // Loaded nearby aircraft render at their true position, so the world's depth buffer
+                // handles terrain. WGMap coverage may be incomplete during chunk handoff.
+                long terrainGeneration = current != null && !projectedBvr
+                        ? 0L : MCH_WGMapOcclusion.terrainGeneration();
+                MCH_WGMapOcclusion.Result terrainResult = current != null && !projectedBvr
+                    ? MCH_WGMapOcclusion.Result.CLEAR
+                    : pose.queryTerrain(mc, definition.info, event.partialTicks, projectedBvr,
+                            now, terrainGeneration,
+                            RenderManager.instance.viewerPosX, RenderManager.instance.viewerPosY,
+                            RenderManager.instance.viewerPosZ);
+                if (pose.shouldSuppressForTerrain(terrainResult, now,
+                        terrainGeneration,
+                        RenderManager.instance.viewerPosX, RenderManager.instance.viewerPosY,
+                        RenderManager.instance.viewerPosZ)) {
+                    if (MCH_Config.DebugLog) pose.report(terrainReason(pose, terrainResult, true,
+                            now, terrainGeneration), entry.getKey().intValue());
+                    continue;
+                }
+                if (MCH_Config.DebugLog) pose.report(current != null && !projectedBvr ? "NORMAL_DEPTH_RENDER"
+                        : terrainReason(pose, terrainResult, false, now, terrainGeneration), entry.getKey().intValue());
                 int brightness = pose.lightmapBrightness >= 0 ? pose.lightmapBrightness
                     : this.resolveLightmapBrightness(mc, pose, null, event.partialTicks);
                 this.renderContact(mc, pose, definition, current, event.partialTicks, brightness);
@@ -394,20 +455,15 @@ public class MCH_RenderFarVehicle {
         }
     }
 
-    private static boolean isOverlappedByLoadedAircraft(World world, SmoothedPose pose, int oldId) {
-        for (Object object : world.loadedEntityList) {
-            if (!(object instanceof MCH_EntityAircraft)) {
-                continue;
-            }
-            MCH_EntityAircraft aircraft = (MCH_EntityAircraft)object;
+    private boolean isOverlappedByLoadedAircraft(SmoothedPose pose, int oldId) {
+        if (pose.aircraftUuid != null) {
+            MCH_EntityAircraft same = this.loadedByUuid.get(pose.aircraftUuid);
+            return same != null && same.getEntityId() != oldId;
+        }
+        for (MCH_EntityAircraft aircraft : this.loadedAircraft) {
             if (aircraft.getEntityId() == oldId || aircraft.isDead || aircraft.getAcInfo() == null
                 || !aircraft.getClass().getName().equals(pose.entityClassName)
                 || !aircraft.getAcInfo().name.equals(pose.entityName)) {
-                continue;
-            }
-            MCH_EntityInfo other = MCH_EntityInfoClientTracker.getEntityInfo(aircraft.getEntityId());
-            if (other != null && pose.aircraftUuid != null && other.aircraftUuid != null
-                && !pose.aircraftUuid.equals(other.aircraftUuid)) {
                 continue;
             }
             double dx = aircraft.posX - pose.x;
@@ -603,6 +659,40 @@ public class MCH_RenderFarVehicle {
         return pose;
     }
 
+    private SmoothedPose getSmoothedPose(MCH_EntityAircraft aircraft) {
+        int entityId = aircraft.getEntityId();
+        SmoothedPose pose = this.smoothedPoses.get(Integer.valueOf(entityId));
+        UUID uuid = aircraft.getUniqueID();
+        if (pose == null && uuid != null) {
+            Iterator<Map.Entry<Integer, SmoothedPose>> iterator = this.smoothedPoses.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<Integer, SmoothedPose> old = iterator.next();
+                if (uuid.equals(old.getValue().aircraftUuid)) {
+                    pose = old.getValue();
+                    iterator.remove();
+                    break;
+                }
+            }
+            if (pose != null) this.smoothedPoses.put(Integer.valueOf(entityId), pose);
+        }
+        return pose != null ? pose : this.getSmoothedPose(entityId);
+    }
+
+    private static boolean couldContributeToFrame(Frustrum frustum, MCH_AircraftInfo info,
+            double dx, double dy, double dz, double scale) {
+        if (!Double.isFinite(dx) || !Double.isFinite(dy) || !Double.isFinite(dz)
+                || !Double.isFinite(scale) || scale <= 0.0D) return false;
+        // Match renderContact's camera-relative projection. Generous model bounds keep edge vehicles.
+        double x = RenderManager.instance.viewerPosX + dx * scale;
+        double y = RenderManager.instance.viewerPosY + dy * scale;
+        double z = RenderManager.instance.viewerPosZ + dz * scale;
+        double radius = Math.max(3.0D, Math.max(info.bodyWidth, Math.max(Math.abs(info.bbZmin),
+                Math.abs(info.bbZmax)))) * scale;
+        double height = Math.max(3.0D, Math.max(info.bodyHeight, info.markerHeight)) * scale;
+        return frustum.isBoxInFrustum(x - radius, y - radius, z - radius,
+                x + radius, y + height + radius, z + radius);
+    }
+
     public static boolean usesUnifiedRender(MCH_EntityAircraft aircraft) {
         if (aircraft == null || aircraft.isDestroyed() || aircraft.getAcInfo() == null || aircraft.getAcInfo().model == null
             || !isSupportedVehicleClass(aircraft.getClass().getName())) {
@@ -636,6 +726,19 @@ public class MCH_RenderFarVehicle {
 
     private static double horizontalChunkDistance(double x, double z) {
         return Math.max(Math.abs(x), Math.abs(z));
+    }
+
+    private static String terrainReason(SmoothedPose pose, MCH_WGMapOcclusion.Result result,
+            boolean hidden, long now, long generation) {
+        if (result == MCH_WGMapOcclusion.Result.BLOCKED) return "HIDDEN_TERRAIN_BLOCKED";
+        if (result == MCH_WGMapOcclusion.Result.CLEAR) return "VISIBLE_CLEAR";
+        if (hidden) return "HELD_PREVIOUS_BLOCKED";
+        if (pose.terrainConfirmedMillis > 0L && !pose.terrainBlocked
+                && pose.terrainConfirmedGeneration == generation
+                && now - pose.terrainConfirmedMillis <= MISSING_HOLD_MILLIS) return "HELD_PREVIOUS_VISIBLE";
+        if (result == MCH_WGMapOcclusion.Result.MISSING_DATA) return "OCCLUSION_UNKNOWN_MISSING_DATA";
+        if (result == MCH_WGMapOcclusion.Result.UNCERTAIN_BLOCK) return "OCCLUSION_UNKNOWN_BLOCK_CLASS";
+        return "OCCLUSION_UNAVAILABLE";
     }
 
     private static float clamp(float value, float minimum, float maximum) {
@@ -688,14 +791,27 @@ public class MCH_RenderFarVehicle {
         private MCH_EntityInfo contact;
         private UUID aircraftUuid;
         private MCH_EntityAircraft visualAircraft;
+        private int visualSeenFrame;
+        private long lastContactSeenMillis;
+        private long handoffUntilMillis;
         private int lightmapBrightness = -1;
         private boolean terrainBlocked;
-        private long terrainBlockedConfirmedMillis;
+        private long terrainConfirmedMillis;
+        private long terrainConfirmedGeneration;
+        private double confirmedX, confirmedY, confirmedZ;
+        private double confirmedCameraX, confirmedCameraY, confirmedCameraZ;
+        private MCH_WGMapOcclusion.Result cachedTerrain;
+        private long cachedTerrainMillis, cachedTerrainGeneration;
+        private double cachedX, cachedY, cachedZ;
+        private double cachedCameraX, cachedCameraY, cachedCameraZ;
+        private boolean cachedProjected;
+        private boolean projectedBvr;
+        private String lastReason;
         private long lastUpdateMillis;
         private int lastRenderFrame;
         private boolean initialized;
 
-        private void observe(MCH_EntityInfo contact) {
+        private void observe(MCH_EntityInfo contact, long now) {
             this.ensureIdentity(contact.entityClassName, contact.entityName);
             if (this.aircraftUuid != null && contact.aircraftUuid != null
                 && !this.aircraftUuid.equals(contact.aircraftUuid)) {
@@ -708,6 +824,7 @@ public class MCH_RenderFarVehicle {
                 this.initialized = false;
             }
             this.aircraftUuid = contact.aircraftUuid;
+            this.lastContactSeenMillis = now;
             if (this.contact == null || contact.lastUpdateTime >= this.contact.lastUpdateTime) {
                 this.contact = contact;
                 if (contact.packedLight >= 0) {
@@ -719,14 +836,37 @@ public class MCH_RenderFarVehicle {
         private void updateFromAircraft(MCH_EntityAircraft aircraft, RenderDefinition definition,
                 long now, int renderFrame, float partialTicks) {
             this.ensureIdentity(aircraft.getClass().getName(), aircraft.getAcInfo().name);
-            this.x = aircraft.lastTickPosX + (aircraft.posX - aircraft.lastTickPosX) * partialTicks;
-            this.y = aircraft.lastTickPosY + (aircraft.posY - aircraft.lastTickPosY) * partialTicks;
-            this.z = aircraft.lastTickPosZ + (aircraft.posZ - aircraft.lastTickPosZ) * partialTicks;
-            this.yaw = interpolateAngle(aircraft.prevRotationYaw, aircraft.getRotYaw(), partialTicks);
-            this.pitch = aircraft.calcRotPitch(partialTicks);
-            this.roll = interpolateAngle(aircraft.prevRotationRoll, aircraft.getRotRoll(), partialTicks);
-            this.turretYaw = aircraft.getLastRiderYaw();
-            this.turretPitch = aircraft.getLastRiderPitch();
+            if (this.aircraftUuid != null && !this.aircraftUuid.equals(aircraft.getUniqueID())) {
+                this.contact = null;
+                this.initialized = false;
+                this.clearTerrainOcclusion();
+            }
+            this.aircraftUuid = aircraft.getUniqueID();
+            double targetX = aircraft.lastTickPosX + (aircraft.posX - aircraft.lastTickPosX) * partialTicks;
+            double targetY = aircraft.lastTickPosY + (aircraft.posY - aircraft.lastTickPosY) * partialTicks;
+            double targetZ = aircraft.lastTickPosZ + (aircraft.posZ - aircraft.lastTickPosZ) * partialTicks;
+            float targetYaw = interpolateAngle(aircraft.prevRotationYaw, aircraft.getRotYaw(), partialTicks);
+            float targetPitch = aircraft.calcRotPitch(partialTicks);
+            float targetRoll = interpolateAngle(aircraft.prevRotationRoll, aircraft.getRotRoll(), partialTicks);
+            double dx = targetX - this.x, dy = targetY - this.y, dz = targetZ - this.z;
+            if (this.visualAircraft != aircraft || this.visualSeenFrame != renderFrame - 1) {
+                this.handoffUntilMillis = now + 180L;
+            }
+            if (!this.initialized || dx * dx + dy * dy + dz * dz > 16.0D * 16.0D
+                    || now >= this.handoffUntilMillis) {
+                this.x = targetX; this.y = targetY; this.z = targetZ;
+                this.yaw = targetYaw; this.pitch = targetPitch; this.roll = targetRoll;
+                this.turretYaw = aircraft.getLastRiderYaw();
+                this.turretPitch = aircraft.getLastRiderPitch();
+            } else {
+                float factor = (float)(1.0D - Math.exp(-Math.max(1L, now - this.lastUpdateMillis) / 65.0D));
+                this.x += dx * factor; this.y += dy * factor; this.z += dz * factor;
+                this.yaw = interpolateAngle(this.yaw, targetYaw, factor);
+                this.pitch = interpolateAngle(this.pitch, targetPitch, factor);
+                this.roll = interpolateAngle(this.roll, targetRoll, factor);
+                this.turretYaw = interpolateAngle(this.turretYaw, aircraft.getLastRiderYaw(), factor);
+                this.turretPitch = interpolateAngle(this.turretPitch, aircraft.getLastRiderPitch(), factor);
+            }
             String currentTexture = aircraft.getTextureName();
             if (currentTexture == null || currentTexture.isEmpty()) {
                 currentTexture = definition.info.name;
@@ -791,32 +931,80 @@ public class MCH_RenderFarVehicle {
             }
         }
 
-        private boolean shouldSuppressForTerrain(MCH_WGMapOcclusion.Result result, long nowMillis) {
+        private MCH_WGMapOcclusion.Result queryTerrain(Minecraft mc, MCH_AircraftInfo info,
+                float partialTicks, boolean projected, long now, long generation,
+                double cameraX, double cameraY, double cameraZ) {
+            long age = now - this.cachedTerrainMillis;
+            long lifetime = this.cachedTerrain == MCH_WGMapOcclusion.Result.CLEAR
+                    || this.cachedTerrain == MCH_WGMapOcclusion.Result.BLOCKED
+                    ? OCCLUSION_RESULT_CACHE_MILLIS : OCCLUSION_RETRY_MILLIS;
+            if (this.cachedTerrain != null && age >= 0 && age < lifetime
+                    && this.cachedTerrainGeneration == generation && this.cachedProjected == projected
+                    && close(this.x, this.y, this.z, this.cachedX, this.cachedY, this.cachedZ, 0.25D)
+                    && close(cameraX, cameraY, cameraZ,
+                            this.cachedCameraX, this.cachedCameraY, this.cachedCameraZ, 0.25D)) {
+                return this.cachedTerrain;
+            }
+            MCH_WGMapOcclusion.Result result = MCH_WGMapOcclusion.traceProjectedSamples(
+                    mc, info, this.x, this.y, this.z, partialTicks);
+            this.cachedTerrain = result;
+            this.cachedTerrainMillis = now;
+            this.cachedTerrainGeneration = generation;
+            this.cachedProjected = projected;
+            this.cachedX = this.x; this.cachedY = this.y; this.cachedZ = this.z;
+            this.cachedCameraX = cameraX; this.cachedCameraY = cameraY; this.cachedCameraZ = cameraZ;
+            return result;
+        }
+
+        private boolean shouldSuppressForTerrain(MCH_WGMapOcclusion.Result result, long nowMillis,
+                long generation, double cameraX, double cameraY, double cameraZ) {
             if (result == MCH_WGMapOcclusion.Result.BLOCKED) {
                 this.terrainBlocked = true;
-                this.terrainBlockedConfirmedMillis = nowMillis;
-                return true;
-            }
-            if (result == MCH_WGMapOcclusion.Result.UNKNOWN) {
+                this.rememberTerrain(nowMillis, generation, cameraX, cameraY, cameraZ);
                 return true;
             }
             if (result == MCH_WGMapOcclusion.Result.CLEAR) {
-                this.clearTerrainOcclusion();
+                this.terrainBlocked = false;
+                this.rememberTerrain(nowMillis, generation, cameraX, cameraY, cameraZ);
                 return false;
             }
-            if (!this.terrainBlocked) {
-                return false;
-            }
-            if (nowMillis - this.terrainBlockedConfirmedMillis <= OCCLUSION_UNAVAILABLE_HOLD_MILLIS) {
-                return true;
-            }
-            this.clearTerrainOcclusion();
-            return false;
+            long hold = result == MCH_WGMapOcclusion.Result.UNCERTAIN_BLOCK
+                    ? UNCERTAIN_HOLD_MILLIS : MISSING_HOLD_MILLIS;
+            // UNKNOWN means no reliable answer, never a newly confirmed mountain.
+            return this.terrainBlocked && nowMillis - this.terrainConfirmedMillis <= hold
+                    && generation == this.terrainConfirmedGeneration
+                    && close(this.x, this.y, this.z, this.confirmedX, this.confirmedY, this.confirmedZ, 1.0D)
+                    && close(cameraX, cameraY, cameraZ,
+                            this.confirmedCameraX, this.confirmedCameraY, this.confirmedCameraZ, 1.0D);
+        }
+
+        private void rememberTerrain(long now, long generation,
+                double cameraX, double cameraY, double cameraZ) {
+            this.terrainConfirmedMillis = now;
+            this.terrainConfirmedGeneration = generation;
+            this.confirmedX = this.x; this.confirmedY = this.y; this.confirmedZ = this.z;
+            this.confirmedCameraX = cameraX; this.confirmedCameraY = cameraY; this.confirmedCameraZ = cameraZ;
         }
 
         private void clearTerrainOcclusion() {
             this.terrainBlocked = false;
-            this.terrainBlockedConfirmedMillis = 0L;
+            this.terrainConfirmedMillis = 0L;
+            this.cachedTerrain = null;
+        }
+
+        private void report(String reason, int entityId) {
+            if (MCH_Config.DebugLog && !reason.equals(this.lastReason)) {
+                MCH_Lib.DbgLog(true, "[FarVehicle] id=%d uuid=%s mode=%s %s",
+                        Integer.valueOf(entityId), this.aircraftUuid,
+                        this.projectedBvr ? "PROJECTED_BVR" : "NORMAL_DEPTH_RENDER", reason);
+                this.lastReason = reason;
+            }
+        }
+
+        private static boolean close(double x, double y, double z,
+                double otherX, double otherY, double otherZ, double limit) {
+            double dx = x - otherX, dy = y - otherY, dz = z - otherZ;
+            return dx * dx + dy * dy + dz * dz <= limit * limit;
         }
 
         private static float interpolateAngle(float current, float target, float factor) {
