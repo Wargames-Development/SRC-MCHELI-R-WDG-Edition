@@ -341,6 +341,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
      * APS范围
      */
     public int apsRange = 8;
+    /** Interceptor charges for a tank APS. */
+    public int apsShots = 4;
     /**
      * 电子干扰类型，0为机载电子干扰，1为机载电子攻击
      */
@@ -1413,6 +1415,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                                                             apsWaitTime = this.toInt(data, 0, 10000);
                                                         } else if (item.equalsIgnoreCase("APSRange")) {
                                                             apsRange = this.toInt(data, 0, 100);
+                                                        } else if (item.equalsIgnoreCase("APSShots")) {
+                                                            apsShots = this.toInt(data, 0, 1000);
                                                         } else if (item.equalsIgnoreCase("HasECMJammer")) {
                                                             ecmJammer = new ECMJammer();
                                                         } else if (item.equalsIgnoreCase("ECMJammerType")) {

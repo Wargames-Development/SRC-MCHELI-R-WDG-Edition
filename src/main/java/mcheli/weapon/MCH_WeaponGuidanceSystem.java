@@ -78,7 +78,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
 
     public static boolean inLockAngle(Entity entity, float rotationYaw, float rotationPitch, Entity target, float lockAng) {
         double dx = target.posX - entity.posX;
-        double dy = target.posY + (double) (target.height / 2.0F) - entity.posY;
+        double dy = target.posY + (double) (target.height / 2.0F) - getLockOriginY(entity);
         double dz = target.posZ - entity.posZ;
         float entityYaw = (float) MCH_Lib.getRotate360((double) rotationYaw);
         float targetYaw = (float) MCH_Lib.getRotate360(Math.atan2(dz, dx) * 180.0D / 3.141592653589793D);
@@ -87,6 +87,11 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
         float targetPitch = -((float) (Math.atan2(dy, dxz) * 180.0D / 3.141592653589793D));
         float diffPitch = targetPitch - rotationPitch;
         return (diffYaw < lockAng || diffYaw > 360.0F - lockAng) && Math.abs(diffPitch) < lockAng;
+    }
+
+    private static double getLockOriginY(Entity entity) {
+        // A handheld seeker's sight starts at the player's eyes, not their feet.
+        return entity.posY + (entity instanceof EntityPlayer ? entity.getEyeHeight() : 0.0F);
     }
 
     public static boolean inLockCone(Entity origin, float yaw, float pitch, Entity target, float angle) {
@@ -220,7 +225,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
                             && inLockAngle(cueOrigin, cueYaw, cuePitch, currentEntity, angle)
                             && inConstraintAngle(constraintOrigin, constraintYaw, constraintPitch, currentEntity, constraintAngle)) {
                             // 检测目标是否可见
-                            Vec3 v1 = W_WorldFunc.getWorldVec3(this.worldObj, cueOrigin.posX, cueOrigin.posY, cueOrigin.posZ);
+                            Vec3 v1 = W_WorldFunc.getWorldVec3(this.worldObj, cueOrigin.posX, getLockOriginY(cueOrigin), cueOrigin.posZ);
                             Vec3 v2 = W_WorldFunc.getWorldVec3(this.worldObj, currentEntity.posX, currentEntity.posY + (double) (currentEntity.height / 2.0F), currentEntity.posZ);
                             MovingObjectPosition m = W_WorldFunc.clip(this.worldObj, v1, v2, false, true, false);
                             if (m == null || W_MovingObjectPosition.isHitTypeEntity(m)) {

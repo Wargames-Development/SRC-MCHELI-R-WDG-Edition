@@ -63,6 +63,9 @@ public class MCH_GuiTank extends MCH_AircraftCommonGui {
                 }
             }
 
+            if (!isThirdPersonView || MCH_Config.DisplayHUDThirdPerson.prmBool) {
+                this.drawCountermeasureCounts(tank);
+            }
             this.drawHitBullet(tank, -14101432, seatID);
         }
     }

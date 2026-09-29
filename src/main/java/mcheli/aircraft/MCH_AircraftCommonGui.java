@@ -9,6 +9,7 @@ import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
 import mcheli.gui.MCH_Gui;
 import mcheli.hud.MCH_Hud;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.weapon.MCH_EntityTvMissile;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_McClient;
@@ -89,7 +90,8 @@ public abstract class MCH_AircraftCommonGui extends MCH_Gui {
     }
 
     protected void drawCountermeasureCounts(MCH_EntityAircraft ac) {
-        if (ac == null || (!ac.haveFlare() && !ac.haveChaff())) {
+        if (ac == null || (!ac.haveFlare() && !ac.haveChaff()
+            && !(ac instanceof MCH_EntityTank && ac.haveAPS()))) {
             return;
         }
         int y = super.height * 7 / 16;
@@ -99,9 +101,14 @@ public abstract class MCH_AircraftCommonGui extends MCH_Gui {
                 ac.getRemainingFlarePairs(), ac.getFlareCapacity(), y);
         }
         if (ac.haveChaff()) {
-            this.drawCountermeasureCount(
+            y = this.drawCountermeasureCount(
                 MCH_I18n.format("gui.mcheli.key.chaff"),
                 ac.getRemainingChaffPairs(), ac.getChaffCapacity(), y);
+        }
+        if (ac instanceof MCH_EntityTank && ac.haveAPS() && ac.getAcInfo().apsRange != 100) {
+            this.drawCountermeasureCount(
+                MCH_I18n.format("gui.mcheli.key.aps"),
+                Math.max(0, ac.aps.remainingShots), ac.getAPSShotCapacity(), y);
         }
     }
 

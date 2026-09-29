@@ -13,6 +13,8 @@ public class PacketCountermeasureState extends PacketBase {
     private int aircraftId;
     private int flarePairs;
     private int chaffPairs;
+    private int apsShots;
+    private boolean apsEnabled;
 
     public PacketCountermeasureState() {
     }
@@ -21,6 +23,8 @@ public class PacketCountermeasureState extends PacketBase {
         this.aircraftId = aircraft.getEntityId();
         this.flarePairs = aircraft.getRemainingFlarePairs();
         this.chaffPairs = aircraft.getRemainingChaffPairs();
+        this.apsShots = Math.max(0, aircraft.aps.remainingShots);
+        this.apsEnabled = aircraft.aps.enabled;
     }
 
     @Override
@@ -28,6 +32,8 @@ public class PacketCountermeasureState extends PacketBase {
         data.writeInt(this.aircraftId);
         data.writeInt(this.flarePairs);
         data.writeInt(this.chaffPairs);
+        data.writeInt(this.apsShots);
+        data.writeBoolean(this.apsEnabled);
     }
 
     @Override
@@ -35,6 +41,8 @@ public class PacketCountermeasureState extends PacketBase {
         this.aircraftId = data.readInt();
         this.flarePairs = data.readInt();
         this.chaffPairs = data.readInt();
+        this.apsShots = data.readInt();
+        this.apsEnabled = data.readBoolean();
     }
 
     @Override
@@ -49,7 +57,10 @@ public class PacketCountermeasureState extends PacketBase {
         }
         Entity entity = playerEntity.worldObj.getEntityByID(this.aircraftId);
         if (entity instanceof MCH_EntityAircraft) {
-            ((MCH_EntityAircraft)entity).setCountermeasureStateClient(this.flarePairs, this.chaffPairs);
+            MCH_EntityAircraft aircraft = (MCH_EntityAircraft)entity;
+            aircraft.setCountermeasureStateClient(this.flarePairs, this.chaffPairs);
+            aircraft.aps.remainingShots = Math.min(Math.max(0, this.apsShots), aircraft.getAPSShotCapacity());
+            aircraft.aps.enabled = this.apsEnabled && aircraft.aps.remainingShots > 0;
         }
     }
 }

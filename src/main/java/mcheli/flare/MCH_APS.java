@@ -5,11 +5,13 @@ import mcheli.MCH_MOD;
 import mcheli.MCH_PacketEffectExplosion;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.network.packets.PacketIronCurtainUse;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.weapon.*;
 import mcheli.wrapper.W_WorldFunc;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -32,6 +34,9 @@ public class MCH_APS {
     public int range;
 
     public Entity user;
+    public int remainingShots = -1;
+    public boolean enabled;
+    public String operatorTeam = "";
 
     public MCH_APS(World w, MCH_EntityAircraft ac) {
         this.worldObj = w;
@@ -39,8 +44,25 @@ public class MCH_APS {
     }
 
     public boolean onUse(Entity user) {
-        if (!(user instanceof EntityLivingBase) || this.tick != 0) {
+        if (!(user instanceof EntityLivingBase) || (!isTankAPS() && this.tick != 0)) {
             return false;
+        }
+
+        if (isTankAPS()) {
+            if (!enabled && remainingShots <= 0) return false;
+            enabled = !enabled;
+            if (enabled) {
+                this.user = user;
+                Team team = ((EntityLivingBase)user).getTeam();
+                operatorTeam = team != null ? team.getRegisteredName() : "";
+            }
+            W_WorldFunc.MOD_playSoundEffect(worldObj, aircraft.posX, aircraft.posY, aircraft.posZ,
+                enabled ? "aps_activate" : "aps_deactivate", 3.0F, 1.0F);
+            if (!worldObj.isRemote) {
+                aircraft.getEntityData().setBoolean("APSUsing", enabled);
+                aircraft.syncCountermeasureState();
+            }
+            return true;
         }
 
         this.user = user;
@@ -68,6 +90,13 @@ public class MCH_APS {
 
     public void onUpdate() {
         if (this.aircraft != null && !this.aircraft.isDead) {
+            if (isTankAPS()) {
+                if (enabled && remainingShots > 0 && !worldObj.isRemote) onUsing();
+                if (!worldObj.isRemote && aircraft.getEntityData().getBoolean("APSUsing") != isUsing()) {
+                    aircraft.getEntityData().setBoolean("APSUsing", isUsing());
+                }
+                return;
+            }
             if (this.tick > 0) {
                 --this.tick;
             }
@@ -102,13 +131,13 @@ public class MCH_APS {
     }
 
     private boolean isHostileMissile(MCH_EntityBaseBullet bullet) {
-        if (!(this.user instanceof EntityLivingBase) || !(bullet.shootingEntity instanceof EntityLivingBase)) {
-            return false;
-        }
-        if (bullet.shootingAircraft == this.aircraft || bullet.shootingEntity == this.aircraft || bullet.shootingEntity == this.user) {
+        if (bullet.shootingAircraft == this.aircraft || bullet.shootingEntity == this.aircraft
+            || (!isTankAPS() && bullet.shootingEntity == this.user)) {
             return false;
         }
 
+        if (isTankAPS()) return true;
+        if (!(this.user instanceof EntityLivingBase) || !(bullet.shootingEntity instanceof EntityLivingBase)) return false;
         EntityLivingBase operator = (EntityLivingBase)this.user;
         EntityLivingBase shooter = (EntityLivingBase)bullet.shootingEntity;
         return operator.getTeam() == null || shooter.getTeam() == null || !operator.isOnSameTeam(shooter);
@@ -116,15 +145,16 @@ public class MCH_APS {
 
     private void onUsing() {
         // Projectile removal and FMUR integration are authoritative server operations.
-        if (worldObj.isRemote || range == 100 || !(user instanceof EntityLivingBase)) {
+        if (worldObj.isRemote || range == 100 || (!isTankAPS() && !(user instanceof EntityLivingBase))) {
             return;
         }
         List list = worldObj.getEntitiesWithinAABBExcludingEntity(aircraft, aircraft.boundingBox.expand(range, range, range));
         for (Object obj : list) {
             Entity entity = (Entity) obj;
 
-            boolean isBullet = entity.getClass().getName().contains("EntityBullet");
-            boolean isGrenade = entity.getClass().getName().contains("EntityGrenade");
+            boolean isBullet = !isTankAPS() && entity.getClass().getName().contains("EntityBullet");
+            boolean isGrenade = !isTankAPS() && entity.getClass().getName().contains("EntityGrenade");
+            boolean isFlansMissile = isTankAPS() && MCH_FMURUtil.isFlansAPSThreat(entity);
             // APS recognizes guided threat classes directly. WeaponInfo.canBeIntercepted
             // is reserved for weapon-on-weapon interceptor targeting.
             boolean isMissile = entity instanceof MCH_EntityAAMissile
@@ -133,7 +163,21 @@ public class MCH_APS {
                 || entity instanceof MCH_EntityASMissile
                 || entity instanceof MCH_EntityTvMissile;
 
-            if (!isBullet && !isGrenade && !isMissile) continue;
+            if (!isBullet && !isGrenade && !isMissile && !isFlansMissile) continue;
+
+            if (isFlansMissile) {
+                Entity shooter = MCH_FMURUtil.getFlansBulletOwner(entity);
+                if (!entity.isDead) {
+                    entity.setDead();
+                    --remainingShots;
+                    if (remainingShots == 0) enabled = false;
+                    aircraft.syncCountermeasureState();
+                    sendInterceptEffect(entity, 3.0F, true);
+                    if (shooter instanceof EntityPlayerMP) MCH_FMURUtil.sendAPSMarker((EntityPlayerMP)shooter);
+                    if (!enabled) break;
+                }
+                continue;
+            }
 
             if (isBullet) {
                 if (MCH_FMURUtil.bulletDestructedByAPS(entity, (EntityLivingBase) user)) {
@@ -151,12 +195,19 @@ public class MCH_APS {
 
             if (isMissile) {
                 MCH_EntityBaseBullet bullet = (MCH_EntityBaseBullet) entity;
+                if (bullet.isDead) continue;
                 if (isHostileMissile(bullet)) {
                     bullet.setDead();
+                    if (isTankAPS()) {
+                        --remainingShots;
+                        if (remainingShots == 0) enabled = false;
+                        aircraft.syncCountermeasureState();
+                    }
                     sendInterceptEffect(entity, 3.0F, true);
                     if (bullet.shootingEntity instanceof EntityPlayerMP) {
                         MCH_FMURUtil.sendAPSMarker((EntityPlayerMP) bullet.shootingEntity);
                     }
+                    if (isTankAPS() && !enabled) break;
                 }
             }
         }
@@ -176,6 +227,12 @@ public class MCH_APS {
     }
 
     public boolean isUsing() {
-        return this.useTick > 0;
+        return isTankAPS() ? enabled && remainingShots > 0 : this.useTick > 0;
     }
+
+    private boolean isTankAPS() {
+        return aircraft instanceof MCH_EntityTank && aircraft.getAcInfo() != null
+            && aircraft.getAcInfo().apsRange != 100;
+    }
+
 }

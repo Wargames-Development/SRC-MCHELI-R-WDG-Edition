@@ -400,7 +400,8 @@ public class MCH_EntityGunner extends EntityLivingBase {
             used = true;
         if (ac.canUseECMJammer() && ac.useECMJammer((Entity)this))
             used = true;
-        if (ac.canUseAPS() && ac.useAPS((Entity)this))
+        if (!(ac instanceof MCH_EntityTank && ac.getAcInfo().apsRange != 100 && ac.aps.isUsing())
+            && ac.canUseAPS() && ac.useAPS((Entity)this))
             used = true;
         if (used)
             this.autoCountermeasureCooldown = 30;

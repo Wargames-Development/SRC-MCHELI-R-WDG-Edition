@@ -998,6 +998,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.remainingChaffPairs = nbt.hasKey("AcChaffPairs")
             ? MathHelper.clamp_int(nbt.getInteger("AcChaffPairs"), 0, this.getChaffCapacity())
             : this.getChaffCapacity();
+        this.aps.remainingShots = nbt.hasKey("AcAPSShots")
+            ? MathHelper.clamp_int(nbt.getInteger("AcAPSShots"), 0, this.getAPSShotCapacity())
+            : this.getAPSShotCapacity();
+        this.aps.enabled = nbt.getBoolean("AcAPSEnabled") && this.aps.remainingShots > 0;
+        this.aps.operatorTeam = nbt.getString("AcAPSTeam");
 
         if (this.getDespawnCount() > 0) {
             this.setDamageTaken(this.getMaxHP());
@@ -1054,6 +1059,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         nbt.setTag("AcWeaponsReloadWait", W_NBTTag.newTagIntArray("AcWeaponsReloadWait", reloadWait));
         nbt.setInteger("AcFlarePairs", this.getRemainingFlarePairs());
         nbt.setInteger("AcChaffPairs", this.getRemainingChaffPairs());
+        nbt.setInteger("AcAPSShots", this.aps.remainingShots < 0 ? this.getAPSShotCapacity() : this.aps.remainingShots);
+        nbt.setBoolean("AcAPSEnabled", this.aps.enabled);
+        nbt.setString("AcAPSTeam", this.aps.operatorTeam);
         nbt.setInteger("AcDamage", this.getDamageTaken());
         nbt.setString("AcERAState", this.buildERAStateString());
         nbt.setBoolean("AcDismounted", this.dismountedUserCtrl);
@@ -3834,7 +3842,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean canUseAPS() {
         // APS has its own threat sensor; the crew-operated search radar is unrelated.
-        return this.getAcInfo() != null && this.getAcInfo().haveAPS() && this.aps.tick == 0;
+        return this.getAcInfo() != null && this.getAcInfo().haveAPS()
+            && (this instanceof mcheli.tank.MCH_EntityTank && this.getAcInfo().apsRange != 100
+                ? this.aps.enabled || this.aps.remainingShots > 0 : this.aps.tick == 0);
+    }
+
+    public int getAPSShotCapacity() {
+        return this.getAcInfo() != null && this.getAcInfo().haveAPS() ? this.getAcInfo().apsShots : 0;
     }
 
     public boolean canUseECMJammer() {
@@ -3890,7 +3904,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         return this.getRiddenByEntity() != null || this.getEntityBySeatId(1) != null || this.getUavStation() != null;
     }
 
-    private void syncCountermeasureState() {
+    public void syncCountermeasureState() {
         if (!this.worldObj.isRemote) {
             PacketCountermeasureState packet = new PacketCountermeasureState(this);
             MCH_MOD.getPacketHandler().sendToAllAround(packet,
@@ -6497,6 +6511,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             }
             if (this.remainingChaffPairs < 0) {
                 this.remainingChaffPairs = this.getChaffCapacity();
+            }
+            if (this.aps.remainingShots < 0) {
+                this.aps.remainingShots = this.getAPSShotCapacity();
             }
             this.partHatch = this.createHatch();
             this.partCanopy = this.createCanopy();

@@ -125,10 +125,6 @@ public class MCP_GuiPlane extends MCH_AircraftCommonGui {
                             msg = var12.append(MCH_KeyName.getDescOrName(MCH_Config.KeyZoom.prmInt)).toString();
                             this.drawString(msg, LX, super.centerY - 80, colorActive);
                         }
-                    } else {
-                        var12 = (new StringBuilder()).append("FoldWing : ");
-                        msg = var12.append(MCH_KeyName.getDescOrName(MCH_Config.KeyZoom.prmInt)).toString();
-                        this.drawString(msg, LX, super.centerY - 80, colorActive);
                     }
                 }
 

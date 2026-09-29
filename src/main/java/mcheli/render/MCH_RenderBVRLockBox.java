@@ -23,6 +23,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -32,6 +33,7 @@ import net.minecraft.util.Vec3;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -522,6 +524,15 @@ public class MCH_RenderBVRLockBox {
 
     private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean hardLock, int markerSize, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor,
                                String stateText, String text, String detailText, int textColor, boolean drawText, float alpha) {
+        boolean lightingEnabled = GL11.glIsEnabled(GL11.GL_LIGHTING);
+        boolean depthEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        boolean textureEnabled = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
+        boolean blendEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
+        boolean depthWriteEnabled = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        int srcBlend = GL11.glGetInteger(GL11.GL_BLEND_SRC);
+        int dstBlend = GL11.glGetInteger(GL11.GL_BLEND_DST);
+        int srcAlphaBlend = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA);
+        int dstAlphaBlend = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
@@ -538,6 +549,16 @@ public class MCH_RenderBVRLockBox {
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        if (lightingEnabled) GL11.glEnable(GL11.GL_LIGHTING);
+        else GL11.glDisable(GL11.GL_LIGHTING);
+        if (depthEnabled) GL11.glEnable(GL11.GL_DEPTH_TEST);
+        else GL11.glDisable(GL11.GL_DEPTH_TEST);
+        if (textureEnabled) GL11.glEnable(GL11.GL_TEXTURE_2D);
+        else GL11.glDisable(GL11.GL_TEXTURE_2D);
+        if (blendEnabled) GL11.glEnable(GL11.GL_BLEND);
+        else GL11.glDisable(GL11.GL_BLEND);
+        GL11.glDepthMask(depthWriteEnabled);
+        OpenGlHelper.glBlendFunc(srcBlend, dstBlend, srcAlphaBlend, dstAlphaBlend);
     }
 
     private void drawMarkerCore(Minecraft mc, boolean isMSL, int markerColor, boolean highlight, boolean hardLock, int markerSize, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor, String stateText,
@@ -547,6 +568,7 @@ public class MCH_RenderBVRLockBox {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
         float mr = ((markerColor >> 16) & 0xFF) / 255.0F;
         float mg = ((markerColor >> 8) & 0xFF) / 255.0F;
         float mb = (markerColor & 0xFF) / 255.0F;

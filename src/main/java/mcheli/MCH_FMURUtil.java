@@ -1,6 +1,7 @@
 package mcheli;
 
 import com.flansmod.common.guns.EntityDamageSourceFlans;
+import com.flansmod.common.guns.EntityBullet;
 import com.flansmod.common.mob.EntitySoldier;
 import com.flansmod.common.mob.EnumFaction;
 import com.flansmod.common.mob.SoldierType;
@@ -24,6 +25,17 @@ public class MCH_FMURUtil {
 
     public static boolean isFMURLoaded() {
         return isFMURLoaded;
+    }
+
+    public static boolean isFlansAPSThreat(Entity entity) {
+        if (!isFMURLoaded || !(entity instanceof EntityBullet)) return false;
+        EntityBullet bullet = (EntityBullet)entity;
+        return bullet.type != null && bullet.type.canBeDestructByAPS
+            && bullet.type.explosionRadius > 0.0F;
+    }
+
+    public static Entity getFlansBulletOwner(Entity entity) {
+        return isFMURLoaded && entity instanceof EntityBullet ? ((EntityBullet)entity).owner : null;
     }
 
     static {

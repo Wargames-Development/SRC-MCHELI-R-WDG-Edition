@@ -41,6 +41,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.*;
 import net.minecraftforge.client.model.IModelCustom;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -901,6 +902,18 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                 // 与BVR框保持同一显示距离上限（min(4096, radarMaxTargetRange)）
                                 if (dist < bvrDisplayMaxRange * bvrDisplayMaxRange) {
                                     float scl = 0.02666667F; // 缩放因子
+                                    boolean lightingEnabled = GL11.glIsEnabled(GL11.GL_LIGHTING);
+                                    boolean depthEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+                                    boolean textureEnabled = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
+                                    boolean blendEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
+                                    boolean depthWriteEnabled = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+                                    int srcBlend = GL11.glGetInteger(GL11.GL_BLEND_SRC);
+                                    int dstBlend = GL11.glGetInteger(GL11.GL_BLEND_DST);
+                                    int srcAlphaBlend = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA);
+                                    int dstAlphaBlend = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
+                                    float previousLineWidth = GL11.glGetFloat(GL11.GL_LINE_WIDTH);
+                                    float brightnessX = OpenGlHelper.lastBrightnessX;
+                                    float brightnessY = OpenGlHelper.lastBrightnessY;
                                     GL11.glPushMatrix();
                                     // 进行位置变换，将目标实体渲染到玩家视角中
                                     GL11.glTranslatef((float) x, (float) y + entity.height + 2F, (float) z);
@@ -918,7 +931,6 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                     GL11.glDisable(2929 /* GL_DEPTH_TEST */);
 
                                     // 获取绘制前的屏幕宽度
-                                    int prevWidth = GL11.glGetInteger(2849);
                                     // 设置目标实体大小（根据实体的宽度和高度进行调整）
                                     float size1 = Math.max(entity.width, entity.height) * 20.0F;
                                     if (entity instanceof MCH_EntityAircraft
@@ -1041,12 +1053,18 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                     }
 
                                     // 恢复之前的线宽，启用纹理，恢复深度写入和深度测试
-                                    GL11.glLineWidth((float) prevWidth);
-                                    GL11.glEnable(3553);
-                                    GL11.glDepthMask(true);
-                                    GL11.glEnable(2896);
-                                    GL11.glDisable(3042);
-                                    GL11.glEnable(2929 /* GL_DEPTH_TEST */);
+                                    GL11.glLineWidth(previousLineWidth);
+                                    if (textureEnabled) GL11.glEnable(GL11.GL_TEXTURE_2D);
+                                    else GL11.glDisable(GL11.GL_TEXTURE_2D);
+                                    GL11.glDepthMask(depthWriteEnabled);
+                                    if (lightingEnabled) GL11.glEnable(GL11.GL_LIGHTING);
+                                    else GL11.glDisable(GL11.GL_LIGHTING);
+                                    if (blendEnabled) GL11.glEnable(GL11.GL_BLEND);
+                                    else GL11.glDisable(GL11.GL_BLEND);
+                                    OpenGlHelper.glBlendFunc(srcBlend, dstBlend, srcAlphaBlend, dstAlphaBlend);
+                                    if (depthEnabled) GL11.glEnable(GL11.GL_DEPTH_TEST);
+                                    else GL11.glDisable(GL11.GL_DEPTH_TEST);
+                                    OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, brightnessX, brightnessY);
                                     GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F); // 恢复默认颜色
                                     GL11.glPopMatrix();
                                 }

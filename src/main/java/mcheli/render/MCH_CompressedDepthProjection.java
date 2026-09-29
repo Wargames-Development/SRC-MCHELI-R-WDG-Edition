@@ -1,8 +1,8 @@
 package mcheli.render;
 
-/** Mirrors WGMap CompressedDepthProjection v1 without a required WGMap dependency. */
+/** Mirrors WGMap's v2 eye-depth contract without a required WGMap dependency. */
 public final class MCH_CompressedDepthProjection {
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     public static final double MAX_DISTANCE = 4096.0D;
 
     private MCH_CompressedDepthProjection() { }

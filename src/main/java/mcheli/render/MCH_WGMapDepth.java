@@ -3,6 +3,7 @@ package mcheli.render;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.MCH_Lib;
 
 import java.lang.reflect.Method;
 
@@ -20,6 +21,7 @@ final class MCH_WGMapDepth {
         try {
             return Boolean.TRUE.equals(available.invoke(null));
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
+            MCH_Lib.Log("[FarVehicle] WGMap GPU depth query failed: %s", failed.toString());
             disable(); return false;
         }
     }
@@ -34,6 +36,7 @@ final class MCH_WGMapDepth {
             return result instanceof boolean[] && ((boolean[])result).length == count
                     ? (boolean[])result : null;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
+            MCH_Lib.Log("[FarVehicle] WGMap GPU depth prepare failed: %s", failed.toString());
             disable(); return null;
         }
     }
@@ -44,6 +47,7 @@ final class MCH_WGMapDepth {
             draw.invoke(null);
             return true;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
+            MCH_Lib.Log("[FarVehicle] WGMap GPU depth draw failed: %s", failed.toString());
             disable(); return false;
         }
     }
@@ -54,14 +58,22 @@ final class MCH_WGMapDepth {
         if (!Loader.isModLoaded("wgmap")) return false;
         try {
             Class<?> api = Class.forName(API, false, MCH_WGMapDepth.class.getClassLoader());
-            if (api.getField("API_VERSION").getInt(null) != 1
-                    || api.getField("PROJECTION_VERSION").getInt(null) != MCH_CompressedDepthProjection.VERSION) return false;
+            int apiVersion = api.getField("API_VERSION").getInt(null);
+            int projectionVersion = api.getField("PROJECTION_VERSION").getInt(null);
+            if (apiVersion != 1 || projectionVersion != MCH_CompressedDepthProjection.VERSION) {
+                MCH_Lib.Log("[FarVehicle] WGMap GPU depth disabled: API=%d projection=%d; expected API=1 projection=%d. Update both client mods together.",
+                        Integer.valueOf(apiVersion), Integer.valueOf(projectionVersion),
+                        Integer.valueOf(MCH_CompressedDepthProjection.VERSION));
+                return false;
+            }
             available = api.getMethod("isAvailable");
             prepare = api.getMethod("prepareDepth", Integer.TYPE, Double.TYPE, Double.TYPE,
                     Double.TYPE, Double.TYPE, double[].class, double[].class, Integer.TYPE);
             draw = api.getMethod("drawPreparedDepth");
             return true;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
+            MCH_Lib.Log("[FarVehicle] WGMap GPU depth API unavailable: %s. Update both client mods together.",
+                    failed.toString());
             disable(); return false;
         }
     }

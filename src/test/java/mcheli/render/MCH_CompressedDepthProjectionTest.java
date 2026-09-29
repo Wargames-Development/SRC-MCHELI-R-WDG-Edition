@@ -6,7 +6,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MCH_CompressedDepthProjectionTest {
-    @Test public void sharedVersionOneVectors() {
+    @Test public void sharedVersionTwoVectors() {
+        assertEquals(2, MCH_CompressedDepthProjection.VERSION);
         double[] physical = {112.0D, 250.0D, 500.0D, 1000.0D, 2000.0D, 4096.0D};
         double[] projected = {112.0D, 116.28081646410587D, 116.95484674105806D,
                 117.62887701801027D, 118.30290729496247D, 119.0D};

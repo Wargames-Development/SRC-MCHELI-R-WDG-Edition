@@ -20,6 +20,8 @@ public final class MCH_WGMapOcclusion {
     private static final String MOD_ID = "wgmap";
     private static final String API_CLASS_NAME = "com.wdg.wgmap.client.occlusion.TerrainOcclusionApi";
     private static final int MAX_API_VERSION = 2;
+    private static final double LARGE_COVER_MARGIN = 8.0D;
+    private static final double TARGET_CLEARANCE = 16.0D;
 
     enum Result {
         CLEAR,
@@ -66,8 +68,8 @@ public final class MCH_WGMapOcclusion {
         return shouldSuppress(traceTargetBounds(mc, info, targetX, targetY, targetZ, partialTicks));
     }
 
-    /** Four physical body samples. Two clear rays expose meaningful geometry; three blocked rays
-     * hide the model. Ambiguous combinations retain the previous decision briefly in the renderer. */
+    /** Whole-model culling needs a wide, distant obstruction. Nearby foliage is
+     * left to per-pixel depth so protruding model parts remain visible. */
     static Result traceProjectedSamples(Minecraft mc, MCH_AircraftInfo info,
             double targetX, double targetY, double targetZ, float partialTicks) {
         if (mc == null || mc.theWorld == null || mc.theWorld.provider == null
@@ -82,30 +84,36 @@ public final class MCH_WGMapOcclusion {
             cameraY += ((EntityLivingBase)viewer).getEyeHeight();
         }
 
-        double bodyHeight = Math.max(0.5D, (double)info.bodyHeight);
-        double width = Math.max(0.5D, info.bodyWidth * 0.35D);
+        double height = Math.max(0.5D, Math.max(info.bodyHeight, info.markerHeight));
+        double width = Math.max(0.5D, Math.max(info.bodyWidth * 0.5D, info.markerWidth));
+        width = Math.max(width, Math.max(Math.abs((double)info.bbZmin), Math.abs((double)info.bbZmax)))
+                * 2.0D + LARGE_COVER_MARGIN;
         double horizontal = Math.hypot(targetX - cameraX, targetZ - cameraZ);
         double sideX = horizontal > 0.001D ? -(targetZ - cameraZ) / horizontal * width : width;
         double sideZ = horizontal > 0.001D ? (targetX - cameraX) / horizontal * width : 0.0D;
-        int clear = 0, blocked = 0;
         boolean missing = false, uncertain = false, unknown = false;
         int dimension = mc.theWorld.provider.dimensionId;
-        for (int sample = 0; sample < 4; sample++) {
-            double sx = targetX + (sample == 2 ? sideX : sample == 3 ? -sideX : 0.0D);
-            double sy = targetY + bodyHeight * (sample == 0 ? 0.45D : 0.85D);
-            double sz = targetZ + (sample == 2 ? sideZ : sample == 3 ? -sideZ : 0.0D);
-            Result result = traceSegment(dimension, cameraX, cameraY, cameraZ, sx, sy, sz);
-            if (result == Result.UNAVAILABLE) return Result.UNAVAILABLE;
-            if (result == Result.CLEAR) clear++;
-            else if (result == Result.BLOCKED) blocked++;
-            else if (result == Result.MISSING_DATA) missing = true;
-            else if (result == Result.UNCERTAIN_BLOCK) uncertain = true;
-            else unknown = true;
-            if (clear >= 2) return Result.CLEAR;
-            if (blocked >= 3) return Result.BLOCKED;
+        for (int vertical = 0; vertical < 3; vertical++) {
+            double sy = targetY + (vertical == 0 ? height * 0.15D
+                    : vertical == 1 ? height * 0.55D : height + LARGE_COVER_MARGIN);
+            for (int lateral = -1; lateral <= 1; lateral++) {
+                double sx = targetX + sideX * lateral, sz = targetZ + sideZ * lateral;
+                double dx = sx - cameraX, dy = sy - cameraY, dz = sz - cameraZ;
+                double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                // A blocker within one chunk of the vehicle may be a tree with
+                // visible corners; require broad cover well before its envelope.
+                if (distance <= TARGET_CLEARANCE) return Result.CLEAR;
+                double prefix = (distance - TARGET_CLEARANCE) / distance;
+                Result result = traceSegment(dimension, cameraX, cameraY, cameraZ,
+                        cameraX + dx * prefix, cameraY + dy * prefix, cameraZ + dz * prefix);
+                if (result == Result.UNAVAILABLE || result == Result.CLEAR) return result;
+                if (result == Result.MISSING_DATA) missing = true;
+                else if (result == Result.UNCERTAIN_BLOCK) uncertain = true;
+                else if (result != Result.BLOCKED) unknown = true;
+            }
         }
         return missing ? Result.MISSING_DATA : uncertain ? Result.UNCERTAIN_BLOCK
-                : unknown ? Result.UNKNOWN : blocked > clear ? Result.BLOCKED : Result.CLEAR;
+                : unknown ? Result.UNKNOWN : Result.BLOCKED;
     }
 
     static long terrainGeneration() {
