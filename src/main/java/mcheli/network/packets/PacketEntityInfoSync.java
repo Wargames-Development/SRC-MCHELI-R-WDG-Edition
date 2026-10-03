@@ -9,6 +9,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,9 +23,12 @@ public class PacketEntityInfoSync extends PacketBase {
     private static final int TEAM_EXTENSION_MAGIC = 0x5445414D; // "TEAM"
     private static final int LIGHT_EXTENSION_MAGIC = 0x4C495431; // "LIT1"
     private static final int VEHICLE_ID_EXTENSION_MAGIC = 0x56494431; // "VID1"
+    private static final int RADAR_TERRAIN_EXTENSION_MAGIC = 0x52414431; // "RAD1"
 
     private List<MCH_EntityInfo> entities;
     private long snapshotSeq; // 新增：包级快照序号
+    private int radarEmitterId;
+    private List<Integer> terrainBlockedIds = Collections.emptyList();
 
     public PacketEntityInfoSync() {
     }
@@ -32,6 +36,12 @@ public class PacketEntityInfoSync extends PacketBase {
     public PacketEntityInfoSync(List<MCH_EntityInfo> entities, long snapshotSeq) {
         this.entities = entities;
         this.snapshotSeq = snapshotSeq;
+    }
+
+    public PacketEntityInfoSync(List<MCH_EntityInfo> entities, long snapshotSeq, int radarEmitterId, List<Integer> terrainBlockedIds) {
+        this(entities, snapshotSeq);
+        this.radarEmitterId = radarEmitterId;
+        this.terrainBlockedIds = terrainBlockedIds;
     }
 
     @Override
@@ -82,6 +92,12 @@ public class PacketEntityInfoSync extends PacketBase {
             buf.writeLong(uuid != null ? uuid.getMostSignificantBits() : 0L);
             buf.writeLong(uuid != null ? uuid.getLeastSignificantBits() : 0L);
         }
+        if (radarEmitterId > 0) {
+            buf.writeInt(RADAR_TERRAIN_EXTENSION_MAGIC);
+            buf.writeInt(radarEmitterId);
+            buf.writeInt(terrainBlockedIds.size());
+            for (Integer id : terrainBlockedIds) buf.writeInt(id);
+        }
     }
 
     @Override
@@ -115,6 +131,21 @@ public class PacketEntityInfoSync extends PacketBase {
         readTeamExtension(buf);
         readLightExtension(buf);
         readVehicleIdExtension(buf);
+        readRadarTerrainExtension(buf);
+    }
+
+    private void readRadarTerrainExtension(ByteBuf buf) {
+        radarEmitterId = 0;
+        terrainBlockedIds = Collections.emptyList();
+        if (buf.readableBytes() < 12 || buf.getInt(buf.readerIndex()) != RADAR_TERRAIN_EXTENSION_MAGIC) return;
+        buf.readInt();
+        int emitterId = buf.readInt();
+        int count = buf.readInt();
+        if (emitterId <= 0 || count < 0 || count > entities.size() || count > buf.readableBytes() / 4) return;
+        List<Integer> blocked = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) blocked.add(buf.readInt());
+        radarEmitterId = emitterId;
+        terrainBlockedIds = blocked;
     }
 
     private void readAglExtension(ByteBuf buf) {
@@ -185,6 +216,6 @@ public class PacketEntityInfoSync extends PacketBase {
     @Override
     public void handleClientSide(EntityPlayer player) {
         // 仅当该包的快照序号不小于客户端已知最新序号时才应用（乱序保护）
-        MCH_EntityInfoClientTracker.updateEntities(entities, snapshotSeq);
+        MCH_EntityInfoClientTracker.updateEntities(entities, snapshotSeq, radarEmitterId, terrainBlockedIds);
     }
 }

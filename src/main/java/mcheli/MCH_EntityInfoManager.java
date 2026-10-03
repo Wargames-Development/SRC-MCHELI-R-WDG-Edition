@@ -357,7 +357,21 @@ public class MCH_EntityInfoManager {
                 boolean membershipChanged = state.hasMembershipChanged(visibleEntities);
                 int interval = visibleEntities.isEmpty() ? EMPTY_HEARTBEAT_INTERVAL_TICKS : ACTIVE_SYNC_INTERVAL_TICKS;
                 if (!state.hasSent || membershipChanged || tickCounter - state.lastSendTick >= interval) {
-                    MCH_MOD.getPacketHandler().sendTo(new PacketEntityInfoSync(visibleEntities, snapshotSeq), player);
+                    MCH_EntityAircraft radar = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+                    List<Integer> blocked = new ArrayList<Integer>();
+                    int radarId = 0;
+                    if (radar != null && radar.getAcInfo() != null && radar.getAcInfo().enableRadar
+                        && radar.isRadarEnabledRuntime()) {
+                        radarId = radar.getEntityId();
+                        double range = Math.min(ENTITY_INFO_SYNC_RANGE, radar.getAcInfo().radarMaxTargetRange > 0.0F
+                            ? radar.getAcInfo().radarMaxTargetRange : ENTITY_INFO_SYNC_RANGE);
+                        for (MCH_EntityInfo info : visibleEntities) {
+                            if (info.destroyed || info.getDistanceSqToEntity(radar) > range * range) continue;
+                            Entity target = world.getEntityByID(info.entityId);
+                            if (MCH_RadarTerrain.isBlocked(radar, target)) blocked.add(info.entityId);
+                        }
+                    }
+                    MCH_MOD.getPacketHandler().sendTo(new PacketEntityInfoSync(visibleEntities, snapshotSeq, radarId, blocked), player);
                     if (!state.hasSent || membershipChanged) {
                         state.rememberMembership(visibleEntities);
                     }

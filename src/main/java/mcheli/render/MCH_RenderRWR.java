@@ -1412,7 +1412,8 @@ public class MCH_RenderRWR {
             drawRadarContactPoint(null, null, mp.x, mp.y, 0xFF4040, 1, false, false, null);
 
             Entity target = missile.targetEntity;
-            if (target == null || target.isDead) {
+            if (target == null || target.isDead
+                || MCH_EntityInfoClientTracker.isRadarTerrainBlocked(ac.getEntityId(), target.getEntityId())) {
                 continue;
             }
             RadarProjection tProj = projectPointStatic(ac, player, target.posX, target.posY + target.height * 0.5D, target.posZ, partialTicks, elevationRef, followTurretYaw);
@@ -1458,7 +1459,7 @@ public class MCH_RenderRWR {
                                                  float scanAzClamp, float scanElClamp, String elevationCoverage, float minAltitude, float maxAltitude, String searchType,
                                                  boolean forceTrackingColor, int radarUiColor) {
         MCH_EntityInfo entity = MCH_EntityInfoClientTracker.getEntityInfo(entityId);
-        if (entity == null) {
+        if (entity == null || isTerrainBlocked(ac, entity)) {
             return null;
         }
         RadarTrackState state = radarTrackStateMap.get(ac.getEntityId());
@@ -1731,6 +1732,7 @@ public class MCH_RenderRWR {
                 || isOwnLaunchedMissile(ac, player, info)
                 || isSameTeamTarget(player, ac, info)
                 || isTargetCountermeasureActive(ac, info)
+                || isTerrainBlocked(ac, info)
                 || shouldFilterByAirSpeedGate(searchType, info)) {
                 it.remove();
                 continue;
@@ -1757,6 +1759,7 @@ public class MCH_RenderRWR {
         if (ac == null || player == null || entity == null) {
             return false;
         }
+        if (isTerrainBlocked(ac, entity)) return false;
         if (ac.getAcInfo() == null || !ac.getAcInfo().enableRadar || !ac.isRadarEnabledRuntime()) {
             return false;
         }
@@ -1884,6 +1887,10 @@ public class MCH_RenderRWR {
                 continue;
             }
             passElev++;
+            if (isTerrainBlocked(ac, info)) {
+                cache.remove(info.entityId);
+                continue;
+            }
             RcsProfile rcsProfile = computeTargetRcsProfile(ac, info, partialTicks);
             float p = computeDetectProbabilityStatic(pBase, proj.bearingDeg, proj.elevationDeg, azClamp, elClamp, proj.distance, maxDistance,
                 elevationCoverage, gainNear, gainFar, rcsProfile.detectFactor);
@@ -2038,6 +2045,7 @@ public class MCH_RenderRWR {
             if (Math.abs(relBearing) > acmHalf || Math.abs(relElevation) > acmHalf) {
                 continue;
             }
+            if (isTerrainBlocked(ac, info)) continue;
             RcsProfile rcsProfile = computeTargetRcsProfile(ac, info, partialTicks);
             RadarContact c = cache.get(info.entityId);
             if (c == null) {
@@ -2551,6 +2559,7 @@ public class MCH_RenderRWR {
         if (info == null) {
             return "TARGET_LOST";
         }
+        if (isTerrainBlocked(ac, info)) return "TERRAIN_BLOCKED";
         if (!isTrackableForSearchType(info, searchType)) {
             return "INVALID_TARGET_TYPE";
         }
@@ -2616,6 +2625,11 @@ public class MCH_RenderRWR {
         }
         long nowTick = ac.worldObj.getTotalWorldTime();
         return info.isElectronicCountermeasureActive(nowTick);
+    }
+
+    private static boolean isTerrainBlocked(MCH_EntityAircraft ac, MCH_EntityInfo info) {
+        return ac != null && info != null
+            && MCH_EntityInfoClientTracker.isRadarTerrainBlocked(ac.getEntityId(), info.entityId);
     }
 
     private static boolean isOwnLaunchedMissile(MCH_EntityAircraft ac, EntityPlayer player, MCH_EntityInfo info) {
@@ -2760,7 +2774,8 @@ public class MCH_RenderRWR {
         if (state == null) {
             return;
         }
-        if (ac != null && newTargetId > 0 && !ac.isRadarEnabledRuntime()) {
+        if (ac != null && newTargetId > 0 && (!ac.isRadarEnabledRuntime()
+            || MCH_EntityInfoClientTracker.isRadarTerrainBlocked(ac.getEntityId(), newTargetId))) {
             return;
         }
         int oldTargetId = state.trackingTargetId;
@@ -2774,7 +2789,8 @@ public class MCH_RenderRWR {
         if (ac == null || state == null || ac.worldObj == null || !ac.worldObj.isRemote) {
             return;
         }
-        if (!ac.isRadarEnabledRuntime()) {
+        if (!ac.isRadarEnabledRuntime()
+            || MCH_EntityInfoClientTracker.isRadarTerrainBlocked(ac.getEntityId(), state.trackingTargetId)) {
             setTrackingTarget(ac, aircraftId, state, -1);
             radarLockHeartbeatLastSendTick.remove(aircraftId);
             return;
@@ -3679,7 +3695,7 @@ public class MCH_RenderRWR {
             if (isSelfTarget(ac, player, info) || isOwnLaunchedMissile(ac, player, info)) {
                 continue;
             }
-            if (isSameTeamTarget(player, ac, info) || isTargetCountermeasureActive(ac, info)) {
+            if (isSameTeamTarget(player, ac, info) || isTargetCountermeasureActive(ac, info) || isTerrainBlocked(ac, info)) {
                 continue;
             }
             RadarProjection proj = projectContactStatic(ac, player, info, 0.0F, elevationRef, followTurretYaw);

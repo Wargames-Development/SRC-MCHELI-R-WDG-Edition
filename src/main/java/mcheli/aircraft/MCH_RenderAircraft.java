@@ -14,6 +14,7 @@ import mcheli.render.MCH_RWRDisplayTextureManager;
 import mcheli.render.MCH_TextureRenderUtil;
 import mcheli.render.MCH_WGMapOcclusion;
 import mcheli.tank.MCH_EntityTank;
+import mcheli.tank.MCH_WheeledControlMath;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vector.Vector3f;
@@ -277,7 +278,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 MCH_AircraftInfo.TurretRotPart trp = (MCH_AircraftInfo.TurretRotPart) info.partTurretRotPart.get(i);
                 GL11.glPushMatrix();
                 GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
-                float turretYaw = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+                float turretYaw = getTurretRenderYaw(ac, tickTime);
                 GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
                 GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
                 GL11.glTranslated(trp.pos.xCoord, trp.pos.yCoord, trp.pos.zCoord);
@@ -332,7 +333,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
             float var22;
             if (w.turret) {
                 GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
-                var22 = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+                var22 = getTurretRenderYaw(ac, tickTime);
                 GL11.glRotatef(var22, 0.0F, -1.0F, 0.0F);
                 GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
             }
@@ -360,7 +361,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
             }
 
             if (w.turret) {
-                var22 = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+                var22 = getTurretRenderYaw(ac, tickTime);
                 if (ws != null) {
                     var22 -= ws.rotationTurretYaw;
                 }
@@ -693,13 +694,22 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     }
 
+    private static float getTurretRenderYaw(MCH_EntityAircraft ac, float tickTime) {
+        if (ac instanceof MCH_EntityTank && ((MCH_EntityTank) ac).isWheeledHandling()) {
+            float aim = W_Lib.isClientPlayer(ac.getRiddenByEntity()) ? ac.getLastRiderYaw()
+                    : MCH_Lib.smoothRot(ac.getLastRiderYaw(), ac.prevLastRiderYaw, tickTime);
+            return MCH_WheeledControlMath.relativeRenderYaw(0.0F, aim, ac.calcRotYaw(tickTime));
+        }
+        return MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+    }
+
     public static void renderTurretWeaponBay(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         for (int i = 0; i < info.partTurretWeaponBay.size(); ++i) {
             MCH_AircraftInfo.WeaponBay w = (MCH_AircraftInfo.WeaponBay) info.partTurretWeaponBay.get(i);
             MCH_EntityAircraft.WeaponBay ws = ac.turretWeaponBays[i];
             GL11.glPushMatrix();
             GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
-            float riderYaw = MCH_Lib.smooth(ac.getLastRiderYaw() - ac.getRotYaw(), ac.prevLastRiderYaw - ac.prevRotationYaw, tickTime);
+            float riderYaw = getTurretRenderYaw(ac, tickTime);
             GL11.glRotatef(riderYaw, 0.0F, -1.0F, 0.0F);
             GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
             if (w.isSlide) {

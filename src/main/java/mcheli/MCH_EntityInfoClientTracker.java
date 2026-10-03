@@ -30,6 +30,7 @@ public class MCH_EntityInfoClientTracker {
     private static final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
     private static volatile Collection<MCH_EntityInfo> renderSnapshot = Collections.emptyList();
     private static volatile Set<Integer> latestSnapshotEntityIds = Collections.emptySet();
+    private static volatile Map<Integer, Set<Integer>> radarTerrain = Collections.emptyMap();
     /**
      * 可调：心跳缺席的毫秒阈值（例如 5s）
      */
@@ -56,6 +57,10 @@ public class MCH_EntityInfoClientTracker {
      * 由网络包回调调用：应用一批实体并记录快照序号
      */
     public static void updateEntities(List<MCH_EntityInfo> infos, long snapshotSeq) {
+        updateEntities(infos, snapshotSeq, 0, Collections.<Integer>emptyList());
+    }
+
+    public static void updateEntities(List<MCH_EntityInfo> infos, long snapshotSeq, int emitterId, List<Integer> blockedIds) {
         // 乱序/迟到包保护
         if (snapshotSeq < lastAppliedSeq) {
             return;
@@ -78,6 +83,9 @@ public class MCH_EntityInfoClientTracker {
         }
 
         latestSnapshotEntityIds = Collections.unmodifiableSet(snapshotEntityIds);
+        radarTerrain = emitterId > 0
+            ? Collections.singletonMap(emitterId, Collections.unmodifiableSet(new HashSet<Integer>(blockedIds)))
+            : Collections.<Integer, Set<Integer>>emptyMap();
         lastAppliedSeq = snapshotSeq;
         publishRenderSnapshot();
     }
@@ -100,6 +108,11 @@ public class MCH_EntityInfoClientTracker {
 
     public static boolean isEntityInLatestSnapshot(int entityId) {
         return latestSnapshotEntityIds.contains(Integer.valueOf(entityId));
+    }
+
+    public static boolean isRadarTerrainBlocked(int emitterId, int targetId) {
+        Set<Integer> blocked = radarTerrain.get(emitterId);
+        return blocked != null && blocked.contains(targetId);
     }
 
     public static Collection<MCH_EntityInfo> getAllTrackedEntities() {
@@ -192,6 +205,7 @@ public class MCH_EntityInfoClientTracker {
         tracked.clear();
         renderSnapshot = Collections.emptyList();
         latestSnapshotEntityIds = Collections.emptySet();
+        radarTerrain = Collections.emptyMap();
         lastAppliedSeq = -1L;
         latestSeqObserved = -1L;
         clientTickCounter = 0;

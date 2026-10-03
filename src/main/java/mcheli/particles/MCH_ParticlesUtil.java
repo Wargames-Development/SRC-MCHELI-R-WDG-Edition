@@ -1,5 +1,7 @@
 package mcheli.particles;
 
+import cpw.mods.fml.common.eventhandler.EventPriority;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.client.FMLClientHandler;
 import mcheli.wrapper.W_Particle;
 import net.minecraft.block.Block;
@@ -11,8 +13,14 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.world.World;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 
 public class MCH_ParticlesUtil {
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onRenderWorldLast(RenderWorldLastEvent event) {
+        MCH_EntityParticleSmoke.renderQueued(event.partialTicks);
+    }
 
     public static MCH_EntityParticleMarkPoint markPoint = null;
 

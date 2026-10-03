@@ -130,6 +130,13 @@ public class MCH_ClientTankTickHandler extends MCH_AircraftClientTickHandler {
     }
 
     protected void playerControlInGUI(EntityPlayer player, MCH_EntityTank tank, boolean isPilot) {
+        if (isPilot && tank.isWheeledHandling()) {
+            MCH_TankPacketPlayerControl pc = new MCH_TankPacketPlayerControl();
+            pc.useBrake = true;
+            tank.throttleUp = tank.throttleDown = tank.moveLeft = tank.moveRight = false;
+            W_Network.sendToServer(pc);
+            return;
+        }
         this.commonPlayerControlInGUI(player, tank, isPilot, new MCH_TankPacketPlayerControl());
     }
 
@@ -203,6 +210,15 @@ public class MCH_ClientTankTickHandler extends MCH_AircraftClientTickHandler {
                     }
                 }
             }
+        }
+        if (isPilot && tank.isWheeledHandling()) {
+            // Refresh the server's input lease, including releases and neutral input.
+            pc.throttleUp = tank.throttleUp = this.KeyUp.isKeyPress();
+            pc.throttleDown = tank.throttleDown = this.KeyDown.isKeyPress();
+            pc.moveLeft = tank.moveLeft = this.KeyLeft.isKeyPress();
+            pc.moveRight = tank.moveRight = this.KeyRight.isKeyPress();
+            pc.useBrake = this.KeyBrake.isKeyPress();
+            send |= player.ticksExisted % 5 == 0;
         }
         if (send) {
             W_Network.sendToServer(pc);

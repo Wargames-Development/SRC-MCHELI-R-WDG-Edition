@@ -927,7 +927,13 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     if (var19.getAcInfo() == null) {
                         var17.setAngles((float) mouseDeltaX, (float) mouseDeltaY);
                     } else {
-                        var19.setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, controlTickDelta);
+                        if (var19 instanceof MCH_EntityTank) {
+                            // Frame duration controls mouse response; render fraction
+                            // interpolates the server-controlled wheeled hull/camera.
+                            ((MCH_EntityTank) var19).setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, controlTickDelta, partialTicks);
+                        } else {
+                            var19.setAngles(var17, var22, var23, var25, (float) (mouseDeltaX + prevMouseDeltaX) / 2.0F, (float) (mouseDeltaY + prevMouseDeltaY) / 2.0F, (float) mouseRollDeltaX, (float) mouseRollDeltaY, controlTickDelta);
+                        }
                         if (flightControl) {
                             // Both aircraft use per-frame controls. Render their final yaw,
                             // matching pitch/roll, rather than interpolating it a second time.
@@ -936,7 +942,18 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     }
 
                     refreshRiderRenderRotations(var19);
-                    var19.setupAllRiderRenderPosition(partialTicks, var17);
+                    if (var19 instanceof MCH_EntityTank && ((MCH_EntityTank) var19).isWheeledHandling()) {
+                        float hullYaw = var19.getRotYaw();
+                        try {
+                            // Camera offsets must rotate with the rendered hull too.
+                            var19.setRotYaw(var19.calcRotYaw(partialTicks));
+                            var19.setupAllRiderRenderPosition(partialTicks, var17);
+                        } finally {
+                            var19.setRotYaw(hullYaw);
+                        }
+                    } else {
+                        var19.setupAllRiderRenderPosition(partialTicks, var17);
+                    }
                     double var29 = MathHelper.sqrt_double(mouseRollDeltaX * mouseRollDeltaX + mouseRollDeltaY * mouseRollDeltaY);
                     if (!var20 || var29 < getMaxStickLength() * 0.1D) {
                         // Keep the 60 FPS centering feel without making it stronger at high FPS.
@@ -1042,7 +1059,19 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                         var19.prevLastRiderPitch = var17.prevRotationPitch;
                     }
 
-                    var19.updateWeaponsRotation();
+                    if (var19 instanceof MCH_EntityTank && ((MCH_EntityTank) var19).isWheeledHandling()) {
+                        float hullYaw = var19.getRotYaw();
+                        try {
+                            // Local weapon poses update per frame. Apply existing aim
+                            // limits relative to the drawn hull, rather than its tick yaw.
+                            var19.setRotYaw(var19.calcRotYaw(partialTicks));
+                            var19.updateWeaponsRotation();
+                        } finally {
+                            var19.setRotYaw(hullYaw);
+                        }
+                    } else {
+                        var19.updateWeaponsRotation();
+                    }
                 }
 
                 MCH_ViewEntityDummy var24 = MCH_ViewEntityDummy.getInstance(var17.worldObj);
@@ -1127,79 +1156,88 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
         if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HELMET) {
             Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
-            renderNukeFlashOverlay(i, j, partialTicks);
+            // World-space markers can leave lighting enabled; HUD colors must be unlit.
+            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_CURRENT_BIT
+                    | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+            try {
+                GL11.glDisable(GL11.GL_LIGHTING);
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+                renderNukeFlashOverlay(i, j, partialTicks);
 
-            //渲染失明效果
-            if (player != null && player.isPotionActive(Potion.blindness)
-                && (player.ridingEntity instanceof MCH_EntityAircraft || player.ridingEntity instanceof MCH_EntitySeat || player.ridingEntity instanceof MCH_EntityUavStation)) {
-                int amp = player.getActivePotionEffect(Potion.blindness).getAmplifier();
-                int dur = player.getActivePotionEffect(Potion.blindness).getDuration();
-                float alpha = 0.85f + Math.min(0.06f * (amp + 1), 0.17f);
-                if (dur < 40) alpha *= (dur / 40.0f);
-                GL11.glPushMatrix();
-                GL11.glDisable(GL11.GL_DEPTH_TEST);
-                GL11.glDepthMask(false);
-                GL11.glEnable(GL11.GL_BLEND);
-                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                GL11.glDisable(GL11.GL_TEXTURE_2D);
-                Tessellator t = Tessellator.instance;
-                t.startDrawingQuads();
-                t.setColorRGBA(0, 0, 0, (int) (Math.max(0.0f, Math.min(0.98f, alpha)) * 255));
-                t.addVertex(0, j, 0);
-                t.addVertex(i, j, 0);
-                t.addVertex(i, 0, 0);
-                t.addVertex(0, 0, 0);
-                t.draw();
-                GL11.glEnable(GL11.GL_TEXTURE_2D);
-                GL11.glDisable(GL11.GL_BLEND);
-                GL11.glDepthMask(true);
-                GL11.glEnable(GL11.GL_DEPTH_TEST);
-                GL11.glPopMatrix();
-            }
-
-            if (this.mc.currentScreen == null || this.mc.currentScreen instanceof GuiChat || this.mc.currentScreen.getClass().toString().contains("GuiDriveableController")) {
-                for (MCH_Gui gui : this.guis) {
-                    if (drawGui(gui, partialTicks))
-                        break;
+                //渲染失明效果
+                if (player != null && player.isPotionActive(Potion.blindness)
+                    && (player.ridingEntity instanceof MCH_EntityAircraft || player.ridingEntity instanceof MCH_EntitySeat || player.ridingEntity instanceof MCH_EntityUavStation)) {
+                    int amp = player.getActivePotionEffect(Potion.blindness).getAmplifier();
+                    int dur = player.getActivePotionEffect(Potion.blindness).getDuration();
+                    float alpha = 0.85f + Math.min(0.06f * (amp + 1), 0.17f);
+                    if (dur < 40) alpha *= (dur / 40.0f);
+                    GL11.glPushMatrix();
+                    GL11.glDisable(GL11.GL_DEPTH_TEST);
+                    GL11.glDepthMask(false);
+                    GL11.glEnable(GL11.GL_BLEND);
+                    GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                    GL11.glDisable(GL11.GL_TEXTURE_2D);
+                    Tessellator t = Tessellator.instance;
+                    t.startDrawingQuads();
+                    t.setColorRGBA(0, 0, 0, (int) (Math.max(0.0f, Math.min(0.98f, alpha)) * 255));
+                    t.addVertex(0, j, 0);
+                    t.addVertex(i, j, 0);
+                    t.addVertex(i, 0, 0);
+                    t.addVertex(0, 0, 0);
+                    t.draw();
+                    GL11.glEnable(GL11.GL_TEXTURE_2D);
+                    GL11.glDisable(GL11.GL_BLEND);
+                    GL11.glDepthMask(true);
+                    GL11.glEnable(GL11.GL_DEPTH_TEST);
+                    GL11.glPopMatrix();
                 }
-                drawGui(this.gui_Common, partialTicks);
-                drawGui(this.gui_Wrench, partialTicks);
-                drawGui(this.gui_EMarker, partialTicks);
-                if (isDrawScoreboard)
-                    MCH_GuiScoreboard.drawList(this.mc, this.mc.fontRenderer, false);
-                drawGui(this.gui_Title, partialTicks);
-            }
 
-            this.renderVehicleDismountHoldIndicator(i, j, partialTicks);
+                if (this.mc.currentScreen == null || this.mc.currentScreen instanceof GuiChat || this.mc.currentScreen.getClass().toString().contains("GuiDriveableController")) {
+                    for (MCH_Gui gui : this.guis) {
+                        if (drawGui(gui, partialTicks))
+                            break;
+                    }
+                    drawGui(this.gui_Common, partialTicks);
+                    drawGui(this.gui_Wrench, partialTicks);
+                    drawGui(this.gui_EMarker, partialTicks);
+                    if (isDrawScoreboard)
+                        MCH_GuiScoreboard.drawList(this.mc, this.mc.fontRenderer, false);
+                    drawGui(this.gui_Title, partialTicks);
+                }
 
-            //渲染第三人称准心
-            if (player != null && showVehicleCrossHair) {
-                final int scrW = scaledresolution.getScaledWidth();
-                final int scrH = scaledresolution.getScaledHeight();
-                final float cx = scrW * 0.5f;
-                final float cy = scrH * 0.5f;
-                final float sizePx = 32.0f;
-                final float half = sizePx * 0.5f;
-                GL11.glPushMatrix();
-                GL11.glEnable(GL11.GL_BLEND);
-                GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                GL11.glDisable(GL11.GL_DEPTH_TEST);
-                GL11.glDepthMask(false);
+                this.renderVehicleDismountHoldIndicator(i, j, partialTicks);
 
-                GL11.glTranslatef(cx, cy, 0.0f);
+                //渲染第三人称准心
+                if (player != null && showVehicleCrossHair) {
+                    final int scrW = scaledresolution.getScaledWidth();
+                    final int scrH = scaledresolution.getScaledHeight();
+                    final float cx = scrW * 0.5f;
+                    final float cy = scrH * 0.5f;
+                    final float sizePx = 32.0f;
+                    final float half = sizePx * 0.5f;
+                    GL11.glPushMatrix();
+                    GL11.glEnable(GL11.GL_BLEND);
+                    GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                    GL11.glDisable(GL11.GL_DEPTH_TEST);
+                    GL11.glDepthMask(false);
 
-                mc.getTextureManager().bindTexture(cross3rd);
-                Tessellator t = Tessellator.instance;
-                t.startDrawingQuads();
-                t.addVertexWithUV(-half, half, 0, 0, 1);
-                t.addVertexWithUV(half, half, 0, 1, 1);
-                t.addVertexWithUV(half, -half, 0, 1, 0);
-                t.addVertexWithUV(-half, -half, 0, 0, 0);
-                t.draw();
-                GL11.glDepthMask(true);
-                GL11.glEnable(GL11.GL_DEPTH_TEST);
-                GL11.glDisable(GL11.GL_BLEND);
-                GL11.glPopMatrix();
+                    GL11.glTranslatef(cx, cy, 0.0f);
+
+                    mc.getTextureManager().bindTexture(cross3rd);
+                    Tessellator t = Tessellator.instance;
+                    t.startDrawingQuads();
+                    t.addVertexWithUV(-half, half, 0, 0, 1);
+                    t.addVertexWithUV(half, half, 0, 1, 1);
+                    t.addVertexWithUV(half, -half, 0, 1, 0);
+                    t.addVertexWithUV(-half, -half, 0, 0, 0);
+                    t.draw();
+                    GL11.glDepthMask(true);
+                    GL11.glEnable(GL11.GL_DEPTH_TEST);
+                    GL11.glDisable(GL11.GL_BLEND);
+                    GL11.glPopMatrix();
+                }
+            } finally {
+                GL11.glPopAttrib();
             }
         }
 

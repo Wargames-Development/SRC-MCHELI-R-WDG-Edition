@@ -3,6 +3,7 @@ package mcheli.aircraft;
 import com.google.common.io.ByteArrayDataInput;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.weapon.MCH_EntityTvMissile;
 import mcheli.weapon.MCH_WeaponInfoManager;
 import mcheli.wrapper.W_Entity;
@@ -26,6 +27,10 @@ public class MCH_AircraftPacketHandler {
                 Entity e = player.worldObj.getEntityByID(req.entityID_Ac);
                 if (e instanceof MCH_EntityAircraft) {
                     MCH_EntityAircraft ac = (MCH_EntityAircraft) e;
+                    // Wheeled hull attitude is simulated by the server, never accepted from a pilot.
+                    if (ac instanceof MCH_EntityTank && ((MCH_EntityTank) ac).isWheeledHandling()) {
+                        return;
+                    }
                     ac.setRotRoll(req.roll);
                     if (req.rollRev) {
                         MCH_Lib.DbgLog(ac.worldObj, "onPacketIndRotation Error:req.rollRev y=%.2f, p=%.2f, r=%.2f", req.yaw, req.pitch, req.roll);

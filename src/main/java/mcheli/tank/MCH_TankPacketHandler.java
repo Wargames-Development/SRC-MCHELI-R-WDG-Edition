@@ -13,6 +13,9 @@ public class MCH_TankPacketHandler {
         if (!player.worldObj.isRemote) {
             MCH_TankPacketPlayerControl pc = new MCH_TankPacketPlayerControl();
             pc.readData(data);
+            if (!pc.valid || player.isDead) {
+                return;
+            }
             boolean isPilot = true;
             MCH_EntityTank tank = null;
             if (player.ridingEntity instanceof MCH_EntityTank) {
@@ -65,17 +68,20 @@ public class MCH_TankPacketHandler {
                     }
 
                     if (tank.isPilot(player)) {
-                        tank.throttleUp = pc.throttleUp;
-                        tank.throttleDown = pc.throttleDown;
-                        double dx1 = tank.posX - tank.prevPosX;
-                        double dz = tank.posZ - tank.prevPosZ;
-                        double dist = dx1 * dx1 + dz * dz;
-                        if (pc.useBrake && tank.getCurrentThrottle() <= 0.03D && dist < 0.01D) {
-                            tank.moveLeft = false;
-                            tank.moveRight = false;
+                        if (tank.isWheeledHandling()) {
+                            tank.receiveWheeledControl(player, pc);
+                        } else {
+                            tank.throttleUp = pc.throttleUp;
+                            tank.throttleDown = pc.throttleDown;
+                            double dx1 = tank.posX - tank.prevPosX;
+                            double dz = tank.posZ - tank.prevPosZ;
+                            double dist = dx1 * dx1 + dz * dz;
+                            if (pc.useBrake && tank.getCurrentThrottle() <= 0.03D && dist < 0.01D) {
+                                tank.moveLeft = false;
+                                tank.moveRight = false;
+                            }
+                            tank.setBrake(pc.useBrake);
                         }
-
-                        tank.setBrake(pc.useBrake);
                     }
 
                     if (tank.canOperateCountermeasures(player)) {

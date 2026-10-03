@@ -112,6 +112,8 @@ public class MCH_RWRThreatManager {
             return false;
         }
         TrackingSource tracking = selectTrackingSource(emitterAircraftId, now);
+        // Weapon packets may read this on Netty; world traversal stays on the server tick.
+        if (MCH_RadarTerrain.isKnownBlocked(emitterAircraftId, targetEntityId)) return false;
         return tracking != null
             && tracking.report != null
             && tracking.report.targetEntityId == targetEntityId
@@ -200,7 +202,8 @@ public class MCH_RWRThreatManager {
             if (isSameTeam(emitter, target)) {
                 continue;
             }
-            if (!isTargetInsideScanCone(emitter, target, maxRange, scanAz, scanEl)) {
+            if (!isTargetInsideScanCone(emitter, target, maxRange, scanAz, scanEl)
+                || MCH_RadarTerrain.isBlocked(emitter, target)) {
                 decreaseScanHitCounter(emitter.getEntityId(), target.getEntityId());
                 continue;
             }
@@ -229,6 +232,9 @@ public class MCH_RWRThreatManager {
             return;
         }
         MCH_EntityAircraft target = (MCH_EntityAircraft) targetEntity;
+        if (MCH_RadarTerrain.isBlocked(emitter, target)) {
+            return;
+        }
         if (!isTargetRwrReceivable(target) || isSameTeam(emitter, target)) {
             return;
         }

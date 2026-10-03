@@ -5,15 +5,47 @@ import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Camera;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.wrapper.W_McClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
+
+    private static final List<MCH_EntityParticleSmoke> queued = new ArrayList<MCH_EntityParticleSmoke>();
+    private static boolean renderingQueued;
+    private static float rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ;
+
+    public static void renderQueued(float partialTicks) {
+        if (queued.isEmpty()) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        float oldBrightnessX = OpenGlHelper.lastBrightnessX;
+        float oldBrightnessY = OpenGlHelper.lastBrightnessY;
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
+            | GL11.GL_LIGHTING_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
+        mc.entityRenderer.enableLightmap(partialTicks);
+        try {
+            renderingQueued = true;
+            for (MCH_EntityParticleSmoke smoke : queued) {
+                if (!smoke.isDead && smoke.worldObj == mc.theWorld) {
+                    smoke.renderParticle(Tessellator.instance, partialTicks,
+                        rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ);
+                }
+            }
+        } finally {
+            renderingQueued = false;
+            queued.clear();
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit,
+                oldBrightnessX, oldBrightnessY);
+            mc.entityRenderer.disableLightmap(partialTicks);
+            GL11.glPopAttrib();
+        }
+    }
 
     public MCH_EntityParticleSmoke(World par1World, double x, double y, double z, double mx, double my, double mz) {
         super(par1World, x, y, z, mx, my, mz);
@@ -116,6 +148,16 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
     }
 
     public void renderParticle(Tessellator tessellator, float par2, float par3, float par4, float par5, float par6, float par7) {
+        if (!renderingQueued) {
+            // Vanilla renders layer-3 particles before the far-vehicle LOD pass.
+            queued.add(this);
+            rotationX = par3;
+            rotationZ = par4;
+            rotationYZ = par5;
+            rotationXY = par6;
+            rotationXZ = par7;
+            return;
+        }
         W_McClient.MOD_bindTexture("textures/particles/smoke.png");
         GL11.glEnable(3042);
         int srcBlend = GL11.glGetInteger(3041);

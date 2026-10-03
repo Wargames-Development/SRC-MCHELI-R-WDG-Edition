@@ -162,6 +162,11 @@ Please note that this inbox will not reply to any queries or help about the mod 
 
 ## Compiling a current Version
 
+Use Java 8 to build this Forge 1.7.10 project. Keep the `lib` and `dev-deps`
+directories from the source checkout: Gradle uses their JARs during compilation.
+`dev-deps/WGMap-dev-local.jar` provides WGMap's deobfuscated API as a compile-only
+dependency; it is not bundled in the built mod. Use the real WGMap mod at runtime.
+
 If you are annoyed by our slow releases (since we work on the server's schedule), and you can see we have done work,
 feel free to compile it yourself, however it might not work due to incomplete fixes or updates!
 
