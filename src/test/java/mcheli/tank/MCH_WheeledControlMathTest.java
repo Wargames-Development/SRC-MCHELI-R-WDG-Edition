@@ -128,7 +128,7 @@ public class MCH_WheeledControlMathTest {
         double speed = 4.0D;
         double first = MCH_WheeledControlMath.forwardSpeed(speed, 4.0D, false, true, false, true);
         assertTrue(first > 0.0D && first < speed);
-        for (int tick = 0; tick < 200; ++tick) {
+        for (int tick = 0; tick < 400; ++tick) {
             speed = MCH_WheeledControlMath.forwardSpeed(speed, 4.0D, false, true, false, true);
         }
         assertEquals(-0.6D, speed, 0.000001D);
@@ -141,12 +141,62 @@ public class MCH_WheeledControlMathTest {
         double speed = 4.0D;
         assertTrue(MCH_WheeledControlMath.forwardSpeed(speed, 4.0D, false, false, false, true)
                 > MCH_WheeledControlMath.forwardSpeed(speed, 4.0D, false, false, true, true));
-        for (int tick = 0; tick < 200; ++tick) {
+        for (int tick = 0; tick < 400; ++tick) {
             speed = MCH_WheeledControlMath.forwardSpeed(speed, 4.0D, false, false, true, true);
             assertTrue(speed >= 0.0D);
         }
         assertEquals(0.0D, speed, 0.0D);
         assertEquals(0.0D, MCH_WheeledControlMath.forwardSpeed(0.0D, 4.0D, true, true, false, true), 0.0D);
+    }
+
+    @Test
+    public void roadSpeedBrakingTakesSeveralSecondsRegardlessOfConfiguredTopSpeed() {
+        for (double limit : new double[]{1.0D, 4.0D, 8.0D}) {
+            double speed = 1.0D; // 20 m/s: braking should take roughly 3.3 seconds.
+            int ticks = 0;
+            for (; ticks < 20; ++ticks) {
+                speed = MCH_WheeledControlMath.forwardSpeed(speed, limit, false, false, true, true);
+            }
+            assertTrue(speed > 0.65D && speed < 0.75D);
+            for (; ticks < 100 && speed > 0.0D; ++ticks) {
+                double previous = speed;
+                speed = MCH_WheeledControlMath.forwardSpeed(speed, limit, false, false, true, true);
+                assertTrue(speed >= 0.0D && speed < previous);
+            }
+            assertEquals(0.0D, speed, 0.0D);
+            assertTrue(ticks >= 60 && ticks <= 75);
+        }
+        double reverse = -0.6D;
+        for (int tick = 0; tick < 20; ++tick) {
+            reverse = MCH_WheeledControlMath.forwardSpeed(reverse, 1.5D, false, false, true, true);
+        }
+        assertTrue(reverse < -0.25D && reverse > -0.35D);
+        for (int tick = 20; tick < 60; ++tick) {
+            reverse = MCH_WheeledControlMath.forwardSpeed(reverse, 1.5D, false, false, true, true);
+            assertTrue(reverse <= 0.0D);
+        }
+        assertEquals(0.0D, reverse, 0.0D);
+    }
+
+    @Test
+    public void throttleReleaseKeepsRollingAtLowSpeedAndEventuallyStopsInBothDirections() {
+        for (double start : new double[]{0.1D, 0.25D, 1.0D, 8.0D, -0.1D, -0.6D}) {
+            double coast = start;
+            double braking = start;
+            for (int tick = 0; tick < 20; ++tick) {
+                coast = MCH_WheeledControlMath.forwardSpeed(coast, 8.0D, false, false, false, true);
+                braking = MCH_WheeledControlMath.forwardSpeed(braking, 8.0D, false, false, true, true);
+            }
+            assertTrue(coast * start > 0.0D);
+            assertTrue(Math.abs(coast) > Math.abs(start) * 0.75D);
+            assertTrue(Math.abs(coast) > Math.abs(braking));
+            for (int tick = 20; tick < 5000 && coast != 0.0D; ++tick) {
+                double previous = coast;
+                coast = MCH_WheeledControlMath.forwardSpeed(coast, 8.0D, false, false, false, true);
+                assertTrue(coast * start >= 0.0D && Math.abs(coast) < Math.abs(previous));
+            }
+            assertEquals(0.0D, coast, 0.0D);
+        }
     }
 
     @Test

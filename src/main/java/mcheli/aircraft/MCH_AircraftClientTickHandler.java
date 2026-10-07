@@ -316,7 +316,27 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
             boolean armCurrentWeapon = MCH_RenderRWR.isArmCurrentWeapon(ac, player);
             boolean armNarrowBandMode = MCH_RenderRWR.isArmNarrowBandCurrentWeapon(ac, player);
             boolean automaticIrSeeker = isPureHeatSeeker(ac, player);
-            if (armCurrentWeapon) {
+            MCH_WeaponSet gpsWeapon = ac.getCurrentWeapon(player);
+            boolean gpsWaypointMode = gpsWeapon != null && gpsWeapon.getInfo() != null
+                    && gpsWeapon.getInfo().isGPSMissile;
+            if (gpsWaypointMode) {
+                ac.currentWeaponUnlock(player);
+                if (Loader.isModLoaded("wgmap")) {
+                    try {
+                        if (this.KeyCurrentWeaponLock.isKeyDown()) {
+                            if (WGMapGpsClientBridge.cycle(player) != null) playSound("mark");
+                            else playSoundNG();
+                        } else {
+                            WGMapGpsClientBridge.refreshSelection(player);
+                        }
+                    } catch (LinkageError incompatible) {
+                        MCH_GPSPosition.clientSet(0, 0, 0, false, player);
+                    }
+                } else if (this.KeyCurrentWeaponLock.isKeyDown()) {
+                    MCH_GPSPosition.clientSet(0, 0, 0, false, player);
+                    playSoundNG();
+                }
+            } else if (armCurrentWeapon) {
                 // ARM窄频使用RWR目标层锁定，不走常规武器锁定与雷达STT上报
                 ac.currentWeaponUnlock(player);
                 MCH_RenderRWR.clearRadarTrackForArmMode(ac);
@@ -349,7 +369,7 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                 boolean weaponNeedsRightLock = shouldKeepWeaponRightLock(ac, player);
                 boolean hasRadarTracking = MCH_RenderRWR.getRadarTrackingTargetId(ac) > 0;
                 boolean allowRadarToggle = !weaponNeedsRightLock || !hasRadarTracking;
-                if (allowRadarToggle && !armCurrentWeapon) {
+                if (allowRadarToggle && !armCurrentWeapon && !gpsWaypointMode) {
                     int trackToggle = MCH_RenderRWR.handleRadarTrackToggleKey(lockKeyPress, player, ac);
                     if (trackToggle == 1 || trackToggle == -1) {
                         playSoundOK();

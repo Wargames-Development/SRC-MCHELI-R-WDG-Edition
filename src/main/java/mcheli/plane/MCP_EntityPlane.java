@@ -303,6 +303,11 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         return roll * 0.8F;
     }
 
+    public double getAddRotationRollLimit() {
+        float mobility = this.getAcInfo() != null ? this.getAcInfo().mobilityRoll : 1.0F;
+        return MCH_AircraftControlMath.planeRollLimit(mobility, MCH_Config.MouseControlFlightSimMode.prmBool);
+    }
+
     public boolean isOverridePlayerPitch() {
         return super.isOverridePlayerPitch() && !this.isHovering();
     }
@@ -325,18 +330,15 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     }
 
     public float getControlRotRoll(float mouseX, float mouseY, float tick) {
-        if (MCH_Config.MouseControlFlightSimMode.prmBool) {
-            return mouseX * 2.0F;
-        }
+        boolean flightSim = MCH_Config.MouseControlFlightSimMode.prmBool;
         float key = 0.0F;
-        if (MCH_Lib.getBlockIdY(this, 3, -3) == 0 && !this.isFreeLookMode() && !super.isGunnerMode
+        if (!flightSim && MCH_Lib.getBlockIdY(this, 3, -3) == 0 && !this.isFreeLookMode() && !super.isGunnerMode
                 && (!this.getAcInfo().isFloat || this.getWaterDepth() <= 0.0D)) {
             this.rotationByKey(tick);
-            // Normal-flight factor is 0.8: preserve the 0.5 degree/tick key rate,
-            // then clamp the combined mouse/key demand through MobilityRoll.
-            key = this.addkeyRotValue * this.getAcInfo().mobilityRoll * (0.5F / 0.048F);
+            key = this.addkeyRotValue;
         }
-        return (this.getVtolMode() == 0 ? mouseX * 0.5F : mouseX) + key;
+        return MCH_AircraftControlMath.planeRollInput(mouseX, key, this.getAcInfo().mobilityRoll,
+                flightSim, this.getVtolMode() != 0);
     }
 
     private void rotationByKey(float partialTicks) {

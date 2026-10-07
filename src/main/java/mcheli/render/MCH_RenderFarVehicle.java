@@ -117,6 +117,9 @@ public class MCH_RenderFarVehicle {
         for (Object object : mc.theWorld.loadedEntityList) {
             if (object instanceof MCH_EntityAircraft && !((MCH_EntityAircraft)object).isDead) {
                 MCH_EntityAircraft aircraft = (MCH_EntityAircraft)object;
+                if (MCH_EntityInfoClientTracker.shouldSuppressAircraftRender(aircraft)) {
+                    continue;
+                }
                 this.loadedAircraft.add(aircraft);
                 this.loadedByUuid.put(aircraft.getUniqueID(), aircraft);
             }

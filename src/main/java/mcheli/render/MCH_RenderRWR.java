@@ -75,7 +75,8 @@ public class MCH_RenderRWR {
     private static final int RWR_EVENT_MAX_ROWS = 4;
     private static final String RWR_SCAN_SOUND = "rwr_scan";
     private static final String RWR_LOCK_SOUND = "rwr_lock";
-    private static final float RWR_LOCK_SOUND_VOLUME = 3.0F;
+    // Keep radar tracking quieter than the full-volume alert_radar missile warning.
+    private static final float RWR_LOCK_SOUND_VOLUME = 0.35F;
     private static final String RWR_SCAN_SOUND_FALLBACK = "alert";
     private static final String RWR_LOCK_SOUND_FALLBACK = "locked";
     private static final int RWR_LOCK_BLINK_TICK = 5;

@@ -42,6 +42,13 @@ Both client and server must load matching definitions.
   has its own acceleration/coasting model, rather than the legacy double drag.
 - The brake key decelerates motion directly. Steering and braking work while
   coasting after fuel loss or engine shutdown; propulsion does not.
+  Braking uses 6 m/s squared (0.015 blocks/tick squared), independent of the
+  configured top speed. The opposite direction key and both direction keys
+  use that same rate. Releasing throttle retains 99.9% of forward/reverse speed
+  each tick, then removes up to 0.001 blocks/tick for rolling resistance.
+  At 20 m/s on flat ground, deliberate braking takes about 3.35 seconds;
+  throttle release coasts much longer. Both paths settle at zero without
+  reversing the vehicle.
 - No tire acceleration or steering yaw is applied in the air. Floating vehicles
   retain propulsion/steering but use weaker lateral damping.
 

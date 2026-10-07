@@ -26,6 +26,10 @@ public class MCH_EntityInfoClientTracker {
     private static final long RESYNC_ENTITY_COOLDOWN_MS = 2_000L;
     private static final long RESYNC_GLOBAL_COOLDOWN_MS = 2_000L;
     private static final double RESYNC_MAX_HORIZONTAL_DISTANCE_SQ = 256.0D * 256.0D;
+    private static final long AIRCRAFT_RENDER_MISSING_GRACE_MS = 3_000L;
+
+    // Accessed only by client render calls. Weak keys release state with the local entity.
+    private static final Map<UUID, AircraftRenderState> aircraftRenderStates = new WeakHashMap<>();
 
     private static final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
     private static volatile Collection<MCH_EntityInfo> renderSnapshot = Collections.emptyList();
@@ -119,6 +123,54 @@ public class MCH_EntityInfoClientTracker {
         return renderSnapshot;
     }
 
+    /** A loaded client copy is not proof that the aircraft still exists on the server. */
+    public static boolean shouldSuppressAircraftRender(MCH_EntityAircraft aircraft) {
+        if (aircraft.isDead) return true;
+        UUID localUuid = aircraft.getUniqueID();
+        AircraftRenderState state = aircraftRenderStates.get(localUuid);
+        if (state == null) {
+            state = new AircraftRenderState();
+            aircraftRenderStates.put(localUuid, state);
+        }
+        int entityId = aircraft.getEntityId();
+        return state.shouldSuppress(getEntityInfo(entityId), isEntityInLatestSnapshot(entityId),
+            aircraft.isDestroyed(), lastAppliedSeq, System.currentTimeMillis());
+    }
+
+    static final class AircraftRenderState {
+        private UUID serverUuid;
+        private long missingSinceMillis = -1L;
+        private long missingSinceSeq;
+        private boolean serverDestroyed;
+
+        boolean shouldSuppress(MCH_EntityInfo info, boolean inSnapshot, boolean localDestroyed,
+                long snapshotSeq, long now) {
+            if (snapshotSeq < 0L) return false;
+            if (info != null && inSnapshot) {
+                // A reused entity ID must not validate the previous vehicle's client copy.
+                // Forge 1.7.10 does not send the UUID in this aircraft's spawn data;
+                // bind the server identity from snapshots, never from the local UUID.
+                if (info.aircraftUuid != null) {
+                    if (this.serverUuid != null && !info.aircraftUuid.equals(this.serverUuid)) return true;
+                    this.serverUuid = info.aircraftUuid;
+                }
+                this.missingSinceMillis = -1L;
+                this.serverDestroyed = info.destroyed;
+                // Preserve the normal dark wreck while its server entity still exists.
+                return this.serverDestroyed && !localDestroyed;
+            }
+            if (this.missingSinceMillis < 0L) {
+                this.missingSinceMillis = now;
+                this.missingSinceSeq = snapshotSeq;
+            }
+            // Retain destruction after the short-lived tombstone expires. Absence alone
+            // needs a newer full snapshot and a grace window for spawn/chunk handoffs.
+            return this.serverDestroyed && !localDestroyed
+                || snapshotSeq > this.missingSinceSeq
+                    && now - this.missingSinceMillis >= AIRCRAFT_RENDER_MISSING_GRACE_MS;
+        }
+    }
+
     /** Packet/tick publication owns the copy; render readers reuse it without allocating. */
     private static void publishRenderSnapshot() {
         List<MCH_EntityInfo> out = new ArrayList<MCH_EntityInfo>(tracked.size());
@@ -203,6 +255,7 @@ public class MCH_EntityInfoClientTracker {
 
     public static void resetTracker() {
         tracked.clear();
+        aircraftRenderStates.clear();
         renderSnapshot = Collections.emptyList();
         latestSnapshotEntityIds = Collections.emptySet();
         radarTerrain = Collections.emptyMap();

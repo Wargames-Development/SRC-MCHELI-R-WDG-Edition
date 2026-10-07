@@ -1,12 +1,12 @@
 package mcheli.render;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.lweapon.MCH_ItemLightWeaponBase;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.uav.MCH_EntityUavStation;
-import mcheli.vector.Vector3f;
 import mcheli.weapon.MCH_GPSPosition;
 import mcheli.weapon.MCH_LaserGuidanceSystem;
 import mcheli.weapon.MCH_LaserStateStore;
@@ -21,6 +21,7 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Vec3;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
 
@@ -28,8 +29,12 @@ public class MCH_RenderGPSPosition {
 
     private static final ResourceLocation GPS_POS = new ResourceLocation(W_MOD.DOMAIN, "textures/gpsposition.png");
     private static final int ICON_SIZE_PX = 24; // 以像素为基准的目标尺寸
+    private static final double LOCK_ALIGNMENT_COS = Math.cos(Math.toRadians(1.5D));
+    private double cachedDistance = Double.NaN;
+    private boolean cachedGps;
+    private String cachedDistanceText;
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onRenderWorldLast(RenderWorldLastEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
@@ -86,28 +91,32 @@ public class MCH_RenderGPSPosition {
         if (vlen < 1e-4) return;
         vx /= vlen; vy /= vlen; vz /= vlen;
 
-        Vector3f look = new Vector3f((float)player.getLookVec().xCoord, (float)player.getLookVec().yCoord, (float)player.getLookVec().zCoord);
-        double dot = Math.max(-1.0, Math.min(1.0, vx*look.x + vy*look.y + vz*look.z));
-        double angleDeg = Math.toDegrees(Math.acos(dot));
-
-        boolean inLock = angleDeg <= 1.5;
+        Vec3 look = player.getLookVec();
+        double dot = vx * look.xCoord + vy * look.yCoord + vz * look.zCoord;
+        boolean inLock = dot >= LOCK_ALIGNMENT_COS;
         float alpha = 1.0F;
 
         // —— 基于 FOV 的恒定像素大小 ——
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
         double dist = Math.sqrt(x*x + y*y + z*z);
+        double projectionScale = renderGps ? markerProjectionScale(dist, mc.gameSettings.renderDistanceChunks) : 1.0D;
+        if (!Double.isFinite(projectionScale)) return;
+        double drawDistance = dist * projectionScale;
         double fovDeg = mc.gameSettings.fovSetting;
         double fovRad = Math.toRadians(fovDeg);
-        float sPerPixel = (float)((2.0 * dist * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
+        float sPerPixel = (float)((2.0 * drawDistance * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
 
         // —— 取得视角 roll（度）并在 billboard 后抵消 ——
         float rollDeg = getViewRollDeg(mc, ac, event.partialTicks); // 正负方向以 MCH 的右手坐标为准
         // 如果无法获取则返回 0
 
         // —— 渲染 ——
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
+                | GL11.GL_CURRENT_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_LINE_BIT);
         GL11.glPushMatrix();
-        {
-            GL11.glTranslated(x, y + 0.2, z);
+        try {
+            // Equal position/icon scaling preserves direction and pixel size, like vehicle LODs.
+            GL11.glTranslated(x * projectionScale, (y + 0.2) * projectionScale, z * projectionScale);
 
             // billboard 朝向 yaw、pitch：
             GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
@@ -126,6 +135,7 @@ public class MCH_RenderGPSPosition {
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             GL11.glDisable(GL11.GL_LIGHTING);
+            if (renderGps) GL11.glDisable(GL11.GL_FOG);
 
             Tessellator tess = Tessellator.instance;
             float half = ICON_SIZE_PX * 0.5f;
@@ -159,21 +169,30 @@ public class MCH_RenderGPSPosition {
             }
 
             // 文字（固定像素大小）
-            String text = String.format(renderGps ? "[GPS %.1fm]" : "[LZR %.1fm]", player.getDistance((float)gx, (float)gy, (float)gz));
+            double distanceLabel = Math.round(player.getDistance((float)gx, (float)gy, (float)gz) * 10.0D) / 10.0D;
+            if (distanceLabel != this.cachedDistance || renderGps != this.cachedGps) {
+                this.cachedDistance = distanceLabel;
+                this.cachedGps = renderGps;
+                this.cachedDistanceText = String.format(renderGps ? "[GPS %.1fm]" : "[LZR %.1fm]", distanceLabel);
+            }
+            String text = this.cachedDistanceText;
             int color = inLock ? 0xFF0000 : 0x00FF00;
             GL11.glTranslatef(0.0F, ICON_SIZE_PX * 0.5f + 8.0f, 0.0F);
             int fw = mc.fontRenderer.getStringWidth(text);
             mc.fontRenderer.drawString(text, -fw / 2, 0, color, false);
 
-            // 还原
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
-            GL11.glEnable(GL11.GL_LIGHTING);
-            GL11.glDisable(GL11.GL_BLEND);
-            GL11.glDepthMask(true);
-            GL11.glEnable(GL11.GL_DEPTH_TEST);
-            GL11.glColor4f(1F, 1F, 1F, 1F);
+        } finally {
+            GL11.glPopMatrix();
+            GL11.glPopAttrib();
         }
-        GL11.glPopMatrix();
+    }
+
+    static double markerProjectionScale(double distance, int renderChunks) {
+        if (!Double.isFinite(distance) || distance <= 0.0D) return Double.NaN;
+        double transitionStart = Math.max(16.0D, (renderChunks > 0 ? renderChunks : 8) * 16.0D - 16.0D);
+        double projected = MCH_CompressedDepthProjection.projected(distance, transitionStart);
+        if (!Double.isFinite(projected)) projected = Math.min(distance, transitionStart);
+        return projected / distance;
     }
 
     private float getViewRollDeg(Minecraft mc, MCH_EntityAircraft ac, float partialTicks) {

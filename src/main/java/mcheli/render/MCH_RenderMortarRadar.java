@@ -147,7 +147,8 @@ public class MCH_RenderMortarRadar {
             drawTexture(mc, TARGET, markerX, markerY, targetSize);
             String label = getRadarName(entity, ac) + "[" + (int)distance + "]";
             int textWidth = mc.fontRenderer.getStringWidth(label);
-            mc.fontRenderer.drawString(label, (int)(markerX - textWidth / 2.0D), (int)markerY, 0xFFFFFF, true);
+            mc.fontRenderer.drawString(label, (int)(markerX - textWidth / 2.0D),
+                    (int)(markerY + targetSize / 2.0D + 2.0D), 0xFFFFFF, true);
         }
 
         if (currentDistance >= MIN_DISTANCE) {
@@ -173,7 +174,12 @@ public class MCH_RenderMortarRadar {
                     markerX += radius * Math.sin(-Math.toRadians(angle));
                     markerY -= radius * Math.cos(Math.toRadians(angle));
                 }
-                drawTexture(mc, TARGET, markerX, markerY, Math.max(3.0D, targetSize * 2.0D));
+                drawTexture(mc, TARGET, markerX, markerY, targetSize);
+                String label = gps.name.isEmpty() ? "GPS" : gps.name;
+                int textWidth = mc.fontRenderer.getStringWidth(label);
+                mc.fontRenderer.drawString(label, (int)(markerX - textWidth / 2.0D),
+                        (int)(markerY - targetSize / 2.0D - mc.fontRenderer.FONT_HEIGHT - 2.0D),
+                        0xFFFFFF, true);
             }
         }
 
@@ -185,8 +191,11 @@ public class MCH_RenderMortarRadar {
             MCH_EntityAircraft ac, double maxDistance) {
         if (!Loader.isModLoaded("wgmap")) return Collections.emptyList();
         long tick = world.getTotalWorldTime();
+        // GPS eligibility uses WGMap's armed lookup; refresh at most twice per
+        // second rather than repeating those searches every render frame/tick.
         if (gpsCacheWorld.get() != world || gpsCachePlayerId != player.getEntityId()
-                || gpsCacheAircraftId != ac.getEntityId() || gpsCacheTick != tick
+                || gpsCacheAircraftId != ac.getEntityId() || gpsCacheTick == Long.MIN_VALUE
+                || tick < gpsCacheTick || tick - gpsCacheTick >= 10L
                 || gpsCacheRange != maxDistance) {
             if (gpsCacheWorld.get() != world) gpsCacheWorld = new WeakReference<World>(world);
             gpsCachePlayerId = player.getEntityId();

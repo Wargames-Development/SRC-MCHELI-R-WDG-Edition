@@ -2,6 +2,9 @@ package mcheli.tank;
 
 /** Ground driving calculations; no Minecraft or client dependencies. */
 public final class MCH_WheeledControlMath {
+    // One block is one metre; 20 ticks/second converts 6 m/s^2 to blocks/tick^2.
+    private static final double BRAKE_DECELERATION = 6.0D / 400.0D;
+
     private MCH_WheeledControlMath() {
     }
 
@@ -82,13 +85,14 @@ public final class MCH_WheeledControlMath {
             return 0.0D;
         }
         if (brake || up && down || down && speed > 0.02D || up && speed < -0.02D) {
-            return approach(speed, 0.0D, Math.max(0.12D, limit / 25.0D));
+            return approach(speed, 0.0D, BRAKE_DECELERATION);
         }
         if (up || down && enableBack) {
             double target = up ? limit : -Math.min(0.6D, limit * 0.3D);
             return approach(speed, target, acceleration);
         }
-        return approach(speed * 0.995D, 0.0D, 0.003D);
+        // Mild speed-dependent drag and rolling resistance let throttle release coast.
+        return approach(speed * 0.999D, 0.0D, 0.001D);
     }
 
     public static float effectiveSteering(double speed, float steering, double wheelbase) {

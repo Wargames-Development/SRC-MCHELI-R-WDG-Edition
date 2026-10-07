@@ -1131,6 +1131,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
 
         MCH_EntityAircraft ac = (MCH_EntityAircraft) entity;
+        if (MCH_EntityInfoClientTracker.shouldSuppressAircraftRender(ac)) return;
         //this will fire like constantly so yay emoji
         //if(ac.getAcInfo() != null) {
         //   ac.getAcInfo().reload();

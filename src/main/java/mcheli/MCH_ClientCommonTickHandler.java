@@ -498,7 +498,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             if (isLocked && lockedSoundCount == 0) {
                 isLocked = false;
                 lockedSoundCount = 20;
-                MCH_ClientTickHandlerBase.playSound("locked");
+                // Match the quieter RWR lock tone; missile alerts retain full volume.
+                MCH_ClientTickHandlerBase.playSound("locked", 0.35F, 1.0F);
             }
         } else {
             lockedSoundCount = 0;

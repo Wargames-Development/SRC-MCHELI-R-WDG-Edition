@@ -1,7 +1,5 @@
 package mcheli.weapon;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Lib;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.MCH_RayTracer;
@@ -10,23 +8,15 @@ import mcheli.mob.MCH_EntityGunner;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.wrapper.W_EntityPlayer;
 import mcheli.wrapper.W_WorldFunc;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.PositionedSoundRecord;
-import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import java.util.List;
 public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
-    private int lockCount;
-    private int prevLockCount;
 
     public MCH_WeaponASMissile(World world, Vec3 position, float yaw, float pitch, String name, MCH_WeaponInfo weaponInfo) {
         super(world, position, yaw, pitch, name, weaponInfo);
@@ -39,17 +29,6 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
 
     public boolean isCooldownCountReloadTime() {
         return true;
-    }
-
-    public void update(int countWait) {
-        super.update(countWait);
-        if (this.worldObj != null && this.worldObj.isRemote) {
-            if (this.lockCount != this.prevLockCount) {
-                this.prevLockCount = this.lockCount;
-            } else {
-                this.lockCount = this.prevLockCount = 0;
-            }
-        }
     }
 
     private MCH_GPSPosition getGpsPositionForShot(MCH_WeaponParam prm) {
@@ -221,97 +200,12 @@ public class MCH_WeaponASMissile extends MCH_WeaponBase {
                     return false;
                 }
                 playSound(prm.entity);
-            } else {
-                if (prm.user instanceof EntityPlayer) {
-                    MCH_GPSPosition.set(hitResult.hitVec.xCoord, hitResult.hitVec.yCoord, hitResult.hitVec.zCoord, true, prm.user);
-                }
             }
             return true;
         }
     }
 
-    @SideOnly(Side.CLIENT)
-    public void clientLock(MCH_WeaponParam prm) {
-        if (!MCH_GPSPosition.tryBeginClientWaypointUpdate(prm.user)) {
-            return;
-        }
-
-        float yaw = prm.user.rotationYaw;
-        float pitch = prm.user.rotationPitch;
-        if(Minecraft.getMinecraft().gameSettings.thirdPersonView != 0) {
-            EntityLivingBase e = Minecraft.getMinecraft().renderViewEntity;
-            yaw = e.rotationYaw;
-            pitch = e.rotationPitch;
-        }
-        double targetX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
-        double targetZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
-        double targetY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);
-        double dist = MathHelper.sqrt_double(targetX * targetX + targetY * targetY + targetZ * targetZ);
-        double maxDist = 1500.0;
-        double segmentLength = 100.0;
-        int numSegments = (int) (maxDist / segmentLength);
-        double posX = RenderManager.renderPosX;
-        double posY = RenderManager.renderPosY;
-        double posZ = RenderManager.renderPosZ;
-        targetX = targetX * maxDist / dist;
-        targetY = targetY * maxDist / dist;
-        targetZ = targetZ * maxDist / dist;
-        Vec3 src = W_WorldFunc.getWorldVec3(this.worldObj, posX, posY, posZ);
-        MovingObjectPosition hitResult = null;
-        for (int i = 1; i <= numSegments; i++) {
-            Vec3 currentDst = W_WorldFunc.getWorldVec3(this.worldObj,
-                posX + targetX * i / numSegments,
-                posY + targetY * i / numSegments,
-                posZ + targetZ * i / numSegments);
-            if (getInfo().ballisticApexGpsGuidance
-                && !this.worldObj.blockExists(MathHelper.floor_double(currentDst.xCoord), 0,
-                    MathHelper.floor_double(currentDst.zCoord))) {
-                MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
-                return;
-            }
-            List<MovingObjectPosition> hitResults = MCH_RayTracer.rayTraceAllBlocks(this.worldObj, src, currentDst, false, true, true);
-            if (hitResults != null && !hitResults.isEmpty()) {
-                hitResult = hitResults.get(0);
-                break;
-            }
-            src = currentDst;
-        }
-        if (hitResult == null || hitResult.hitVec == null) {
-            if (getInfo().ballisticApexGpsGuidance) {
-                MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
-                return;
-            }
-            hitResult = new MovingObjectPosition(null, src.addVector(targetX, targetY, targetZ));
-        }
-        if (getInfo().ballisticApexGpsGuidance
-            && !MCH_GPSPosition.isSafeApexTarget(prm.entity.posX, prm.entity.posZ,
-                hitResult.hitVec.xCoord, hitResult.hitVec.zCoord)) {
-            MCH_GPSPosition.set(0.0D, 0.0D, 0.0D, false, prm.user);
-            return;
-        }
-        Minecraft.getMinecraft().getSoundHandler().playSound(
-            new PositionedSoundRecord(new ResourceLocation("mcheli:mark"), 10.0F, 1.0F,
-                (float) prm.user.posX, (float) prm.user.posY, (float) prm.user.posZ));
-        MCH_GPSPosition.set(hitResult.hitVec.xCoord, hitResult.hitVec.yCoord, hitResult.hitVec.zCoord, true, prm.user);
-    }
-
-    @Override
-    public boolean lock(MCH_WeaponParam prm) {
-        if (super.worldObj.isRemote) {
-            if (lockCount <= weaponInfo.lockTime) {
-                if (lockCount == 1) {
-                }
-                lockCount++;
-                if (lockCount == weaponInfo.lockTime) {
-                    lockCount = 0;
-                    clientLock(prm);
-                }
-            }
-        }
-        return false;
-    }
-
     public float getLockTime() {
-        return (float) lockCount / weaponInfo.lockTime;
+        return 0.0F;
     }
 }
