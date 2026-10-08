@@ -303,6 +303,8 @@ public class MCH_RenderBVRLockBox {
         boolean bvrDebugVerbose = MCH_RadarDebug.isBvrDebugVerbose();
         boolean bvrDebugTick = bvrDebugEnabled && ac.worldObj != null && ac.worldObj.getTotalWorldTime() % 10L == 0L;
         for (MCH_EntityInfo entity : entities) {
+            // The ARM pass already draws this emitter; a green radar box would cover it.
+            if (wi.antiRadiationMissile && entity.isArmEmitterForWeapon(wi.type)) continue;
             boolean isRadarTracking = entity.entityId == radarTrackingId;
             boolean isRadarSelected = entity.entityId == radarSelectedId;
             boolean isRadarSelectedOrTracking = isRadarTracking || isRadarSelected;

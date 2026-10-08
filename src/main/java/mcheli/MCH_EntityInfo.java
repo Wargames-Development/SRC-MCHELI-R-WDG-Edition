@@ -32,6 +32,8 @@ public class MCH_EntityInfo {
     public float turretYaw;
     public float turretPitch;
     public boolean destroyed;
+    /** Server-owned ARM eligibility; false when an older server does not supply it. */
+    public boolean armEmitter;
     /** Stable across chunk reloads even when the numeric entity ID changes. */
     public UUID aircraftUuid;
     /** Packed block/sky light from the server; -1 for older snapshot packets. */
@@ -143,6 +145,7 @@ public class MCH_EntityInfo {
         );
         if (aircraft != null) {
             info.aircraftUuid = e.getUniqueID();
+            info.armEmitter = aircraft.isArmEmitterRadiating();
         }
         info.altitudeAboveGround = computeServerAgl(e);
         if (!e.worldObj.isRemote && aircraft != null) {
@@ -211,6 +214,17 @@ public class MCH_EntityInfo {
 
     public boolean isCountermeasureActive(long worldTick) {
         return this.countermeasureFlags != 0 && this.countermeasureUntilTick >= worldTick;
+    }
+
+    public boolean isArmEmitterForWeapon(String weaponType) {
+        if (!this.armEmitter || this.destroyed || this.entityClassName == null) return false;
+        if ("atmissile".equalsIgnoreCase(weaponType)) {
+            return this.entityClassName.contains("MCH_EntityTank") || this.entityClassName.contains("MCH_EntityVehicle");
+        }
+        if ("aamissile".equalsIgnoreCase(weaponType)) {
+            return this.entityClassName.contains("MCP_EntityPlane") || this.entityClassName.contains("MCH_EntityHeli");
+        }
+        return false;
     }
 
     public boolean isElectronicCountermeasureActive(long worldTick) {

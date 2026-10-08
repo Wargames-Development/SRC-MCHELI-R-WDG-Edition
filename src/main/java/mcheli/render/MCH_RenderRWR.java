@@ -3098,7 +3098,8 @@ public class MCH_RenderRWR {
                 continue;
             }
             MCH_EntityInfo emitterInfo = MCH_EntityInfoClientTracker.getEntityInfo(evt.emitterId);
-            if (isSelfTarget(ac, player, emitterInfo) || isOwnLaunchedMissile(ac, player, emitterInfo) || isSameTeamTarget(player, ac, emitterInfo)) {
+            if (!isArmContactAllowedForCurrentWeapon(ac, player, evt.emitterId)
+                || isSelfTarget(ac, player, emitterInfo) || isOwnLaunchedMissile(ac, player, emitterInfo) || isSameTeamTarget(player, ac, emitterInfo)) {
                 continue;
             }
             String sourceName = normalizeRwrSourceName(evt.sourceName);
@@ -3125,20 +3126,33 @@ public class MCH_RenderRWR {
             contact.lastRefreshTick = nowTick;
             contact.color = stt ? ARM_BVR_STT_COLOR : ARM_BVR_BASE_COLOR;
         }
+        // Warning pulses describe who is being illuminated, not whether a radar is on.
+        // Refresh passive ARM contacts from the server's current emitter state instead.
+        for (MCH_EntityInfo info : MCH_EntityInfoClientTracker.getAllTrackedEntities()) {
+            if (!isArmContactAllowedForCurrentWeapon(ac, player, info.entityId)
+                || isSelfTarget(ac, player, info) || isSameTeamTarget(player, ac, info)) continue;
+            ArmBvrContact contact = cache.get(info.entityId);
+            if (contact == null) {
+                contact = new ArmBvrContact();
+                contact.emitterId = info.entityId;
+                contact.threatMode = MCH_RWRThreatEvent.MODE_SEARCH;
+                contact.color = ARM_BVR_BASE_COLOR;
+                cache.put(info.entityId, contact);
+            }
+            contact.sourceName = info.entityName;
+            contact.untilTick = nowTick + baseTtl;
+        }
+        it = cache.entrySet().iterator();
+        while (it.hasNext()) {
+            if (!isArmContactAllowedForCurrentWeapon(ac, player, it.next().getKey())) it.remove();
+        }
         ArmTrackState state = getOrCreateArmTrackState(aircraftId);
         if (state.trackingTargetId > 0) {
             if (cache.containsKey(state.trackingTargetId)) {
                 state.trackingLostSinceTick = -1L;
-            } else if (nowTick - state.lastTrackAcquireTick < ARM_TRACK_LOCK_GUARD_TICK) {
-                state.trackingLostSinceTick = -1L;
             } else {
-                if (state.trackingLostSinceTick < 0L) {
-                    state.trackingLostSinceTick = nowTick;
-                }
-                if (nowTick - state.trackingLostSinceTick >= ARM_TRACK_LOST_GRACE_TICK) {
-                    state.trackingTargetId = -1;
-                    state.trackingLostSinceTick = -1L;
-                }
+                state.trackingTargetId = -1;
+                state.trackingLostSinceTick = -1L;
             }
         }
         if (state.selectedTargetId > 0 && !cache.containsKey(state.selectedTargetId)) {
@@ -3202,7 +3216,8 @@ public class MCH_RenderRWR {
     }
 
     private static boolean isArmContactAllowedForCurrentWeapon(MCH_EntityAircraft ac, EntityPlayer player, int emitterId) {
-        if (ac == null || player == null || ac.worldObj == null) {
+        if (ac == null || player == null || ac.worldObj == null || ac.getAcInfo() == null
+            || !ac.getAcInfo().enableRadar || !ac.isRadarEnabledRuntime()) {
             return false;
         }
         MCH_WeaponSet ws = ac.getCurrentWeapon(player);
@@ -3211,17 +3226,16 @@ public class MCH_RenderRWR {
             return false;
         }
         MCH_EntityInfo info = MCH_EntityInfoClientTracker.getEntityInfo(emitterId);
-        if (info == null || info.entityClassName == null) {
+        if (info == null || !info.isArmEmitterForWeapon(wi.type)
+            || !MCH_EntityInfoClientTracker.isEntityInLatestSnapshot(emitterId)
+            || System.currentTimeMillis() - info.lastUpdateTime > 1500L) {
             return false;
         }
-        String type = wi.type != null ? wi.type.toLowerCase() : "";
-        if ("aamissile".equals(type)) {
-            return info.entityClassName.contains("MCP_EntityPlane") || info.entityClassName.contains("MCH_EntityHeli");
+        double range = Math.max(1.0D, wi.maxLockOnRange);
+        if (ac.getAcInfo().radarMaxTargetRange > 0.0F) {
+            range = Math.min(range, ac.getAcInfo().radarMaxTargetRange);
         }
-        if ("atmissile".equals(type)) {
-            return info.entityClassName.contains("MCH_EntityTank") || info.entityClassName.contains("MCH_EntityVehicle");
-        }
-        return true;
+        return info.getDistanceSqToEntity(ac) <= range * range;
     }
 
     private static int getArmThreatPriority(byte threatMode) {
@@ -3301,7 +3315,8 @@ public class MCH_RenderRWR {
             state.trackingLostSinceTick = -1L;
             return -1;
         }
-        if (state.selectedTargetId <= 0 || cache == null || !cache.containsKey(state.selectedTargetId)) {
+        if (state.selectedTargetId <= 0 || cache == null || !cache.containsKey(state.selectedTargetId)
+            || !isArmContactAllowedForCurrentWeapon(ac, player, state.selectedTargetId)) {
             return 2;
         }
         state.trackingTargetId = state.selectedTargetId;
@@ -3311,9 +3326,10 @@ public class MCH_RenderRWR {
     }
 
     public static int getArmTrackingTargetId(MCH_EntityAircraft ac) {
-        if (ac == null) {
+        if (ac == null || ac.worldObj == null) {
             return -1;
         }
+        refreshArmBvrContacts(ac, Minecraft.getMinecraft().thePlayer, ac.worldObj.getTotalWorldTime());
         ArmTrackState state = armTrackStateMap.get(ac.getEntityId());
         return state != null ? state.trackingTargetId : -1;
     }

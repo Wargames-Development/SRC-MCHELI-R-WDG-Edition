@@ -13,6 +13,7 @@ import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.wrapper.W_Entity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.MathHelper;
@@ -104,7 +105,11 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
         if (!super.worldObj.isRemote) {
             if (getInfo().passiveRadar || getInfo().activeRadar || getInfo().semiActiveRadar) {
                 Entity tgtEnt = prm.user.worldObj.getEntityByID(prm.option1);
-                if (!getInfo().antiRadiationMissile) {
+                if (getInfo().antiRadiationMissile) {
+                    boolean validTarget = isValidServerTarget(prm, tgtEnt);
+                    if (isArmNarrowBandMode() && !validTarget) return false;
+                    if (!validTarget) tgtEnt = null;
+                } else {
                     boolean validTarget = isValidServerTarget(prm, tgtEnt);
                     boolean requiresTrackedTarget = requiresBvrRadarTrack(prm)
                         || getInfo().passiveRadar || getInfo().semiActiveRadar;
@@ -195,6 +200,9 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
         } else {
             if (getInfo().passiveRadar || getInfo().activeRadar || getInfo().semiActiveRadar) {
                 result = true;
+            } else if (isArmNarrowBandMode()) {
+                // A server snapshot can represent an emitter beyond client entity range.
+                result = super.optionParameter1 > 0;
             } else if ("atmissile".equals(getInfo().type) && getInfo().isHeatSeekerMissile && !getInfo().activeRadar && !getInfo().passiveRadar && !getInfo().semiActiveRadar && !getInfo().antiRadiationMissile && super.optionParameter1 > 0) {
                 result = true;
             } else if (super.guidanceSystem.lock(prm.user) && super.guidanceSystem.lastLockEntity != null) {
@@ -221,6 +229,9 @@ public class MCH_WeaponATMissile extends MCH_WeaponEntitySeeker {
             && ((MCH_EntityAircraft)target).isECMJammerUsing()) {
             return false;
         }
+        if (getInfo().antiRadiationMissile && target instanceof MCH_EntityAircraft
+            && prm.user instanceof EntityLivingBase
+            && ((MCH_EntityAircraft)target).isMountedSameTeamEntity((EntityLivingBase)prm.user)) return false;
         double maxRange = Math.max(1.0D, getInfo().maxLockOnRange);
         boolean radarGuided = getInfo().isRadarMissile || getInfo().activeRadar
             || getInfo().passiveRadar || getInfo().semiActiveRadar;

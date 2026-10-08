@@ -244,6 +244,13 @@ However, We hope you have some understanding of modding and therefore are giving
 
     2. Open the .ipr file in the explorer to intellij Idea.
 
+    3. Select the installed JDK 8 as the Project SDK. The generated project includes
+       Lombok and enables annotation processing for IntelliJ builds.
+
+    In PowerShell, run `.\gradlew.bat setupDecompWorkspace idea` from the project
+    root to perform both setup steps together. If linking the project to Gradle,
+    select the Gradle wrapper and JDK 8 as the Gradle JVM too.
+
 * Eclipse Users:
     1. Generate eclipse files by running  `gradlew eclipse` in the cmd.
 

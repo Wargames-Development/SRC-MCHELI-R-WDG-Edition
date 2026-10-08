@@ -404,7 +404,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             return false;
         }
 
-        return aircraft.hasAARadar();
+        return aircraft.isArmEmitterRadiating();
     }
 
     private MCH_EntityAircraft getAircraftForEcmCheck(Entity entity) {
@@ -446,9 +446,8 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
 
             // HARM: only ground vehicles/tanks with HasAARadar = true are valid
             if (this.antiRadiationMissile) {
-                if (!isHarmGroundRadarTarget(entity)) {
-                    return false;
-                }
+                // Radar/IR countermeasure flags must not suppress a radiating ARM target.
+                return isHarmGroundRadarTarget(entity) && (this.checker == null || this.checker.canLockEntity(entity));
             }
             // IR-only restriction: only MCHELI vehicles or flares
             if (this.isHeatSeekerMissile) {

@@ -12,6 +12,8 @@ import mcheli.event.AircraftDestoryEvent;
 import mcheli.flare.*;
 import mcheli.multiplay.MCH_Multiplay;
 import mcheli.mob.MCH_EntityGunner;
+import mcheli.tank.MCH_EntityTank;
+import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.network.packets.PacketBoundingBoxHit;
 import mcheli.network.packets.PacketCountermeasureState;
@@ -7079,6 +7081,22 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean isRadarEnabledRuntime() {
         return this.getCommonStatus(CMN_ID_RADAR_ENABLED);
+    }
+
+    public boolean isArmEmitterRadiating() {
+        if (this.isDead || this.isDestroyed() || this.getAcInfo() == null
+            || ((this instanceof MCH_EntityTank || this instanceof MCH_EntityVehicle) && !this.hasAARadar())) {
+            return false;
+        }
+        // Receiving RWR warnings is unrelated to transmitting radar. Keep existing HOJ support.
+        if (!(this.getAcInfo().enableRadar && this.isRadarEnabledRuntime()) && !this.isECMJammerUsing()) {
+            return false;
+        }
+        for (int seatId = 0; seatId <= this.getSeatNum(); ++seatId) {
+            Entity crew = this.getEntityBySeatId(seatId);
+            if (crew instanceof EntityPlayer || crew instanceof MCH_EntityGunner) return true;
+        }
+        return false;
     }
 
     public void setRadarEnabledRuntime(boolean enabled) {

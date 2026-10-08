@@ -90,6 +90,28 @@ sourceSets {
     }
 }
 
+idea {
+    module {
+        scopes.PROVIDED.plus += [configurations.provided]
+    }
+    project {
+        ipr.withXml {
+            // IDEA needs Lombok on its classpath and annotation processing enabled.
+            def compiler = asNode().component.find { it.@name == 'CompilerConfiguration' }
+            def processing = compiler.annotationProcessing[0]
+            processing.@enabled = 'true'
+            def profile = processing.profile.find { it.@default == 'true' }
+            if (profile == null) {
+                profile = processing.appendNode('profile', [default: 'true', name: 'Default'])
+            }
+            profile.@enabled = 'true'
+            if (profile.processorPath.isEmpty()) {
+                profile.appendNode('processorPath', [useClasspath: 'true'])
+            }
+        }
+    }
+}
+
 processResources {
     inputs.property "version", modVersionString
     inputs.property "mcversion", mcVersion

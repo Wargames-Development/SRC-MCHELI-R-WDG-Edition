@@ -1745,13 +1745,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     protected boolean isArmEmitterRadiatingSource(MCH_EntityAircraft emitter) {
-        if (emitter == null || emitter.getAcInfo() == null || !emitter.getAcInfo().hasRWR) {
-            return false;
-        }
-        if (!hasArmEmitterCrew(emitter)) {
-            return false;
-        }
-        return (emitter.getAcInfo().enableRadar && emitter.isRadarEnabledRuntime()) || emitter.isECMJammerUsing();
+        return emitter != null && emitter.isArmEmitterRadiating();
     }
 
     public void notifyHitBullet() {
@@ -2489,6 +2483,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 if (entity instanceof EntityPlayer) {
                     continue;
                 }
+                if (getInfo().antiRadiationMissile && this.getDistanceSqToEntity(entity) > range * range) {
+                    continue;
+                }
                 // AA 导弹的目标判定
                 if (this instanceof MCH_EntityAAMissile) {
                     boolean canScanMissiles = getInfo().canLockMissile && (getInfo().activeRadar || getInfo().semiActiveRadar);
@@ -2615,7 +2612,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                             closestAngle = angle;
                             closestTarget = entity;
                         }
-                    } else if (!getInfo().isHeatSeekerMissile && !getInfo().ridableOnly
+                    } else if (!getInfo().antiRadiationMissile && !getInfo().isHeatSeekerMissile && !getInfo().ridableOnly
                         && entity instanceof EntityLivingBase && entity.ridingEntity == null) {
                         if (W_Entity.isEqual(entity, shootingEntity)) continue;
                         if (shootingEntity instanceof EntityLivingBase && ((EntityLivingBase) entity).isOnSameTeam((EntityLivingBase) shootingEntity)) {

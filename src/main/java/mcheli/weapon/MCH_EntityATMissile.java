@@ -240,13 +240,14 @@ public class MCH_EntityATMissile extends MCH_EntityBaseBullet implements MCH_IEn
             double y = super.posY - super.targetEntity.posY;
             double z = super.posZ - super.targetEntity.posZ;
             double d = x * x + y * y + z * z;
-            if (d > 3422500.0D) {
+            double maxRange = Math.max(1.0D, this.getInfo().maxLockOnRange);
+            if (d > maxRange * maxRange) {
                 if (MCH_RadarDebug.isEnabled()) {
                     MCH_RadarDebug.trace(this.worldObj, this,
-                        "msl_death type=AT_ARM reason=TARGET_DISTANCE_LIMIT msl=%d target=%d dist=%.1f distSq=%.1f limitSq=3422500.0 pos=(%.1f,%.1f,%.1f) tpos=(%.1f,%.1f,%.1f)",
+                        "msl_death type=AT_ARM reason=TARGET_DISTANCE_LIMIT msl=%d target=%d dist=%.1f distSq=%.1f limitSq=%.1f pos=(%.1f,%.1f,%.1f) tpos=(%.1f,%.1f,%.1f)",
                         this.getEntityId(),
                         super.targetEntity.getEntityId(),
-                        Math.sqrt(d), d,
+                        Math.sqrt(d), d, maxRange * maxRange,
                         this.posX, this.posY, this.posZ,
                         super.targetEntity.posX, super.targetEntity.posY, super.targetEntity.posZ);
                 }
