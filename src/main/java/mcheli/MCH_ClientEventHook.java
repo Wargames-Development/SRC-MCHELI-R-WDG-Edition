@@ -337,13 +337,16 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
     }
 
     public void worldEventUnload(Unload event) {
-        if (event.world != null && event.world.isRemote) {
-            MCH_ClientCommonTickHandler.cleanupClientState("world_unload");
-            MCH_RadarDisplayTextureManager.clear();
-            MCH_RWRDisplayTextureManager.clear();
+        // Forge fires unload events for both sides in integrated singleplayer.
+        // Never mutate the client camera singleton from the server thread.
+        if (event.world == null || !event.world.isRemote) {
+            return;
         }
+        MCH_ClientCommonTickHandler.cleanupClientState("world_unload");
+        MCH_RadarDisplayTextureManager.clear();
+        MCH_RWRDisplayTextureManager.clear();
         MCH_EntityInfoClientTracker.resetTracker();
-        MCH_ViewEntityDummy.onUnloadWorld();
+        MCH_ViewEntityDummy.onUnloadWorld(event.world);
     }
 
     public void entityJoinWorldEvent(EntityJoinWorldEvent event) {

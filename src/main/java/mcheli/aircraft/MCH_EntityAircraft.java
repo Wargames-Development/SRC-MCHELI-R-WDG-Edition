@@ -1662,6 +1662,45 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.velocityZ = super.motionZ = par5;
     }
 
+    /**
+     * Stable compatibility hook for the WDG WorldBorder plugin.
+     * Kept deliberately independent of Bukkit so MCHeli has no plugin dependency.
+     */
+    public double[] wdgWorldBorderSnapshot() {
+        return new double[] {
+                super.posX, super.posY, super.posZ,
+                this.getRotYaw(), this.getRotPitch(),
+                super.motionX, super.motionY, super.motionZ
+        };
+    }
+
+    /**
+     * Move the complete aircraft across a wrapped world seam without ejecting riders.
+     * Seats and rider positions are refreshed immediately so a secondary-seat passenger
+     * cannot drag the seat back to the pre-wrap aircraft position on the next tick.
+     */
+    public void wdgWorldBorderMove(double x, double y, double z, float yaw,
+                                   double motionX, double motionY, double motionZ) {
+        super.setPosition(x, y, z);
+        super.prevPosX = super.lastTickPosX = x;
+        super.prevPosY = super.lastTickPosY = y;
+        super.prevPosZ = super.lastTickPosZ = z;
+
+        this.setRotYaw(yaw);
+        super.prevRotationYaw = yaw;
+        this.aircraftX = x;
+        this.aircraftY = y;
+        this.aircraftZ = z;
+        this.aircraftYaw = yaw;
+        this.aircraftPitch = this.getRotPitch();
+        this.aircraftPosRotInc = 0;
+
+        this.setVelocity(motionX, motionY, motionZ);
+        this.updateRiderPosition(x, y, z);
+        this.updateSeatsPosition(x, y, z, true);
+        this.updateHitBoxPosition();
+    }
+
     public void onFirstUpdate() {
         if (!super.worldObj.isRemote) {
             this.setCommonStatus(3, MCH_Config.InfinityAmmo.prmBool);
