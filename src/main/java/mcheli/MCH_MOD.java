@@ -48,7 +48,6 @@ import mcheli.mob.MCH_EntityNPC;
 import mcheli.mob.MCH_GunnerInfo;
 import mcheli.mob.MCH_GunnerInfoManager;
 import mcheli.mob.MCH_ItemSpawnGunner;
-import mcheli.mob.MCH_ItemSpawnNPC;
 import mcheli.network.PacketHandler;
 import mcheli.parachute.MCH_EntityParachute;
 import mcheli.parachute.MCH_ItemParachute;
@@ -133,13 +132,7 @@ public class MCH_MOD {
     public static MCH_ItemFuel itemFuel;
     public static MCH_ItemWrench itemWrench;
     public static MCH_ItemRangeFinder itemRangeFinder;
-    public static MCH_ItemSpawnGunner itemSpawnGunnerVsPlayer;
-    public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonster;
     public static MCH_ItemSpawnGunner itemSpawnGunnerAA;
-    public static MCH_ItemSpawnGunner itemSpawnGunnerEnemy;
-    public static MCH_ItemSpawnGunner itemSpawnGunnerVsMonsterStupid;
-    public static MCH_ItemSpawnGunner itemSpawnGunnerEnemyStupid;
-    public static MCH_ItemSpawnNPC itemSpawnNPC;
     public static MCH_CreativeTabs creativeTabs;
     public static MCH_CreativeTabs creativeTabsHeli;
     public static MCH_CreativeTabs creativeTabsPlane;
@@ -338,8 +331,6 @@ public class MCH_MOD {
         MCH_Lib.Log("Register item");
         this.registerItemRangeFinder();
         this.registerItemSpawnGunner();
-        this.registerItemSpawnNPC();
-        this.registerConfiguredGunnerItems();
         this.registerItemWrench();
         this.registerItemFuel();
         this.registerItemGLTD();
@@ -428,111 +419,52 @@ public class MCH_MOD {
         proxy.registerServerTick();
     }
 
-    private void registerItemSpawnGunner() {
-        itemSpawnGunnerVsMonster = registerLegacyOrProfileGunner(
-            "spawn_gunner_vs_monster", "gunner_friendly_default",
-            0, false, true, 12632224, 12582912,
-            "Gunner [Friendly]", "対モンスター 射撃手", "炮手[友好]"
-        );
-        itemSpawnGunnerVsPlayer = registerLegacyOrProfileGunner(
-            "spawn_gunner_vs_player", "gunner_player_default",
-            1, false, true, 12632224, 49152,
-            "Gunner [Faction]", "対他チームプレイヤー 射撃手", "炮手[阵营]"
-        );
-        itemSpawnGunnerAA = registerLegacyOrProfileGunner(
-            "gunner_aa", "gunner_aa_default",
-            2, false, true, 12632224, 32768,
-            "Gunner [Anti-Missile]", "対弾薬迎撃 射撃手", "炮手[反导]"
-        );
-        itemSpawnGunnerEnemy = registerLegacyOrProfileGunner(
-            "gunner_enemy", "gunner_enemy_default",
-            3, false, true, 12632224, 2228224,
-            "Gunner [Hostile]", "敵対 射撃手", "炮手[敌对]"
-        );
-        itemSpawnGunnerVsMonsterStupid = registerLegacyOrProfileGunner(
-            "gunner_friendly_stupid", "gunner_friendly_stupid_default",
-            0, true, false, 12632224, 12582912,
-            "Gunner [Friendly][Stupid]", "対モンスター 射撃手[愚人]", "炮手[愚人][友好]"
-        );
-        itemSpawnGunnerEnemyStupid = registerLegacyOrProfileGunner(
-            "gunner_enemy_stupid", "gunner_enemy_stupid_default",
-            3, true, false, 12632224, 2228224,
-            "Gunner [Hostile][Stupid]", "敵対 射撃手[愚人]", "炮手[愚人][敌对]"
-        );
+    @EventHandler
+    public void onMissingMappings(FMLMissingMappingsEvent event) {
+        for (FMLMissingMappingsEvent.MissingMapping mapping : event.get()) {
+            if (mapping.type != GameRegistry.Type.ITEM) continue;
+            switch (mapping.name) {
+                case "mcheli:spawn_gunner_vs_monster":
+                case "mcheli:spawn_gunner_vs_player":
+                case "mcheli:gunner_enemy":
+                case "mcheli:gunner_friendly_stupid":
+                case "mcheli:gunner_enemy_stupid":
+                case "mcheli:spawn_npc":
+                    // These eggs were deliberately removed; discard old stacks instead of blocking world load.
+                    mapping.ignore();
+                    MCH_Lib.Log("[mcheli] Removed retired spawn egg mapping '%s'.", mapping.name);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
-    private MCH_ItemSpawnGunner registerLegacyOrProfileGunner(String registerName, String profileKey,
-                                                               int fallbackTargetType, boolean fallbackStupid, boolean fallbackLayeredIcon,
-                                                               int fallbackPrimaryColor, int fallbackSecondaryColor,
-                                                               String fallbackDisplayName, String fallbackJa, String fallbackZh) {
-        MCH_GunnerInfo profile = MCH_GunnerInfoManager.get(profileKey);
+    private void registerItemSpawnGunner() {
+        MCH_GunnerInfo profile = MCH_GunnerInfoManager.get("gunner_aa_default");
         MCH_ItemSpawnGunner item = new MCH_ItemSpawnGunner();
-        if (profile != null && profile.isValidData()) {
-            item.targetType = profile.targetType;
-            item.isStupid = profile.stupidGunner;
+        item.targetType = MCH_EntityGunner.TARGET_AA_AMMO;
+        item.primaryColor = 12632224;
+        item.secondaryColor = 32768;
+        if (profile != null && profile.isValidData() && profile.targetType == MCH_EntityGunner.TARGET_AA_AMMO) {
             item.useLayeredIcon = profile.useLayeredIcon;
             item.applyItemColorTint = profile.applyItemColorTint;
             item.primaryColor = profile.primaryColor;
             item.secondaryColor = profile.secondaryColor;
             item.gunnerProfileName = profile.name;
-            registerItem(item, registerName, creativeTabsGunner);
+            registerItem(item, "gunner_aa", creativeTabsGunner);
             W_LanguageRegistry.addName(item, profile.displayName);
             for (String lang : profile.displayNameLang.keySet()) {
                 W_LanguageRegistry.addNameForObject(item, lang, profile.displayNameLang.get(lang));
             }
-            MCH_Lib.Log("[mcheli] Gunner legacy item '%s' mapped to profile '%s'.", registerName, profileKey);
-            return item;
+        } else {
+            registerItem(item, "gunner_aa", creativeTabsGunner);
+            W_LanguageRegistry.addName(item, "Gunner [CIWS AA]");
+            W_LanguageRegistry.addNameForObject(item, "ja_JP", "対弾薬迎撃 射撃手");
+            W_LanguageRegistry.addNameForObject(item, "zh_CN", "炮手[反导]");
+            MCH_Lib.Log("[mcheli] CIWS AA profile missing/invalid; using built-in AA defaults.");
         }
-
-        item.targetType = fallbackTargetType;
-        item.isStupid = fallbackStupid;
-        item.useLayeredIcon = fallbackLayeredIcon;
-        item.primaryColor = fallbackPrimaryColor;
-        item.secondaryColor = fallbackSecondaryColor;
-        registerItem(item, registerName, creativeTabsGunner);
-        W_LanguageRegistry.addName(item, fallbackDisplayName);
-        W_LanguageRegistry.addNameForObject(item, "ja_JP", fallbackJa);
-        W_LanguageRegistry.addNameForObject(item, "zh_CN", fallbackZh);
-        MCH_Lib.Log("[mcheli] Gunner profile '%s' missing/invalid, fallback to legacy item '%s'.", profileKey, registerName);
-        return item;
-    }
-
-    private void registerItemSpawnNPC() {
-        itemSpawnNPC = new MCH_ItemSpawnNPC();
-        registerItem(itemSpawnNPC, "spawn_npc", creativeTabsGunner);
-        W_LanguageRegistry.addName(itemSpawnNPC, "NPC Spawn Egg");
-        W_LanguageRegistry.addNameForObject(itemSpawnNPC, "ja_JP", "NPC 召喚卵");
-        W_LanguageRegistry.addNameForObject(itemSpawnNPC, "zh_CN", "NPC生成蛋");
-    }
-
-    private void registerConfiguredGunnerItems() {
-        for (MCH_GunnerInfo info : MCH_GunnerInfoManager.getValues()) {
-            if (info == null || info.itemName == null || info.itemName.trim().isEmpty()) {
-                continue;
-            }
-            String regName = info.itemName.trim().toLowerCase(Locale.ROOT);
-            if (regName.equals("spawn_gunner_vs_monster")
-                || regName.equals("spawn_gunner_vs_player")
-                || regName.equals("gunner_aa")
-                || regName.equals("gunner_enemy")
-                || regName.equals("gunner_friendly_stupid")
-                || regName.equals("gunner_enemy_stupid")) {
-                continue;
-            }
-            MCH_ItemSpawnGunner item = new MCH_ItemSpawnGunner();
-            item.targetType = info.targetType;
-            item.isStupid = info.stupidGunner;
-            item.useLayeredIcon = info.useLayeredIcon;
-            item.applyItemColorTint = info.applyItemColorTint;
-            item.primaryColor = info.primaryColor;
-            item.secondaryColor = info.secondaryColor;
-            item.gunnerProfileName = info.name;
-            registerItem(item, regName, creativeTabsGunner);
-            W_LanguageRegistry.addName(item, info.displayName);
-            for (String lang : info.displayNameLang.keySet()) {
-                W_LanguageRegistry.addNameForObject(item, lang, info.displayNameLang.get(lang));
-            }
-        }
+        itemSpawnGunnerAA = item;
     }
 
     private void registerConfiguredBlocks() {

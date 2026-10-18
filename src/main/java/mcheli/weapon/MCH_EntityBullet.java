@@ -77,8 +77,7 @@ public class MCH_EntityBullet extends MCH_EntityBaseBullet {
             for (Object o : entities) {
                 Entity entity = (Entity) o;
                 if (this.canBeCollidedEntity(entity) && shootingAircraft != o) {
-                    float f = 0.3F;
-                    MovingObjectPosition movingObjectPosition = entity.boundingBox.expand(f, f, f).calculateIntercept(src, dir);
+                    MovingObjectPosition movingObjectPosition = this.getProjectileCollision(entity, src, dir);
                     if (movingObjectPosition != null) {
                         double d1 = src.distanceTo(movingObjectPosition.hitVec);
                         if (d1 < d2 || d2 == 0.0D) {

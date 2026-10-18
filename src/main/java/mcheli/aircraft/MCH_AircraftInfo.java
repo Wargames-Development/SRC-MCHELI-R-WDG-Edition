@@ -1,6 +1,7 @@
 package mcheli.aircraft;
 
 import mcheli.MCH_BaseInfo;
+import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
 import mcheli.hud.MCH_Hud;
@@ -47,6 +48,8 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public float gravity;
     public float gravityInWater;
     public int maxHp;
+    // Null inherits the server config; explicit true/false overrides its pickup default.
+    private Boolean survivalPickup;
     public float armorMinDamage;
     public float armorMaxDamage;
     public float armorDamageFactor;
@@ -947,6 +950,10 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
         return this.weaponSetList.size();
     }
 
+    public boolean isSurvivalPickupAllowed() {
+        return this.survivalPickup != null ? this.survivalPickup : MCH_Config.EnableSurvivalVehiclePickup.prmBool;
+    }
+
     public void loadItemData(String item, String data) {
         if (item.compareTo("displayname") == 0) {
             this.displayName = data.trim();
@@ -961,6 +968,12 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
                 this.category = data.toUpperCase().replaceAll("[,;:]", ".").replaceAll("[ \t]", "");
             } else if (item.equalsIgnoreCase("CanRide")) {
                 this.canRide = this.toBool(data, true);
+            } else if (item.equalsIgnoreCase("SurvivalPickup")) {
+                String value = data.trim();
+                if (!value.equalsIgnoreCase("true") && !value.equalsIgnoreCase("false")) {
+                    throw new IllegalArgumentException("SurvivalPickup must be true or false: " + data);
+                }
+                this.survivalPickup = this.toBool(value);
             } else if (item.equalsIgnoreCase("MaxFuel")) {
                 this.maxFuel = this.toInt(data, 0, 100000000);
             } else if (item.equalsIgnoreCase("FuelConsumption")) {
@@ -1932,6 +1945,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     }
 
     public void preReload() {
+        this.survivalPickup = null;
         this.textureNameList.clear();
         this.textureNameList.add(this.name);
         this.cameraList.clear();

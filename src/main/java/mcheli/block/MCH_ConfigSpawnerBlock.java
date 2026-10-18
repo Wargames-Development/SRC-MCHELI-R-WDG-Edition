@@ -9,6 +9,8 @@ import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IIcon;
@@ -91,6 +93,15 @@ public class MCH_ConfigSpawnerBlock extends W_BlockContainer implements ITileEnt
         if (!world.isRemote) {
             world.setBlockMetadataWithNotify(x, y, z, MCH_ConfigSpawnerTileEntity.STATE_ACTIVE, 2);
         }
+    }
+
+    @Override
+    public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack stack) {
+        super.onBlockPlacedBy(world, x, y, z, placer, stack);
+        if (world.isRemote || !(placer instanceof EntityPlayer)) return;
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof MCH_ConfigSpawnerTileEntity)
+            ((MCH_ConfigSpawnerTileEntity) tile).assignGunnerTeam((EntityPlayer) placer);
     }
 
     public int damageDropped(int meta) {

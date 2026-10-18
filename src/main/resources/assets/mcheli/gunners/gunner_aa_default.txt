@@ -1,0 +1,29 @@
+; Server-owned AA operator for CIWS vehicles, including C-RAM and HPJ 1130.
+DisplayName = Gunner [CIWS AA]
+ItemName = gunner_aa
+TargetType = aa
+TeamMode = player
+AllowMountAircraft = true
+AllowMountSeat = true
+AllowReplaceExistingGunner = false
+MountSearchRange = 5
+
+; One spawn egg selects model-specific tuning from the currently controlled weapon.
+WeaponProfile = ac_cram_m61a1, gunner_aa_cram
+WeaponProfile = ac_hpj1130_30mm, gunner_aa_hpj1130
+
+; Conservative point-defense fallback for other compatible guns or missing model profiles.
+DetectionRange = 180
+ScanInterval = 4
+ReactionTicks = 10
+LookSpeed = 4
+TrackingResponse = 0.35
+AimError = 0.15
+FireTolerance = 0.9
+LeadFactor = 1.0
+TargetMissiles = true
+TargetAircraft = true
+DebugGunner = false
+EnableShortBurst = true
+ShortBurstFireTick = 18
+ShortBurstRestTick = 6

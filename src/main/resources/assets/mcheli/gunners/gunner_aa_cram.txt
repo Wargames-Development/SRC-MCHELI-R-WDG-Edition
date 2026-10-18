@@ -1,0 +1,19 @@
+; C-RAM timing/range selected by gunner_aa_default. Does not register another egg.
+DisplayName = Gunner [CIWS AA]
+ItemName = gunner_aa
+TargetType = aa
+TeamMode = player
+DetectionRange = 320
+ScanInterval = 2
+ReactionTicks = 4
+LookSpeed = 4
+TrackingResponse = 0.35
+AimError = 0.15
+FireTolerance = 0.9
+LeadFactor = 1
+TargetMissiles = true
+TargetAircraft = true
+DebugGunner = false
+EnableShortBurst = true
+ShortBurstFireTick = 18
+ShortBurstRestTick = 6

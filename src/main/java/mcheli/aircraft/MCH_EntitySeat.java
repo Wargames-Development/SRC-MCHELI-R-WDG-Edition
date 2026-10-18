@@ -3,6 +3,7 @@ package mcheli.aircraft;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Lib;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.mob.MCH_ItemSpawnGunner;
 import mcheli.tool.MCH_ItemWrench;
 import mcheli.wrapper.W_Entity;
@@ -180,6 +181,9 @@ public class MCH_EntitySeat extends W_Entity {
 
     public boolean interactFirst(EntityPlayer player) {
         if (getParent() != null && !getParent().isDestroyed()) {
+            if (player.isSneaking() && this.riddenByEntity instanceof MCH_EntityGunner) {
+                return this.riddenByEntity.interactFirst(player);
+            }
             if (!getParent().checkTeam(player)) return false;
             ItemStack itemStack = player.getCurrentEquippedItem();
             if (itemStack != null && itemStack.getItem() instanceof MCH_ItemSpawnGunner)

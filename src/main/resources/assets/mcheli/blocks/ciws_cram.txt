@@ -1,0 +1,37 @@
+; Place while on a WGEvents team or in a WGCore faction.
+; The block keeps that team and deploys one C-RAM with the AA operator.
+DisplayName = Team CIWS [C-RAM]
+BlockID = 34750
+Material = iron
+Hardness = 5
+Resistance = 10
+StepSound = metal
+CreativeTab = block
+EnableSpawner = true
+SpawnMode = once
+CheckRadius = 8
+CheckIntervalTick = 20
+CooldownTick = 600
+SpawnYOffset = 1
+SpawnYawMode = fixed
+SpawnYaw = 0
+DetectPlayers = false
+DetectMobs = false
+DetectAnimals = false
+DetectGunners = false
+DetectVehicles = true
+VehiclePool = vehicle:cram
+VehicleWeight = 1
+SpawnVehicleCount = 1
+SpawnGunner = true
+GunnerProfile = gunner_aa_default
+GunnerMode = normal
+GunnerSeatIndex = 0
+GunnerTargetType = 2
+GunnerYaw = 0
+GunnerPitch = 0
+AutoCreateFaction = false
+TextureActive = active
+TextureSleep = sleep
+TextureError = error
+StateSyncTick = 5

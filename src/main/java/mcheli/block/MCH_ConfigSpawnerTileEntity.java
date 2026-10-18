@@ -1,7 +1,5 @@
 package mcheli.block;
 
-import mcheli.MCH_FmurDebug;
-import mcheli.MCH_FMURUtil;
 import mcheli.MCH_ServerSettings;
 import mcheli.MCH_WaypointNavDebug;
 import mcheli.aircraft.MCH_EntityAircraft;
@@ -12,6 +10,7 @@ import mcheli.helicopter.MCH_HeliInfoManager;
 import mcheli.mob.MCH_EntityGunner;
 import mcheli.mob.MCH_GunnerInfo;
 import mcheli.mob.MCH_GunnerInfoManager;
+import mcheli.mob.MCH_GunnerTeams;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.plane.MCP_PlaneInfoManager;
 import mcheli.tank.MCH_TankInfo;
@@ -24,9 +23,6 @@ import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.scoreboard.ScorePlayerTeam;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.Team;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 
@@ -41,6 +37,8 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
     public static final int STATE_SLEEP = 1;
     public static final int STATE_ERROR = 2;
     private String blockInfoName = "";
+    private String placedGunnerTeam = "";
+    private String gunnerOwnerUUID = "";
     private long nextCheckTick = 0L;
     private long cooldownEndTick = 0L;
     private boolean spawnedOnce = false;
@@ -58,6 +56,19 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
 
     public MCH_ConfigSpawnerTileEntity(String blockInfoName) {
         this.blockInfoName = blockInfoName;
+    }
+
+    public void assignGunnerTeam(EntityPlayer player) {
+        if (this.worldObj == null || this.worldObj.isRemote) return;
+        MCH_BlockInfo info = MCH_BlockInfoManager.get(this.blockInfoName);
+        MCH_GunnerInfo profile = info == null ? null : MCH_GunnerInfoManager.get(info.gunnerProfile);
+        if (profile == null || profile.targetType != MCH_EntityGunner.TARGET_AA_AMMO) return;
+        this.placedGunnerTeam = MCH_GunnerTeams.teamOf(this.worldObj, player);
+        this.gunnerOwnerUUID = player.getUniqueID().toString();
+        this.markDirty();
+        if (this.placedGunnerTeam.isEmpty() && "player".equalsIgnoreCase(profile.teamMode)
+            && info.gunnerFactionId.isEmpty())
+            player.addChatMessage(new net.minecraft.util.ChatComponentText("Join a WGE team or WGC faction and replace this CIWS block."));
     }
 
     /**
@@ -239,73 +250,29 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
     }
 
     private boolean spawnAndMountGunner(MCH_BlockInfo info, MCH_EntityAircraft aircraft) {
-        if (info.gunnerMode != null && info.gunnerMode.equalsIgnoreCase("none")) {
-            return true;
-        }
-        MCH_GunnerInfo profile = null;
-        if (info.gunnerProfile != null && !info.gunnerProfile.trim().isEmpty()) {
-            profile = MCH_GunnerInfoManager.get(info.gunnerProfile.trim());
-            if (profile == null) {
-                return false;
-            }
-        }
+        if ("none".equalsIgnoreCase(info.gunnerMode)) return true;
+        MCH_GunnerInfo profile = MCH_GunnerInfoManager.get(info.gunnerProfile);
+        if (profile == null || profile.targetType != MCH_EntityGunner.TARGET_AA_AMMO
+            || !MCH_EntityGunner.canOperate(aircraft)) return false;
+        String teamId = "fixed".equalsIgnoreCase(profile.teamMode) ? profile.fixedTeamId : info.gunnerFactionId;
+        String team = teamId == null || teamId.isEmpty() ? this.placedGunnerTeam
+            : MCH_GunnerTeams.fixedTeam(this.worldObj, teamId);
+        if (!MCH_GunnerTeams.validTeam(this.worldObj, team)) return false;
+        Entity mount = this.resolveMountTarget(info, aircraft);
+        if (!MCH_EntityGunner.canMount(mount) || mount.riddenByEntity != null) return false;
         MCH_EntityGunner gunner = new MCH_EntityGunner(this.worldObj, aircraft.posX, aircraft.posY, aircraft.posZ);
         gunner.rotationYaw = info.gunnerYaw;
         gunner.rotationPitch = info.gunnerPitch;
-        gunner.isCreative = true;
-        gunner.ownerUUID = "";
-        int targetType = profile != null ? profile.targetType : info.gunnerTargetType;
-        if (profile != null) {
-            Team team = this.resolveTeamForSpawner(profile, info, targetType);
-            if (targetType == MCH_EntityGunner.TARGET_PLAYER && this.needTeamByProfile(profile) && team == null) {
-                return false;
-            }
-            if (team != null) {
-                gunner.setTeamName(team.getRegisteredName());
-            }
-            String role = profile.factionRole == null ? "normal" : profile.factionRole;
-            float chance = profile.getStupidChanceForRole(role);
-            boolean stupidByChance = chance >= 0.0F && this.worldObj.rand.nextFloat() < chance;
-            gunner.setStupidGunner(profile.stupidGunner || stupidByChance);
-            gunner.setFactionRole(role);
-            gunner.setProfileSearchRanges(
-                profile.searchRangeGroundHorizontal,
-                profile.searchRangeGroundVertical,
-                profile.searchRangeAirHorizontal,
-                profile.searchRangeAirVertical,
-                profile.searchRangeFallbackToConfig
-            );
-            gunner.setProfileWeaponPriority(profile.airWeaponPriorityRaw, profile.groundWeaponPriorityRaw);
-            gunner.setProfileCombatBehavior(
-                profile.allowLeadForAirTarget,
-                profile.stupidAttackSectorScaleGround,
-                profile.enableShortBurst,
-                profile.shortBurstFireTick,
-                profile.shortBurstRestTick
-            );
-        } else if (info.gunnerMode != null && info.gunnerMode.equalsIgnoreCase("faction")) {
-            targetType = MCH_EntityGunner.TARGET_PLAYER;
-            String teamName = this.ensureFactionTeam(info);
-            if (teamName == null || teamName.isEmpty()) {
-                return false;
-            }
-            gunner.setTeamName(teamName);
-        }
-        gunner.setTargetType(targetType);
-        if (!this.worldObj.spawnEntityInWorld(gunner)) {
-            return false;
-        }
-        Entity mountTarget = this.resolveMountTarget(info, aircraft);
-        if (mountTarget == null) {
-            gunner.setDead();
-            return false;
-        }
-        gunner.mountEntity(mountTarget);
-        MCH_FmurDebug.log(this.worldObj, "[ConfigSpawnerTileEntity] gunner mount done, calling spawnAiSoldierOnAircraft acId=%d", aircraft.getEntityId());
-        MCH_FMURUtil.spawnAiSoldierOnAircraft(this.worldObj, aircraft, gunner.getTeam());
+        // A deployment block must not silently grant creative-mode infinite ammunition.
+        gunner.isCreative = false;
+        gunner.ownerUUID = this.gunnerOwnerUUID;
+        gunner.setTargetType(MCH_EntityGunner.TARGET_AA_AMMO);
+        gunner.setTeamName(team);
+        gunner.applyProfile(profile);
+        if (!this.worldObj.spawnEntityInWorld(gunner)) return false;
+        gunner.mountEntity(mount);
         return true;
     }
-
     private Entity resolveMountTarget(MCH_BlockInfo info, MCH_EntityAircraft aircraft) {
         MCH_EntitySeat[] seats = aircraft.getSeats();
         if (info.gunnerSeatIndex > 0) {
@@ -329,77 +296,6 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
             }
         }
         return null;
-    }
-
-    private String ensureFactionTeam(MCH_BlockInfo info) {
-        Team team = this.resolveTeamByBlockFaction(info);
-        return team != null ? team.getRegisteredName() : null;
-    }
-
-    private boolean needTeamByProfile(MCH_GunnerInfo profile) {
-        if (profile == null) {
-            return true;
-        }
-        if ("none".equalsIgnoreCase(profile.teamMode)) {
-            return false;
-        }
-        return !"fixed".equalsIgnoreCase(profile.teamMode) ? profile.requirePlayerTeamWhenPvp : true;
-    }
-
-    private Team resolveTeamForSpawner(MCH_GunnerInfo profile, MCH_BlockInfo info, int targetType) {
-        if (profile == null) {
-            return this.resolveTeamByBlockFaction(info);
-        }
-        if ("none".equalsIgnoreCase(profile.teamMode)) {
-            return null;
-        }
-        if ("fixed".equalsIgnoreCase(profile.teamMode)) {
-            String teamId = profile.fixedTeamId == null ? "" : profile.fixedTeamId.trim();
-            if (teamId.isEmpty()) {
-                return null;
-            }
-            Scoreboard scoreboard = this.worldObj.getScoreboard();
-            Team team = scoreboard.getTeam(teamId);
-            if (team == null && profile.autoCreateTeam) {
-                ScorePlayerTeam created = scoreboard.createTeam(teamId);
-                if (created != null) {
-                    if (profile.fixedTeamDisplayName != null && !profile.fixedTeamDisplayName.trim().isEmpty()) {
-                        created.setTeamName(profile.fixedTeamDisplayName.trim());
-                    }
-                    team = created;
-                }
-            }
-            return team;
-        }
-        // TeamMode=player has no player context in block spawner. Fallback to block faction settings.
-        Team team = this.resolveTeamByBlockFaction(info);
-        if (team != null) {
-            return team;
-        }
-        // Non-PVP targets (AA/enemy/monster) can still benefit from team assignment for friendly filtering.
-        if (targetType != MCH_EntityGunner.TARGET_PLAYER) {
-            return this.resolveTeamByBlockFaction(info);
-        }
-        return null;
-    }
-
-    private Team resolveTeamByBlockFaction(MCH_BlockInfo info) {
-        if (info == null || info.gunnerFactionId == null || info.gunnerFactionId.trim().isEmpty()) {
-            return null;
-        }
-        String teamId = info.gunnerFactionId.trim();
-        Scoreboard scoreboard = this.worldObj.getScoreboard();
-        Team team = scoreboard.getTeam(teamId);
-        if (team == null && info.autoCreateFaction) {
-            ScorePlayerTeam created = scoreboard.createTeam(teamId);
-            if (created != null) {
-                if (info.gunnerFactionName != null && !info.gunnerFactionName.trim().isEmpty()) {
-                    created.setTeamName(info.gunnerFactionName.trim());
-                }
-                team = created;
-            }
-        }
-        return team;
     }
 
     private MCH_ItemAircraft resolveAircraftItem(String entry) {
@@ -680,6 +576,8 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
     public void writeToNBT(NBTTagCompound nbt) {
         super.writeToNBT(nbt);
         nbt.setString("BlockInfoName", this.blockInfoName);
+        nbt.setString("PlacedGunnerTeam", this.placedGunnerTeam);
+        nbt.setString("GunnerOwnerUUID", this.gunnerOwnerUUID);
         nbt.setLong("NextCheckTick", this.nextCheckTick);
         nbt.setLong("CooldownEndTick", this.cooldownEndTick);
         nbt.setBoolean("SpawnedOnce", this.spawnedOnce);
@@ -693,6 +591,8 @@ public class MCH_ConfigSpawnerTileEntity extends TileEntity {
     public void readFromNBT(NBTTagCompound nbt) {
         super.readFromNBT(nbt);
         this.blockInfoName = nbt.getString("BlockInfoName");
+        this.placedGunnerTeam = nbt.getString("PlacedGunnerTeam");
+        this.gunnerOwnerUUID = nbt.getString("GunnerOwnerUUID");
         this.nextCheckTick = nbt.getLong("NextCheckTick");
         this.cooldownEndTick = nbt.getLong("CooldownEndTick");
         this.spawnedOnce = nbt.getBoolean("SpawnedOnce");

@@ -25,11 +25,11 @@ public class MCH_GunnerInfoManager {
                 return pathname.isFile() && s.endsWith(".txt");
             }
         });
+        map.clear();
         if (files == null || files.length <= 0) {
             return false;
         }
 
-        map.clear();
         for (File f : files) {
             MCH_InputFile inFile = new MCH_InputFile();
             int line = 0;
@@ -52,7 +52,7 @@ public class MCH_GunnerInfoManager {
                         map.put(key, info);
                     }
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 if (line > 0) {
                     MCH_Lib.Log("### Load failed %s : line=%d", f.getName(), line);
                 } else {

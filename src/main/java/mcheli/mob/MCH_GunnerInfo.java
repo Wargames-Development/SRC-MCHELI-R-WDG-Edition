@@ -51,6 +51,19 @@ public class MCH_GunnerInfo extends MCH_BaseInfo {
     public int shortBurstFireTick;
     public int shortBurstRestTick;
 
+    public final Map<String, String> weaponProfiles = new LinkedHashMap<String, String>();
+    public float detectionRange = 180.0F;
+    public int scanInterval = 4;
+    public int reactionTicks = 10;
+    public float lookSpeed = 4.0F;
+    public float trackingResponse = 0.35F;
+    public float aimError = 0.15F;
+    public float fireTolerance = 0.9F;
+    public float leadFactor = 1.0F;
+    public boolean targetMissiles = true;
+    public boolean targetAircraft = true;
+    public boolean debugGunner = false;
+
     public MCH_GunnerInfo(String name) {
         this.name = name;
         this.displayName = name;
@@ -90,14 +103,44 @@ public class MCH_GunnerInfo extends MCH_BaseInfo {
         this.groundWeaponPriorityRaw = "";
         this.allowLeadForAirTarget = true;
         this.stupidAttackSectorScaleGround = 1.0F;
-        this.enableShortBurst = false;
-        this.shortBurstFireTick = 14;
-        this.shortBurstRestTick = 10;
+        this.enableShortBurst = true;
+        this.shortBurstFireTick = 18;
+        this.shortBurstRestTick = 6;
     }
 
     @Override
     public void loadItemData(String item, String data) {
-        if (item.equalsIgnoreCase("DisplayName")) {
+        if (item.equalsIgnoreCase("WeaponProfile")) {
+            String[] pair = data.split(",", -1);
+            if (pair.length != 2) throw new IllegalArgumentException("Expected weapon,profile: " + data);
+            String weapon = pair[0].trim().toLowerCase(Locale.ROOT);
+            String profile = pair[1].trim().toLowerCase(Locale.ROOT);
+            if (!weapon.matches("[a-z0-9_.-]+") || !profile.matches("[a-z0-9_.-]+"))
+                throw new IllegalArgumentException("Invalid weapon/profile name: " + data);
+            this.weaponProfiles.put(weapon, profile);
+        } else if (item.equalsIgnoreCase("DetectionRange")) {
+            this.detectionRange = bounded(data, 1.0F, 1000.0F);
+        } else if (item.equalsIgnoreCase("ScanInterval")) {
+            this.scanInterval = integer(data, 1, 200);
+        } else if (item.equalsIgnoreCase("ReactionTicks")) {
+            this.reactionTicks = integer(data, 0, 200);
+        } else if (item.equalsIgnoreCase("LookSpeed")) {
+            this.lookSpeed = bounded(data, 0.1F, 15.0F);
+        } else if (item.equalsIgnoreCase("TrackingResponse")) {
+            this.trackingResponse = bounded(data, 0.01F, 1.0F);
+        } else if (item.equalsIgnoreCase("AimError")) {
+            this.aimError = bounded(data, 0.0F, 30.0F);
+        } else if (item.equalsIgnoreCase("FireTolerance")) {
+            this.fireTolerance = bounded(data, 0.1F, 10.0F);
+        } else if (item.equalsIgnoreCase("LeadFactor")) {
+            this.leadFactor = bounded(data, 0.0F, 2.0F);
+        } else if (item.equalsIgnoreCase("TargetMissiles")) {
+            this.targetMissiles = this.toBool(data);
+        } else if (item.equalsIgnoreCase("TargetAircraft")) {
+            this.targetAircraft = this.toBool(data);
+        } else if (item.equalsIgnoreCase("DebugGunner")) {
+            this.debugGunner = this.toBool(data);
+        } else if (item.equalsIgnoreCase("DisplayName")) {
             this.displayName = data;
         } else if (item.equalsIgnoreCase("AddDisplayName")) {
             String[] s = this.splitParam(data);
@@ -183,6 +226,20 @@ public class MCH_GunnerInfo extends MCH_BaseInfo {
         } else if (item.equalsIgnoreCase("ShortBurstRestTick")) {
             this.shortBurstRestTick = this.toInt(data.trim(), 0, 200);
         }
+    }
+
+    private static float bounded(String data, float min, float max) {
+        float value = Float.parseFloat(data.trim());
+        if (!Float.isFinite(value) || value < min || value > max)
+            throw new IllegalArgumentException("Invalid AA gunner parameter: " + data);
+        return value;
+    }
+
+    private static int integer(String data, int min, int max) {
+        int value = Integer.parseInt(data.trim());
+        if (value < min || value > max)
+            throw new IllegalArgumentException("Invalid AA gunner parameter: " + data);
+        return value;
     }
 
     public float getStupidChanceForRole(String role) {

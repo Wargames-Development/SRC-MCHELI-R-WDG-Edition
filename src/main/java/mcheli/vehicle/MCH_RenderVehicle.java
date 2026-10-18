@@ -6,6 +6,7 @@ import mcheli.MCH_Lib;
 import mcheli.MCH_ModelManager;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_RenderAircraft;
+import mcheli.mob.MCH_EntityGunner;
 import mcheli.weapon.MCH_WeaponSet;
 import mcheli.wrapper.W_Lib;
 import mcheli.wrapper.W_Render;
@@ -28,7 +29,13 @@ public class MCH_RenderVehicle extends MCH_RenderAircraft {
             MCH_EntityVehicle vehicle = (MCH_EntityVehicle) entity;
             vehicleInfo = vehicle.getVehicleInfo();
             if (vehicleInfo != null) {
-                if (vehicle.riddenByEntity != null && !vehicle.isDestroyed()) {
+                MCH_WeaponSet ws = vehicle.getFirstSeatWeapon();
+                boolean aaOperator = hasAAOperator(vehicle, ws);
+                if (aaOperator && !vehicle.isDestroyed()) {
+                    vehicle.isUsedPlayer = true;
+                    vehicle.lastRiderYaw = vehicle.getRotYaw() + ws.rotationYaw;
+                    vehicle.lastRiderPitch = vehicle.getRotPitch() + ws.rotationPitch;
+                } else if (vehicle.riddenByEntity != null && !vehicle.isDestroyed()) {
                     vehicle.isUsedPlayer = true;
                     vehicle.lastRiderYaw = vehicle.riddenByEntity.rotationYaw;
                     vehicle.lastRiderPitch = vehicle.riddenByEntity.rotationPitch;
@@ -44,7 +51,6 @@ public class MCH_RenderVehicle extends MCH_RenderAircraft {
                 GL11.glRotatef(pitch, 1.0F, 0.0F, 0.0F);
                 this.bindTexture("textures/vehicles/" + vehicle.getTextureName() + ".png", vehicle);
                 renderBody(vehicleInfo.model);
-                MCH_WeaponSet ws = vehicle.getFirstSeatWeapon();
                 this.drawPart(vehicle, vehicleInfo, yaw, pitch, ws, tickTime);
             }
         }
@@ -59,6 +65,16 @@ public class MCH_RenderVehicle extends MCH_RenderAircraft {
             vp = (MCH_VehicleInfo.VPart) i$.next();
         }
 
+    }
+
+    private boolean hasAAOperator(MCH_EntityVehicle vehicle, MCH_WeaponSet ws) {
+        for (int seat = 0; seat <= vehicle.getSeatNum(); ++seat) {
+            Entity occupant = vehicle.getEntityBySeatId(seat);
+            if (occupant instanceof MCH_EntityGunner
+                && ((MCH_EntityGunner) occupant).getTargetType() == MCH_EntityGunner.TARGET_AA_AMMO
+                && vehicle.getCurrentWeapon(occupant) == ws) return true;
+        }
+        return false;
     }
 
     int drawPart(MCH_VehicleInfo.VPart vp, MCH_EntityVehicle vehicle, MCH_VehicleInfo info, float yaw, float pitch, float rotBrl, float tickTime, MCH_WeaponSet ws, int index) {
@@ -76,7 +92,9 @@ public class MCH_RenderVehicle extends MCH_RenderAircraft {
             }
 
             if (vp.rotPitch) {
-                float i$ = MCH_Lib.RNG(vehicle.lastRiderPitch, info.minRotationPitch, info.maxRotationPitch);
+                // The AA barrel already follows the native gun limits; body limits are a different axis.
+                float i$ = hasAAOperator(vehicle, ws) ? vehicle.lastRiderPitch
+                    : MCH_Lib.RNG(vehicle.lastRiderPitch, info.minRotationPitch, info.maxRotationPitch);
                 GL11.glRotatef(i$ - pitch, 1.0F, 0.0F, 0.0F);
             }
 

@@ -1,0 +1,19 @@
+; HPJ 1130 timing/range selected by gunner_aa_default. Does not register another egg.
+DisplayName = Gunner [CIWS AA]
+ItemName = gunner_aa
+TargetType = aa
+TeamMode = player
+DetectionRange = 420
+ScanInterval = 2
+ReactionTicks = 3
+LookSpeed = 5
+TrackingResponse = 0.45
+AimError = 0.1
+FireTolerance = 0.8
+LeadFactor = 1
+TargetMissiles = true
+TargetAircraft = true
+DebugGunner = false
+EnableShortBurst = true
+ShortBurstFireTick = 24
+ShortBurstRestTick = 4

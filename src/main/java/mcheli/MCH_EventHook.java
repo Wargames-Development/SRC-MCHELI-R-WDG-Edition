@@ -43,6 +43,10 @@ public class MCH_EventHook extends W_EventHook {
 
 
     public void entitySpawn(EntityJoinWorldEvent event) {
+        if (event.entity instanceof MCH_EntityBaseBullet) {
+            // Projectile weapons may advance pos fields after construction; align the box before tracking.
+            event.entity.setPosition(event.entity.posX, event.entity.posY, event.entity.posZ);
+        }
         if (W_Lib.isEntityLivingBase(event.entity) && !W_EntityPlayer.isPlayer(event.entity)) {
             event.entity.renderDistanceWeight *= MCH_Config.MobRenderDistanceWeight.prmDouble;
         } else if (event.entity instanceof MCH_EntityAircraft) {

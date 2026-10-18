@@ -24,6 +24,10 @@ final class WGCoreCompat {
         return WGCoreIntegrationAccess.canHarmPlayer(actingPlayerId, targetPlayerId, world);
     }
 
+    static UUID getPlayerFaction(World world, UUID playerId) {
+        return WGCoreIntegrationAccess.getPlayerFaction(world, playerId);
+    }
+
     static boolean arePlayersInSameFaction(World world, UUID firstPlayerId, UUID secondPlayerId) {
         UUID firstFactionId = WGCoreIntegrationAccess.getPlayerFaction(world, firstPlayerId);
         UUID secondFactionId = WGCoreIntegrationAccess.getPlayerFaction(world, secondPlayerId);

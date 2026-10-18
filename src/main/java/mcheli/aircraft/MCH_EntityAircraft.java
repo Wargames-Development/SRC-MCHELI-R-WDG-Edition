@@ -95,7 +95,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private static final int CMN_ID_RADAR_ENABLED = 13;
     private static final int CMN_ID_MORTAR_RADAR_ENABLED = 14;
     private static final int CLIENT_TYPE_RESYNC_RETRY = 100;
-    private static final int PICKUP_REMAINING_HP = 10;
+    // Keep reading damage from items picked up by older versions, even with ItemDamage disabled.
     private static final String NBT_PICKUP_DAMAGED = "MCH_PickupDamaged";
 
     private static final MCH_EntitySeat[] seatsDummy = new MCH_EntitySeat[0];
@@ -255,11 +255,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private String clientUnresolvedType = "";
     private String pendingSeatCreationId = "";
     private Entity clientLastDirectRider;
+    private long lastPhysicsWorldTick = Long.MIN_VALUE;
 
     public MCH_EntityAircraft(World world) {
         super(world);
         this.setAcInfo(null);
-        this.commonStatus = 1 << CMN_ID_RADAR_ENABLED;
+        // Entity's constructor already ran entityInit(), including the server gunner/ammo flags.
+        this.commonStatus |= 1 << CMN_ID_RADAR_ENABLED;
         super.dropContentsWhenDead = false;
         super.ignoreFrustumCheck = true;
         this.flareDv = new MCH_Flare(world, this);
@@ -963,7 +965,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.getGuiInventory().readEntityFromNBT(nbt);
         this.setCommandForce(nbt.getString("AcCommand"));
         this.setFuel(nbt.getInteger("AcFuel"));
-        setGunnerStatus(nbt.getBoolean("AcGunnerStatus"));
+        setGunnerStatus(!nbt.hasKey("AcGunnerStatus") || nbt.getBoolean("AcGunnerStatus"));
         int weaponNum = this.getWeaponNum();
         int[] ammoInMag = nbt.getIntArray("AcWeaponsAmmoInMag");
         int[] restAmmo = nbt.getIntArray("AcWeaponsRestAmmo");
@@ -1037,8 +1039,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         nbt.setFloat("AcLastRYaw", this.getLastRiderYaw());
         nbt.setFloat("AcLastRPitch", this.getLastRiderPitch());
         nbt.setString("AcCommand", this.getCommand());
-        if (!nbt.hasKey("AcGunnerStatus"))
-            setGunnerStatus(true);
         nbt.setBoolean("AcGunnerStatus", getGunnerStatus());
         super.writeEntityToNBT(nbt);
         this.getGuiInventory().writeEntityToNBT(nbt);
@@ -1164,7 +1164,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                             if (isCreative) {
                                 isDamageSourcePlayer = true;
                             } else if (getAcInfo() != null) {
-                                if (!MCH_Config.PreventingBroken.prmBool) {
+                                if (!MCH_Config.PreventingBroken.prmBool && getAcInfo().isSurvivalPickupAllowed()) {
                                     if (MCH_Config.BreakableOnlyPickaxe.prmBool) {
                                         if (cmd.getCurrentEquippedItem() != null && cmd.getCurrentEquippedItem().getItem() instanceof ItemPickaxe) {
                                             isDamageSourcePlayer = true;
@@ -1307,13 +1307,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 if (this.getAcInfo() != null && this.getAcInfo().getItem() != null) {
                                     if (isCreative) {
                                         if (MCH_Config.DropItemInCreativeMode.prmBool && !isSneaking) {
-                                            this.dropDamagedPickupItem();
+                                            this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
                                         }
                                         if (!MCH_Config.DropItemInCreativeMode.prmBool && isSneaking) {
-                                            this.dropDamagedPickupItem();
+                                            this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
                                         }
                                     } else {
-                                        this.dropDamagedPickupItem();
+                                        this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
                                     }
                                 }
                                 this.setDead(true);
@@ -1551,25 +1551,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         this.setDead(true);
-    }
-
-    private void dropDamagedPickupItem() {
-        int maxHP = this.getMaxHP();
-        int remainingHP = Math.min(PICKUP_REMAINING_HP, maxHP);
-        int shutdownThreshold = this.getAcInfo().engineShutdownThreshold;
-        if (shutdownThreshold > 0) {
-            int shutdownHP = (maxHP * shutdownThreshold + 99) / 100 - 1;
-            remainingHP = Math.min(remainingHP, Math.max(1, shutdownHP));
-        }
-
-        this.setDamageTaken(Math.max(this.getDamageTaken(), maxHP - remainingHP));
-        EntityItem droppedItem = this.dropItemWithOffset(this.getAcInfo().getItem(), 1, 0.0F);
-        if (droppedItem != null) {
-            ItemStack stack = droppedItem.getEntityItem();
-            stack.setItemDamage(this.getDamageTaken());
-            stack.getTagCompound().setBoolean(NBT_PICKUP_DAMAGED, true);
-            droppedItem.setEntityItemStack(stack);
-        }
     }
 
     public EntityItem entityDropItem(ItemStack is, float par2) {
@@ -2253,6 +2234,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         boolean var11 = super.onGround;
         double var12 = super.motionY;
         this.onUpdateAircraft();
+        this.lastPhysicsWorldTick = this.worldObj.getTotalWorldTime();
         if (this.getAcInfo() != null) {
             this.updateParts(this.getPartStatus());
         }
@@ -5423,6 +5405,9 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             return false;
         if (getAcInfo() == null)
             return false;
+        if (player.isSneaking() && this.riddenByEntity instanceof MCH_EntityGunner) {
+            return this.riddenByEntity.interactFirst(player);
+        }
         if (!checkTeam(player)) {
             return false;
         }
@@ -7111,6 +7096,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public boolean getGunnerStatus() {
         return getCommonStatus(CMN_ID_GUNNER_STATUS);
+    }
+
+    public boolean hasMovedThisWorldTick() {
+        return this.lastPhysicsWorldTick == this.worldObj.getTotalWorldTime();
     }
 
     public void setGunnerStatus(boolean b) {

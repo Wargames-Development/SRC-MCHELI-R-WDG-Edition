@@ -4,8 +4,8 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import java.util.List;
 import java.util.Locale;
-import mcheli.MCH_FmurDebug;
-import mcheli.MCH_FMURUtil;
+
+
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.wrapper.W_Item;
@@ -16,8 +16,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.ScorePlayerTeam;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.Team;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
@@ -31,7 +29,6 @@ public class MCH_ItemSpawnGunner extends W_Item {
     public int secondaryColor = 16777215;
     public boolean applyItemColorTint = false;
     public int targetType = 0;
-    public boolean isStupid = false;
     public boolean useLayeredIcon = true;
     public String gunnerProfileName = "";
     @SideOnly(Side.CLIENT)
@@ -45,8 +42,11 @@ public class MCH_ItemSpawnGunner extends W_Item {
     public ItemStack onItemRightClick(ItemStack itemStack, World world, EntityPlayer player) {
         MCH_GunnerInfo profile = this.resolveProfile();
         int spawnTargetType = profile != null ? profile.targetType : this.targetType;
-        boolean forceStupid = profile != null ? profile.stupidGunner : this.isStupid;
-        String factionRole = profile != null ? profile.factionRole : "normal";
+        if (spawnTargetType != MCH_EntityGunner.TARGET_AA_AMMO) {
+            if (!world.isRemote) player.addChatMessage(new ChatComponentText("The old gunner AI has been retired. Use the AA gunner."));
+            return itemStack;
+        }
+
         float searchRange = profile != null ? profile.mountSearchRange : 5.0F;
         boolean allowMountAircraft = profile == null || profile.allowMountAircraft;
         boolean allowMountSeat = profile == null || profile.allowMountSeat;
@@ -86,7 +86,7 @@ public class MCH_ItemSpawnGunner extends W_Item {
             List<MCH_EntitySeat> seatList = world.getEntitiesWithinAABB(MCH_EntitySeat.class, player.boundingBox.expand(searchRange, searchRange, searchRange));
             for (i = 0; i < seatList.size(); i++) {
                 MCH_EntitySeat seat = seatList.get(i);
-                if (seat.getParent() != null && seat.getParent().getAcInfo() != null && seat.boundingBox.calculateIntercept(vec3, vec31) != null) {
+                if (MCH_EntityGunner.canMount(seat) && seat.boundingBox.calculateIntercept(vec3, vec31) != null) {
                     if (hitSeat != null && player.getDistanceSqToEntity((Entity) seat) >= player.getDistanceSqToEntity((Entity) hitSeat)) {
                         continue;
                     }
@@ -99,12 +99,12 @@ public class MCH_ItemSpawnGunner extends W_Item {
             }
         }
 
-        if (hitSeat == null && allowMountAircraft) {
+        if (hitGunner == null && hitSeat == null && allowMountAircraft) {
             List<MCH_EntityAircraft> aircraftList = world.getEntitiesWithinAABB(MCH_EntityAircraft.class, player.boundingBox.expand(searchRange, searchRange, searchRange));
             for (i = 0; i < aircraftList.size(); i++) {
                 MCH_EntityAircraft ac = aircraftList.get(i);
-                if (!ac.isUAV() && ac.getAcInfo() != null && ac.boundingBox.calculateIntercept(vec3, vec31) != null) {
-                    if (hitSeat != null && player.getDistanceSqToEntity((Entity) ac) >= player.getDistanceSqToEntity((Entity) hitSeat)) {
+                if (MCH_EntityGunner.canMount(ac) && ac.boundingBox.calculateIntercept(vec3, vec31) != null) {
+                    if (mountTarget != null && player.getDistanceSqToEntity(ac) >= player.getDistanceSqToEntity(mountTarget)) {
                         continue;
                     }
                     if (ac.getRiddenByEntity() instanceof MCH_EntityGunner && !allowReplace) {
@@ -127,60 +127,44 @@ public class MCH_ItemSpawnGunner extends W_Item {
         }
 
         if (!world.isRemote) {
-            Team resolvedTeam = this.resolveTeamForProfile(world, player, profile, spawnTargetType);
-            if (spawnTargetType == MCH_EntityGunner.TARGET_PLAYER && this.needTeamForProfile(profile) && resolvedTeam == null) {
-                player.addChatMessage((IChatComponent) new ChatComponentText("You are not on team."));
+            MCH_EntityAircraft aircraft = mountTarget instanceof MCH_EntityAircraft
+                ? (MCH_EntityAircraft) mountTarget : ((MCH_EntitySeat) mountTarget).getParent();
+            if (!MCH_EntityGunner.canMount(mountTarget)) {
+                player.addChatMessage(new ChatComponentText("The AA gunner requires a CIWS vehicle."));
                 return itemStack;
             }
-
-            if (allowReplace) {
-                this.removeMountedGunnerIfAny(mountTarget);
+            Entity occupant = mountTarget.riddenByEntity;
+            if (occupant != null && (!(occupant instanceof MCH_EntityGunner) || !allowReplace
+                || (!player.capabilities.isCreativeMode && !((MCH_EntityGunner) occupant).ownerUUID.equals(player.getUniqueID().toString())))) {
+                player.addChatMessage(new ChatComponentText("This seat is occupied."));
+                return itemStack;
             }
-
             MCH_EntityGunner gunner = new MCH_EntityGunner(world, mountTarget.posX, mountTarget.posY, mountTarget.posZ);
-            gunner.rotationYaw = (((MathHelper.floor_double((player.rotationYaw * 4.0F / 360.0F) + 0.5D) & 0x3) - 1) * 90);
+            gunner.rotationYaw = mountTarget.rotationYaw;
             gunner.isCreative = player.capabilities.isCreativeMode;
             gunner.ownerUUID = player.getUniqueID().toString();
             gunner.setTargetType(spawnTargetType);
-            boolean randomStupidFaction = spawnTargetType == MCH_EntityGunner.TARGET_PLAYER && world.rand.nextInt(10) == 0;
-            if (profile != null) {
-                float chance = profile.getStupidChanceForRole(factionRole);
-                if (chance >= 0.0F) {
-                    randomStupidFaction = world.rand.nextFloat() < chance;
+            gunner.applyProfile(profile);
+            if (!gunner.assignTeam(player, profile)) {
+                player.addChatMessage(new ChatComponentText("Join a WGE team or WGC faction before placing an AA gunner."));
+                return itemStack;
+            }
+            for (int seatId = 0; seatId <= aircraft.getSeatNum(); ++seatId) {
+                String crewTeam = MCH_GunnerTeams.teamOf(world, aircraft.getEntityBySeatId(seatId));
+                if (!crewTeam.isEmpty() && !crewTeam.equals(gunner.getTeamName())) {
+                    player.addChatMessage(new ChatComponentText("This vehicle belongs to another team."));
+                    return itemStack;
                 }
-                gunner.setFactionRole(profile.factionRole);
-                gunner.setProfileSearchRanges(
-                    profile.searchRangeGroundHorizontal,
-                    profile.searchRangeGroundVertical,
-                    profile.searchRangeAirHorizontal,
-                    profile.searchRangeAirVertical,
-                    profile.searchRangeFallbackToConfig
-                );
-                gunner.setProfileWeaponPriority(profile.airWeaponPriorityRaw, profile.groundWeaponPriorityRaw);
-                gunner.setProfileCombatBehavior(
-                    profile.allowLeadForAirTarget,
-                    profile.stupidAttackSectorScaleGround,
-                    profile.enableShortBurst,
-                    profile.shortBurstFireTick,
-                    profile.shortBurstRestTick
-                );
             }
-            gunner.setStupidGunner(forceStupid || randomStupidFaction);
-            if (resolvedTeam != null) {
-                gunner.setTeamName(resolvedTeam.getRegisteredName());
-            }
-
-            world.spawnEntityInWorld((Entity) gunner);
+            if (!world.spawnEntityInWorld(gunner)) return itemStack;
+            if (occupant != null) { occupant.setDead(); occupant.mountEntity(null); }
             gunner.mountEntity(mountTarget);
-            MCH_FmurDebug.log(world, "[ItemSpawnGunner] gunner spawned, calling spawnAiSoldierOnAircraft acId=%s",
-                mountTarget instanceof MCH_EntityAircraft ? String.valueOf(mountTarget.getEntityId()) : ((MCH_EntitySeat) mountTarget).getParent().getEntityId());
-            MCH_FMURUtil.spawnAiSoldierOnAircraft(world, mountTarget instanceof MCH_EntityAircraft ? mountTarget : ((MCH_EntitySeat) mountTarget).getParent(), resolvedTeam);
             W_WorldFunc.MOD_playSoundAtEntity((Entity) gunner, "wrench", 1.0F, 3.0F);
             MCH_EntityAircraft ac = (mountTarget instanceof MCH_EntityAircraft) ? (MCH_EntityAircraft) mountTarget : ((MCH_EntitySeat) mountTarget).getParent();
             player.addChatMessage((IChatComponent) new ChatComponentText("The gunner was put on " + EnumChatFormatting.GOLD + (ac.getAcInfo()).displayName + EnumChatFormatting.RESET + " seat " + (ac.getSeatIdByEntity((Entity) gunner) + 1) + " by " + ScorePlayerTeam.formatPlayerName(player.getTeam(), player.getDisplayName())));
         }
 
-        if (!player.capabilities.isCreativeMode) {
+        if (!world.isRemote && !player.capabilities.isCreativeMode) {
             itemStack.stackSize--;
         }
         return itemStack;
@@ -191,63 +175,6 @@ public class MCH_ItemSpawnGunner extends W_Item {
             return null;
         }
         return MCH_GunnerInfoManager.get(this.gunnerProfileName.trim().toLowerCase(Locale.ROOT));
-    }
-
-    private boolean needTeamForProfile(MCH_GunnerInfo profile) {
-        if (profile == null) {
-            return true;
-        }
-        if ("none".equalsIgnoreCase(profile.teamMode)) {
-            return false;
-        }
-        return !"fixed".equalsIgnoreCase(profile.teamMode) ? profile.requirePlayerTeamWhenPvp : true;
-    }
-
-    private Team resolveTeamForProfile(World world, EntityPlayer player, MCH_GunnerInfo profile, int targetType) {
-        if (targetType != MCH_EntityGunner.TARGET_PLAYER) {
-            return world.getScoreboard().getPlayersTeam(player.getDisplayName());
-        }
-        if (profile == null || "player".equalsIgnoreCase(profile.teamMode)) {
-            return world.getScoreboard().getPlayersTeam(player.getDisplayName());
-        }
-        if ("none".equalsIgnoreCase(profile.teamMode)) {
-            return null;
-        }
-        if ("fixed".equalsIgnoreCase(profile.teamMode)) {
-            String teamId = profile.fixedTeamId == null ? "" : profile.fixedTeamId.trim();
-            if (teamId.isEmpty()) {
-                return null;
-            }
-            Scoreboard scoreboard = world.getScoreboard();
-            Team team = scoreboard.getTeam(teamId);
-            if (team == null && profile.autoCreateTeam) {
-                ScorePlayerTeam t = scoreboard.createTeam(teamId);
-                if (t != null) {
-                    if (profile.fixedTeamDisplayName != null && !profile.fixedTeamDisplayName.trim().isEmpty()) {
-                        t.setTeamName(profile.fixedTeamDisplayName.trim());
-                    }
-                    team = t;
-                }
-            }
-            return team;
-        }
-        return world.getScoreboard().getPlayersTeam(player.getDisplayName());
-    }
-
-    private void removeMountedGunnerIfAny(Entity mountTarget) {
-        if (mountTarget instanceof MCH_EntitySeat) {
-            Entity r = ((MCH_EntitySeat) mountTarget).riddenByEntity;
-            if (r instanceof MCH_EntityGunner) {
-                r.mountEntity(null);
-                r.setDead();
-            }
-        } else if (mountTarget instanceof MCH_EntityAircraft) {
-            Entity r = ((MCH_EntityAircraft) mountTarget).getRiddenByEntity();
-            if (r instanceof MCH_EntityGunner) {
-                r.mountEntity(null);
-                r.setDead();
-            }
-        }
     }
 
     @SideOnly(Side.CLIENT)

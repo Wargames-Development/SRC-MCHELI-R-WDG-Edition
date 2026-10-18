@@ -148,6 +148,15 @@ public final class Integrations {
         return WGCoreCompat.arePlayersInSameFaction(world, firstPlayerId, secondPlayerId);
     }
 
+    public static UUID getPlayerFactionWGC(World world, UUID playerId) {
+        if (!isWGCoreIntegrationEnabled() || world == null || playerId == null) return null;
+        try {
+            return WGCoreCompat.getPlayerFaction(world, playerId);
+        } catch (LinkageError incompatibleApi) {
+            return null;
+        }
+    }
+
     public static Entity resolveActingEntity(Entity preferredPlayerEntity, Entity fallbackEntity) {
         return preferredPlayerEntity != null ? preferredPlayerEntity : fallbackEntity;
     }
