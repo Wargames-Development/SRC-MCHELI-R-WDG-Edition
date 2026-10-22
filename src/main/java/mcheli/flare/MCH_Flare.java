@@ -4,6 +4,7 @@ import mcheli.MCH_Lib;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.particles.MCH_ParticleParam;
 import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.plane.MCP_EntityPlane;
 import mcheli.wrapper.W_McClient;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
@@ -128,21 +129,28 @@ public class MCH_Flare {
         ++this.numFlare;
         int type = this.getFlareType();
         int num = type == 10 ? 8 : 2;
+        boolean planeFlare = this.aircraft instanceof MCP_EntityPlane && type != 10;
         long releaseId = (this.worldObj.getTotalWorldTime() << 20) ^ (long)this.aircraft.getEntityId();
-        double x = v.xCoord - this.aircraft.motionX * 2.0D;
-        double y = v.yCoord - this.aircraft.motionY * 2.0D - 1.0D;
-        double z = v.zCoord - this.aircraft.motionZ * 2.0D;
+        // Launch from the current dispenser, toward the plane's underside even while banked.
+        Vec3 spawnPos = planeFlare
+            ? this.aircraft.getTransformedPosition(0.0D, -1.0D, 0.0D, v.xCoord, v.yCoord, v.zCoord)
+            : Vec3.createVectorHelper(v.xCoord - this.aircraft.motionX * 2.0D,
+                v.yCoord - this.aircraft.motionY * 2.0D - 1.0D,
+                v.zCoord - this.aircraft.motionZ * 2.0D);
+        double x = spawnPos.xCoord;
+        double y = spawnPos.yCoord;
+        double z = spawnPos.zCoord;
         this.worldObj.playAuxSFXAtEntity((EntityPlayer) null, 1004, (int) x, (int) y, (int) z, 0);
 
         for (int i = 0; i < num; ++i) {
-            x = v.xCoord - this.aircraft.motionX * 2.0D;
-            y = v.yCoord - this.aircraft.motionY * 2.0D - 1.0D;
-            z = v.zCoord - this.aircraft.motionZ * 2.0D;
+            x = spawnPos.xCoord;
+            y = spawnPos.yCoord;
+            z = spawnPos.zCoord;
             double tx = 0.0D;
             double ty = this.aircraft.motionY;
             double tz = 0.0D;
             byte fuseCount = 0;
-            double r = (double) this.aircraft.rotationYaw;
+            double r = planeFlare ? 0.0D : (double) this.aircraft.rotationYaw;
             if (type == 1) {
                 tx = (double) MathHelper.sin(this.rand.nextFloat() * 360.0F);
                 tz = (double) MathHelper.cos(this.rand.nextFloat() * 360.0F);
@@ -176,6 +184,8 @@ public class MCH_Flare {
                 tz = Math.cos(r) + ((double) this.rand.nextFloat() - 0.5D) * 0.6D;
             }
 
+            Vec3 planeEjection = planeFlare ? getPlaneFlareEjection(tx, tz,
+                this.aircraft.getRotYaw(), this.aircraft.getRotPitch(), this.aircraft.getRotRoll()) : null;
             tx += this.aircraft.motionX;
             ty += this.aircraft.motionY / 2.0D;
             tz += this.aircraft.motionZ;
@@ -190,6 +200,12 @@ public class MCH_Flare {
             }
 
             MCH_EntityFlare e = new MCH_EntityFlare(this.worldObj, x, y, z, tx * 0.5D, ty * 0.5D, tz * 0.5D, 6.0F, fuseCount);
+            if (planeFlare) {
+                // Retain full carrier velocity so fast flight does not drag the flare through the hull.
+                e.motionX = this.aircraft.motionX + planeEjection.xCoord;
+                e.motionY = this.aircraft.motionY + planeEjection.yCoord;
+                e.motionZ = this.aircraft.motionZ + planeEjection.zCoord;
+            }
             e.getEntityData().setLong("CountermeasureReleaseId", releaseId);
             e.rotationPitch = this.rand.nextFloat() * 360.0F;
             e.rotationYaw = this.rand.nextFloat() * 360.0F;
@@ -203,6 +219,10 @@ public class MCH_Flare {
             this.worldObj.spawnEntityInWorld(e);
         }
 
+    }
+
+    static Vec3 getPlaneFlareEjection(double spreadX, double spreadZ, float yaw, float pitch, float roll) {
+        return MCH_Lib.RotVec3(spreadX * 0.75D, -0.75D, spreadZ * 0.75D, -yaw, -pitch, -roll);
     }
 
 

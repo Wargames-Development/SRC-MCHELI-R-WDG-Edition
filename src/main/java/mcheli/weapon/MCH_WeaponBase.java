@@ -62,9 +62,10 @@ public abstract class MCH_WeaponBase {
         this.acceleration = 0.0F;
         this.explosionPower = 0;
         this.explosionPowerInWater = 0;
-        this.explosionType = wi.explosionType;
-        this.nukeYield = wi.nukeYield;
-        this.chemYield = wi.chemYield;
+        // The GLTD can be created without its optional a10gau8 content definition.
+        this.explosionType = wi != null ? wi.explosionType : "";
+        this.nukeYield = wi != null ? wi.nukeYield : 0;
+        this.chemYield = wi != null ? wi.chemYield : 0;
         this.interval = 1;
         this.numMode = 0;
         this.lockTime = 0;

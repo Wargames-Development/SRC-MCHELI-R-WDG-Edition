@@ -112,6 +112,7 @@ public class MCH_RenderFarVehicle {
 
         ++this.renderFrame;
         long now = System.currentTimeMillis();
+        long renderNanos = System.nanoTime();
         this.loadedByUuid.clear();
         this.loadedAircraft.clear();
         for (Object object : mc.theWorld.loadedEntityList) {
@@ -218,7 +219,7 @@ public class MCH_RenderFarVehicle {
                 continue;
             }
             SmoothedPose pose = this.getSmoothedPose(aircraft);
-            pose.updateFromAircraft(aircraft, definition, now, this.renderFrame, event.partialTicks);
+            pose.updateFromAircraft(aircraft, definition, now, renderNanos, this.renderFrame, event.partialTicks);
             pose.visualAircraft = aircraft;
             pose.visualSeenFrame = this.renderFrame;
             pose.lightmapBrightness = aircraft.getBrightnessForRender(event.partialTicks);
@@ -1013,6 +1014,7 @@ public class MCH_RenderFarVehicle {
     }
 
     private static final class SmoothedPose {
+        private final SnapshotRotation snapshotRotation = new SnapshotRotation();
         private double x;
         private double y;
         private double z;
@@ -1074,7 +1076,7 @@ public class MCH_RenderFarVehicle {
         }
 
         private void updateFromAircraft(MCH_EntityAircraft aircraft, RenderDefinition definition,
-                long now, int renderFrame, float partialTicks) {
+                long now, long renderNanos, int renderFrame, float partialTicks) {
             this.ensureIdentity(aircraft.getClass().getName(), aircraft.getAcInfo().name);
             if (this.aircraftUuid != null && !this.aircraftUuid.equals(aircraft.getUniqueID())) {
                 this.contact = null;
@@ -1106,6 +1108,25 @@ public class MCH_RenderFarVehicle {
                 this.roll = interpolateAngle(this.roll, targetRoll, factor);
                 this.turretYaw = interpolateAngle(this.turretYaw, aircraft.getLastRiderYaw(), factor);
                 this.turretPitch = interpolateAngle(this.turretPitch, aircraft.getLastRiderPitch(), factor);
+            }
+            // Vanilla 1.7.10 withholds yaw/pitch until a roughly 5.6-degree change.
+            // Use the existing precise snapshots for observed aircraft, without changing
+            // entity attitude, physics, or the local rider's frame-driven camera/model.
+            boolean observedAircraft = (aircraft instanceof MCP_EntityPlane || aircraft instanceof MCH_EntityHeli)
+                && MCH_EntityAircraft.getAircraft_RiddenOrControl(MCH_Lib.getClientPlayer()) != aircraft;
+            if (observedAircraft && this.contact != null && !this.contact.destroyed
+                    && aircraft.getUniqueID().equals(this.contact.aircraftUuid)
+                    && now >= this.contact.lastUpdateTime && now - this.contact.lastUpdateTime <= 500L
+                    && SnapshotRotation.isFinite(this.contact)) {
+                if (!this.initialized || dx * dx + dy * dy + dz * dz > 16.0D * 16.0D) {
+                    this.snapshotRotation.clear();
+                }
+                this.snapshotRotation.update(this.contact, renderNanos);
+                this.yaw = this.snapshotRotation.yaw;
+                this.pitch = this.snapshotRotation.pitch;
+                this.roll = this.snapshotRotation.roll;
+            } else {
+                this.snapshotRotation.clear();
             }
             String currentTexture = aircraft.getTextureName();
             if (currentTexture == null || currentTexture.isEmpty()) {
@@ -1274,6 +1295,78 @@ public class MCH_RenderFarVehicle {
             if (delta > 180.0F) delta -= 360.0F;
             if (delta < -180.0F) delta += 360.0F;
             return current + delta * factor;
+        }
+    }
+
+    /** Render-only snapshot interpolation; never extrapolates beyond the received attitude. */
+    static final class SnapshotRotation {
+        float yaw, pitch, roll;
+        private float startYaw, startPitch, startRoll;
+        private float targetYaw, targetPitch, targetRoll;
+        private MCH_EntityInfo sample;
+        private long startNanos;
+        private long durationNanos;
+
+        void clear() {
+            this.sample = null;
+        }
+
+        static boolean isFinite(MCH_EntityInfo sample) {
+            return Float.isFinite(sample.rotationYaw) && Float.isFinite(sample.rotationPitch)
+                && Float.isFinite(sample.rotationRoll);
+        }
+
+        void update(MCH_EntityInfo next, long nowNanos) {
+            if (!isFinite(next)) return;
+            if (this.sample == null) {
+                this.yaw = next.rotationYaw;
+                this.pitch = next.rotationPitch;
+                this.roll = next.rotationRoll;
+                this.startYaw = this.yaw;
+                this.startPitch = this.pitch;
+                this.startRoll = this.roll;
+                this.setTarget(next);
+                this.sample = next;
+                this.startNanos = nowNanos;
+                this.durationNanos = 100_000_000L;
+                return;
+            }
+            float factor = (float)Math.max(0.0D, Math.min(1.0D,
+                (double)(nowNanos - this.startNanos) / this.durationNanos));
+            this.yaw = this.startYaw + (this.targetYaw - this.startYaw) * factor;
+            this.pitch = this.startPitch + (this.targetPitch - this.startPitch) * factor;
+            this.roll = this.startRoll + (this.targetRoll - this.startRoll) * factor;
+            if (next != this.sample) {
+                // Start at the pose already on screen, even when delivery is irregular.
+                this.startYaw = this.yaw;
+                this.startPitch = this.pitch;
+                this.startRoll = this.roll;
+                this.setTarget(next);
+                this.durationNanos = Math.max(50L, Math.min(200L,
+                    next.lastUpdateTime - this.sample.lastUpdateTime)) * 1_000_000L;
+                this.startNanos = nowNanos;
+                this.sample = next;
+            }
+        }
+
+        private void setTarget(MCH_EntityInfo next) {
+            float dy = wrapAngle(next.rotationYaw - this.startYaw);
+            float dp = wrapAngle(next.rotationPitch - this.startPitch);
+            float dr = wrapAngle(next.rotationRoll - this.startRoll);
+            // Y-X-Z Euler angles invert yaw/roll together when pitch crosses vertical.
+            // Choose the equivalent attitude nearest the last displayed pose.
+            float alternateYaw = wrapAngle(next.rotationYaw + 180.0F - this.startYaw);
+            float alternatePitch = wrapAngle(180.0F - next.rotationPitch - this.startPitch);
+            float alternateRoll = wrapAngle(next.rotationRoll + 180.0F - this.startRoll);
+            if (alternateYaw * alternateYaw + alternatePitch * alternatePitch + alternateRoll * alternateRoll
+                    < dy * dy + dp * dp + dr * dr) {
+                dy = alternateYaw;
+                dp = alternatePitch;
+                dr = alternateRoll;
+            }
+            this.targetYaw = this.startYaw + dy;
+            this.targetPitch = this.startPitch + dp;
+            this.targetRoll = this.startRoll + dr;
         }
     }
 }

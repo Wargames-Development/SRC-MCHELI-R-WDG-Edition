@@ -2,6 +2,8 @@ package mcheli.mob;
 
 import com.mojang.authlib.GameProfile;
 import cpw.mods.fml.common.event.FMLMissingMappingsEvent;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.weapon.MCH_WeaponParam;
 import net.minecraft.block.Block;
@@ -39,6 +41,74 @@ import static org.junit.Assert.*;
 
 /** Runs the real constructors, NBT and AA update with only Forge bootstrap/transport replaced. */
 public class MCH_GunnerEngagementTest {
+    @Test public void spawnedPlaneUsesPreciseSnapshotPitchWhileVanillaPitchHasNotChanged() throws Exception {
+        // Reuse the existing headless aircraft bootstrap to exercise spawn and rendering together.
+        Fixture f = new Fixture(0);
+        Entity server = (Entity) f.type("mcheli.plane.MCP_EntityPlane").getConstructor(World.class).newInstance(f.world);
+        Entity client = (Entity) server.getClass().getConstructor(World.class).newInstance(f.world);
+        Object info = f.type("mcheli.plane.MCP_PlaneInfo").getConstructor(String.class).newInstance("test_plane");
+        Class<?> aircraftType = f.type("mcheli.aircraft.MCH_EntityAircraft");
+        Class<?> infoType = f.type("mcheli.aircraft.MCH_AircraftInfo");
+        ((Map) f.type("mcheli.plane.MCP_PlaneInfoManager").getField("map").get(null)).put("test_plane", info);
+        f.call(server, "setAcInfo", new Class[]{infoType}, info);
+        f.call(server, "setTypeName", new Class[]{String.class}, "test_plane");
+        assertNotEquals(server.getUniqueID(), client.getUniqueID());
+        ByteBuf spawn = Unpooled.buffer();
+        try {
+            f.call(server, "writeSpawnData", new Class[]{ByteBuf.class}, spawn);
+            f.call(client, "readSpawnData", new Class[]{ByteBuf.class}, spawn);
+            assertEquals("The precise-angle guard requires the server's identity", server.getUniqueID(), client.getUniqueID());
+        } finally {
+            spawn.release();
+        }
+        assertSame(info, f.call(client, "getAcInfo", new Class[0]));
+        client.setEntityId(server.getEntityId());
+        Class<?> poseType = f.type("mcheli.render.MCH_RenderFarVehicle$SmoothedPose");
+        java.lang.reflect.Constructor<?> poseConstructor = poseType.getDeclaredConstructor();
+        poseConstructor.setAccessible(true);
+        Object pose = poseConstructor.newInstance();
+        Class<?> definitionType = f.type("mcheli.render.MCH_RenderFarVehicle$RenderDefinition");
+        java.lang.reflect.Constructor<?> definitionConstructor = definitionType.getDeclaredConstructor(
+            infoType, String.class, net.minecraft.util.ResourceLocation.class);
+        definitionConstructor.setAccessible(true);
+        Object definition = definitionConstructor.newInstance(info, "planes", null);
+        Class<?> snapshotType = f.type("mcheli.MCH_EntityInfo");
+        Method observe = poseType.getDeclaredMethod("observe", snapshotType, long.class);
+        observe.setAccessible(true);
+        Method update = poseType.getDeclaredMethod("updateFromAircraft", aircraftType, definitionType,
+            long.class, long.class, int.class, float.class);
+        update.setAccessible(true);
+        Object first = f.rotationSnapshot(server, 0, 1000);
+        observe.invoke(pose, first, 1000L);
+        update.invoke(pose, client, definition, 1000L, 0L, 1, 0.5F);
+        Object next = f.rotationSnapshot(server, 1, 1100);
+        observe.invoke(pose, next, 1100L);
+        update.invoke(pose, client, definition, 1100L, 100_000_000L, 2, 0.5F);
+        update.invoke(pose, client, definition, 1150L, 150_000_000L, 3, 0.5F);
+        assertEquals(0.0F, client.rotationPitch, 0.0F);
+        assertEquals("Render pitch advances even below the vanilla look threshold", 0.5F,
+            ((Number) f.value(pose, "pitch")).floatValue(), 0.0001F);
+    }
+
+    @Test public void legacyOrIncompleteAircraftSpawnIdentityKeepsTheLocalUuid() throws Exception {
+        Fixture f = new Fixture(0);
+        for (int trailerBytes : new int[]{0, 4, 12, 19}) {
+            Entity client = (Entity) f.type(TestVehicle.class.getName()).getConstructor(World.class).newInstance(f.world);
+            UUID localUuid = client.getUniqueID();
+            ByteBuf legacy = Unpooled.buffer();
+            try {
+                legacy.writeFloat(2).writeFloat(3).writeFloat(4).writeShort(0);
+                if (trailerBytes > 0) legacy.writeInt(0x41494431).writeZero(trailerBytes - 4);
+                f.call(client, "readSpawnData", new Class[]{ByteBuf.class}, legacy);
+                assertEquals(localUuid, client.getUniqueID());
+                assertEquals(2, client.height, 0);
+                assertEquals(3, client.width, 0);
+            } finally {
+                legacy.release();
+            }
+        }
+    }
+
     @Test public void shiftRightClickOnTurretReturnsOneEggAndFreesItForReloading() throws Exception {
         Fixture f = new Fixture(0);
         TestPlayer player = TestPlayer.create(f.world);
@@ -511,6 +581,16 @@ public class MCH_GunnerEngagementTest {
             world.loadedEntityList.add(turret);
         }
         Class<?> type(String name) throws Exception { return Class.forName(name, true, loader); }
+        Object rotationSnapshot(Entity aircraft, float pitch, long millis) throws Exception {
+            Object snapshot = type("mcheli.MCH_EntityInfo").getConstructor(int.class, String.class, String.class,
+                String.class, double.class, double.class, double.class, double.class, double.class, double.class)
+                .newInstance(aircraft.getEntityId(), "gunner_test", "test_plane", aircraft.getClass().getName(),
+                    0D, 0D, 0D, 0D, 0D, 0D);
+            field(snapshot, "aircraftUuid").set(snapshot, aircraft.getUniqueID());
+            field(snapshot, "rotationPitch").setFloat(snapshot, pitch);
+            field(snapshot, "lastUpdateTime").setLong(snapshot, millis);
+            return snapshot;
+        }
         void registerProfile(Object profile) throws Exception {
             Field map = type("mcheli.mob.MCH_GunnerInfoManager").getDeclaredField("map");
             map.setAccessible(true);

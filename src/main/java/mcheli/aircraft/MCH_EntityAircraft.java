@@ -56,6 +56,7 @@ import net.minecraftforge.common.MinecraftForge;
 import java.util.*;
 
 public abstract class MCH_EntityAircraft extends W_EntityContainer implements MCH_IEntityLockChecker, MCH_IEntityCanRideAircraft, IEntityAdditionalSpawnData {
+    private static final int SPAWN_IDENTITY_MAGIC = 0x41494431; // "AID1"
 
     public static final byte LIMIT_GROUND_PITCH = 40;
     public static final byte LIMIT_GROUND_ROLL = 40;
@@ -923,7 +924,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
             buffer.writeFloat(4.0F);
             buffer.writeShort(0);
         }
-
+        // Forge 1.7.10's mod-entity spawn message does not synchronize Entity's UUID.
+        // Append it so client render poses can match the precise server snapshots.
+        UUID identity = this.getUniqueID();
+        buffer.writeInt(SPAWN_IDENTITY_MAGIC);
+        buffer.writeLong(identity.getMostSignificantBits());
+        buffer.writeLong(identity.getLeastSignificantBits());
     }
 
     public void readSpawnData(ByteBuf additionalData) {
@@ -937,6 +943,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 byte[] dst = new byte[len];
                 additionalData.readBytes(dst);
                 changeType(new String(dst));
+            }
+            // Older servers have no trailer; older clients ignore the appended bytes.
+            if (additionalData.readableBytes() >= 20
+                    && additionalData.getInt(additionalData.readerIndex()) == SPAWN_IDENTITY_MAGIC) {
+                additionalData.readInt();
+                this.entityUniqueID = new UUID(additionalData.readLong(), additionalData.readLong());
             }
             this.currentThrottle = this.getThrottle();
             this.prevCurrentThrottle = this.currentThrottle;
