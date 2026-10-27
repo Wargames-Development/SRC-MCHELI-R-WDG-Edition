@@ -21,27 +21,40 @@ final class MCH_FarVehicleDepthLayer {
     private static final double LOCAL_NEAR = 16.0D;
     private static final double LOCAL_FAR = 256.0D;
     private static final int DEPTH_COMPONENT24 = 0x81A6;
+    static final String DEPTH_FUNCTION =
+            "uniform float worldZ, worldOffset, eyeOrigin, objectScale, transitionStart, transitionDepth;\n"
+            + "float physicalDepth(float distance) {\n"
+            + "  float eye = eyeOrigin - distance;\n"
+            + "  if (distance <= transitionStart) return 0.5 * ((worldZ * eye + worldOffset) / -eye + 1.0);\n"
+            + "  float span = log(4096.0 / transitionStart);\n"
+            + "  float shoulder = 0.05 / (1.0 / transitionStart - 0.80 / (transitionStart * span));\n"
+            + "  float capped = min(distance, 4096.0);\n"
+            + "  float fraction = 0.05 * (1.0 - exp(-(capped - transitionStart) / shoulder))\n"
+            + "      + 0.80 * log(capped / transitionStart) / span;\n"
+            + "  return transitionDepth + (1.0 - transitionDepth) * fraction;\n"
+            + "}\n";
     private static final String VERTEX = "#version 120\n"
             + "void main() { gl_Position = ftransform(); gl_TexCoord[0] = gl_MultiTexCoord0; }\n";
     private static final String FRAGMENT = "#version 120\n"
             + "uniform sampler2D colorTex, depthTex;\n"
-            + "uniform float localZ, localOffset, worldZ, worldOffset, rangeNear, rangeFar;\n"
+            + "uniform float localZ, localOffset;\n"
+            + DEPTH_FUNCTION
             + "void main() {\n"
             + "  vec2 uv = gl_TexCoord[0].xy;\n"
             + "  vec4 color = texture2D(colorTex, uv);\n"
             + "  float d = texture2D(depthTex, uv).r;\n"
             + "  if (d >= 1.0 || color.a <= 0.001) discard;\n"
             + "  float eyeZ = localOffset / (1.0 - 2.0 * d - localZ);\n"
-            + "  float normalDepth = 0.5 * ((worldZ * eyeZ + worldOffset) / -eyeZ + 1.0);\n"
-            + "  gl_FragDepth = clamp(rangeNear + (rangeFar - rangeNear) * normalDepth, 0.0, 1.0);\n"
+            + "  gl_FragDepth = clamp(physicalDepth((eyeOrigin - eyeZ) / objectScale), 0.0, 1.0);\n"
             + "  gl_FragColor = color;\n"
             + "}\n";
 
-    private final IntBuffer viewport = BufferUtils.createIntBuffer(4);
+    private final IntBuffer viewport = BufferUtils.createIntBuffer(16);
     private final FloatBuffer localProjection = BufferUtils.createFloatBuffer(16);
     private int framebuffer, colorTexture, depthTexture, program;
     private int colorSampler, depthSampler, localZUniform, localOffsetUniform;
-    private int worldZUniform, worldOffsetUniform, rangeNearUniform, rangeFarUniform;
+    private int worldZUniform, worldOffsetUniform, scaleUniform, originUniform, startUniform, transitionUniform;
+    private double physicalScale, sourceOrigin, depthStart;
     private int width, height, previousReadFramebuffer, previousDrawFramebuffer;
     private int previousProgram, previousMatrixMode, previousActiveTexture;
     private int maxTextureSize;
@@ -66,8 +79,9 @@ final class MCH_FarVehicleDepthLayer {
         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
         double scale = MCH_CompressedDepthProjection.projected(distance, transitionStart) / distance;
         if (!Double.isFinite(scale) || scale <= 0.0D) return false;
+        physicalScale = scale; sourceOrigin = modelview.get(14); depthStart = transitionStart;
         // Include long barrels, rotors and animated parts. If the box cannot be projected
-        // conservatively, the caller retains the existing direct draw.
+        // conservatively, the caller withholds the projected model.
         double radius = Math.max(64.0D, 2.0D * Math.max(info.bodyWidth,
                 Math.max(info.bodyHeight, Math.max(Math.abs(info.bbZmin), Math.abs(info.bbZmax))))) * scale;
         if (radius >= 80.0D || !bounds(dx * scale, dy * scale, dz * scale,
@@ -85,7 +99,7 @@ final class MCH_FarVehicleDepthLayer {
                 GL13.glActiveTexture(previousActiveTexture);
                 GL11.glPopAttrib();
                 unavailable = true;
-                MCH_Lib.Log("[FarVehicle] high-precision depth layer unavailable; using direct depth");
+                MCH_Lib.Log("[FarVehicle] high-precision depth layer unavailable; withholding projected vehicles");
                 return false;
             }
             GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, framebuffer);
@@ -101,8 +115,10 @@ final class MCH_FarVehicleDepthLayer {
             GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
             localProjection.clear();
             for (int i = 0; i < 16; i++) localProjection.put(i, projection.get(i));
-            localProjection.put(10, (float)(-(LOCAL_FAR + LOCAL_NEAR) / (LOCAL_FAR - LOCAL_NEAR)));
-            localProjection.put(14, (float)(-2.0D * LOCAL_FAR * LOCAL_NEAR / (LOCAL_FAR - LOCAL_NEAR)));
+            double localNear = Math.min(LOCAL_NEAR, transitionStart * 0.25D);
+            double localFar = Math.max(LOCAL_FAR, transitionStart + 128.0D);
+            localProjection.put(10, (float)(-(localFar + localNear) / (localFar - localNear)));
+            localProjection.put(14, (float)(-2.0D * localFar * localNear / (localFar - localNear)));
             GL11.glMatrixMode(GL11.GL_PROJECTION);
             GL11.glPushMatrix();
             projectionPushed = true;
@@ -208,8 +224,10 @@ final class MCH_FarVehicleDepthLayer {
             localOffsetUniform = GL20.glGetUniformLocation(program, "localOffset");
             worldZUniform = GL20.glGetUniformLocation(program, "worldZ");
             worldOffsetUniform = GL20.glGetUniformLocation(program, "worldOffset");
-            rangeNearUniform = GL20.glGetUniformLocation(program, "rangeNear");
-            rangeFarUniform = GL20.glGetUniformLocation(program, "rangeFar");
+            scaleUniform = GL20.glGetUniformLocation(program, "objectScale");
+            originUniform = GL20.glGetUniformLocation(program, "eyeOrigin");
+            startUniform = GL20.glGetUniformLocation(program, "transitionStart");
+            transitionUniform = GL20.glGetUniformLocation(program, "transitionDepth");
         }
         if (framebuffer != 0 && width == w && height == h) return true;
         if (framebuffer != 0) GL30.glDeleteFramebuffers(framebuffer);
@@ -257,7 +275,7 @@ final class MCH_FarVehicleDepthLayer {
         GL11.glDisable(GL11.GL_ALPHA_TEST);
         GL11.glDisable(GL11.GL_CULL_FACE);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthFunc(GL11.GL_LESS);
+        GL11.glDepthFunc(MCH_FMURThermal.isHeatPass() ? GL11.GL_LEQUAL : GL11.GL_LESS);
         GL11.glDepthMask(true);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -269,8 +287,12 @@ final class MCH_FarVehicleDepthLayer {
         GL20.glUniform1f(localOffsetUniform, localProjection.get(14));
         GL20.glUniform1f(worldZUniform, worldZ);
         GL20.glUniform1f(worldOffsetUniform, worldOffset);
-        GL20.glUniform1f(rangeNearUniform, (float)near);
-        GL20.glUniform1f(rangeFarUniform, (float)far);
+        GL20.glUniform1f(scaleUniform, (float)physicalScale);
+        GL20.glUniform1f(originUniform, (float)sourceOrigin);
+        GL20.glUniform1f(startUniform, (float)depthStart);
+        double eye = sourceOrigin - depthStart;
+        double transition = ((worldZ * eye + worldOffset) / -eye + 1) * 0.5;
+        GL20.glUniform1f(transitionUniform, (float)transition);
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, colorTexture);

@@ -11,6 +11,7 @@ import mcheli.aircraft.MCH_EntityHitBox;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.chain.MCH_EntityChain;
 import mcheli.flare.MCH_EntityChaff;
+import mcheli.integration.wgmap.client.WGMapLaserClientBridge;
 import mcheli.network.packets.PacketLaserGuidanceTargeting;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
@@ -35,6 +36,8 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
     public double targetPosY;
     public double targetPosZ;
     public boolean targeting = false;
+    public boolean targetConfirmed;
+    private java.util.UUID followedVehicle;
     @SideOnly(Side.CLIENT)
     public MCH_EntityLockBox lockBox;
     public MCH_WeaponParam param;
@@ -62,10 +65,13 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
 
     @Override
     public void update() {
+        if (worldObj.isRemote) updateClient();
+    }
 
-        if (worldObj.isRemote) {
-
-            if (!targeting) return;
+    @SideOnly(Side.CLIENT)
+    private void updateClient() {
+            targetConfirmed = false;
+            if (!targeting) { followedVehicle = null; return; }
 
             float yaw;
             float pitch;
@@ -118,16 +124,41 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             } else {
                 hitResult = MCH_RayTracer.rayTrace(worldObj, src, end);
             }
+            WGMapLaserClientBridge.Trace terrain = WGMapLaserClientBridge.traceDetailed(worldObj, src, end, hitResult);
+            hitResult = terrain.hit;
+            mcheli.render.MCH_RenderFarVehicle.LaserTarget lod = lockEntity
+                    ? mcheli.render.MCH_RenderFarVehicle.findLaserTarget(worldObj, src, end,
+                            cameraFollowLockEntity ? followedVehicle : null, ac == null ? -1 : ac.getEntityId()) : null;
+            if (lod != null && (lod.uuid.equals(followedVehicle) || hitResult == null
+                    || lod.hitDistanceSq < src.squareDistanceTo(hitResult.hitVec))) {
+                MovingObjectPosition liveCover = MCH_RayTracer.rayTrace(worldObj, src, lod.centre);
+                WGMapLaserClientBridge.Trace cover = WGMapLaserClientBridge.traceDetailed(worldObj, src, lod.centre, liveCover);
+                if (!cover.known || cover.hit != null
+                        && src.distanceTo(cover.hit.hitVec) + 0.1D < src.distanceTo(lod.centre)) lod = null;
+            } else lod = null;
+            targetConfirmed = lod != null || terrain.known;
+            if (!targetConfirmed) {
+                // Keep only the identity while terrain refreshes. Do not publish or
+                // follow a point until the visibility query is trusted again.
+                if (sendToServer) MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
+                return; // Pending terrain is not a confirmed 1,500 m designation.
+            }
 
             // 如果没有检测到碰撞，则返回默认的目标位置
             if (hitResult == null) {
                 hitResult = new MovingObjectPosition(null, end);  // 使用目标点作为默认值
             }
 
-            if(hitResult.entityHit != null) {
+            if (lod != null) {
+                targetPosX = lod.centre.xCoord; targetPosY = lod.centre.yCoord; targetPosZ = lod.centre.zCoord;
+                followedVehicle = lod.uuid;
+                if (cameraFollowLockEntity)
+                    MCH_PlayerViewHandler.updatePlayerViewDirection(user, targetPosX, targetPosY, targetPosZ, cameraFollowStrength);
+            } else if(hitResult.entityHit != null) {
                 boolean jamming = false;
                 //无法锁定释放烟雾弹的地面载具
                 if(hitResult.entityHit instanceof MCH_EntityTank && ((MCH_EntityTank) hitResult.entityHit).isUsingFlareType(10)) {
+                    followedVehicle = null;
                     targetPosX = hitResult.hitVec.xCoord;
                     targetPosY = hitResult.hitVec.yCoord;
                     targetPosZ = hitResult.hitVec.zCoord;
@@ -135,6 +166,7 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 }
 
                 if(!jamming) {
+                    followedVehicle = hitResult.entityHit.getUniqueID();
                     targetPosX = hitResult.entityHit.posX;
                     targetPosY = hitResult.entityHit.posY + hitResult.entityHit.height / 2;
                     targetPosZ = hitResult.entityHit.posZ;
@@ -145,6 +177,7 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 }
 
             } else {
+                followedVehicle = null;
                 targetPosX = hitResult.hitVec.xCoord;
                 targetPosY = hitResult.hitVec.yCoord;
                 targetPosZ = hitResult.hitVec.zCoord;
@@ -160,7 +193,6 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 lockBox = new MCH_EntityLockBox(worldObj);
                 worldObj.spawnEntityInWorld(lockBox);
             }
-        }
     }
 
     public static boolean canHitByLaser(Entity entity, Entity user, Entity ac) {

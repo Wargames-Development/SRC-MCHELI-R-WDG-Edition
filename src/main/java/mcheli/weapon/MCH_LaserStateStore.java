@@ -3,10 +3,11 @@ package mcheli.weapon;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import net.minecraft.world.World;
+import java.lang.ref.WeakReference;
 
 /**
- * Phase-A infrastructure only.
- * Stores per-owner laser designator state by source channel without changing existing gameplay logic.
+ * Stores per-owner laser designation by source channel; server entries belong to one live world.
  */
 public final class MCH_LaserStateStore {
 
@@ -25,6 +26,7 @@ public final class MCH_LaserStateStore {
         public boolean active;
         public long sequence;
         public long lastUpdateTick;
+        private WeakReference<World> world;
         private boolean published;
         private boolean lastPublishedActive;
         private long lastPublishedTick;
@@ -42,11 +44,17 @@ public final class MCH_LaserStateStore {
 
     public static synchronized void upsertServerState(int ownerId, int sourceType, double x, double y, double z,
                                                       boolean active, long sequence, long worldTick) {
+        upsertServerState(ownerId, sourceType, x, y, z, active, sequence, worldTick, null);
+    }
+
+    public static synchronized void upsertServerState(int ownerId, int sourceType, double x, double y, double z,
+                                                      boolean active, long sequence, long worldTick, World world) {
         if (!isValidSourceType(sourceType)) {
             return;
         }
         long key = buildKey(ownerId, sourceType);
         LaserState old = SERVER_STATES.get(key);
+        if (old != null && serverWorld(old) != world) old = null;
         if (old != null && sequence < old.sequence) {
             // Drop out-of-order update.
             return;
@@ -60,6 +68,7 @@ public final class MCH_LaserStateStore {
         st.active = active;
         st.sequence = sequence;
         st.lastUpdateTick = worldTick;
+        st.world = world == null ? null : new WeakReference<World>(world);
         SERVER_STATES.put(key, st);
     }
 
@@ -77,6 +86,13 @@ public final class MCH_LaserStateStore {
         }
         return state;
     }
+
+    public static synchronized LaserState getServerState(int ownerId, int sourceType, long worldTick, World world) {
+        LaserState state = SERVER_STATES.get(buildKey(ownerId, sourceType));
+        return state != null && serverWorld(state) == world ? getServerState(ownerId, sourceType, worldTick) : null;
+    }
+
+    private static World serverWorld(LaserState state) { return state.world == null ? null : state.world.get(); }
 
     public static synchronized void upsertClientState(int ownerId, int sourceType, double x, double y, double z,
                                                       boolean active, long sequence, long worldTick) {
@@ -160,7 +176,9 @@ public final class MCH_LaserStateStore {
         while (it.hasNext()) {
             Map.Entry<Long, LaserState> e = it.next();
             LaserState st = e.getValue();
-            if (st == null || worldTick - st.lastUpdateTick > ttl) {
+            World world = st == null ? null : serverWorld(st);
+            long now = world == null ? worldTick : world.getTotalWorldTime();
+            if (st == null || st.world != null && world == null || now < st.lastUpdateTick || now - st.lastUpdateTick > ttl) {
                 it.remove();
             }
         }

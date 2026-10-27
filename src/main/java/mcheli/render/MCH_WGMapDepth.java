@@ -12,9 +12,17 @@ import java.lang.reflect.Method;
 final class MCH_WGMapDepth {
     private static final String API = "com.wdg.wgmap.client.occlusion.TerrainDepthApi";
     private static boolean resolved;
-    private static Method available, prepare, draw;
+    private static Method available, prepare, draw, viewDistance;
 
     private MCH_WGMapDepth() { }
+
+    static void setViewDistance(double blocks) {
+        if (!bind() || viewDistance == null) return;
+        try { viewDistance.invoke(null, Double.valueOf(blocks)); }
+        catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
+            viewDistance = null; // An optional hint must not disable existing depth/CPU fallback.
+        }
+    }
 
     static boolean isAvailable() {
         if (!bind()) return false;
@@ -44,8 +52,7 @@ final class MCH_WGMapDepth {
     static boolean draw() {
         if (!bind()) return false;
         try {
-            draw.invoke(null);
-            return true;
+            return Boolean.TRUE.equals(draw.invoke(null));
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
             MCH_Lib.Log("[FarVehicle] WGMap GPU depth draw failed: %s", failed.toString());
             disable(); return false;
@@ -67,9 +74,17 @@ final class MCH_WGMapDepth {
                 return false;
             }
             available = api.getMethod("isAvailable");
-            prepare = api.getMethod("prepareDepth", Integer.TYPE, Double.TYPE, Double.TYPE,
+            if (api.getField("GAP_COVERAGE_VERSION").getInt(null) != 1) { disable(); return false; }
+            prepare = api.getMethod("prepareDepthIncludingUnloadedChunks", Integer.TYPE, Double.TYPE, Double.TYPE,
                     Double.TYPE, Double.TYPE, double[].class, double[].class, Integer.TYPE);
-            draw = api.getMethod("drawPreparedDepth");
+            if (api.getField("DRAW_STATUS_VERSION").getInt(null) != 1) { disable(); return false; }
+            draw = api.getMethod("drawPreparedDepthChecked");
+            try {
+                if (api.getField("VIEW_DISTANCE_VERSION").getInt(null) == 1)
+                    viewDistance = api.getMethod("setViewDistance", Double.TYPE);
+            } catch (NoSuchFieldException | NoSuchMethodException legacy) {
+                viewDistance = null;
+            }
             return true;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
             MCH_Lib.Log("[FarVehicle] WGMap GPU depth API unavailable: %s. Update both client mods together.",
@@ -80,6 +95,6 @@ final class MCH_WGMapDepth {
 
     private static void disable() {
         resolved = true;
-        available = null; prepare = null; draw = null;
+        available = null; prepare = null; draw = null; viewDistance = null;
     }
 }

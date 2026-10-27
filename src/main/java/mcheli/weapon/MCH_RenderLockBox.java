@@ -34,14 +34,17 @@ public class MCH_RenderLockBox extends W_Render {
             ac = ((MCH_EntityUavStation) player.ridingEntity).getControlAircract();
         }
         if (ac == null) return;
-        MCH_IGuidanceSystem guidanceSystem = ac.getCurrentWeapon(player).getCurrentWeapon().getGuidanceSystem();
+        MCH_WeaponSet weapons = ac.getCurrentWeapon(player);
+        if (weapons == null || weapons.getCurrentWeapon() == null) return;
+        MCH_IGuidanceSystem guidanceSystem = weapons.getCurrentWeapon().getGuidanceSystem();
         if (guidanceSystem == null) {
             return;
         }
 
         if (guidanceSystem instanceof MCH_LaserGuidanceSystem) {
 
-            if (!((MCH_LaserGuidanceSystem) guidanceSystem).targeting) return;
+            if (!((MCH_LaserGuidanceSystem) guidanceSystem).targeting
+                    || !((MCH_LaserGuidanceSystem) guidanceSystem).targetConfirmed) return;
 
             double lockPosX = guidanceSystem.getLockPosX();
             double lockPosY = guidanceSystem.getLockPosY();
@@ -58,7 +61,10 @@ public class MCH_RenderLockBox extends W_Render {
             double y = lockPosY - posY;
             double z = lockPosZ - posZ;
 
-            if (distance > 1000) return;
+            // Keep the laser HUD inside vanilla's far plane while retaining the real range label.
+            double scale = Math.min(1.0D, Math.max(16.0D,
+                    Minecraft.getMinecraft().gameSettings.renderDistanceChunks * 16.0D - 16.0D)
+                    / Math.max(0.001D, distance));
 
             boolean jammed = false;
             {
@@ -74,8 +80,11 @@ public class MCH_RenderLockBox extends W_Render {
                 }
             }
 
+            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
+                    | GL11.GL_CURRENT_BIT | GL11.GL_LINE_BIT);
             GL11.glPushMatrix();
-            GL11.glTranslatef((float) x, (float) y, (float) z);
+            GL11.glTranslated(x * scale, y * scale, z * scale);
+            GL11.glScaled(scale, scale, scale);
             GL11.glNormal3f(0.0F, 1.0F, 0.0F);
             GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);
             GL11.glRotatef(rm.playerViewX, 1.0F, 0.0F, 0.0F);
@@ -86,6 +95,7 @@ public class MCH_RenderLockBox extends W_Render {
             GL11.glBlendFunc(770, 771);
             GL11.glDisable(3553);
             GL11.glDisable(2929);
+            GL11.glDisable(GL11.GL_FOG);
 
             int prevWidth = GL11.glGetInteger(2849);
             float minDistance = 50.0F;
@@ -148,11 +158,12 @@ public class MCH_RenderLockBox extends W_Render {
             GL11.glDisable(3042);
             GL11.glEnable(2929);
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glPopAttrib();
         }
     }
 
     @Override
     public void doRender(Entity entity, double posX, double posY, double posZ, float par8, float tickTime) {
-        renderGuidanceHUD();
+        // The world-last overlay draws once, independently of this entity's chunk/frustum culling.
     }
 }

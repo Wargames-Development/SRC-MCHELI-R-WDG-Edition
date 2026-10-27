@@ -26,6 +26,7 @@ public class MCH_ServerTickHandler {
             this.onServerTickPre();
         }
         if (event.phase == Phase.END) {
+            mcheli.network.packets.PacketLaserStateSync.drainServerIntents();
             PacketUseWeapon.drainWaypointShots();
             MCH_StructureDebugLogger.onServerTick();
             this.onServerTickPost();

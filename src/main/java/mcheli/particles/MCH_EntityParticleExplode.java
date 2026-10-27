@@ -31,12 +31,14 @@ public class MCH_EntityParticleExplode extends MCH_EntityParticleBase {
     public void renderParticle(Tessellator tessellator, float p_70539_2_, float p_70539_3_, float p_70539_4_, float p_70539_5_, float p_70539_6_, float p_70539_7_) {
         int i = (int) (((float) this.nowCount + p_70539_2_) * 15.0F / (float) this.endCount);
         if (i <= 15) {
+            boolean depthWrite = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+            GL11.glDepthMask(false);
             GL11.glEnable(3042);
             int srcBlend = GL11.glGetInteger(3041);
             int dstBlend = GL11.glGetInteger(3040);
             GL11.glBlendFunc(770, 771);
             GL11.glDisable(2884);
-            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
                 this.theRenderEngine.bindTexture(texture_white);
             } else this.theRenderEngine.bindTexture(texture);
             float f6 = (float) (i % 4) / 4.0F;
@@ -53,7 +55,7 @@ public class MCH_EntityParticleExplode extends MCH_EntityParticleBase {
             tessellator.setColorRGBA_F(super.particleRed, super.particleGreen, super.particleBlue, super.particleAlpha);
             tessellator.setNormal(0.0F, 1.0F, 0.0F);
             tessellator.setBrightness(15728880);
-            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
                 OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
                 GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
                 tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
@@ -68,6 +70,7 @@ public class MCH_EntityParticleExplode extends MCH_EntityParticleBase {
             GL11.glEnable(2884);
             GL11.glBlendFunc(srcBlend, dstBlend);
             GL11.glDisable(3042);
+            GL11.glDepthMask(depthWrite);
         }
 
     }

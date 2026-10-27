@@ -229,7 +229,7 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
 
     private boolean shouldRenderPlayerAsThermalTarget(EntityPlayer target) {
         if (MCH_Camera.currentCameraMode != MCH_Camera.MODE_THERMALVISION
-            || MCH_RenderAircraft.renderingEntity) {
+            || MCH_RenderAircraft.renderingEntity || mcheli.render.MCH_FMURThermal.isAvailable()) {
             return false;
         }
 

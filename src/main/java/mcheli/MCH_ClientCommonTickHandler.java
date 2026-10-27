@@ -683,7 +683,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         String expectedShader = "";
         if (expectedMode == MCH_Camera.MODE_NIGHTVISION) {
             expectedShader = "nightvision";
-        } else if (expectedMode == MCH_Camera.MODE_THERMALVISION) {
+        } else if (expectedMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
             expectedShader = "thermal";
         }
 

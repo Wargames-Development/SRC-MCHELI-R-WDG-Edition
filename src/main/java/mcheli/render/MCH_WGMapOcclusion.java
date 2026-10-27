@@ -23,7 +23,7 @@ public final class MCH_WGMapOcclusion {
     private static final double LARGE_COVER_MARGIN = 8.0D;
     private static final double TARGET_CLEARANCE = 16.0D;
 
-    enum Result {
+    public enum Result {
         CLEAR,
         BLOCKED,
         MISSING_DATA,
@@ -151,7 +151,7 @@ public final class MCH_WGMapOcclusion {
             targetX + halfHorizontal, targetY + height, targetZ + halfHorizontal);
     }
 
-    static Result traceSegment(int dimension,
+    public static Result traceSegment(int dimension,
             double cameraX, double cameraY, double cameraZ,
             double targetX, double targetY, double targetZ) {
         Binding current = getBinding();
@@ -178,6 +178,23 @@ public final class MCH_WGMapOcclusion {
             disableBinding();
         }
         return Result.UNAVAILABLE;
+    }
+
+    /** Optional first-hit contract; unknown prefixes cannot establish a target surface. */
+    public static Result traceFirstHit(int dimension, double x0, double y0, double z0,
+            double x1, double y1, double z1, double[] hit) {
+        if (hit == null || hit.length < 3) return Result.UNKNOWN;
+        hit[0] = hit[1] = hit[2] = Double.NaN;
+        Binding current = getBinding();
+        if (current == null || current.firstHit == null) return Result.UNAVAILABLE;
+        try {
+            if (!Boolean.TRUE.equals(current.isAvailable.invoke(null))) return Result.UNKNOWN;
+            return mapApiResult(current.firstHit.invoke(null, Integer.valueOf(dimension),
+                    Double.valueOf(x0), Double.valueOf(y0), Double.valueOf(z0),
+                    Double.valueOf(x1), Double.valueOf(y1), Double.valueOf(z1), hit));
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
+            return Result.UNKNOWN;
+        }
     }
 
     static Result traceBounds(int dimension,
@@ -265,7 +282,14 @@ public final class MCH_WGMapOcclusion {
             } catch (NoSuchMethodException legacyApi) {
                 // WGMap v1 remains usable with its coarse UNKNOWN result and short retry.
             }
-            binding = new Binding(isAvailable, traceSegment, traceBounds, detailedSegment, generation);
+            Method firstHit = null;
+            try {
+                if (api.getField("FIRST_HIT_VERSION").getInt(null) == 1)
+                    firstHit = api.getMethod("traceFirstHit", Integer.TYPE,
+                            Double.TYPE, Double.TYPE, Double.TYPE,
+                            Double.TYPE, Double.TYPE, Double.TYPE, double[].class);
+            } catch (NoSuchFieldException | NoSuchMethodException legacyApi) { }
+            binding = new Binding(isAvailable, traceSegment, traceBounds, detailedSegment, generation, firstHit);
         } catch (ClassNotFoundException e) {
             binding = null;
         } catch (NoSuchFieldException e) {
@@ -293,14 +317,16 @@ public final class MCH_WGMapOcclusion {
         final Method traceBounds;
         final Method detailedSegment;
         final Method generation;
+        final Method firstHit;
 
         Binding(Method isAvailable, Method traceSegment, Method traceBounds,
-                Method detailedSegment, Method generation) {
+                Method detailedSegment, Method generation, Method firstHit) {
             this.isAvailable = isAvailable;
             this.traceSegment = traceSegment;
             this.traceBounds = traceBounds;
             this.detailedSegment = detailedSegment;
             this.generation = generation;
+            this.firstHit = firstHit;
         }
     }
 }

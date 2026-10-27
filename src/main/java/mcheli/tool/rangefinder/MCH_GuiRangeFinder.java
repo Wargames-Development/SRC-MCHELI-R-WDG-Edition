@@ -86,6 +86,9 @@ public class MCH_GuiRangeFinder extends MCH_Gui {
             Vec3 s = MCH_Lib.Rot2Vec3(player.rotationYaw, player.rotationPitch);
             s = mode.addVector(s.xCoord * 300.0D, s.yCoord * 300.0D, s.zCoord * 300.0D);
             MovingObjectPosition mop = player.worldObj.rayTraceBlocks(mode, s, true);
+            mcheli.integration.wgmap.client.WGMapLaserClientBridge.Trace terrain =
+                    mcheli.integration.wgmap.client.WGMapLaserClientBridge.traceDetailed(player.worldObj, mode, s, mop);
+            mop = terrain.known ? terrain.hit : null;
             if (mop != null && mop.typeOfHit != MovingObjectType.MISS) {
                 int range = (int) player.getDistance(mop.hitVec.xCoord, mop.hitVec.yCoord, mop.hitVec.zCoord);
                 this.drawDigit(String.format("%4d", new Object[]{Integer.valueOf(range)}), (int) px, (int) py, 13, -15663328);

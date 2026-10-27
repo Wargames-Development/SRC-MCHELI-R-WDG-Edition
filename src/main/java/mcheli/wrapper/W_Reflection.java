@@ -34,6 +34,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
@@ -179,12 +180,21 @@ public class W_Reflection {
 
     }
 
+    /** Returns a snapshot so callers can iterate without holding Minecraft's connection lock. */
     public static List getNetworkManagers() {
         try {
-            return ObfuscationReflectionHelper.getPrivateValue(NetworkSystem.class, MinecraftServer.getServer().func_147137_ag(), new String[]{"field_151272_f", "networkManagers"});
+            return getNetworkManagers(MinecraftServer.getServer().func_147137_ag());
         } catch (Exception var1) {
             var1.printStackTrace();
             return null;
+        }
+    }
+
+    static List getNetworkManagers(NetworkSystem networkSystem) {
+        List managers = ObfuscationReflectionHelper.getPrivateValue(NetworkSystem.class, networkSystem, new String[]{"field_151272_f", "networkManagers"});
+        // Netty adds connections off-thread; use the same monitor as NetworkSystem.networkTick().
+        synchronized (managers) {
+            return new ArrayList(managers);
         }
     }
 

@@ -39,6 +39,8 @@ public class MCH_RenderGPSPosition {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
         if (player == null || mc.theWorld == null) return;
+        // Laser targets may have no loaded chunk/entity renderer beyond the vanilla view distance.
+        mcheli.weapon.MCH_RenderLockBox.renderGuidanceHUD();
 
         // —— 载具判定（与原逻辑一致）——
         MCH_EntityAircraft ac = null;
@@ -99,7 +101,7 @@ public class MCH_RenderGPSPosition {
         // —— 基于 FOV 的恒定像素大小 ——
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
         double dist = Math.sqrt(x*x + y*y + z*z);
-        double projectionScale = renderGps ? markerProjectionScale(dist, mc.gameSettings.renderDistanceChunks) : 1.0D;
+        double projectionScale = markerProjectionScale(dist, mc.gameSettings.renderDistanceChunks);
         if (!Double.isFinite(projectionScale)) return;
         double drawDistance = dist * projectionScale;
         double fovDeg = mc.gameSettings.fovSetting;
@@ -135,7 +137,7 @@ public class MCH_RenderGPSPosition {
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             GL11.glDisable(GL11.GL_LIGHTING);
-            if (renderGps) GL11.glDisable(GL11.GL_FOG);
+            GL11.glDisable(GL11.GL_FOG);
 
             Tessellator tess = Tessellator.instance;
             float half = ICON_SIZE_PX * 0.5f;

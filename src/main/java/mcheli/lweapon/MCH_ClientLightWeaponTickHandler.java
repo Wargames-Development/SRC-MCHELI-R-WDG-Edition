@@ -494,15 +494,18 @@ public class MCH_ClientLightWeaponTickHandler extends MCH_ClientTickHandlerBase 
             // Keep updating laser target even when ammo is empty, so mark point follows current sight.
             laser.targeting = true;
             laser.update();
-            this.publishHandheldLaserState(player, true, laser.targetPosX, laser.targetPosY, laser.targetPosZ);
+            this.publishHandheldLaserState(player, laser.targetConfirmed, laser.targetPosX, laser.targetPosY, laser.targetPosZ);
             return;
         }
         Vec3 src = Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
         Vec3 look = player.getLook(1.0F);
         Vec3 end = src.addVector(look.xCoord * 1500.0D, look.yCoord * 1500.0D, look.zCoord * 1500.0D);
-        MovingObjectPosition hit = player.worldObj.rayTraceBlocks(src, end);
+        MovingObjectPosition hit = mcheli.MCH_RayTracer.rayTrace(player.worldObj, src, end);
+        mcheli.integration.wgmap.client.WGMapLaserClientBridge.Trace terrain =
+                mcheli.integration.wgmap.client.WGMapLaserClientBridge.traceDetailed(player.worldObj, src, end, hit);
+        hit = terrain.hit;
         Vec3 pos = hit != null && hit.hitVec != null ? hit.hitVec : end;
-        this.publishHandheldLaserState(player, true, pos.xCoord, pos.yCoord, pos.zCoord);
+        this.publishHandheldLaserState(player, terrain.known, pos.xCoord, pos.yCoord, pos.zCoord);
     }
 
     private int getEffectiveWeaponMode() {

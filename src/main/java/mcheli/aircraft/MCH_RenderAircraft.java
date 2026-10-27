@@ -63,7 +63,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
     private static final ResourceLocation THERMAL_WHITE = new ResourceLocation(W_MOD.DOMAIN, "textures/test.png");
 
     private static boolean shouldRenderAsThermalTarget(MCH_EntityAircraft ac) {
-        if (ac == null || MCH_Camera.currentCameraMode != MCH_Camera.MODE_THERMALVISION) {
+        if (ac == null || MCH_Camera.currentCameraMode != MCH_Camera.MODE_THERMALVISION || mcheli.render.MCH_FMURThermal.isAvailable()) {
             return false;
         }
         Entity viewer = MCH_Lib.getClientPlayer();
@@ -999,7 +999,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                                         tessellator.setColorRGBA_F(0.0F, 1.0F, 0.0F, alpha); // 绿色
                                     }
                                     int color = 0x00ff00;
-                                    if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+                                    if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
                                         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
                                         GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
                                         tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);

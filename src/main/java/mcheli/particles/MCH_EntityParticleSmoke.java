@@ -148,7 +148,7 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
     }
 
     public void renderParticle(Tessellator tessellator, float par2, float par3, float par4, float par5, float par6, float par7) {
-        if (!renderingQueued) {
+        if (!renderingQueued && !mcheli.render.MCH_FMURThermal.isParticlePass()) {
             // Vanilla renders layer-3 particles before the far-vehicle LOD pass.
             queued.add(this);
             rotationX = par3;
@@ -181,7 +181,7 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
         tessellator.setColorRGBA_F(super.particleRed, super.particleGreen, super.particleBlue, super.particleAlpha);
         tessellator.setBrightness(this.getBrightnessForRender(par2));
         tessellator.setNormal(0.0F, 1.0F, 0.0F);
-        if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
+        if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
             GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
             tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
