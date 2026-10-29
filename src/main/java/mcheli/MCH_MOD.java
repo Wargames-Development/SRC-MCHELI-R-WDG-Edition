@@ -91,6 +91,7 @@ import java.util.Locale;
 @Mod(
     modid = "mcheli",
     name = "Mcheli-R Wargames Edition",
+    version = "@VERSION@",
     dependencies = "required-after:Forge@[10.13.2.1230,)"
 )
 @NetworkMod(
@@ -130,6 +131,7 @@ public class MCH_MOD {
     public static MCH_ItemContainer itemContainer;
     public static MCH_ItemChain itemChain;
     public static MCH_ItemFuel itemFuel;
+    public static W_Item itemCountermeasureReload;
     public static MCH_ItemWrench itemWrench;
     public static MCH_ItemRangeFinder itemRangeFinder;
     public static MCH_ItemSpawnGunner itemSpawnGunnerAA;
@@ -353,6 +355,10 @@ public class MCH_MOD {
         GameRegistry.registerBlock(blockDraftingTable, "drafting_table");
         GameRegistry.registerBlock(blockDraftingTableLit, "lit_drafting_table");
         this.registerConfiguredBlocks();
+        itemCountermeasureReload = new W_Item();
+        registerItem(itemCountermeasureReload, "countermeasure_reload", creativeTabs);
+        W_LanguageRegistry.addName(itemCountermeasureReload, "Countermeasures");
+        W_LanguageRegistry.addNameForObject(itemCountermeasureReload, "zh_CN", "干扰弹");
         W_LanguageRegistry.addName(blockDraftingTable, "Drafting Table");
         W_LanguageRegistry.addNameForObject(blockDraftingTable, "zh_CN", "蓝图制作台");
         MCH_Achievement.PreInit();

@@ -28,7 +28,7 @@ public class MCH_PacketNotifyClientSetting extends MCH_Packet {
         s.planeAutoThrottleDown = MCH_Config.AutoThrottleDownPlane.prmBool;
         var10001 = MCH_MOD.config;
         s.tankAutoThrottleDown = MCH_Config.AutoThrottleDownTank.prmBool;
-        s.shaderSupport = W_EntityRenderer.isShaderSupport();
+        s.shaderSupport = W_EntityRenderer.isCameraEffectSupported();
         W_Network.sendToServer(s);
     }
 

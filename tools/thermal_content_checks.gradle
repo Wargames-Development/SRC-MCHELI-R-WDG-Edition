@@ -1,0 +1,22 @@
+// Opt-in migration validation; no production dependencies or default build tasks change.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def checksDirectory = p.file('build/thermal-content-checks')
+    def compileChecks = p.tasks.create('compileThermalContentChecks') {
+        dependsOn p.tasks.classes
+        inputs.file p.file('tools/ThermalContentChecks.java')
+        outputs.dir checksDirectory
+        doLast {
+            checksDirectory.mkdirs()
+            p.ant.javac(srcdir: p.file('tools'), includes: 'ThermalContentChecks.java',
+                    destdir: checksDirectory, source: '1.8', target: '1.8', includeantruntime: false,
+                    encoding: 'UTF-8', classpath: p.sourceSets.main.runtimeClasspath.asPath)
+        }
+    }
+    p.tasks.create('thermalContentChecks', JavaExec) {
+        dependsOn compileChecks
+        classpath = p.files(checksDirectory) + p.sourceSets.main.runtimeClasspath
+        main = 'ThermalContentChecks'
+        args p.property('thermalContentRoot'), p.property('fmurClasses')
+    }
+}

@@ -127,6 +127,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private static MCH_RenderMouseHelper renderMouseHelper;
     private static boolean ownsRenderMouse;
     private static boolean savedSmoothCamera;
+    private static boolean zoomMouseSensitivityApplied;
+    private static float savedZoomMouseSensitivity;
     private final RenderItem economyHudItemRenderer = new RenderItem();
     public MCH_GuiCommon gui_Common;
     public MCH_Gui gui_Heli;
@@ -659,6 +661,10 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
         ridingAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
         if (ridingAircraft != null) {
+            if (this.mc.gameSettings.thirdPersonView != 0) {
+                ridingAircraft.camera.setMode(ridingAircraft.getSeatIdByEntity(player), MCH_Camera.MODE_NORMAL);
+                return MCH_Camera.MODE_NORMAL;
+            }
             return ridingAircraft.getCameraMode(player);
         }
         if (player.ridingEntity instanceof MCH_EntityGLTD) {
@@ -683,8 +689,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         String expectedShader = "";
         if (expectedMode == MCH_Camera.MODE_NIGHTVISION) {
             expectedShader = "nightvision";
-        } else if (expectedMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
-            expectedShader = "thermal";
         }
 
         if (expectedShader.isEmpty()) {
@@ -795,7 +799,28 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         ownsRenderMouse = true;
     }
 
+    private void applyZoomMouseSensitivity() {
+        if (this.mc.gameSettings.thirdPersonView != 0 || this.mc.currentScreen != null
+                || !this.mc.inGameHasFocus || !Display.isActive()
+                || !(this.mc.renderViewEntity instanceof MCH_ViewEntityDummy)) {
+            return;
+        }
+        float zoom = ((MCH_ViewEntityDummy) this.mc.renderViewEntity).getCameraZoom();
+        float sensitivity = this.mc.gameSettings.mouseSensitivity;
+        float adjusted = MCH_RenderMouseHelper.getZoomSensitivity(sensitivity, zoom);
+        if (adjusted != sensitivity) {
+            savedZoomMouseSensitivity = sensitivity;
+            zoomMouseSensitivityApplied = true;
+            // Both MCHR's input above and vanilla mouse-look must use the same zoom gain.
+            this.mc.gameSettings.mouseSensitivity = adjusted;
+        }
+    }
+
     private static void restoreRenderMouse() {
+        if (zoomMouseSensitivityApplied) {
+            Minecraft.getMinecraft().gameSettings.mouseSensitivity = savedZoomMouseSensitivity;
+            zoomMouseSensitivityApplied = false;
+        }
         if (!ownsRenderMouse) {
             return;
         }
@@ -845,6 +870,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
 
         if (!W_McClient.isGamePaused()) {
+            this.applyZoomMouseSensitivity();
             EntityClientPlayerMP var17 = super.mc.thePlayer;
             if (var17 != null) {
                 MCH_EntityAircraft controlledAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(var17);

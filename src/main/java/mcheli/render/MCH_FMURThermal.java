@@ -6,8 +6,13 @@ import cpw.mods.fml.relauncher.SideOnly;
 import java.lang.reflect.Method;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
+import java.util.Map;
+import java.util.Collections;
+import mcheli.aircraft.MCH_AircraftInfo;
+import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.MCH_Camera;
-import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import net.minecraft.client.Minecraft;
 
@@ -30,13 +35,49 @@ public final class MCH_FMURThermal {
                     new BooleanSupplier() {
                         @Override public boolean getAsBoolean() {
                             Minecraft mc = Minecraft.getMinecraft();
-                            return mc.theWorld != null && mc.thePlayer != null && !MCH_Config.DisableShader.prmBool
-                                    && MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION;
+                            if (mc.theWorld == null || mc.thePlayer == null || mc.gameSettings.thirdPersonView != 0
+                                    || MCH_Camera.currentCameraMode != MCH_Camera.MODE_THERMALVISION) return false;
+                            MCH_EntityAircraft aircraft = currentAircraft();
+                            return aircraft != null ? aircraft.getCameraMode(mc.thePlayer) == MCH_Camera.MODE_THERMALVISION
+                                    : mc.thePlayer.ridingEntity instanceof mcheli.gltd.MCH_EntityGLTD;
                         }
                     }, renderer);
+            try {
+                api.getMethod("registerVehicleSensor", Supplier.class, IntSupplier.class).invoke(null,
+                        new Supplier<Object>() {
+                            @Override public Object get() {
+                                MCH_EntityAircraft aircraft = currentAircraft();
+                                if (aircraft == null || aircraft.getAcInfo() == null) return MCH_FMURThermal.class;
+                                return aircraft.getAcInfo().getThermalProfile(aircraft.getCameraPosInfo(),
+                                        aircraft.getSeatIdByEntity(Minecraft.getMinecraft().thePlayer));
+                            }
+                        }, new IntSupplier() {
+                            @Override public int getAsInt() {
+                                MCH_EntityAircraft aircraft = currentAircraft();
+                                MCH_AircraftInfo info = aircraft == null ? null : aircraft.getAcInfo();
+                                return info == null ? 30 : info.getThermalMaxFps(aircraft.getCameraPosInfo());
+                            }
+                        });
+            } catch (NoSuchMethodException olderApi) {
+                // Existing FMUR v1 builds still supply the heat renderer.
+            }
+            try {
+                api.getMethod("registerVehicleProfile", Supplier.class).invoke(null, new Supplier<Map<String, String>>() {
+                    @Override public Map<String, String> get() {
+                        MCH_EntityAircraft aircraft = currentAircraft();
+                        if (aircraft == null || aircraft.getAcInfo() == null) return Collections.emptyMap();
+                        return aircraft.getAcInfo().getThermalProfile(aircraft.getCameraPosInfo(),
+                                aircraft.getSeatIdByEntity(Minecraft.getMinecraft().thePlayer));
+                    }
+                });
+            } catch (NoSuchMethodException olderApi) { }
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
             disable(failure);
         }
+    }
+
+    private static MCH_EntityAircraft currentAircraft() {
+        return MCH_EntityAircraft.getAircraft_RiddenOrControl(Minecraft.getMinecraft().thePlayer);
     }
 
     public static boolean isAvailable() { return invoke(supported); }

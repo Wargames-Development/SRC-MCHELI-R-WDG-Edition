@@ -41,6 +41,11 @@ public class W_EntityRenderer {
         return OpenGlHelper.shadersSupported && !MCH_Config.DisableShader.prmBool;
     }
 
+    public static boolean isCameraEffectSupported() {
+        // The third camera mode is the shared sensor. A legacy postprocess cannot enforce device limits.
+        return mcheli.render.MCH_FMURThermal.isAvailable();
+    }
+
     public static void activateShader(String n) {
         W_EntityRenderer.activateShader(new ResourceLocation("mcheli", "shaders/post/" + n + ".json"), n);
     }

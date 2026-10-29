@@ -101,6 +101,16 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.reload_all_hud", "zh_CN", "重新加载所有HUD");
         addTranslation("gui.mcheli.reload", "en_US", "Reload");
         addTranslation("gui.mcheli.reload", "zh_CN", "装填弹药");
+        addTranslation("gui.mcheli.reload_countermeasures", "en_US", "Reload countermeasures");
+        addTranslation("gui.mcheli.reload_countermeasures", "zh_CN", "补给干扰弹");
+        addTranslation("gui.mcheli.countermeasure_reload_cost", "en_US", "Survival: 1x Countermeasures");
+        addTranslation("gui.mcheli.countermeasure_reload_cost", "zh_CN", "生存模式：消耗1个干扰弹物品");
+        addTranslation("gui.mcheli.countermeasure_reload_effect", "en_US", "Fully refills all enabled countermeasures.");
+        addTranslation("gui.mcheli.countermeasure_reload_effect", "zh_CN", "一次补满所有已启用的干扰弹。");
+        addTranslation("gui.mcheli.flare_stock", "en_US", "Flares: %d/%d");
+        addTranslation("gui.mcheli.flare_stock", "zh_CN", "热焰弹: %d/%d");
+        addTranslation("gui.mcheli.chaff_stock", "en_US", "Chaff: %d/%d");
+        addTranslation("gui.mcheli.chaff_stock", "zh_CN", "箔条: %d/%d");
         addTranslation("gui.mcheli.inventory", "en_US", "Inventory");
         addTranslation("gui.mcheli.inventory", "zh_CN", "储物箱");
         addTranslation("gui.mcheli.mod_options", "en_US", "MOD Options");

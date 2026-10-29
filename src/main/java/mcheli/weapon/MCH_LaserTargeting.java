@@ -8,6 +8,7 @@ import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.init.Blocks;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
@@ -61,10 +62,7 @@ public final class MCH_LaserTargeting {
         Vec3 hit = trace(new Terrain() {
             public boolean loaded(int bx, int bz) { return world.getChunkProvider().chunkExists(bx >> 4, bz >> 4); }
             public Vec3 blockHit(int bx, int by, int bz, Vec3 from, Vec3 to) {
-                Block block = world.getBlock(bx, by, bz);
-                if (!block.canCollideCheck(world.getBlockMetadata(bx, by, bz), false)) return null;
-                MovingObjectPosition result = block.collisionRayTrace(world, bx, by, bz, from, to);
-                return result == null ? null : result.hitVec;
+                return nativeBlockHit(world, bx, by, bz, from, to);
             }
             public Vec3 missingHit(Vec3 from, Vec3 to) {
                 return Loader.isModLoaded("wgmap") ? WGMapLaserServerBridge.trace(world, from, to) : null;
@@ -175,5 +173,22 @@ public final class MCH_LaserTargeting {
         Vec3 blockHit(int x, int y, int z, Vec3 start, Vec3 end);
         // Return the exact end object for clear, a surface point for blocked, or null for unknown.
         Vec3 missingHit(Vec3 start, Vec3 end);
+    }
+
+    /** Laser-only policy, matching WGMap capture; transparency alone never grants passage. */
+    public static boolean ignoresPlant(Block block) {
+        return block != null && (block == Blocks.tallgrass || block == Blocks.deadbush
+                || block == Blocks.yellow_flower || block == Blocks.red_flower || block == Blocks.double_plant
+                || block == Blocks.sapling || block == Blocks.brown_mushroom || block == Blocks.red_mushroom
+                || block == Blocks.wheat || block == Blocks.carrots || block == Blocks.potatoes
+                || block == Blocks.nether_wart || block == Blocks.reeds || block == Blocks.vine);
+    }
+
+    /** Caller must have established that this chunk is already loaded on the owning thread. */
+    public static Vec3 nativeBlockHit(World world, int x, int y, int z, Vec3 from, Vec3 to) {
+        Block block = world.getBlock(x, y, z);
+        if (ignoresPlant(block) || !block.canCollideCheck(world.getBlockMetadata(x, y, z), false)) return null;
+        MovingObjectPosition result = block.collisionRayTrace(world, x, y, z, from, to);
+        return result == null ? null : result.hitVec;
     }
 }

@@ -142,7 +142,8 @@ public abstract class MCH_AircraftClientTickHandler extends MCH_ClientTickHandle
                     playSoundOK();
                     send = true;
                 }
-            } else if (ac.canSwitchCameraMode()) {
+            } else if (ac.canSwitchCameraMode(ac.getSeatIdByEntity(player)) && ac.isCameraView(player)
+                    && this.mc.gameSettings.thirdPersonView == 0) {
                 int beforeMode = ac.getCameraMode(player);
                 ac.switchCameraMode(player);
                 int mode = ac.getCameraMode(player);

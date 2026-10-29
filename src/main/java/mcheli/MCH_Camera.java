@@ -1,7 +1,10 @@
 package mcheli;
 
+import java.util.Arrays;
 import mcheli.wrapper.W_Entity;
 import mcheli.wrapper.W_Lib;
+import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.aircraft.MCH_AircraftInfo;
 import net.minecraft.entity.Entity;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
@@ -14,6 +17,7 @@ public class MCH_Camera {
     public static final int MODE_THERMALVISION = 2;
     public static int currentCameraMode = 0;
     private final World worldObj;
+    private final Entity owner;
     public double posX;
     public double posY;
     public double posZ;
@@ -34,11 +38,12 @@ public class MCH_Camera {
 
     public MCH_Camera(World w, Entity p) {
         this.worldObj = w;
+        this.owner = p;
         this.mode = new int[]{0, 0};
         this.zoom = 1.0F;
-        this.lastMode = new int[this.getUserMax()];
+        this.lastMode = new int[this.mode.length];
         this.lastZoomDir = 0;
-        this.canUseShader = new boolean[this.getUserMax()];
+        this.canUseShader = new boolean[this.mode.length];
     }
 
     public MCH_Camera(World w, Entity p, double x, double y, double z) {
@@ -48,6 +53,15 @@ public class MCH_Camera {
     }
 
     public int getUserMax() {
+        if (this.owner instanceof MCH_EntityAircraft) {
+            MCH_AircraftInfo info = ((MCH_EntityAircraft)this.owner).getAcInfo();
+            if (info != null && info.getNumSeatAndRack() > this.mode.length) {
+                int users = info.getNumSeatAndRack();
+                this.mode = Arrays.copyOf(this.mode, users);
+                this.lastMode = Arrays.copyOf(this.lastMode, users);
+                this.canUseShader = Arrays.copyOf(this.canUseShader, users);
+            }
+        }
         return this.mode.length;
     }
 
@@ -68,7 +82,11 @@ public class MCH_Camera {
      */
     public void setMode(int uid, int m) {
         if (this.isValidUid(uid)) {
-            this.mode[uid] = m < 0 ? 0 : m % this.getModeNum(uid);
+            int next = m < 0 ? 0 : m % this.getModeNum(uid);
+            // Keep wire mode IDs stable while cycling vehicle optics directly to thermal.
+            if (this.owner instanceof MCH_EntityAircraft && next == MODE_NIGHTVISION)
+                next = this.getModeNum(uid) == 3 ? MODE_THERMALVISION : MODE_NORMAL;
+            this.mode[uid] = next;
         }
     }
 
@@ -84,15 +102,28 @@ public class MCH_Camera {
     }
 
     public boolean isValidUid(int uid) {
-        return uid >= 0 && uid < this.getUserMax();
+        // Extra crew slots need an equipped sensor; ordinary passengers remain excluded.
+        return uid >= 0 && uid < this.getUserMax() && (uid < 2 || thermalAllowed(uid));
     }
 
     public int getModeNum(int uid) {
-        return !this.isValidUid(uid) ? 2 : (this.canUseShader[uid] ? 3 : 2);
+        int normalModes = this.owner instanceof MCH_EntityAircraft ? 1 : 2;
+        return !this.isValidUid(uid) ? normalModes : (this.canUseShader[uid] && thermalAllowed(uid) ? 3 : normalModes);
+    }
+
+    private boolean thermalAllowed(int uid) {
+        if (!(owner instanceof MCH_EntityAircraft)) return true;
+        MCH_EntityAircraft aircraft = (MCH_EntityAircraft)owner;
+        MCH_AircraftInfo info = aircraft.getAcInfo();
+        return info != null && info.isThermalEnabled(aircraft.getCameraPosInfo(uid), uid);
     }
 
     public int getMode(int uid) {
-        return this.isValidUid(uid) ? this.mode[uid] : 0;
+        if (!this.isValidUid(uid)) return MODE_NORMAL;
+        if (this.owner instanceof MCH_EntityAircraft && this.mode[uid] == MODE_NIGHTVISION)
+            this.mode[uid] = MODE_NORMAL;
+        if (this.mode[uid] >= this.getModeNum(uid)) this.mode[uid] = MODE_NORMAL;
+        return this.mode[uid];
     }
 
     public String getModeName(int uid) {
@@ -100,6 +131,8 @@ public class MCH_Camera {
     }
 
     public void updateViewer(int uid, Entity viewer) {
+        // Aircraft optics must neither grant night vision nor remove wearable NVG effects.
+        if (this.owner instanceof MCH_EntityAircraft) return;
         if (this.isValidUid(uid) && viewer != null) {
             if (W_Lib.isEntityLivingBase(viewer) && !viewer.isDead) {
                 PotionEffect pe;

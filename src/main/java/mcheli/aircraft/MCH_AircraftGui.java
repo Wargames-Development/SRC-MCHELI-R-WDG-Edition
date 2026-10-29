@@ -23,10 +23,13 @@ public class MCH_AircraftGui extends W_GuiContainer {
     public static final int BUTTON_CLOSE = 4;
     public static final int BUTTON_CONFIG = 5;
     public static final int BUTTON_INVENTORY = 6;
+    public static final int BUTTON_COUNTERMEASURES = 7;
     private final EntityPlayer thePlayer;
     private final MCH_EntityAircraft aircraft;
     private int scaleFactor;
     private GuiButton buttonReload;
+    private GuiButton buttonCountermeasures;
+    private final boolean hasCountermeasures;
     private GuiButton buttonNext;
     private GuiButton buttonPrev;
     private GuiButton buttonInventory;
@@ -40,6 +43,7 @@ public class MCH_AircraftGui extends W_GuiContainer {
         this.aircraft = ac;
         this.thePlayer = player;
         super.xSize = 210;
+        this.hasCountermeasures = ac.getFlareCapacity() > 0 || ac.getChaffCapacity() > 0;
         super.ySize = 236;
         this.buttonReload = null;
         this.currentWeaponId = 0;
@@ -54,12 +58,23 @@ public class MCH_AircraftGui extends W_GuiContainer {
         this.buttonReload.enabled = this.canReload(this.thePlayer);
         this.buttonNext.enabled = this.aircraft.getWeaponNum() >= 2;
         this.buttonPrev.enabled = this.aircraft.getWeaponNum() >= 2;
-        this.buttonInventory = new GuiButton(6, super.guiLeft + 210 - 30 - 60, super.guiTop + 90, 80, 20, MCH_I18n.format("gui.mcheli.inventory"));
-        super.buttonList.add(new GuiButton(5, super.guiLeft + 210 - 30 - 60, super.guiTop + 110, 80, 20, MCH_I18n.format("gui.mcheli.mod_options")));
+        this.buttonInventory = new GuiButton(6, super.guiLeft + (this.hasCountermeasures ? 25 : 120),
+            super.guiTop + (this.hasCountermeasures ? 215 : 90), 80, this.hasCountermeasures ? 16 : 20,
+            MCH_I18n.format("gui.mcheli.inventory"));
+        super.buttonList.add(new GuiButton(5, super.guiLeft + (this.hasCountermeasures ? 110 : 120),
+            super.guiTop + (this.hasCountermeasures ? 215 : 110), 80, this.hasCountermeasures ? 16 : 20,
+            MCH_I18n.format("gui.mcheli.mod_options")));
         super.buttonList.add(new GuiButton(4, super.guiLeft + 210 - 30 - 20, super.guiTop + 10, 40, 20, MCH_I18n.format("gui.mcheli.close")));
         super.buttonList.add(this.buttonReload);
         super.buttonList.add(this.buttonNext);
         super.buttonList.add(this.buttonPrev);
+        if (this.hasCountermeasures) {
+            this.buttonCountermeasures = new GuiButton(BUTTON_COUNTERMEASURES,
+                super.guiLeft + 65, super.guiTop + 114, 140, 16,
+                MCH_I18n.format("gui.mcheli.reload_countermeasures"));
+            this.buttonCountermeasures.enabled = this.aircraft.canPlayerRearmCountermeasures(this.thePlayer);
+            super.buttonList.add(this.buttonCountermeasures);
+        }
         if (this.aircraft != null && this.aircraft.getSizeInventory() > 0) {
             super.buttonList.add(this.buttonInventory);
         }
@@ -77,12 +92,15 @@ public class MCH_AircraftGui extends W_GuiContainer {
     }
 
     public boolean canReload(EntityPlayer player) {
-        return this.aircraft.canPlayerSupplyAmmo(player, this.currentWeaponId)
-            || this.aircraft.canPlayerRearmCountermeasures(player);
+        return this.aircraft.getWeaponNum() > 0
+            && this.aircraft.canPlayerSupplyAmmo(player, this.currentWeaponId);
     }
 
     public void updateScreen() {
         super.updateScreen();
+        if (this.buttonCountermeasures != null) {
+            this.buttonCountermeasures.enabled = this.aircraft.canPlayerRearmCountermeasures(this.thePlayer);
+        }
         if (this.reloadWait > 0) {
             --this.reloadWait;
             if (this.reloadWait == 0) {
@@ -104,23 +122,27 @@ public class MCH_AircraftGui extends W_GuiContainer {
         super.onGuiClosed();
     }
 
+    @Override
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        super.drawScreen(mouseX, mouseY, partialTicks);
+        if (this.buttonCountermeasures != null
+            && mouseX >= this.buttonCountermeasures.xPosition && mouseX < this.buttonCountermeasures.xPosition + 140
+            && mouseY >= this.buttonCountermeasures.yPosition && mouseY < this.buttonCountermeasures.yPosition + 16) {
+            this.drawHoveringText(java.util.Arrays.asList(
+                MCH_I18n.format("gui.mcheli.countermeasure_reload_cost"),
+                MCH_I18n.format("gui.mcheli.countermeasure_reload_effect")), mouseX, mouseY, this.fontRendererObj);
+        }
+    }
+
     protected void actionPerformed(GuiButton button) {
         super.actionPerformed(button);
         if (button.enabled) {
             switch (button.id) {
                 case 1:
-                    boolean canSupplyAmmo = this.aircraft.canPlayerSupplyAmmo(this.thePlayer, this.currentWeaponId);
-                    boolean canRearmCountermeasures = this.aircraft.canPlayerRearmCountermeasures(this.thePlayer);
-                    this.buttonReload.enabled = canSupplyAmmo || canRearmCountermeasures;
+                    this.buttonReload.enabled = this.canReload(this.thePlayer);
                     if (this.buttonReload.enabled) {
                         MCH_PacketIndReload.send(this.aircraft, this.currentWeaponId);
-                        if (canSupplyAmmo) {
-                            this.aircraft.supplyAmmo(this.currentWeaponId);
-                        }
-                        if (canRearmCountermeasures) {
-                            this.aircraft.setCountermeasureStateClient(
-                                this.aircraft.getFlareCapacity(), this.aircraft.getChaffCapacity());
-                        }
+                        this.aircraft.supplyAmmo(this.currentWeaponId);
                         this.reloadWait = 3;
                         this.buttonReload.enabled = false;
                     }
@@ -149,6 +171,13 @@ public class MCH_AircraftGui extends W_GuiContainer {
                     break;
                 case 6:
                     MCH_PacketIndOpenScreen.send(3);
+                    break;
+                case BUTTON_COUNTERMEASURES:
+                    if (this.aircraft.canPlayerRearmCountermeasures(this.thePlayer)) {
+                        this.mc.playerController.sendEnchantPacket(this.inventorySlots.windowId,
+                            MCH_AircraftGuiContainer.RELOAD_COUNTERMEASURES);
+                    }
+                    break;
             }
 
         }
@@ -158,6 +187,18 @@ public class MCH_AircraftGui extends W_GuiContainer {
         super.drawGuiContainerForegroundLayer(par1, par2);
         MCH_EntityAircraft ac = this.aircraft;
         this.drawString(ac.getGuiInventory().getInventoryName(), 10, 10, 16777215);
+        if (this.hasCountermeasures) {
+            int stockY = 91;
+            if (ac.getFlareCapacity() > 0) {
+                this.drawString(MCH_I18n.format("gui.mcheli.flare_stock",
+                    ac.getRemainingFlarePairs(), ac.getFlareCapacity()), 80, stockY, 4210752);
+                stockY += 12;
+            }
+            if (ac.getChaffCapacity() > 0) {
+                this.drawString(MCH_I18n.format("gui.mcheli.chaff_stock",
+                    ac.getRemainingChaffPairs(), ac.getChaffCapacity()), 80, stockY, 4210752);
+            }
+        }
         if (this.aircraft.getNumEjectionSeat() > 0) {
             this.drawString(MCH_I18n.format("gui.mcheli.parachute"), 9, 95, 16777215);
         }

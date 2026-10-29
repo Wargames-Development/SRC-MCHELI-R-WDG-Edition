@@ -5,7 +5,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.render.MCH_WGMapOcclusion;
 import mcheli.render.MCH_WGMapOcclusion.Result;
 import mcheli.weapon.MCH_LaserTargeting;
-import net.minecraft.block.Block;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
@@ -31,6 +30,8 @@ public final class WGMapLaserClientBridge {
 
     public static Trace traceDetailed(World world, Vec3 start, Vec3 end, MovingObjectPosition liveHit) {
         if (world == null || !world.isRemote || world.provider == null) return new Trace(liveHit, false);
+        // Vanilla's initial aim can hit a soft plant. Do not use it to truncate the laser ray.
+        if (isIgnoredPlantHit(world, liveHit)) liveHit = null;
         Vec3 limit = liveHit != null && liveHit.hitVec != null ? liveHit.hitVec : end;
         double distance = start.distanceTo(limit);
         if (!Double.isFinite(distance) || distance <= 0 || distance > 1500.01D) return new Trace(liveHit, false);
@@ -45,10 +46,7 @@ public final class WGMapLaserClientBridge {
                 return nativeChunkPresent(world.getChunkProvider(), x >> 4, z >> 4);
             }
             @Override public Vec3 blockHit(int x, int y, int z, Vec3 from, Vec3 to) {
-                Block block = world.getBlock(x, y, z);
-                if (!block.canCollideCheck(world.getBlockMetadata(x, y, z), false)) return null;
-                MovingObjectPosition result = block.collisionRayTrace(world, x, y, z, from, to);
-                return result == null ? null : result.hitVec;
+                return MCH_LaserTargeting.nativeBlockHit(world, x, y, z, from, to);
             }
             @Override public Vec3 missingHit(Vec3 from, Vec3 to) {
                 Result result = MCH_WGMapOcclusion.traceFirstHit(world.provider.dimensionId,
@@ -79,6 +77,12 @@ public final class WGMapLaserClientBridge {
         // a miss; only this verified client provider is safe to call here.
         return provider instanceof ChunkProviderClient
                 && !(provider.provideChunk(x, z) instanceof EmptyChunk);
+    }
+
+    public static boolean isIgnoredPlantHit(World world, MovingObjectPosition hit) {
+        return world != null && hit != null && hit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK
+                && nativeChunkPresent(world.getChunkProvider(), hit.blockX >> 4, hit.blockZ >> 4)
+                && MCH_LaserTargeting.ignoresPlant(world.getBlock(hit.blockX, hit.blockY, hit.blockZ));
     }
 
     /** Shared bounded live/gap traversal; no cached data is required for loaded chunks. */

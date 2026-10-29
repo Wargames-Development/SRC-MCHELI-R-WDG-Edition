@@ -225,6 +225,7 @@ public class MCH_ParticlesUtil {
                 entityFX = new MCH_EntityParticleSplash(p.world, p.posX, p.posY, p.posZ, p.motionX, p.motionY, p.motionZ);
             } else {
                 entityFX = new MCH_EntityParticleSmoke(p.world, p.posX, p.posY, p.posZ, p.motionX, p.motionY, p.motionZ);
+                ((MCH_EntityParticleSmoke)entityFX).thermalHot = p.name.equalsIgnoreCase("explode");
             }
 
             entityFX.setRBGColorF(p.r, p.g, p.b);

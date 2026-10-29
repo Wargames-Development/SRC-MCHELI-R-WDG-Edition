@@ -203,10 +203,13 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
         return entity instanceof MCH_EntityAircraft;
     }
 
+    @SideOnly(Side.CLIENT)
     public static MovingObjectPosition laserRaytrace(Entity user, Entity ac, Vec3 start, Vec3 lookVec, Vec3 end) {
         double distance = start.distanceTo(end);
         Entity pointedEntity = null;
         MovingObjectPosition result = MCH_RayTracer.rayTrace(user.worldObj, start, end);
+        // Let entities behind soft plants participate; the final laser trace still checks solid cover.
+        if (WGMapLaserClientBridge.isIgnoredPlantHit(user.worldObj, result)) result = null;
         double dist = distance;
         if (result != null) {
             dist = result.hitVec.distanceTo(start);

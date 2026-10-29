@@ -4,6 +4,7 @@ import mcheli.MCH_BaseInfo;
 import mcheli.MCH_Config;
 import mcheli.MCH_Lib;
 import mcheli.MCH_MOD;
+import mcheli.MCH_ThermalProfiles;
 import mcheli.hud.MCH_Hud;
 import mcheli.hud.MCH_HudManager;
 import mcheli.weapon.MCH_WeaponInfoManager;
@@ -29,6 +30,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     public String category;
     public boolean isEnableGunnerMode;
     public int cameraZoom;
+    private final MCH_ThermalProfiles thermalProfiles = new MCH_ThermalProfiles();
     public boolean isEnableConcurrentGunnerMode;
     /** Whether an AI gunner mounted as pilot may drive/fly this aircraft. */
     public boolean canGunnerMoveVehicle;
@@ -955,6 +957,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     }
 
     public void loadItemData(String item, String data) {
+        if (thermalProfiles.read(item, data)) return;
         if (item.compareTo("displayname") == 0) {
             this.displayName = data.trim();
         } else {
@@ -1945,6 +1948,7 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
     }
 
     public void preReload() {
+        this.thermalProfiles.clear();
         this.survivalPickup = null;
         this.textureNameList.clear();
         this.textureNameList.add(this.name);
@@ -2368,6 +2372,19 @@ public abstract class MCH_AircraftInfo extends MCH_BaseInfo {
             this.name = n;
             this.rackID = id;
         }
+    }
+
+    public int getThermalMaxFps(CameraPosition camera) {
+        String fps = getThermalProfile(camera, -1).get("ThermalMaxFPS");
+        return fps == null ? 30 : Integer.parseInt(fps);
+    }
+
+    public Map<String, String> getThermalProfile(CameraPosition camera, int seat) {
+        return thermalProfiles.resolve(this.cameraPosition.indexOf(camera), seat);
+    }
+
+    public boolean isThermalEnabled(CameraPosition camera, int seat) {
+        return thermalProfiles.isEnabled(this.cameraPosition.indexOf(camera), seat);
     }
 
     public class CameraPosition {

@@ -11,6 +11,7 @@ import net.minecraft.item.ItemStack;
 
 public class MCH_AircraftGuiContainer
     extends Container {
+    public static final int RELOAD_COUNTERMEASURES = 0;
     public final EntityPlayer player;
     public final MCH_EntityAircraft aircraft;
 
@@ -48,6 +49,14 @@ public class MCH_AircraftGuiContainer
 
     public void detectAndSendChanges() {
         super.detectAndSendChanges();
+    }
+
+    @Override
+    public boolean enchantItem(EntityPlayer player, int action) {
+        // Vanilla routes this button action through the player's current container window.
+        return action == RELOAD_COUNTERMEASURES && player == this.player
+            && player.openContainer == this && !player.worldObj.isRemote
+            && this.canInteractWith(player) && this.aircraft.rearmCountermeasures(player);
     }
 
     public boolean canInteractWith(EntityPlayer player) {

@@ -17,6 +17,7 @@ import java.util.List;
 
 public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
 
+    public boolean thermalHot;
     private static final List<MCH_EntityParticleSmoke> queued = new ArrayList<MCH_EntityParticleSmoke>();
     private static boolean renderingQueued;
     private static float rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ;
@@ -179,7 +180,12 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
         float f13 = (float) (super.prevPosZ + (super.posZ - super.prevPosZ) * (double) par2 - EntityFX.interpPosZ);
         tessellator.startDrawingQuads();
         tessellator.setColorRGBA_F(super.particleRed, super.particleGreen, super.particleBlue, super.particleAlpha);
-        tessellator.setBrightness(this.getBrightnessForRender(par2));
+        if (this.thermalHot && mcheli.render.MCH_FMURThermal.isParticlePass()) {
+            float life = Math.min(1F, (super.particleAge + par2) / Math.max(1F, super.particleMaxAge));
+            // FMUR's particle pass reserves block-light 241..255 for cooling smoke heat.
+            // This tag is never sent to the ordinary world/lightmap rendering path.
+            tessellator.setBrightness(0xF00000 | (241 + Math.round(14F * (0.9F - 0.5F * life))));
+        } else tessellator.setBrightness(this.getBrightnessForRender(par2));
         tessellator.setNormal(0.0F, 1.0F, 0.0F);
         if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);

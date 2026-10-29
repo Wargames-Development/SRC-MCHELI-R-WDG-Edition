@@ -106,4 +106,8 @@ public class MCH_ViewEntityDummy extends EntityPlayerSP {
         return super.getFOVMultiplier() * (1.0F / this.zoom);
     }
 
+    public float getCameraZoom() {
+        return this.zoom;
+    }
+
 }

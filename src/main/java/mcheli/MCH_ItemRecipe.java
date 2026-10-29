@@ -56,6 +56,7 @@ public class MCH_ItemRecipe implements MCH_IRecipeList {
         GameRegistry.addRecipe(new MCH_RecipeFuel());
         MCH_Config var10001 = MCH_MOD.config;
         addRecipeList(addRecipe(MCH_MOD.itemFuel, MCH_Config.ItemRecipe_Fuel.prmString));
+        addRecipeList(addShapelessRecipe(MCH_MOD.itemCountermeasureReload, "iron_ingot, paper, gunpowder"));
         var10001 = MCH_MOD.config;
         addRecipeList(addRecipe(MCH_MOD.itemGLTD, MCH_Config.ItemRecipe_GLTD.prmString));
         var10001 = MCH_MOD.config;

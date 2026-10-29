@@ -40,6 +40,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     private static HashSet<Integer> markedEntityIds = new HashSet<>();
     private static Minecraft s_minecraft;
     private static int spotedEntityCountdown = 0;
+    private int cameraWidth, cameraHeight;
 
 
     public MCH_GuiTargetMarker(Minecraft minecraft) {
@@ -350,6 +351,13 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         }
     }
 
+    /** Optional camera compositor entry; viewport dimensions are presentation metadata. */
+    public void drawCameraGui(EntityPlayer player, boolean thirdPerson, int width, int height) {
+        cameraWidth = width; cameraHeight = height;
+        try { drawGui(player, thirdPerson); }
+        finally { cameraWidth = 0; cameraHeight = 0; }
+    }
+
     void drawMark() {
         int[] COLOR_TABLE = new int[]{0, -808464433, -805371904, -805306624, -822018049, -805351649, -65536, 0};
         int scale = MCH_Gui.scaleFactor > 0 ? MCH_Gui.scaleFactor : 2;
@@ -360,10 +368,10 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         boolean depthTestEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
-        int DW = super.mc.displayWidth;
-        int DH = super.mc.displayHeight;
-        int DSW = super.mc.displayWidth / scale;
-        int DSH = super.mc.displayHeight / scale;
+        int DW = cameraWidth > 0 ? cameraWidth : super.mc.displayWidth;
+        int DH = cameraHeight > 0 ? cameraHeight : super.mc.displayHeight;
+        int DSW = DW / scale;
+        int DSH = DH / scale;
         double x = 9999.0D;
         double z = 9999.0D;
         double y = 9999.0D;

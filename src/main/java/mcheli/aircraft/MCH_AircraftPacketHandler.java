@@ -159,7 +159,6 @@ public class MCH_AircraftPacketHandler {
                         && ind.weaponID >= 0 && ind.weaponID < ac.getWeaponNum()) {
                         MCH_Lib.DbgLog(e.worldObj, "onPacketIndReload :%s", ac.getAcInfo().displayName);
                         ac.supplyAmmo(ind.weaponID);
-                        ac.rearmCountermeasures(player);
                     }
                 }
 

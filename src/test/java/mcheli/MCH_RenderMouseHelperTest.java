@@ -4,8 +4,43 @@ import net.minecraft.util.MouseHelper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class MCH_RenderMouseHelperTest {
+    @Test
+    public void zoomKeepsSingleCountScreenMovementConsistentAcrossSensitivitySettings() {
+        for (float sensitivity : new float[]{0.0F, 0.1F, 0.5F, 1.0F}) {
+            double normalGain = mouseGain(sensitivity);
+            for (float zoom : new float[]{1.0F, 2.0F, 4.0F, 10.0F, 40.0F, 100.0F}) {
+                float adjusted = MCH_RenderMouseHelper.getZoomSensitivity(sensitivity, zoom);
+                double zoomedGain = mouseGain(adjusted);
+                assertTrue(zoomedGain > 0.0D);
+                // A single positive or negative mouse count must survive without integer rounding.
+                assertEquals(normalGain, zoomedGain * zoom, normalGain * 0.00001D);
+                assertEquals(-normalGain, -zoomedGain * zoom, normalGain * 0.00001D);
+            }
+        }
+    }
+
+    @Test
+    public void highZoomCanGoBelowVanillasMinimumSensitivityGain() {
+        float adjusted = MCH_RenderMouseHelper.getZoomSensitivity(0.0F, 40.0F);
+        assertTrue(adjusted < 0.0F);
+        assertEquals(mouseGain(0.0F) / 40.0D, mouseGain(adjusted), 0.00000001D);
+    }
+
+    @Test
+    public void unzoomedOrInvalidZoomPreservesSensitivity() {
+        for (float zoom : new float[]{1.0F, 0.0F, -2.0F, Float.NaN, Float.POSITIVE_INFINITY}) {
+            assertEquals(0.37F, MCH_RenderMouseHelper.getZoomSensitivity(0.37F, zoom), 0.0F);
+        }
+    }
+
+    private static double mouseGain(float sensitivity) {
+        float gain = sensitivity * 0.6F + 0.2F;
+        return gain * gain * gain * 8.0F;
+    }
+
     @Test
     public void vanillaCannotApplyOrDiscardMovementArrivingAfterVehicleInput() {
         QueuedMouse mouse = new QueuedMouse();

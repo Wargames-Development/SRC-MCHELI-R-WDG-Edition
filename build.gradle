@@ -113,23 +113,19 @@ idea {
 }
 
 processResources {
-    inputs.property "version", modVersionString
+    inputs.property "version", { project.version.toString() }
     inputs.property "mcversion", mcVersion
     inputs.property "modid", modBaseName
     inputs.property "name", modDisplayName
 
-    from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
-        expand([
-                version  : modVersionString,
-                mcversion: mcVersion,
-                modid    : modBaseName,
-                name     : modDisplayName
-        ])
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude 'mcmod.info'
+    filesMatching('mcmod.info') {
+        // Plain replacement preserves JSON's escaped newlines; template expansion unescapes them.
+        filter { String line ->
+            line.replace('${version}', project.version.toString())
+                .replace('${mcversion}', mcVersion)
+                .replace('${modid}', modBaseName)
+                .replace('${name}', modDisplayName)
+        }
     }
 }
 
@@ -138,5 +134,95 @@ jar {
     def suffix = (project.hasProperty("branch") && project.branch) ? "-${project.branch}" : ""
     baseName = "${jarBaseName}-${fullVersion}${suffix}"
     version = null
-    destinationDir = file("build/libs")
+    // MCP-named classes must never appear in the deployable output directory.
+    destinationDir = file("build/intermediates/reobf")
+}
+
+def nextBuildNumber = null
+def developmentRuntime = false
+
+task packageMod {
+    group = 'build'
+    description = 'Verifies the reobfuscated mod jar and copies it into build/libs.'
+    dependsOn 'reobf'
+    mustRunAfter 'check'
+    onlyIf { !developmentRuntime && !gradle.taskGraph.allTasks.any { it.state.failure != null } }
+    doLast {
+        if (!jar.enabled || !reobf.enabled || !jar.state.executed
+                || (jar.state.skipped && !jar.state.upToDate) || !reobf.state.executed
+                || (reobf.state.skipped && !reobf.state.upToDate)) {
+            throw new GradleException('Packaging requires both jar and reobf. Do not exclude or disable them.')
+        }
+        def archive = new java.util.zip.ZipFile(jar.archivePath)
+        try {
+            def entry = archive.getEntry('mcheli/MCH_Lib.class')
+            if (entry == null) throw new GradleException('The mod jar is missing MCH_Lib.class.')
+            def probe = new org.objectweb.asm.tree.ClassNode()
+            archive.getInputStream(entry).withCloseable { input ->
+                new org.objectweb.asm.ClassReader(input).accept(probe,
+                    org.objectweb.asm.ClassReader.SKIP_DEBUG | org.objectweb.asm.ClassReader.SKIP_FRAMES)
+            }
+            def materialFields = probe.methods.collectMany { it.instructions.toArray().toList() }.findAll {
+                it instanceof org.objectweb.asm.tree.FieldInsnNode && it.owner == 'net/minecraft/block/material/Material'
+            }.collect { it.name }
+            if (materialFields.contains('air') || materialFields.contains('rock')
+                    || !materialFields.containsAll(['field_151579_a', 'field_151576_e'])) {
+                throw new GradleException('The mod jar still uses development mappings (Material.air/rock). Do not deploy it.')
+            }
+            def metadataEntry = archive.getEntry('mcmod.info')
+            if (metadataEntry == null) throw new GradleException('The mod jar is missing mcmod.info.')
+            def metadata
+            archive.getInputStream(metadataEntry).withCloseable { input ->
+                metadata = new groovy.json.JsonSlurper().parseText(input.getText('UTF-8'))
+            }
+            if (metadata[0].modid != modBaseName || metadata[0].version != project.version.toString()) {
+                throw new GradleException('The jar metadata does not match the configured mod ID and version.')
+            }
+        } finally {
+            archive.close()
+        }
+        copy {
+            from jar.archivePath
+            into file('build/libs')
+        }
+        logger.lifecycle("Verified production mod jar: build/libs/${jar.archiveName}")
+    }
+}
+
+// Direct jar invocations must be just as deployable as assemble/build.
+jar.finalizedBy packageMod
+assemble.dependsOn packageMod
+reobf.onlyIf { !developmentRuntime }
+
+gradle.taskGraph.whenReady { graph ->
+    developmentRuntime = ['runClient', 'runServer', 'debugClient', 'debugServer'].any {
+        tasks.findByName(it) != null && graph.hasTask(tasks.getByName(it))
+    }
+    if (developmentRuntime && graph.hasTask(assemble)) {
+        throw new GradleException('Run development launches and production packaging in separate Gradle invocations.')
+    }
+    // Choose once before compilation/resource processing, but persist only after success.
+    if (!developmentRuntime && !gradle.startParameter.dryRun
+            && !gradle.startParameter.projectProperties.containsKey('modBuildNumber')
+            && graph.hasTask(packageMod) && graph.hasTask(jar) && graph.hasTask(reobf)
+            && packageMod.enabled && jar.enabled && reobf.enabled) {
+        nextBuildNumber = Math.addExact(buildNumber, 1)
+        project.version = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${nextBuildNumber}${branchSuffix}"
+        jar.baseName = "${jarBaseName}-${project.version}"
+        sourceMainJava.replace '@VERSION@', project.version.toString()
+    }
+}
+
+gradle.buildFinished { result ->
+    if (nextBuildNumber != null && result.failure == null
+            && packageMod.state.executed && !packageMod.state.skipped) {
+        def propertiesFile = file('gradle.properties')
+        def content = propertiesFile.getText('UTF-8')
+        if (!(content =~ /(?m)^modBuildNumber=[0-9]+[ \t]*\r?$/).find()) {
+            throw new GradleException('Missing or invalid modBuildNumber in gradle.properties.')
+        }
+        propertiesFile.setText(content.replaceFirst(/(?m)^modBuildNumber=[0-9]+[ \t]*(?=\r?$)/,
+            "modBuildNumber=${nextBuildNumber}"), 'UTF-8')
+        logger.lifecycle("Saved successful build number X${nextBuildNumber}")
+    }
 }

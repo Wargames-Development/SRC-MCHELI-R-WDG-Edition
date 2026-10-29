@@ -878,13 +878,18 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public MCH_AircraftInfo.CameraPosition getCameraPosInfo() {
-        if (this.getAcInfo() == null) {
-            return null;
-        } else {
-            Entity player = MCH_Lib.getClientPlayer();
-            int sid = this.getSeatIdByEntity(player);
-            return sid == 0 && this.canSwitchCameraPos() && this.getCameraId() > 0 && this.getCameraId() < this.getAcInfo().cameraPosition.size() ? (MCH_AircraftInfo.CameraPosition) this.getAcInfo().cameraPosition.get(this.getCameraId()) : (sid > 0 && sid < this.getSeatsInfo().length && this.getSeatsInfo()[sid].invCamPos ? this.getSeatsInfo()[sid].getCamPos() : (MCH_AircraftInfo.CameraPosition) this.getAcInfo().cameraPosition.get(0));
-        }
+        return getCameraPosInfo(this.getSeatIdByEntity(MCH_Lib.getClientPlayer()));
+    }
+
+    /** Seat-based resolution is also used by server-side camera capability checks. */
+    public MCH_AircraftInfo.CameraPosition getCameraPosInfo(int sid) {
+        MCH_AircraftInfo info = this.getAcInfo();
+        if (info == null || info.cameraPosition.isEmpty()) return null;
+        if (sid == 0 && this.getCameraId() > 0 && this.getCameraId() < info.cameraPosition.size())
+            return (MCH_AircraftInfo.CameraPosition)info.cameraPosition.get(this.getCameraId());
+        MCH_SeatInfo seat = this.getSeatInfo(sid);
+        return sid > 0 && seat != null && seat.invCamPos ? seat.getCamPos()
+                : (MCH_AircraftInfo.CameraPosition)info.cameraPosition.get(0);
     }
 
     public int getCameraId() {
@@ -3335,27 +3340,34 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean canSwitchCameraMode() {
-        return this.isDestroyed() ? false : this.getAcInfo() != null && this.getAcInfo().isEnableNightVision;
+        return !this.isDestroyed() && this.getAcInfo() != null;
     }
 
     public boolean canSwitchCameraMode(int seatID) {
-        return this.isDestroyed() ? false : this.canSwitchCameraMode() && this.camera.isValidUid(seatID);
+        return this.canSwitchCameraMode() && this.camera.getModeNum(seatID) == 3;
     }
 
     public int getCameraMode(EntityPlayer player) {
-        return this.camera.getMode(this.getSeatIdByEntity(player));
+        int seat = this.getSeatIdByEntity(player);
+        int mode = this.camera.getMode(seat);
+        if (mode == MCH_Camera.MODE_THERMALVISION && !this.isCameraView(player)) {
+            this.camera.setMode(seat, MCH_Camera.MODE_NORMAL);
+            return MCH_Camera.MODE_NORMAL;
+        }
+        return mode;
     }
 
     public String getCameraModeName(EntityPlayer player) {
+        this.getCameraMode(player);
         return this.camera.getModeName(this.getSeatIdByEntity(player));
     }
 
     public void switchCameraMode(EntityPlayer player) {
-        this.switchCameraMode(player, this.camera.getMode(this.getSeatIdByEntity(player)) + 1);
+        this.switchCameraMode(player, this.getCameraMode(player) + 1);
     }
 
     public void switchCameraMode(EntityPlayer player, int mode) {
-        this.camera.setMode(this.getSeatIdByEntity(player), mode);
+        this.camera.setMode(this.getSeatIdByEntity(player), this.isCameraView(player) ? mode : MCH_Camera.MODE_NORMAL);
     }
 
     public void updateCameraViewers() {
@@ -3954,20 +3966,30 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean canPlayerRearmCountermeasures(EntityPlayer player) {
-        if (player == null || this.isDestroyed() || !W_Entity.isEqual(this.getRiddenByEntity(), player)) {
+        if (player == null || player.isDead || this.isDead || this.isDestroyed()
+            || player.worldObj != this.worldObj || player.getDistanceSqToEntity(this) > 144.0D
+            || !W_Entity.isEqual(this.getRiddenByEntity(), player)) {
             return false;
         }
-        if (MCH_Lib.getBlockIdY(this, 1, -3) == 0 || !this.canSupply()) {
+        if (!this.canSupply()) {
             return false;
         }
-        return this.getRemainingFlarePairs() < this.getFlareCapacity()
+        boolean needsReload = this.getRemainingFlarePairs() < this.getFlareCapacity()
             || this.getRemainingChaffPairs() < this.getChaffCapacity();
+        return needsReload && (player.capabilities.isCreativeMode
+            || (MCH_MOD.itemCountermeasureReload != null && player.inventory.hasItem(MCH_MOD.itemCountermeasureReload)));
     }
 
     public boolean rearmCountermeasures(EntityPlayer player) {
         if (this.worldObj.isRemote || !this.canPlayerRearmCountermeasures(player)) {
             return false;
         }
+        // One pack replenishes every enabled countermeasure, regardless of its capacity.
+        if (!player.capabilities.isCreativeMode
+            && !player.inventory.consumeInventoryItem(MCH_MOD.itemCountermeasureReload)) {
+            return false;
+        }
+        player.inventory.markDirty();
         this.remainingFlarePairs = this.getFlareCapacity();
         this.remainingChaffPairs = this.getChaffCapacity();
         this.syncCountermeasureState();
@@ -5507,7 +5529,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         this.cs_planeAutoThrottleDown = MCH_Config.AutoThrottleDownPlane.prmBool;
         var10001 = MCH_MOD.config;
         this.cs_tankAutoThrottleDown = MCH_Config.AutoThrottleDownTank.prmBool;
-        this.camera.setShaderSupport(seatId, W_EntityRenderer.isShaderSupport());
+        this.camera.setShaderSupport(seatId, W_EntityRenderer.isCameraEffectSupported());
         MCH_PacketNotifyClientSetting.send();
     }
 
