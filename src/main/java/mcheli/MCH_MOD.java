@@ -365,6 +365,7 @@ public class MCH_MOD {
         MCH_Lib.Log("Register system");
         W_NetworkRegistry.registerChannel(packetHandler, "MCHeli_CH");
         MinecraftForge.EVENT_BUS.register(new MCH_EventHook());
+        MCH_FMURUtil.registerMountedBulletHandler();
         MinecraftForge.EVENT_BUS.register(new MCH_EconomyEventHandler());
 
         proxy.registerClientTick();

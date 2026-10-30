@@ -3,6 +3,7 @@ package mcheli.weapon;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Lib;
+import mcheli.MCH_FMURUtil;
 import mcheli.MCH_MOD;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.aircraft.MCH_AircraftInfo;
@@ -78,6 +79,11 @@ public class MCH_WeaponMachineGun1 extends MCH_WeaponBase {
             pitch = prm.rotPitch;
         }
         if (!super.worldObj.isRemote) {
+            if (!getInfo().fmurBullet.isEmpty()) {
+                if (!MCH_FMURUtil.spawnMountedBullet(this, prm, yaw, pitch)) return false;
+                this.playSound(prm.entity);
+                return true;
+            }
             double baseTXX = -MathHelper.sin(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double baseTZZ = MathHelper.cos(yaw / 180.0F * (float) Math.PI) * MathHelper.cos(pitch / 180.0F * (float) Math.PI);
             double baseTYY = -MathHelper.sin(pitch / 180.0F * (float) Math.PI);

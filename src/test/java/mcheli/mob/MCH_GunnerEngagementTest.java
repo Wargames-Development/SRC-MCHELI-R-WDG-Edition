@@ -41,6 +41,268 @@ import static org.junit.Assert.*;
 
 /** Runs the real constructors, NBT and AA update with only Forge bootstrap/transport replaced. */
 public class MCH_GunnerEngagementTest {
+    @Test public void highRateCiwsUsesRealRoundsAmmoHeatAndCollisionCheckedLaunchPhases() throws Exception {
+        for (int rounds : new int[]{4, 8}) {
+            String name = rounds == 4 ? "ac_cram_m61a1" : "ac_hpj1130_30mm";
+            Fixture f = new Fixture(name, "0,3,0.5,0,0,true,1,0,-360,360,-80,25");
+            Object oldSet = f.call(f.turret, "getCurrentWeapon", new Class[]{Entity.class}, f.gunner);
+            Object info = f.call(oldSet, "getInfo", new Class[0]);
+            for (String[] setting : new String[][]{{"delay", "1"}, {"RoundsPerShot", String.valueOf(rounds)},
+                {"round", "1000"}, {"maxammo", "1000"}, {"heatcount", "1"}, {"maxheatcount", "4000"},
+                {"gravity", "0"}, {"accuracy", "0"}, {"FMURTracerGlow", "true"}}) f.load(info, setting[0], setting[1]);
+            f.call(info, "checkData", new Class[0]);
+            Object gun = f.type("mcheli.weapon.MCH_WeaponCreator").getMethod("createWeapon", World.class, String.class,
+                Vec3.class, float.class, float.class, f.type("mcheli.weapon.MCH_IEntityLockChecker"), boolean.class)
+                .invoke(null, f.world, name, Vec3.createVectorHelper(0, 0, 0), 0F, 0F, null, true);
+            f.field(f.world, "isRemote").setBoolean(f.world, true);
+            Object clientGun = f.type("mcheli.weapon.MCH_WeaponCreator").getMethod("createWeapon", World.class, String.class,
+                Vec3.class, float.class, float.class, f.type("mcheli.weapon.MCH_IEntityLockChecker"), boolean.class)
+                .invoke(null, f.world, name, Vec3.createVectorHelper(0, 0, 0), 0F, 0F, null, true);
+            assertEquals("Player prediction must request one trigger per tick", 1, f.integer(clientGun, "interval"));
+            f.field(f.world, "isRemote").setBoolean(f.world, false);
+            f.field(gun, "canPlaySound").setBoolean(gun, false);
+            Object ws = f.type("mcheli.weapon.MCH_WeaponSet").getConstructor(f.type("mcheli.weapon.MCH_WeaponBase")).newInstance(gun);
+            f.call(ws, "setAmmoNum", new Class[]{int.class}, 1000);
+            Object sets = java.lang.reflect.Array.newInstance(ws.getClass(), 1);
+            java.lang.reflect.Array.set(sets, 0, ws);
+            f.field(f.turret, "weapons").set(f.turret, sets);
+            for (int tick = 0; tick < 20; ++tick) {
+                if (tick > 0) f.call(ws, "update", new Class[]{Entity.class, boolean.class, boolean.class}, f.turret, true, false);
+                Object intent = f.type("mcheli.weapon.MCH_WeaponParam").newInstance();
+                f.field(intent, "user").set(intent, f.gunner);
+                f.field(intent, "entity").set(intent, f.turret);
+                f.call(intent, "setPosition", new Class[]{double.class, double.class, double.class}, 0D, 64D, 0D);
+                assertTrue((Boolean) f.call(ws, "canUse", new Class[0]));
+                assertTrue((Boolean) f.call(ws, "use", new Class[]{intent.getClass()}, intent));
+                assertEquals(rounds, f.integer(intent, "roundsFired"));
+                assertFalse("Server cooldown still blocks another trigger", (Boolean) f.call(ws, "canUse", new Class[0]));
+            }
+            assertEquals("Real rounds per second", rounds * 20, f.world.spawned.size());
+            assertEquals(1000 - rounds * 20, f.call(ws, "getAmmoNum", new Class[0]));
+            assertEquals(rounds * 20 * 2 - 19, f.integer(ws, "currentHeat"));
+            for (int i = 0; i < rounds; ++i) {
+                Entity bullet = f.world.spawned.get(i);
+                assertEquals("mcheli.weapon.MCH_EntityBullet", bullet.getClass().getName());
+                double z = bullet.posZ;
+                double factor = ((Number) f.value(bullet, "accelerationFactor")).doubleValue();
+                double speed = bullet.motionZ * factor;
+                double fraction = (Math.floorMod(bullet.getEntityId(), rounds) + 1) / (double) rounds;
+                f.call(bullet, "onUpdate", new Class[0]);
+                assertEquals("First movement is phased without skipping collision", speed * fraction, bullet.posZ - z, 0.00001D);
+                assertEquals(factor, ((Number) f.value(bullet, "accelerationFactor")).doubleValue(), 0D);
+                z = bullet.posZ;
+                f.call(bullet, "onUpdate", new Class[0]);
+                assertEquals("Later movement retains full projectile speed", speed, bullet.posZ - z, 0.00001D);
+            }
+            f.call(ws, "update", new Class[]{Entity.class, boolean.class, boolean.class}, f.turret, true, false);
+            f.call(ws, "setAmmoNum", new Class[]{int.class}, 2);
+            Object last = f.type("mcheli.weapon.MCH_WeaponParam").newInstance();
+            f.field(last, "user").set(last, f.gunner); f.field(last, "entity").set(last, f.turret);
+            int before = f.world.spawned.size();
+            assertTrue((Boolean) f.call(ws, "use", new Class[]{last.getClass()}, last));
+            assertEquals("A partial belt cannot spawn free rounds", before + 2, f.world.spawned.size());
+            assertEquals(0, f.call(ws, "getAmmoNum", new Class[0]));
+            f.field(ws, "countReloadWait").setInt(ws, 0); f.field(ws, "countWait").setInt(ws, 0);
+            f.call(ws, "setAmmoNum", new Class[]{int.class}, 100);
+            f.world.rejectProjectileSpawns = true;
+            last = f.type("mcheli.weapon.MCH_WeaponParam").newInstance();
+            f.field(last, "user").set(last, f.gunner); f.field(last, "entity").set(last, f.turret);
+            assertFalse((Boolean) f.call(ws, "use", new Class[]{last.getClass()}, last));
+            assertEquals(100, f.call(ws, "getAmmoNum", new Class[0]));
+        }
+    }
+
+    @Test public void installedFmurMountedGunMappingsLoadThroughTheWeaponManager() throws Exception {
+        String root = System.getProperty("mcheli.test.minecraftRoot");
+        org.junit.Assume.assumeNotNull(root);
+        Fixture f = new Fixture(0);
+        Class<?> manager = f.type("mcheli.weapon.MCH_WeaponInfoManager");
+        java.nio.file.Path weapons = java.nio.file.Paths.get(root,
+            "mods/MCHELI-R-WDG-Edition-1.1.8_X194/assets/mcheli/weapons");
+        assertTrue((Boolean) manager.getMethod("load", String.class).invoke(null, weapons.toString()));
+        int count = 0;
+        int ciwsGlow = 0;
+        for (Object info : (java.util.Collection) manager.getMethod("getValues").invoke(null)) {
+            if ((Boolean) f.value(info, "fmurTracerGlow")) {
+                String name = (String) f.value(info, "name");
+                assertTrue(name.equals("ac_cram_m61a1") || name.equals("ac_hpj1130_30mm"));
+                assertEquals("", f.value(info, "fmurBullet"));
+                assertEquals(name.equals("ac_cram_m61a1") ? 4 : 8, f.integer(info, "roundsPerShot"));
+                assertEquals(1, f.integer(info, "delay"));
+                assertEquals(name.equals("ac_cram_m61a1") ? 22 : 28, f.integer(info, "timeFuse"));
+                assertEquals(name.equals("ac_cram_m61a1") ? 1.0F : 1.25F,
+                    ((Number) f.value(info, "fmurTracerScale")).floatValue(), 0F);
+                ++ciwsGlow;
+            }
+            String bullet = (String) f.value(info, "fmurBullet");
+            if (bullet.isEmpty()) continue;
+            assertTrue(bullet.equals("50calammo") || bullet.equals("762x51100rdbox"));
+            assertEquals(bullet + "Tracer", f.value(info, "fmurTracerBullet"));
+            assertEquals(1, f.integer(info, "fmurTracerInterval"));
+            assertEquals(bullet.equals("50calammo") ? 1F : ((Number) f.value(info, "power")).floatValue(),
+                ((Number) f.value(info, "fmurBulletDamage")).floatValue(), 0F);
+            ++count;
+        }
+        assertEquals(16, count);
+        assertEquals("Only the two requested CIWS weapons opt in", 2, ciwsGlow);
+        for (String nativeGun : new String[]{"ac_cram_m61a1", "ac_hpj1130_30mm", "ac_a10_gau8"}) {
+            assertEquals("", f.value(manager.getMethod("get", String.class).invoke(null, nativeGun), "fmurBullet"));
+        }
+    }
+
+    @Test public void fmurMountedGunsSpawnOneRealBulletAtTheMuzzleAndFailWithoutAmmo() throws Exception {
+        org.junit.Assume.assumeNotNull(System.getProperty("mcheli.test.fmurClasses"));
+        Fixture f = new Fixture(0);
+        Class<?> bulletType = f.type("com.flansmod.common.guns.type.BulletType");
+        Field singleton = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+        singleton.setAccessible(true);
+        Object ammo = ((sun.misc.Unsafe) singleton.get(null)).allocateInstance(bulletType);
+        f.field(ammo, "shortName").set(ammo, "mounted_test_ammo");
+        f.field(ammo, "hitBoxSize").setFloat(ammo, 0.1F);
+        ((List) bulletType.getField("bullets").get(null)).add(ammo);
+        Object tracerAmmo = ((sun.misc.Unsafe) singleton.get(null)).allocateInstance(bulletType);
+        f.field(tracerAmmo, "shortName").set(tracerAmmo, "mounted_red_tracer");
+        f.field(tracerAmmo, "hitBoxSize").setFloat(tracerAmmo, 0.1F);
+        f.field(tracerAmmo, "tracer").setBoolean(tracerAmmo, true);
+        ((List) bulletType.getField("bullets").get(null)).add(tracerAmmo);
+        for (String kind : new String[]{"machinegun1", "machinegun2"}) {
+            Object info = f.type("mcheli.weapon.MCH_WeaponInfo").getConstructor(String.class).newInstance("mounted_test");
+            f.load(info, "type", kind);
+            f.load(info, "fmurbullet", "mounted_test_ammo");
+            f.load(info, "fmurbulletdamage", "5");
+            f.load(info, "acceleration", "15");
+            Object gun = f.type("mcheli.weapon.MCH_Weapon" + (kind.endsWith("1") ? "MachineGun1" : "MachineGun2"))
+                .getConstructor(World.class, Vec3.class, float.class, float.class, String.class, info.getClass())
+                .newInstance(f.world, Vec3.createVectorHelper(0, 0, 0), 0F, 0F, "mounted_test", info);
+            f.field(gun, "acceleration").setFloat(gun, 15);
+            f.field(gun, "canPlaySound").setBoolean(gun, false);
+            Object intent = f.type("mcheli.weapon.MCH_WeaponParam").newInstance();
+            f.field(intent, "entity").set(intent, f.turret);
+            f.field(intent, "user").set(intent, f.gunner);
+            f.call(intent, "setPosAndRot", new Class[]{double.class, double.class, double.class, float.class, float.class},
+                3D, 66D, 7D, 90F, 0F);
+            int before = f.world.spawned.size();
+            assertTrue((Boolean) f.call(gun, "shot", new Class[]{intent.getClass()}, intent));
+            assertEquals(before + 1, f.world.spawned.size());
+            Entity bullet = f.world.spawned.get(before);
+            assertEquals("com.flansmod.common.guns.EntityBullet", bullet.getClass().getName());
+            assertSame(ammo, f.value(bullet, "type"));
+            assertSame(f.gunner, f.value(bullet, "owner"));
+            assertEquals(5F, ((Number) f.value(bullet, "damage")).floatValue(), 0F);
+            assertEquals(3D, bullet.posX, 0D);
+            assertEquals(66D, bullet.posY, 0D);
+            assertEquals(7D, bullet.posZ, 0D);
+            assertEquals(-15D, bullet.motionX, 0.001D);
+            Object handler = f.type("mcheli.MCH_FMURUtil$MountedBulletHandler").newInstance();
+            Class<?> eventType = f.type("com.flansmod.common.eventhandlers.BulletHitEvent");
+            Class<?> hitType = f.type("com.flansmod.common.guns.raytracing.BulletHit");
+            for (Entity hit : new Entity[]{(Entity) f.turret, (Entity) f.gunner, f.aircraft("wge_t2", 30, 64, 0)}) {
+                Object intersection = f.type("com.flansmod.common.guns.raytracing.EntityHit")
+                    .getConstructor(Entity.class, float.class).newInstance(hit, 0.1F);
+                Object event = eventType.getConstructor(bullet.getClass(), hitType).newInstance(bullet, intersection);
+                f.call(handler, "onBulletHit", new Class[]{eventType}, event);
+                assertEquals(hit == f.turret || hit == f.gunner,
+                    f.call(event, "isCanceled", new Class[0]));
+            }
+            bullet.getEntityData().removeTag("MCHRMountedAircraft");
+            Object ownHit = f.type("com.flansmod.common.guns.raytracing.EntityHit")
+                .getConstructor(Entity.class, float.class).newInstance(f.turret, 0.1F);
+            Object ordinaryEvent = eventType.getConstructor(bullet.getClass(), hitType).newInstance(bullet, ownHit);
+            f.call(handler, "onBulletHit", new Class[]{eventType}, ordinaryEvent);
+            assertFalse("Unmarked FMUR bullets keep server behavior", (Boolean) f.call(ordinaryEvent, "isCanceled", new Class[0]));
+            Field remote = World.class.getField("isRemote");
+            remote.setAccessible(true);
+            remote.setBoolean(f.world, true);
+            Object clientEvent = eventType.getConstructor(bullet.getClass(), hitType).newInstance(bullet, ownHit);
+            f.call(handler, "onBulletHit", new Class[]{eventType}, clientEvent);
+            assertTrue("Client prediction must not consume the shot against its own hull",
+                (Boolean) f.call(clientEvent, "isCanceled", new Class[0]));
+            remote.setBoolean(f.world, false);
+            f.load(info, "fmurbullet", "missing_ammo");
+            assertFalse((Boolean) f.call(gun, "shot", new Class[]{intent.getClass()}, intent));
+            assertEquals(before + 1, f.world.spawned.size());
+            f.load(info, "fmurbullet", "mounted_test_ammo");
+            f.load(info, "fmurtracerbullet", "mounted_red_tracer");
+            f.load(info, "fmurtracerinterval", "5");
+            for (int shot = 1; shot <= 10; ++shot) {
+                int spawned = f.world.spawned.size();
+                if (shot == 5) {
+                    f.load(info, "fmurtracerbullet", "missing_tracer");
+                    assertFalse((Boolean) f.call(gun, "shot", new Class[]{intent.getClass()}, intent));
+                    assertEquals(4, f.integer(gun, "fmurShotsSinceTracer"));
+                    f.load(info, "fmurtracerbullet", "mounted_red_tracer");
+                    f.world.rejectProjectileSpawns = true;
+                    assertFalse((Boolean) f.call(gun, "shot", new Class[]{intent.getClass()}, intent));
+                    assertEquals(4, f.integer(gun, "fmurShotsSinceTracer"));
+                    f.world.rejectProjectileSpawns = false;
+                }
+                assertTrue((Boolean) f.call(gun, "shot", new Class[]{intent.getClass()}, intent));
+                assertEquals(spawned + 1, f.world.spawned.size());
+                Entity round = f.world.spawned.get(spawned);
+                assertSame("Only shots 5 and 10 are tracers", shot % 5 == 0 ? tracerAmmo : ammo, f.value(round, "type"));
+                assertEquals(5F, ((Number) f.value(round, "damage")).floatValue(), 0F);
+            }
+            assertFalse("Do not mutate the shared ordinary ammo definition", (Boolean) f.value(ammo, "tracer"));
+            f.load(info, "fmurtracerinterval", "1");
+            for (int shot = 0; shot < 6; ++shot) {
+                int beforeTracer = f.world.spawned.size();
+                assertTrue((Boolean) f.call(gun, "shot", new Class[]{intent.getClass()}, intent));
+                assertSame("Interval 1 makes every round a tracer", tracerAmmo, f.value(f.world.spawned.get(beforeTracer), "type"));
+            }
+        }
+    }
+
+    @Test public void harmRecognizesRadarAaWithEmptyPlayerOrGunnerCrew() throws Exception {
+        Fixture f = new Fixture(0);
+        Object guidance = f.type("mcheli.weapon.MCH_WeaponGuidanceSystem").newInstance();
+        f.field(guidance, "antiRadiationMissile").setBoolean(guidance, true);
+        Object missile = f.type("mcheli.weapon.MCH_EntityATMissile").getConstructor(World.class).newInstance(f.world);
+        Method radiating = missile.getClass().getDeclaredMethod("isArmEmitterRadiating", Entity.class);
+        radiating.setAccessible(true);
+        for (String kind : new String[]{"vehicle.MCH_EntityVehicle", "tank.MCH_EntityTank"}) {
+            Entity target = (Entity) f.type("mcheli." + kind).getConstructor(World.class).newInstance(f.world);
+            Object info = f.type("mcheli." + (kind.startsWith("vehicle") ? "vehicle.MCH_VehicleInfo" : "tank.MCH_TankInfo"))
+                .getConstructor(String.class).newInstance("radar_aa");
+            f.load(info, "enableradar", "true");
+            f.call(target, "setAcInfo", new Class[]{f.type("mcheli.aircraft.MCH_AircraftInfo")}, info);
+            assertFalse("Loaded radar capability must not require the unused legacy flag", (Boolean) f.value(info, "hasAARadar"));
+            for (Entity crew : new Entity[]{null, TestPlayer.create(f.world), (Entity) f.gunner}) {
+                target.riddenByEntity = crew;
+                assertTrue((Boolean) f.call(target, "isArmEmitterRadiating", new Class[0]));
+                assertTrue((Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, target));
+                assertTrue("In-flight ARM homing must use the same emitter state", (Boolean) radiating.invoke(missile, target));
+                f.call(target, "setRadarEnabledRuntime", new Class[]{boolean.class}, false);
+                assertFalse((Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, target));
+                assertFalse((Boolean) radiating.invoke(missile, target));
+                f.call(target, "setRadarEnabledRuntime", new Class[]{boolean.class}, true);
+            }
+            f.call(target, "setDespawnCount", new Class[]{int.class}, 1);
+            assertFalse((Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, target));
+            f.call(target, "setDespawnCount", new Class[]{int.class}, 0);
+            target.isDead = true;
+            assertFalse((Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, target));
+        }
+    }
+
+    @Test public void harmRejectsReceiveOnlyGroundVehiclesAndAirborneTargets() throws Exception {
+        Fixture f = new Fixture(0);
+        Object guidance = f.type("mcheli.weapon.MCH_WeaponGuidanceSystem").newInstance();
+        f.field(guidance, "antiRadiationMissile").setBoolean(guidance, true);
+        Object info = f.call(f.turret, "getAcInfo", new Class[0]);
+        f.load(info, "enablerwr", "true");
+        assertFalse((Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, f.turret));
+        Entity plane = (Entity) f.type("mcheli.plane.MCP_EntityPlane").getConstructor(World.class).newInstance(f.world);
+        Object planeInfo = f.type("mcheli.plane.MCP_PlaneInfo").getConstructor(String.class).newInstance("radar_plane");
+        f.load(planeInfo, "enableradar", "true");
+        f.call(plane, "setAcInfo", new Class[]{f.type("mcheli.aircraft.MCH_AircraftInfo")}, planeInfo);
+        assertFalse("The ground-radar crew exception must not change aircraft emission rules",
+            (Boolean) f.call(plane, "isArmEmitterRadiating", new Class[0]));
+        plane.riddenByEntity = (Entity) f.gunner;
+        assertTrue((Boolean) f.call(plane, "isArmEmitterRadiating", new Class[0]));
+        assertFalse("Ground HARM must still reject aircraft", (Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, plane));
+        assertFalse((Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, TestPlayer.create(f.world)));
+    }
+
     @Test public void spawnedPlaneUsesPreciseSnapshotPitchWhileVanillaPitchHasNotChanged() throws Exception {
         // Reuse the existing headless aircraft bootstrap to exercise spawn and rendering together.
         Fixture f = new Fixture(0);
@@ -672,7 +934,9 @@ public class MCH_GunnerEngagementTest {
     public static class TestVehicle extends MCH_EntityVehicle {
         public int shots;
         public TestVehicle(World world) { super(world); }
-        @Override public boolean useCurrentWeapon(MCH_WeaponParam intent) { ++shots; return true; }
+        @Override public boolean useCurrentWeapon(MCH_WeaponParam intent) {
+            ++shots; return true;
+        }
         public void saveAircraft(NBTTagCompound nbt) { super.writeEntityToNBT(nbt); }
         public void loadAircraft(NBTTagCompound nbt) { super.readEntityFromNBT(nbt); }
     }
@@ -714,6 +978,8 @@ public class MCH_GunnerEngagementTest {
         boolean chunksLoaded = true;
         boolean blocked;
         int droppedEggs;
+        final List<Entity> spawned = new ArrayList<Entity>();
+        boolean rejectProjectileSpawns;
         TestWorld() {
             super(null, "gunner_test", new WorldProviderSurface() {
                 @Override protected void registerWorldChunkManager() { }
@@ -726,10 +992,13 @@ public class MCH_GunnerEngagementTest {
         @Override public Block getBlock(int x, int y, int z) { ++blockQueries; return z == wallZ ? WALL : AIR; }
         @Override public int getBlockMetadata(int x, int y, int z) { return 0; }
         @Override public boolean spawnEntityInWorld(Entity entity) {
+            if (rejectProjectileSpawns) return false;
+            spawned.add(entity);
             if (entity instanceof EntityItem) ++droppedEggs;
             return true;
         }
         @Override public boolean checkChunksExist(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) { return chunksLoaded; }
+        @Override public boolean blockExists(int x, int y, int z) { return chunksLoaded; }
         List<Entity> loadedEntityList() { return loadedEntityList; }
         @Override public Entity getEntityByID(int id) {
             for (Entity entity : loadedEntityList()) if (entity.getEntityId() == id) return entity;
@@ -749,7 +1018,8 @@ public class MCH_GunnerEngagementTest {
     private static final class HeadlessLoader extends ClassLoader {
         HeadlessLoader() { super(MCH_GunnerEngagementTest.class.getClassLoader()); }
         @Override protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-            if (!name.startsWith("mcheli.") && !name.equals("cpw.mods.fml.common.Loader")) return super.loadClass(name, resolve);
+            boolean fmur = name.startsWith("com.flansmod.") && System.getProperty("mcheli.test.fmurClasses") != null;
+            if (!fmur && !name.startsWith("mcheli.") && !name.equals("cpw.mods.fml.common.Loader")) return super.loadClass(name, resolve);
             Class<?> existing = findLoadedClass(name);
             if (existing == null) {
                 try {
@@ -763,13 +1033,24 @@ public class MCH_GunnerEngagementTest {
                         method.visitInsn(Opcodes.IRETURN); method.visitMaxs(2, 1); method.visitEnd(); writer.visitEnd();
                         bytes = writer.toByteArray();
                     } else {
-                        try (InputStream input = getParent().getResourceAsStream(name.replace('.', '/') + ".class")) {
+                        try (InputStream input = fmur ? java.nio.file.Files.newInputStream(java.nio.file.Paths.get(
+                                System.getProperty("mcheli.test.fmurClasses"), name.replace('.', '/') + ".class"))
+                                : getParent().getResourceAsStream(name.replace('.', '/') + ".class")) {
                             if (input == null) throw new ClassNotFoundException(name);
                             ClassReader reader = new ClassReader(input);
                             ClassWriter writer = new ClassWriter(0);
                             reader.accept(new ClassVisitor(Opcodes.ASM5, writer) {
+                                @Override public void visitEnd() {
+                                    // Forge's event transformer supplies this override in-game.
+                                    if (name.equals("com.flansmod.common.eventhandlers.BulletHitEvent")) {
+                                        MethodVisitor method = super.visitMethod(Opcodes.ACC_PUBLIC, "isCancelable", "()Z", null, null);
+                                        method.visitCode(); method.visitInsn(Opcodes.ICONST_1); method.visitInsn(Opcodes.IRETURN);
+                                        method.visitMaxs(1, 1); method.visitEnd();
+                                    }
+                                    super.visitEnd();
+                                }
                                 @Override public MethodVisitor visitMethod(int access, String method, String descriptor, String signature, String[] exceptions) {
-                                    return name.equals("mcheli.MCH_MOD") && method.equals("<clinit>") ? null
+                                    return (name.equals("mcheli.MCH_MOD") || name.equals("com.flansmod.common.FlansMod")) && method.equals("<clinit>") ? null
                                         : super.visitMethod(access, method, descriptor, signature, exceptions);
                                 }
                             }, 0);

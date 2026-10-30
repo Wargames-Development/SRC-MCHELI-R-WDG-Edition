@@ -398,7 +398,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
     }
     private boolean isHarmGroundRadarTarget(Entity entity) {
         // HARM should never target aircraft.
-        // It should only target ground MC Heli entities explicitly marked with HasAARadar = true.
+        // Ground HARM seekers require an active radar or jammer on a ground vehicle.
         MCH_EntityAircraft aircraft = getAircraftForEcmCheck(entity);
         if (!(aircraft instanceof MCH_EntityTank) && !(aircraft instanceof MCH_EntityVehicle)) {
             return false;
@@ -444,7 +444,7 @@ public class MCH_WeaponGuidanceSystem extends MCH_EntityGuidanceSystem {
             // 获取实体的类名
             String className = entity.getClass().getName();
 
-            // HARM: only ground vehicles/tanks with HasAARadar = true are valid
+            // HARM: only radiating ground vehicles/tanks are valid.
             if (this.antiRadiationMissile) {
                 // Radar/IR countermeasure flags must not suppress a radiating ARM target.
                 return isHarmGroundRadarTarget(entity) && (this.checker == null || this.checker.canLockEntity(entity));

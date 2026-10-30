@@ -7146,14 +7146,16 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean isArmEmitterRadiating() {
-        if (this.isDead || this.isDestroyed() || this.getAcInfo() == null
-            || ((this instanceof MCH_EntityTank || this instanceof MCH_EntityVehicle) && !this.hasAARadar())) {
+        if (this.isDead || this.isDestroyed() || this.getAcInfo() == null) {
             return false;
         }
         // Receiving RWR warnings is unrelated to transmitting radar. Keep existing HOJ support.
         if (!(this.getAcInfo().enableRadar && this.isRadarEnabledRuntime()) && !this.isECMJammerUsing()) {
             return false;
         }
+        // Ground radars, including autonomous CIWS, emit independently of crew.
+        // EnableRadar is the loaded capability; the legacy hasAARadar field is not loaded.
+        if (this instanceof MCH_EntityTank || this instanceof MCH_EntityVehicle) return true;
         for (int seatId = 0; seatId <= this.getSeatNum(); ++seatId) {
             Entity crew = this.getEntityBySeatId(seatId);
             if (crew instanceof EntityPlayer || crew instanceof MCH_EntityGunner) return true;

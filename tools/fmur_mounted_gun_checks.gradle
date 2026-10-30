@@ -1,0 +1,11 @@
+// Optional real-FMUR and installed-content tests; normal tests need neither local directory.
+allprojects {
+    tasks.withType(Test) {
+        if (project.hasProperty('fmurClasses')) {
+            systemProperty 'mcheli.test.fmurClasses', project.property('fmurClasses')
+        }
+        if (project.hasProperty('minecraftRoot')) {
+            systemProperty 'mcheli.test.minecraftRoot', project.property('minecraftRoot')
+        }
+    }
+}

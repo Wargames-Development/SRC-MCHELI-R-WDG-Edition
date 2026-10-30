@@ -3,6 +3,7 @@ package mcheli.weapon;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Lib;
+import mcheli.MCH_FMURUtil;
 import mcheli.MCH_MOD;
 import mcheli.MCH_PlayerViewHandler;
 import mcheli.aircraft.MCH_AircraftInfo;
@@ -88,23 +89,38 @@ public class MCH_WeaponMachineGun2 extends MCH_WeaponBase {
             pitch = prm.rotPitch;
         }
         if (!super.worldObj.isRemote) {
-            double tX = -MathHelper.sin(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-            double tZ = MathHelper.cos(yaw / 180.0F * 3.1415927F) * MathHelper.cos(pitch / 180.0F * 3.1415927F);
-            double tY = -MathHelper.sin(pitch / 180.0F * 3.1415927F);
-            MCH_EntityBullet e = new MCH_EntityBullet(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, yaw, pitch, super.acceleration);
-            e.setAirburstDist(this.airburstDist);
-            e.setInfoByName(super.name);
-            e.setParameterFromWeapon(this, prm.entity, prm.user);
-            if (this.getInfo().modeNum < 2) {
-                e.explosionPower = super.explosionPower;
-            } else {
-                e.explosionPower = prm.option1 == 0 ? -super.explosionPower : super.explosionPower;
+            if (!getInfo().fmurBullet.isEmpty()) {
+                if (!MCH_FMURUtil.spawnMountedBullet(this, prm, yaw, pitch)) return false;
+                this.playSound(prm.entity);
+                return true;
             }
+            int rounds = Math.min(getInfo().roundsPerShot, Math.max(1, prm.roundsFired));
+            prm.roundsFired = 0;
+            for (int i = 0; i < rounds; ++i) {
+                float shotYaw = yaw, shotPitch = pitch;
+                if (getInfo().roundsPerShot > 1) {
+                    shotYaw += (rand.nextFloat() - 0.5F) * getInfo().accuracy;
+                    shotPitch += (rand.nextFloat() - 0.5F) * getInfo().accuracy;
+                }
+                double tX = -MathHelper.sin(shotYaw / 180.0F * 3.1415927F) * MathHelper.cos(shotPitch / 180.0F * 3.1415927F);
+                double tZ = MathHelper.cos(shotYaw / 180.0F * 3.1415927F) * MathHelper.cos(shotPitch / 180.0F * 3.1415927F);
+                double tY = -MathHelper.sin(shotPitch / 180.0F * 3.1415927F);
+                MCH_EntityBullet e = new MCH_EntityBullet(super.worldObj, prm.posX, prm.posY, prm.posZ, tX, tY, tZ, shotYaw, shotPitch, super.acceleration);
+                e.setAirburstDist(this.airburstDist);
+                e.setInfoByName(super.name);
+                e.setParameterFromWeapon(this, prm.entity, prm.user);
+                if (this.getInfo().modeNum < 2) {
+                    e.explosionPower = super.explosionPower;
+                } else {
+                    e.explosionPower = prm.option1 == 0 ? -super.explosionPower : super.explosionPower;
+                }
 
-            e.posX += e.motionX * 0.5D;
-            e.posY += e.motionY * 0.5D;
-            e.posZ += e.motionZ * 0.5D;
-            super.worldObj.spawnEntityInWorld(e);
+                e.posX += e.motionX * 0.5D;
+                e.posY += e.motionY * 0.5D;
+                e.posZ += e.motionZ * 0.5D;
+                if (super.worldObj.spawnEntityInWorld(e)) ++prm.roundsFired;
+            }
+            if (prm.roundsFired == 0) return false;
             this.playSound(prm.entity);
         } else {
             super.optionParameter1 = this.getCurrentMode();

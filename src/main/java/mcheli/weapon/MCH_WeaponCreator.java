@@ -199,9 +199,10 @@ public class MCH_WeaponCreator {
                 }
 
                 if (w.isRemote) {
-                    if (weapon.interval < 4) {
+                    // High-rate native guns retain their server-enforced one-tick interval.
+                    if (info.roundsPerShot == 1 && weapon.interval < 4) {
                         ++weapon.interval;
-                    } else if (weapon.interval < 7) {
+                    } else if (info.roundsPerShot == 1 && weapon.interval < 7) {
                         weapon.interval += 2;
                     }
 

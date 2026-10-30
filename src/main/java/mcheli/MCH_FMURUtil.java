@@ -16,8 +16,83 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
 
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
+import mcheli.weapon.MCH_WeaponBase;
+import mcheli.weapon.MCH_WeaponParam;
 
 public class MCH_FMURUtil {
+    private static final Set<String> missingMountedBullets = new HashSet<String>();
+
+    public static void registerMountedBulletHandler() {
+        if (isFMURLoaded) net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(new MountedBulletHandler());
+    }
+
+    public static boolean spawnMountedBullet(MCH_WeaponBase weapon, MCH_WeaponParam prm, float yaw, float pitch) {
+        if (weapon.worldObj.isRemote || !(prm.entity instanceof MCH_EntityAircraft)
+            || !(prm.user instanceof EntityLivingBase) || prm.user.isDead) return false;
+        if (isFMURLoaded && MountedBulletHandler.spawn(weapon, prm, yaw, pitch)) return true;
+        if (missingMountedBullets.add(weapon.getInfo().fmurBullet)) {
+            MCH_Lib.Log("[FMUR] Cannot fire mounted weapon %s: ammunition %s / tracer %s unavailable or spawn rejected",
+                weapon.name, weapon.getInfo().fmurBullet, weapon.getInfo().fmurTracerBullet);
+        }
+        return false;
+    }
+
+    // Loaded only when FMUR is present; common callers expose no FMUR event types.
+    public static final class MountedBulletHandler {
+        private static final String SOURCE = "MCHRMountedAircraft";
+
+        private static boolean spawn(MCH_WeaponBase weapon, MCH_WeaponParam prm, float yaw, float pitch) {
+            int interval = weapon.getInfo().fmurTracerInterval;
+            boolean tracer = interval > 0 && weapon.fmurShotsSinceTracer >= interval - 1;
+            String ammo = tracer ? weapon.getInfo().fmurTracerBullet : weapon.getInfo().fmurBullet;
+            com.flansmod.common.guns.type.BulletType type = com.flansmod.common.guns.type.BulletType.getBullet(ammo);
+            if (type == null) return false;
+            EntityBullet bullet = new EntityBullet(weapon.worldObj,
+                net.minecraft.util.Vec3.createVectorHelper(prm.posX, prm.posY, prm.posZ), yaw, pitch,
+                (EntityLivingBase) prm.user, weapon.getInfo().fmurBulletDamage, type, weapon.acceleration, type, 0.0F, 0.0F);
+            // MCHR has already applied mount rotation and spread. FMUR owns the trajectory from here.
+            if (weapon.getInfo().speedDependsAircraft) {
+                double speed = weapon.acceleration + Math.sqrt(prm.entity.motionX * prm.entity.motionX
+                    + prm.entity.motionY * prm.entity.motionY + prm.entity.motionZ * prm.entity.motionZ);
+                double factor = speed / weapon.acceleration;
+                bullet.motionX *= factor;
+                bullet.motionY *= factor;
+                bullet.motionZ *= factor;
+            }
+            bullet.getEntityData().setString(SOURCE, prm.entity.getUniqueID().toString());
+            if (!weapon.worldObj.spawnEntityInWorld(bullet)) return false;
+            weapon.fmurShotsSinceTracer = interval <= 0 || tracer ? 0 : weapon.fmurShotsSinceTracer + 1;
+            return true;
+        }
+
+        @cpw.mods.fml.common.eventhandler.SubscribeEvent
+        public void onBulletHit(com.flansmod.common.eventhandlers.BulletHitEvent event) {
+            EntityBullet bullet = event.getBullet();
+            String source = bullet.getEntityData().getString(SOURCE);
+            // FMUR also predicts collisions on clients; its spawn packet omits Forge entity data.
+            // Infer cosmetic source immunity there, while the server uses only the recorded UUID.
+            if (source.isEmpty() && bullet.worldObj.isRemote) {
+                MCH_EntityAircraft mount = MCH_EntityAircraft.getAircraft_RiddenOrControl(bullet.owner);
+                if (mount != null) source = mount.getUniqueID().toString();
+            }
+            if (source.isEmpty()) return;
+            Entity hit = event.getHitEntity();
+            if (event.getHit() instanceof com.flansmod.common.guns.raytracing.SoldierBulletHit) {
+                hit = ((com.flansmod.common.guns.raytracing.SoldierBulletHit) event.getHit()).hitbox.soldier;
+            }
+            if (hit == null) return;
+            // Match native MCHR rounds: auxiliary hitboxes/seats cannot consume a shot.
+            if (hit instanceof MCH_EntitySeat || hit instanceof mcheli.aircraft.MCH_EntityHitBox) {
+                event.setCanceled(true);
+                return;
+            }
+            MCH_EntityAircraft aircraft = hit instanceof MCH_EntityAircraft ? (MCH_EntityAircraft) hit
+                : MCH_EntityAircraft.getAircraft_RiddenOrControl(hit);
+            if (aircraft != null && source.equals(aircraft.getUniqueID().toString())) event.setCanceled(true);
+        }
+    }
 
     private static boolean isFMURLoaded;
     private static Class<?> FMUR_APIClass;

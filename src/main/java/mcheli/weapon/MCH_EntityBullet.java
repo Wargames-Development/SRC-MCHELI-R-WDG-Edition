@@ -24,7 +24,18 @@ public class MCH_EntityBullet extends MCH_EntityBaseBullet {
     }
 
     public void onUpdate() {
-        super.onUpdate();
+        if (this.getCountOnUpdate() == 0 && this.getInfo() == null) this.setInfoByName(this.getName());
+        int rounds = this.getInfo() == null ? 1 : this.getInfo().roundsPerShot;
+        if (this.getCountOnUpdate() != 0 || rounds <= 1) {
+            super.onUpdate();
+            return;
+        }
+        // Both sides know the entity ID and definition. Phase the first collision-checked
+        // movement within this tick, rather than teleporting rounds ahead through cover.
+        double factor = this.accelerationFactor;
+        this.accelerationFactor *= (Math.floorMod(this.getEntityId(), rounds) + 1) / (double) rounds;
+        try { super.onUpdate(); }
+        finally { this.accelerationFactor = factor; }
     }
 
     @Override

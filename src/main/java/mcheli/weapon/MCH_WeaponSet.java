@@ -447,7 +447,7 @@ public class MCH_WeaponSet {
             if ((this.getAmmoNumMax() <= 0 || this.getAmmoNum() > 0) && (info.maxHeatCount <= 0 || this.currentHeat < info.maxHeatCount)) {
                 crtWpn.canPlaySound = this.soundWait == 0;
                 setWeaponRotation(prm, crtWpn);
-                if (info.accuracy > 0.0F) {
+                if (info.accuracy > 0.0F && info.roundsPerShot == 1) {
                     float randYaw = rand.nextFloat() - 0.5F;
                     float randPitch = rand.nextFloat() - 0.5F;
                     prm.randYaw = randYaw * info.accuracy;
@@ -462,6 +462,7 @@ public class MCH_WeaponSet {
                 int restAmmoBeforeClientPrediction = this.getRestAllAmmoNum();
                 int heatBeforeClientPrediction = this.currentHeat;
                 int cooldownSpeedBeforeClientPrediction = this.cooldownSpeed;
+                prm.roundsFired = Math.min(info.roundsPerShot, this.getAmmoNumMax() > 0 ? this.getAmmoNum() : info.roundsPerShot);
                 if (crtWpn.use(prm)) {
                     // Predict timing and visuals locally, but keep ammo and heat unchanged until
                     // the server confirms that it accepted and spawned the projectile.
@@ -471,7 +472,7 @@ public class MCH_WeaponSet {
                     if (applyShotState) {
                         if (info.maxHeatCount > 0) {
                             this.cooldownSpeed = 1;
-                            this.currentHeat += crtWpn.heatCount;
+                            this.currentHeat += crtWpn.heatCount * prm.roundsFired;
                             if (this.currentHeat >= info.maxHeatCount) {
                                 this.currentHeat += 30;
                             }
@@ -492,7 +493,7 @@ public class MCH_WeaponSet {
                         this.countWait = crtWpn.interval;
                         this.countReloadWait = 0;
                         if (this.getAmmoNum() > 0) {
-                            this.setAmmoNum(this.getAmmoNum() - 1);
+                            this.setAmmoNum(this.getAmmoNum() - prm.roundsFired);
                         }
 
                         if (this.getAmmoNum() <= 0) {
@@ -587,7 +588,11 @@ public class MCH_WeaponSet {
         this.setAmmoNum(ammo);
         this.setRestAllAmmoNum(restAmmo);
         this.currentHeat = Math.max(0, heat);
-        this.countWait = wait;
+        // This acknowledges an earlier predicted shot. Reapplying its full positive
+        // cooldown on arrival makes automatic fire depend on round-trip latency.
+        // Reload/switch delays still reconcile exactly; the server validates every shot.
+        this.countWait = this.countWait >= 0 && wait >= 0 && reloadWait <= 0
+            ? Math.min(this.countWait, wait) : wait;
         this.countReloadWait = Math.max(0, reloadWait);
         if (this.weapons != null && this.weapons.length > 0) {
             this.currentWeaponIndex = MathHelper.clamp_int(weaponIndex, 0, this.weapons.length - 1);

@@ -22,6 +22,8 @@ public class MCH_WeaponParam {
     public boolean isInfinity = false;
     public boolean isTurret = false;
     public boolean result;
+    /** Local operation result, never read from a client packet. */
+    public int roundsFired = 1;
     public boolean reload;
     public float minPitch;
     public float maxPitch;

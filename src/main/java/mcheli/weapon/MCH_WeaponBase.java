@@ -48,6 +48,8 @@ public abstract class MCH_WeaponBase {
     public int airburstDist = 0;
     public List<MCH_EntityBaseBullet> shootBullets = new ArrayList<>();
     private int currentMode;
+    /** Server-only cadence per mounted barrel; failed shots do not consume a belt position. */
+    public int fmurShotsSinceTracer;
 
 
     public MCH_WeaponBase(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {

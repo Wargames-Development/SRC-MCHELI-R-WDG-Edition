@@ -28,6 +28,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public String displayName;
     public String type;
     public int power;
+    public String fmurBullet = "";
+    public String fmurTracerBullet = "";
+    public int fmurTracerInterval = 0;
+    /** Visual-only FMUR glow on native MCHR rounds. */
+    public boolean fmurTracerGlow = false;
+    public float fmurTracerScale = 1.0F;
+    public int roundsPerShot = 1;
+    /** Base gun damage before the FMUR ammunition's own multipliers. */
+    public float fmurBulletDamage = 1.0F;
     public float acceleration;
     public float accelerationInWater;
     public int explosion;
@@ -644,6 +653,25 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     }
 
     public void checkData() {
+        if (this.roundsPerShot < 1 || this.roundsPerShot > 8
+            || (this.roundsPerShot > 1 && (!"machinegun2".equals(this.type) || !this.fmurBullet.isEmpty()
+                || this.delay != 1))) {
+            throw new IllegalArgumentException("RoundsPerShot requires native MachineGun2, Delay=1 and 1..8 rounds: " + this.name);
+        }
+        if (!Float.isFinite(this.fmurTracerScale) || this.fmurTracerScale < 0.1F || this.fmurTracerScale > 4.0F
+            || (this.fmurTracerGlow && (!("machinegun1".equals(this.type) || "machinegun2".equals(this.type))
+                || !this.fmurBullet.isEmpty()))) {
+            throw new IllegalArgumentException("FMURTracerGlow requires native machine-gun rounds and scale 0.1..4: " + this.name);
+        }
+        if (this.fmurTracerInterval < 0 || (this.fmurTracerInterval > 0) != !this.fmurTracerBullet.isEmpty()
+            || (!this.fmurTracerBullet.isEmpty() && this.fmurBullet.isEmpty())) {
+            throw new IllegalArgumentException("FMURTracerBullet requires FMURBullet and a positive FMURTracerInterval: " + this.name);
+        }
+        if (!this.fmurBullet.isEmpty() && (!Float.isFinite(this.fmurBulletDamage) || this.fmurBulletDamage <= 0.0F
+            || !Float.isFinite(this.acceleration) || this.acceleration <= 0.0F
+            || !("machinegun1".equals(this.type) || "machinegun2".equals(this.type)) || this.canister > 0)) {
+            throw new IllegalArgumentException("FMURBullet requires a single-projectile machine gun with positive damage and speed: " + this.name);
+        }
         if (this.explosionBlock < 0) {
             this.explosionBlock = this.explosion;
         }
@@ -824,6 +852,20 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.group = data.toLowerCase().trim();
         } else if (item.compareTo("power") == 0) {
             this.power = this.toInt(data);
+        } else if (item.equalsIgnoreCase("FMURBullet")) {
+            this.fmurBullet = data.trim();
+        } else if (item.equalsIgnoreCase("FMURTracerBullet")) {
+            this.fmurTracerBullet = data.trim();
+        } else if (item.equalsIgnoreCase("FMURTracerInterval")) {
+            this.fmurTracerInterval = Integer.parseInt(data.trim());
+        } else if (item.equalsIgnoreCase("FMURTracerGlow")) {
+            this.fmurTracerGlow = this.toBool(data);
+        } else if (item.equalsIgnoreCase("FMURTracerScale")) {
+            this.fmurTracerScale = Float.parseFloat(data.trim());
+        } else if (item.equalsIgnoreCase("RoundsPerShot")) {
+            this.roundsPerShot = Integer.parseInt(data.trim());
+        } else if (item.equalsIgnoreCase("FMURBulletDamage")) {
+            this.fmurBulletDamage = Float.parseFloat(data.trim());
         } else if (item.equalsIgnoreCase("sound")) {
             this.soundFileName = data.toLowerCase().trim();
         } else if (item.compareTo("acceleration") == 0) {

@@ -1,0 +1,21 @@
+// Run against the FMUR project: -PmchrRoot=<MCHR checkout> -PlwjglNatives=<LWJGL 2 natives>.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject
+    def mchr = p.file(p.property('mchrRoot'))
+    def compileChecks = p.tasks.create('compileCiwsTracerChecks', JavaCompile) {
+        dependsOn p.tasks.classes
+        source = p.files(new File(mchr, 'tools/CiwsTracerGpuChecks.java'),
+            new File(mchr, 'tools/tracer-reference/OriginalGunTracerReference.java'))
+        classpath = p.sourceSets.main.runtimeClasspath + p.files(new File(mchr, 'build/classes/java/main'))
+        destinationDir = new File(mchr, 'build/ciws-tracer-checks/classes')
+        sourceCompatibility = targetCompatibility = '1.8'
+        options.encoding = 'UTF-8'
+    }
+    p.tasks.create('ciwsTracerGpuChecks', JavaExec) {
+        dependsOn compileChecks
+        classpath = p.files(compileChecks.destinationDir) + compileChecks.classpath
+        main = 'CiwsTracerGpuChecks'
+        args new File(mchr, 'build/ciws-tracer-checks').absolutePath
+        jvmArgs '-Djava.library.path=' + p.property('lwjglNatives')
+    }
+}

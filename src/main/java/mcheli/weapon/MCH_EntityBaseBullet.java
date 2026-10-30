@@ -2623,7 +2623,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 }
                 // AT 导弹：只对地面上的 MCH_EntityAircraft 进行主动雷达搜索
                 // AT missile HARM-style active scan:
-                // only ground vehicles/tanks with HasAARadar = true
+                // only radiating ground vehicles/tanks
                 // AT missile active scan
                 else if (this instanceof MCH_EntityATMissile) {
                     if (entity instanceof MCH_EntityAircraft) {
