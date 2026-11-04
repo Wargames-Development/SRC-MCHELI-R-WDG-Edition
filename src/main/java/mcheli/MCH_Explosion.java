@@ -50,6 +50,17 @@ public class MCH_Explosion extends Explosion {
             && param.isDestroyBlock;
     }
 
+    /** Preserve the projectile and firing player for WGQOL's server-owned combat attribution. */
+    private DamageSource combatDamageSource() {
+        if (cpw.mods.fml.common.Loader.isModLoaded("wgqol") && param != null && param.exploder != null) {
+            final DamageSource original = DamageSource.setExplosionSource(this);
+            return new net.minecraft.util.EntityDamageSourceIndirect("explosion", param.exploder, param.player) {
+                @Override public boolean isDifficultyScaled() { return original.isDifficultyScaled(); }
+            }.setExplosion();
+        }
+        return DamageSource.setExplosionSource(this);
+    }
+
     public static MCH_Explosion.ExplosionResult newExplosion(World w, MCH_ExplosionParam p) {
         if (w.isRemote) {
             return null;
@@ -627,7 +638,7 @@ public class MCH_Explosion extends Explosion {
             }
 
             MCH_Lib.applyEntityHurtResistantTimeConfig(e);
-            DamageSource ds = DamageSource.setExplosionSource(this);
+            DamageSource ds = combatDamageSource();
             damage = MCH_Config.applyDamageVsEntity(e, ds, damage);
             damage = applyTypeMultipliers(e, damage, param);
 
@@ -647,6 +658,7 @@ public class MCH_Explosion extends Explosion {
                 final double fireFactor = 1.0D - vLen / (double) this.explosionSize;
                 if (fireFactor > 0.0D) {
                     e.setFire((int) (fireFactor * (double) param.countSetFireEntity));
+                    mcheli.wgc.CombatBridge.ignite(e, param.exploder, (int) (fireFactor * (double) param.countSetFireEntity));
                 }
             }
         }
@@ -687,7 +699,7 @@ public class MCH_Explosion extends Explosion {
                     }
 
                     MCH_Lib.applyEntityHurtResistantTimeConfig(e);
-                    DamageSource ds = DamageSource.setExplosionSource(this);
+                    DamageSource ds = combatDamageSource();
                     damage = MCH_Config.applyDamageVsEntity(e, ds, damage);
                     damage = applyTypeMultipliers(e, damage, param);
 
@@ -707,6 +719,7 @@ public class MCH_Explosion extends Explosion {
                         final double fireFactor = 1.0D - rDistBox;
                         if (fireFactor > 0.0D) {
                             e.setFire((int) (fireFactor * (double) param.countSetFireEntity));
+                            mcheli.wgc.CombatBridge.ignite(e, param.exploder, (int) (fireFactor * (double) param.countSetFireEntity));
                         }
                     }
                 }
