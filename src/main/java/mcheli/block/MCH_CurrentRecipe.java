@@ -93,7 +93,7 @@ public class MCH_CurrentRecipe {
                     String type = info.getWeaponSetById(var6).type;
                     MCH_WeaponInfo winfo = MCH_WeaponInfoManager.get(type);
                     if (winfo != null) {
-                        this.getAcInfoTextSub(winfo.getWeaponTypeName(), winfo.displayName);
+                        this.getAcInfoTextSub(winfo.getWeaponTypeName(), winfo.displayName + winfo.getRangeDisplaySuffix());
                     } else {
                         this.getAcInfoTextSub("ERROR", "Not found weapon " + (var6 + 1));
                     }

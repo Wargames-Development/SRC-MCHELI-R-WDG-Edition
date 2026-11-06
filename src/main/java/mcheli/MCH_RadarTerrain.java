@@ -7,6 +7,12 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.ChunkProviderServer;
+import cpw.mods.fml.common.Loader;
+import mcheli.integration.wgmap.WGMapRadarServerBridge;
 
 import java.lang.ref.WeakReference;
 import java.util.Map;
@@ -35,17 +41,25 @@ public final class MCH_RadarTerrain {
         }
         Boolean known = cache.targets.get(target.getEntityId());
         if (known != null) return known;
-        // Missing chunks provide no obstruction evidence and must never be loaded by radar.
-        Terrain terrain = (x, y, z) -> {
-            if (y < 0 || y >= 256) return 0;
-            if (!world.blockExists(x, y, z)) return 2;
-            Block block = world.getBlock(x, y, z);
-            return block.getMaterial() != Material.leaves && block.isOpaqueCube() ? 1 : 0;
-        };
         AxisAlignedBB source = emitter.boundingBox;
         double ox = (source.minX + source.maxX) * 0.5D;
         double oy = source.maxY + 0.05D;
         double oz = (source.minZ + source.maxZ) * 0.5D;
+        final int height = world.getHeight();
+        // The loaded table avoids both chunk generation and World.blockExists' vanilla Y<256 gate.
+        final ChunkProviderServer provider = world instanceof WorldServer
+                && world.getChunkProvider() instanceof ChunkProviderServer
+                ? (ChunkProviderServer)world.getChunkProvider() : null;
+        Terrain live = (x, y, z) -> {
+            if (y < 0 || y >= height) return 0;
+            Chunk chunk = provider == null ? null : (Chunk)provider.loadedChunkHashMap.getValueByKey(
+                    ChunkCoordIntPair.chunkXZ2Int(x >> 4, z >> 4));
+            if (chunk == null || !chunk.isChunkLoaded || chunk.worldObj != world) return 2;
+            Block block = chunk.getBlock(x & 15, y, z & 15);
+            return block.getMaterial() != Material.leaves && block.isOpaqueCube() ? 1 : 0;
+        };
+        Terrain stored = Loader.isModLoaded("wgmap") ? WGMapRadarServerBridge.open(world, ox, oy, oz) : null;
+        Terrain terrain = combine(live, stored);
         MCH_EntityAircraft aircraft = (MCH_EntityAircraft)target;
         boolean blocked = isBoxBlocked(terrain, ox, oy, oz, target.boundingBox);
         if (blocked && aircraft.extraBoundingBox != null) {
@@ -109,9 +123,16 @@ public final class MCH_RadarTerrain {
         return step == 0 ? Double.POSITIVE_INFINITY : (block + (step > 0 ? 1.0D : 0.0D) - origin) / delta;
     }
 
-    interface Terrain {
+    public interface Terrain {
         // 0: clear, 1: opaque solid, 2: missing terrain.
         int blockAt(int x, int y, int z);
+    }
+
+    static Terrain combine(Terrain live, Terrain stored) {
+        return (x, y, z) -> {
+            int state = live.blockAt(x, y, z);
+            return state == 2 && stored != null ? stored.blockAt(x, y, z) : state;
+        };
     }
 
     private static final class Cache {

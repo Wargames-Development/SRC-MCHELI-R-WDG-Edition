@@ -846,6 +846,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPre(float partialTicks) {
+        MCH_RenderAircraft.beginRenderFrame();
         restoreRenderMouse();
         restoreRiderRenderPositions("next_render_start");
         MCH_GuiTargetMarker.clearMarkEntityPos();

@@ -13,6 +13,7 @@ public class MCH_WeaponBaseTest {
 
         assertNull(weapon.getInfo());
         assertEquals("", weapon.displayName);
+        assertEquals("", weapon.getName());
         assertEquals("", weapon.explosionType);
         assertEquals(0, weapon.nukeYield);
         assertEquals(0, weapon.chemYield);
@@ -37,5 +38,52 @@ public class MCH_WeaponBaseTest {
         assertEquals(info.explosionType, weapon.explosionType);
         assertEquals(info.nukeYield, weapon.nukeYield);
         assertEquals(info.chemYield, weapon.chemYield);
+    }
+
+    @Test
+    public void missilesAndGpsBombsShowConfiguredRangeWithoutRenamingDefinitions() {
+        for (String type : new String[]{"aamissile", "atmissile", "asmissile", "tvmissile", "bomb"}) {
+            MCH_WeaponInfo info = new MCH_WeaponInfo("test_weapon");
+            info.type = type;
+            info.displayName = "Guided weapon";
+            info.maxLockOnRange = 1100;
+            info.isGPSMissile = "bomb".equals(type);
+            MCH_WeaponBase weapon = createWeapon(info);
+
+            assertEquals(type, "Guided weapon [1100m]", weapon.getName());
+            assertEquals(type, "Guided weapon [1100m]", weapon.getName());
+            assertEquals("Guided weapon", info.displayName);
+            assertEquals("Guided weapon", weapon.displayName);
+            assertEquals("test_weapon", weapon.name);
+
+            info.maxLockOnRange = 2000;
+            assertEquals(type, "Guided weapon [2000m]", weapon.getName());
+        }
+    }
+
+    @Test
+    public void otherWeaponsKeepNamesAndModeLabels() {
+        for (String type : new String[]{"machinegun1", "machinegun2", "rocket", "bomb", "torpedo", "cas"}) {
+            MCH_WeaponInfo info = new MCH_WeaponInfo("test_weapon");
+            info.type = type;
+            info.displayName = "Weapon";
+            info.maxLockOnRange = 1100;
+            assertEquals(type, "Weapon", createWeapon(info).getName());
+        }
+
+        MCH_WeaponInfo info = new MCH_WeaponInfo("rocket");
+        info.type = "rocket";
+        MCH_WeaponRocket rocket = new MCH_WeaponRocket(null, null, 0.0F, 0.0F, info.name, info);
+        rocket.setCurrentMode(1);
+        assertEquals("rocket [HEIAP]", rocket.getName());
+    }
+
+    private MCH_WeaponBase createWeapon(MCH_WeaponInfo info) {
+        return new MCH_WeaponBase(null, null, 0.0F, 0.0F, info.name, info) {
+            @Override
+            public boolean shot(MCH_WeaponParam prm) {
+                return false;
+            }
+        };
     }
 }

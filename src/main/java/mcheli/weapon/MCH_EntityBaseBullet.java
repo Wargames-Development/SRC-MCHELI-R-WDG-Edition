@@ -1417,7 +1417,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     this.airburstTravelled = 0.0D;
                     return;
                 }
-                if (this.getInfo().explosion > 0) {
+                if (this.getInfo().explosionAirburst > 0) {
                     this.newExplosion(ex, ey, ez, getInfo().explosionAirburst,
                         (float) this.getInfo().explosionBlock, false);
                 } else if (this.explosionPower < 0) {
@@ -2894,7 +2894,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
                     if (!this.worldObj.isRemote) {
                         MCH_Explosion.ExplosionResult result = null;
-                        if (this.getInfo().explosion > 0) {
+                        if (this.getInfo().explosionAirburst > 0) {
                             result = this.newExplosion(ex, ey, ez, getInfo().explosionAirburst,
                                 (float) this.getInfo().explosionBlock, false);
                         } else if (this.explosionPower < 0) {

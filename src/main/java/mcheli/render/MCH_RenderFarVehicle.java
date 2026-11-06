@@ -98,6 +98,8 @@ public class MCH_RenderFarVehicle {
             @Override public void accept(Float partialTicks) {
                 Minecraft mc = Minecraft.getMinecraft();
                 if (mc.theWorld == null || mc.thePlayer == null) return;
+                // FMUR's isolated camera replays geometry without a Forge world-last event.
+                MCH_ClientEventHook.collectEntityMarkers(partialTicks.floatValue());
                 // Loaded aircraft with a specialized renderer still contribute heat even
                 // when they do not use this unified near/far vehicle pass.
                 MCH_EntityAircraft viewerAircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(mc.thePlayer);

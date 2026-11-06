@@ -40,6 +40,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     private static HashSet<Integer> markedEntityIds = new HashSet<>();
     private static Minecraft s_minecraft;
     private static int spotedEntityCountdown = 0;
+    private static boolean collectingEntityMarkers;
     private int cameraWidth, cameraHeight;
 
 
@@ -109,6 +110,11 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     }
 
     public static void addMarkEntityPos(int reserve, Entity entity, double x, double y, double z, boolean nazo) {
+        // Model callbacks can run with rider/LOD transforms or a different camera active.
+        // Only the world-last pass may register entity projections; point particles keep their own transform.
+        if (reserve != 100 && !collectingEntityMarkers) {
+            return;
+        }
         if (isEnableEntityMarker()) {
             MCH_TargetType spotType = MCH_TargetType.NONE;
             EntityClientPlayerMP clientPlayer = s_minecraft.thePlayer;
@@ -181,7 +187,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     }
 
     public static void addMarkEntityInfoPos(MCH_EntityInfo info, double x, double y, double z) {
-        if (!isEnableEntityMarker() || info == null || info.entityId <= 0
+        if (!collectingEntityMarkers || !isEnableEntityMarker() || info == null || info.entityId <= 0
             || info.teamName == null || info.teamName.isEmpty()) {
             return;
         }
@@ -214,33 +220,39 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, matModel);
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, matProjection);
         GL11.glGetInteger(GL11.GL_VIEWPORT, matViewport);
+        return projectMarker(x, y, z, marker, nazo, matModel, matProjection, matViewport);
+    }
+
+    static boolean projectMarker(double x, double y, double z, MCH_MarkEntityPos marker, boolean nazo,
+                                 FloatBuffer model, FloatBuffer projection, IntBuffer viewport) {
+        marker.pos.clear();
         if (nazo) {
-            if (!GLU.gluProject((float)z, (float)y, (float)x, matModel, matProjection, matViewport, marker.pos)) {
+            if (!GLU.gluProject((float)z, (float)y, (float)x, model, projection, viewport, marker.pos)) {
                 return false;
             }
             float projectedY = marker.pos.get(1);
             marker.pos.clear();
-            if (!GLU.gluProject((float)x, (float)y, (float)z, matModel, matProjection, matViewport, marker.pos)) {
+            if (!GLU.gluProject((float)x, (float)y, (float)z, model, projection, viewport, marker.pos)) {
                 return false;
             }
             marker.pos.put(1, projectedY);
-        } else if (!GLU.gluProject((float)x, (float)y, (float)z, matModel, matProjection, matViewport, marker.pos)) {
+        } else if (!GLU.gluProject((float)x, (float)y, (float)z, model, projection, viewport, marker.pos)) {
             return false;
         }
         // Entity markers are HUD elements, so the camera's world far plane must not hide
         // a valid contact. Keep rejecting points behind the camera, but clamp forward
         // projections beyond the far plane into the visible window-depth range.
-        if (marker.pos.get(2) >= 1.0F && isInFrontOfCamera(x, y, z)) {
+        if (marker.pos.get(2) >= 1.0F && isInFrontOfCamera(x, y, z, model)) {
             marker.pos.put(2, 0.999999F);
         }
         return isFinite(marker.pos.get(0)) && isFinite(marker.pos.get(1)) && isFinite(marker.pos.get(2));
     }
 
-    private static boolean isInFrontOfCamera(double x, double y, double z) {
-        double eyeZ = (double)matModel.get(2) * x
-            + (double)matModel.get(6) * y
-            + (double)matModel.get(10) * z
-            + (double)matModel.get(14);
+    private static boolean isInFrontOfCamera(double x, double y, double z, FloatBuffer model) {
+        double eyeZ = (double)model.get(2) * x
+            + (double)model.get(6) * y
+            + (double)model.get(10) * z
+            + (double)model.get(14);
         return eyeZ < 0.0D;
     }
 
@@ -273,6 +285,23 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     public static void clearMarkEntityPos() {
         entityPos.clear();
         markedEntityIds.clear();
+        collectingEntityMarkers = false;
+    }
+
+    public static void beginEntityMarkerPass() {
+        // FMUR swaps these two collections for secondary cameras. Keep their identity
+        // and existing point markers, but rebuild entity markers for this view only.
+        for (Iterator<MCH_MarkEntityPos> it = entityPos.iterator(); it.hasNext();) {
+            if (it.next().type != MCH_TargetType.POINT.ordinal()) {
+                it.remove();
+            }
+        }
+        markedEntityIds.clear();
+        collectingEntityMarkers = true;
+    }
+
+    public static void endEntityMarkerPass() {
+        collectingEntityMarkers = false;
     }
 
     public static boolean isEnableEntityMarker() {

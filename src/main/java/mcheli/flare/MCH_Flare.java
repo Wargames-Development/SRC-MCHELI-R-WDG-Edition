@@ -201,10 +201,15 @@ public class MCH_Flare {
 
             MCH_EntityFlare e = new MCH_EntityFlare(this.worldObj, x, y, z, tx * 0.5D, ty * 0.5D, tz * 0.5D, 6.0F, fuseCount);
             if (planeFlare) {
-                // Retain full carrier velocity so fast flight does not drag the flare through the hull.
                 e.motionX = this.aircraft.motionX + planeEjection.xCoord;
                 e.motionY = this.aircraft.motionY + planeEjection.yCoord;
                 e.motionZ = this.aircraft.motionZ + planeEjection.zCoord;
+            }
+            if (type != 10) {
+                Vec3 velocity = limitHorizontalSpeed(e.motionX, e.motionY, e.motionZ,
+                    this.aircraft.motionX, this.aircraft.motionZ);
+                e.motionX = velocity.xCoord;
+                e.motionZ = velocity.zCoord;
             }
             e.getEntityData().setLong("CountermeasureReleaseId", releaseId);
             e.rotationPitch = this.rand.nextFloat() * 360.0F;
@@ -223,6 +228,17 @@ public class MCH_Flare {
 
     static Vec3 getPlaneFlareEjection(double spreadX, double spreadZ, float yaw, float pitch, float roll) {
         return MCH_Lib.RotVec3(spreadX * 0.75D, -0.75D, spreadZ * 0.75D, -yaw, -pitch, -roll);
+    }
+
+    static Vec3 limitHorizontalSpeed(double x, double y, double z, double aircraftX, double aircraftZ) {
+        double speed = Math.sqrt(x * x + z * z);
+        double aircraftSpeed = Math.sqrt(aircraftX * aircraftX + aircraftZ * aircraftZ);
+        if (speed > aircraftSpeed) {
+            double scale = aircraftSpeed / speed;
+            x *= scale;
+            z *= scale;
+        }
+        return Vec3.createVectorHelper(x, y, z);
     }
 
 

@@ -8,6 +8,27 @@ import static org.junit.Assert.*;
 public class MCH_RadarTerrainTest {
     private final AxisAlignedBB target = AxisAlignedBB.getBoundingBox(10, 0, -1, 12, 4, 1);
 
+    @Test public void unloadedMountainBlocksDistantContactUsingStoredEvidence() {
+        MCH_RadarTerrain.Terrain terrain = MCH_RadarTerrain.combine((x, y, z) -> 2,
+                (x, y, z) -> x == 800 ? 1 : 2);
+        AxisAlignedBB distant = AxisAlignedBB.getBoundingBox(2498, 60, -3, 2502, 65, 3);
+        assertTrue(MCH_RadarTerrain.isBoxBlocked(terrain, 0.5, 64.5, 0.5, distant));
+    }
+
+    @Test public void liveClearAndLiveSolidOverrideHistoricalSnapshots() {
+        assertFalse(MCH_RadarTerrain.isBoxBlocked(MCH_RadarTerrain.combine(
+                (x, y, z) -> 0, (x, y, z) -> 1), 0.5, 1.5, 0.5, target));
+        assertTrue(MCH_RadarTerrain.isBoxBlocked(MCH_RadarTerrain.combine(
+                (x, y, z) -> x == 5 ? 1 : 0, (x, y, z) -> 0), 0.5, 1.5, 0.5, target));
+    }
+
+    @Test public void absentStoredEvidenceAndExposedRoofDoNotInventObstruction() {
+        assertFalse(MCH_RadarTerrain.isBoxBlocked(MCH_RadarTerrain.combine(
+                (x, y, z) -> 2, null), 0.5, 1.5, 0.5, target));
+        assertFalse(MCH_RadarTerrain.isBoxBlocked(MCH_RadarTerrain.combine(
+                (x, y, z) -> 2, (x, y, z) -> x == 5 && y < 2 ? 1 : 2), 0.5, 1.5, 0.5, target));
+    }
+
     @Test public void broadTerrainHidesTheWholeVehicle() {
         assertTrue(MCH_RadarTerrain.isBoxBlocked((x, y, z) -> x == 5 ? 1 : 0, 0.5, 1.5, 0.5, target));
     }

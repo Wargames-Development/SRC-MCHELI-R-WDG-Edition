@@ -14,4 +14,8 @@ public final class WGMapOptionalClassloadingTest {
         assertNull(WGMapLaserServerBridge.trace(null, net.minecraft.util.Vec3.createVectorHelper(0, 64, 0),
                 net.minecraft.util.Vec3.createVectorHelper(1000, 64, 0)));
     }
+
+    @Test public void missingRadarApiRetainsLiveTerrainWithoutLoadingClientClasses() {
+        assertNull(WGMapRadarServerBridge.open(null, 0, 64, 0));
+    }
 }

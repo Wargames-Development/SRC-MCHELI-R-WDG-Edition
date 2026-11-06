@@ -64,7 +64,7 @@ dependencies {
 
     compile fileTree(dir: 'lib', include: ['*.jar'])
     // WGMap's deobfuscated API is compile-only; the real mod supplies it at runtime.
-    compileOnly files('dev-deps/WGMap-dev-local.jar')
+    compileOnly files(project.findProperty('wgmapDevelopmentClasses') ?: 'dev-deps/WGMap-dev-local.jar')
 
     provided "org.projectlombok:lombok:1.18.30"
     apt      "org.projectlombok:lombok:1.18.30"

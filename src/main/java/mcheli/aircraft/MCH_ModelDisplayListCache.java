@@ -15,8 +15,15 @@ import java.util.Map;
 final class MCH_ModelDisplayListCache {
 
     private static final Map<IModelCustom, ModelLists> MODEL_LISTS = new IdentityHashMap<IModelCustom, ModelLists>();
+    // Shared by near/far and thermal passes: a new vehicle must not compile
+    // every animated part in the same frame. Deferred parts still draw directly.
+    private static int compilationsRemaining = 1;
 
     private MCH_ModelDisplayListCache() {
+    }
+
+    static synchronized void beginFrame() {
+        compilationsRemaining = 1;
     }
 
     static synchronized boolean renderAll(IModelCustom model) {
@@ -26,6 +33,10 @@ final class MCH_ModelDisplayListCache {
 
         ModelLists lists = getLists(model);
         if (lists.renderAll == 0) {
+            if (compilationsRemaining == 0) {
+                return false;
+            }
+            --compilationsRemaining;
             lists.renderAll = compileAll(model);
             if (lists.renderAll == 0) {
                 return false;
@@ -45,6 +56,10 @@ final class MCH_ModelDisplayListCache {
         Integer cachedList = lists.parts.get(partName);
         int list = cachedList != null ? cachedList.intValue() : 0;
         if (list == 0) {
+            if (compilationsRemaining == 0) {
+                return false;
+            }
+            --compilationsRemaining;
             list = compilePart(model, partName);
             if (list == 0) {
                 return false;

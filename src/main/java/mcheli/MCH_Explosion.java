@@ -1,6 +1,8 @@
 package mcheli;
 
 import mcheli.wgc.Integrations;
+import mcheli.aircraft.MCH_BoundingBox;
+import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.flare.MCH_EntityFlare;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.particles.MCH_ParticleParam;
@@ -467,6 +469,33 @@ public class MCH_Explosion extends Explosion {
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
+    static Vec3 closestAircraftPoint(MCH_EntityAircraft aircraft, Vec3 point) {
+        AxisAlignedBB hull = aircraft.boundingBox;
+        Vec3 closest = Vec3.createVectorHelper(
+            Math.max(hull.minX, Math.min(hull.maxX, point.xCoord)),
+            Math.max(hull.minY, Math.min(hull.maxY, point.yCoord)),
+            Math.max(hull.minZ, Math.min(hull.maxZ, point.zCoord)));
+        double best = closest.squareDistanceTo(point);
+        for (MCH_BoundingBox part : aircraft.extraBoundingBox) {
+            if (part.isERA && !part.eraActive) continue;
+            Vec3 offset = Vec3.createVectorHelper(point.xCoord - part.center.xCoord,
+                point.yCoord - part.center.yCoord, point.zCoord - part.center.zCoord);
+            double x = Math.max(-part.halfWidth, Math.min(part.halfWidth, offset.dotProduct(part.axisX)));
+            double y = Math.max(-part.halfHeight, Math.min(part.halfHeight, offset.dotProduct(part.axisY)));
+            double z = Math.max(-part.halfDepth, Math.min(part.halfDepth, offset.dotProduct(part.axisZ)));
+            Vec3 surface = part.center.addVector(
+                part.axisX.xCoord * x + part.axisY.xCoord * y + part.axisZ.xCoord * z,
+                part.axisX.yCoord * x + part.axisY.yCoord * y + part.axisZ.yCoord * z,
+                part.axisX.zCoord * x + part.axisY.zCoord * y + part.axisZ.zCoord * z);
+            double distance = surface.squareDistanceTo(point);
+            if (distance < best) {
+                closest = surface;
+                best = distance;
+            }
+        }
+        return closest;
+    }
+
     public boolean isRemote() {
         return this.world.isRemote;
     }
@@ -578,10 +607,20 @@ public class MCH_Explosion extends Explosion {
         final int minZ = MathHelper.floor_double(this.explosionZ - this.explosionSize - 1.0D);
         final int maxZ = MathHelper.floor_double(this.explosionZ + this.explosionSize + 1.0D);
 
-        final List list = this.world.getEntitiesWithinAABBExcludingEntity(
-                this.exploder, W_AxisAlignedBB.getAABB(minX, minY, minZ, maxX, maxY, maxZ));
+        final List list = new ArrayList(this.world.getEntitiesWithinAABBExcludingEntity(
+                this.exploder, W_AxisAlignedBB.getAABB(minX, minY, minZ, maxX, maxY, maxZ)));
 
         final Vec3 center = W_WorldFunc.getWorldVec3(this.world, this.explosionX, this.explosionY, this.explosionZ);
+        // A wing/tail can extend outside the chunks searched by vanilla's entity query.
+        // Check loaded aircraft only; never load chunks or apply damage once per component.
+        for (Object object : this.world.loadedEntityList) {
+            if (!(object instanceof MCH_EntityAircraft) || object == this.exploder) continue;
+            MCH_EntityAircraft aircraft = (MCH_EntityAircraft) object;
+            if (!aircraft.isDead && !list.contains(aircraft)
+                && closestAircraftPoint(aircraft, center).distanceTo(center) <= this.explosionSize) {
+                list.add(aircraft);
+            }
+        }
 
         this.exploder = param.player;
 
@@ -596,7 +635,9 @@ public class MCH_Explosion extends Explosion {
                 continue;
             }
 
-            final double rDist = e.getDistance(this.explosionX, this.explosionY, this.explosionZ) / (double) this.explosionSize;
+            Vec3 aircraftPoint = e instanceof MCH_EntityAircraft ? closestAircraftPoint((MCH_EntityAircraft)e, center) : null;
+            final double rDist = (aircraftPoint != null ? aircraftPoint.distanceTo(center)
+                : e.getDistance(this.explosionX, this.explosionY, this.explosionZ)) / (double) this.explosionSize;
             if (rDist > 1.0D) {
                 continue;
             }
@@ -613,15 +654,22 @@ public class MCH_Explosion extends Explosion {
             double vy = e.posY + (double) e.getEyeHeight() - this.explosionY;
             double vz = e.posZ - this.explosionZ;
             final double vLen = MathHelper.sqrt_double(vx * vx + vy * vy + vz * vz);
-            if (vLen == 0.0D) {
+            if (vLen == 0.0D && aircraftPoint == null) {
                 continue;
             }
-            vx /= vLen;
-            vy /= vLen;
-            vz /= vLen;
+            if (vLen > 0.0D) {
+                vx /= vLen;
+                vy /= vLen;
+                vz /= vLen;
+            }
 
             // 用于击退/向量登记的遮挡+距离因子（保持原版感觉）
             double blockDensity = this.getBlockDensity(center, e.boundingBox);
+            if (aircraftPoint != null
+                && this.world.func_147447_a(aircraftPoint, center, false, true, false) == null) {
+                // An exposed wing must not inherit the central hull's terrain cover.
+                blockDensity = 1.0D;
+            }
             double density = param.explosionThroughWall ? 1.0D : blockDensity;
             final double attenForKnock = (1.0D - rDist) * density;
             final double attenForDamage = Math.max(0.0D, attenForKnock);

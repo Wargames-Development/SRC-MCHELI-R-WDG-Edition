@@ -39,6 +39,30 @@ public class MCH_FlareEjectionTest {
         }
     }
 
+    @Test
+    public void horizontalSpeedIsCappedWithoutChangingVerticalVelocity() {
+        Vec3 velocity = MCH_Flare.limitHorizontalSpeed(3.0D, -0.75D, 4.0D, 0.0D, 2.0D);
+        assertEquals(1.2D, velocity.xCoord, 0.0001D);
+        assertEquals(-0.75D, velocity.yCoord, 0.0001D);
+        assertEquals(1.6D, velocity.zCoord, 0.0001D);
+    }
+
+    @Test
+    public void slowerFlareKeepsItsVelocity() {
+        Vec3 velocity = MCH_Flare.limitHorizontalSpeed(-0.3D, 0.5D, 0.4D, 1.0D, 0.0D);
+        assertEquals(-0.3D, velocity.xCoord, 0.0001D);
+        assertEquals(0.5D, velocity.yCoord, 0.0001D);
+        assertEquals(0.4D, velocity.zCoord, 0.0001D);
+    }
+
+    @Test
+    public void stationaryAircraftCannotGiveFlareHorizontalSpeed() {
+        Vec3 velocity = MCH_Flare.limitHorizontalSpeed(1.0D, -0.75D, -1.0D, 0.0D, 0.0D);
+        assertEquals(0.0D, velocity.xCoord, 0.0001D);
+        assertEquals(-0.75D, velocity.yCoord, 0.0001D);
+        assertEquals(0.0D, velocity.zCoord, 0.0001D);
+    }
+
     private void assertVector(double x, double y, double z, float yaw, float pitch, float roll) {
         Vec3 velocity = MCH_Flare.getPlaneFlareEjection(0.0D, 0.0D, yaw, pitch, roll);
         assertEquals(x, velocity.xCoord, 0.0002D);

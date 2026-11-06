@@ -6702,37 +6702,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         targetY = targetY * maxDist / distNorm;
         targetZ = targetZ * maxDist / distNorm;
 
-        // 按照100格为步长逐段进行射线检测
-        double segmentLength = 100.0;
-        int numSegments = (int) (maxDist / segmentLength);
         Vec3 src = W_WorldFunc.getWorldVec3(this.worldObj, posX, posY, posZ);
-        MovingObjectPosition hitResult = null;
-        for (int i = 1; i <= numSegments; i++) {
-            Vec3 dst = W_WorldFunc.getWorldVec3(this.worldObj,
-                posX + targetX * i / numSegments,
-                posY + targetY * i / numSegments,
-                posZ + targetZ * i / numSegments);
-            List<MovingObjectPosition> hits = MCH_RayTracer.rayTraceAllBlocks(this.worldObj, src, dst, false, true, true);
-            if (hits != null && !hits.isEmpty()) {
-                hitResult = hits.get(0);
-                break;
-            }
-            // 未命中则将终点作为下一次的起点
-            src = dst;
-        }
-        // 如果没有命中方块，则默认将远端目标作为命中点
-        if (hitResult == null) {
-            hitResult = new MovingObjectPosition(null,
-                src.addVector(targetX, targetY, targetZ));
-        }
-
-        // 计算摄像机到命中点的距离并取整
-        Vec3 hitVec = hitResult.hitVec;
-        dist = (int) Math.sqrt(
-            (hitVec.xCoord - posX) * (hitVec.xCoord - posX) +
-                (hitVec.yCoord - posY) * (hitVec.yCoord - posY) +
-                (hitVec.zCoord - posZ) * (hitVec.zCoord - posZ)
-        );
+        Vec3 dst = src.addVector(targetX, targetY, targetZ);
+        MovingObjectPosition hitResult = MCH_RayTracer.rayTraceAirburst(this.worldObj, this, src, dst);
+        dist = hitResult != null ? (int) src.distanceTo(hitResult.hitVec) : 0;
+        if (dist <= 5 || dist >= 3000) dist = 0;
 
         wb.setAirburstDist(dist);
         MCH_MOD.getPacketHandler().sendToServer(new PacketAirburstDistReset(getEntityId(), dist));

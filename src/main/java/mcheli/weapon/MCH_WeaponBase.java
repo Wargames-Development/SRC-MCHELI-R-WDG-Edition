@@ -85,7 +85,7 @@ public abstract class MCH_WeaponBase {
     }
 
     public String getName() {
-        return this.displayName;
+        return this.displayName + (this.weaponInfo != null ? this.weaponInfo.getRangeDisplaySuffix() : "");
     }
 
     public abstract boolean shot(MCH_WeaponParam var1);

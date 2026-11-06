@@ -146,7 +146,7 @@ public abstract class MCH_ItemAircraft extends W_Item {
 
             MCH_WeaponInfo weaponInfo = MCH_WeaponInfoManager.get(weaponName);
             if (weaponInfo != null && weaponInfo.displayName != null && !weaponInfo.displayName.isEmpty()) {
-                weaponNames.add(weaponInfo.displayName);
+                weaponNames.add(weaponInfo.displayName + weaponInfo.getRangeDisplaySuffix());
             }
         }
         return weaponNames;

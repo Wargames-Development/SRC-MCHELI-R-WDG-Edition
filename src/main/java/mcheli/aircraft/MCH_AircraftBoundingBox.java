@@ -170,13 +170,16 @@ public class MCH_AircraftBoundingBox extends AxisAlignedBB {
                 continue;
             }
             // 将射线转换到 bb 的局部坐标系
-            Vec3 dir = end.subtract(start);
+            // In 1.7.10 Vec3.subtract returns argument minus receiver.
+            Vec3 dir = Vec3.createVectorHelper(end.xCoord - start.xCoord,
+                end.yCoord - start.yCoord, end.zCoord - start.zCoord);
             // 计算射线在 bb.axis 上的分量
             double dirX = dir.dotProduct(bb.axisX);
             double dirY = dir.dotProduct(bb.axisY);
             double dirZ = dir.dotProduct(bb.axisZ);
             // 射线起点相对 bb 中心的向量
-            Vec3 relStart = start.subtract(bb.center);
+            Vec3 relStart = Vec3.createVectorHelper(start.xCoord - bb.center.xCoord,
+                start.yCoord - bb.center.yCoord, start.zCoord - bb.center.zCoord);
             double startX = relStart.dotProduct(bb.axisX);
             double startY = relStart.dotProduct(bb.axisY);
             double startZ = relStart.dotProduct(bb.axisZ);

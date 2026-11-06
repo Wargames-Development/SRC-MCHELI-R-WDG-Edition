@@ -1,5 +1,6 @@
 package mcheli;
 
+import mcheli.aircraft.MCH_EntityAircraft;
 import net.minecraft.block.Block;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
@@ -9,6 +10,49 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 
 public class MCH_RayTracer {
+
+    public static MovingObjectPosition rayTraceAirburst(World world, MCH_EntityAircraft source, Vec3 start, Vec3 end) {
+        MovingObjectPosition nearest = null;
+        double distance = start.distanceTo(end);
+        if (!(distance > 0.0D) || Double.isInfinite(distance)) return null;
+        for (Object object : world.loadedEntityList) {
+            if (!(object instanceof MCH_EntityAircraft)) continue;
+            MCH_EntityAircraft aircraft = (MCH_EntityAircraft) object;
+            if (aircraft == source || aircraft.isDead) continue;
+            // Aircraft intercepts include rotated component hitboxes, but also record
+            // direct-hit armour metadata. Range finding must not change that metadata.
+            float factor = aircraft.lastBBDamageFactor;
+            String name = aircraft.lastBBName;
+            int index = aircraft.lastBBIndex;
+            MovingObjectPosition hit;
+            try {
+                hit = aircraft.boundingBox.calculateIntercept(start, end);
+            } finally {
+                aircraft.lastBBDamageFactor = factor;
+                aircraft.lastBBName = name;
+                aircraft.lastBBIndex = index;
+            }
+            if (hit != null && start.distanceTo(hit.hitVec) < distance) {
+                distance = start.distanceTo(hit.hitVec);
+                nearest = new MovingObjectPosition(aircraft, hit.hitVec);
+            }
+        }
+        // Preserve the short terrain segments needed by the legacy block tracer.
+        // It mutates its start vector, so never pass the original camera origin.
+        double length = start.distanceTo(end);
+        int segments = Math.max(1, (int) Math.ceil(distance / 100.0D));
+        for (int i = 0; i < segments; i++) {
+            double from = distance * i / segments / length;
+            double to = distance * (i + 1) / segments / length;
+            Vec3 a = start.addVector((end.xCoord - start.xCoord) * from,
+                (end.yCoord - start.yCoord) * from, (end.zCoord - start.zCoord) * from);
+            Vec3 b = start.addVector((end.xCoord - start.xCoord) * to,
+                (end.yCoord - start.yCoord) * to, (end.zCoord - start.zCoord) * to);
+            ArrayList<MovingObjectPosition> hits = rayTraceAllBlocks(world, a, b, false, true, true);
+            if (hits != null && !hits.isEmpty()) return hits.get(0);
+        }
+        return nearest;
+    }
 
     public static ArrayList<MovingObjectPosition> rayTraceAllBlocks(World world, Vec3 p_147447_1_, Vec3 p_147447_2_, boolean p_147447_3_, boolean p_147447_4_, boolean p_147447_5_) {
         if (!Double.isNaN(p_147447_1_.xCoord) && !Double.isNaN(p_147447_1_.yCoord) && !Double.isNaN(p_147447_1_.zCoord)) {

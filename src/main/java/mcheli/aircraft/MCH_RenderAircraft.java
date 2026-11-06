@@ -194,6 +194,10 @@ public abstract class MCH_RenderAircraft extends W_Render {
         MCH_ModelDisplayListCache.clear();
     }
 
+    public static void beginRenderFrame() {
+        MCH_ModelDisplayListCache.beginFrame();
+    }
+
     public static void renderLightHatch(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         if (!info.lightHatchList.isEmpty()) {
             float rot = ac.prevRotLightHatch + (ac.rotLightHatch - ac.prevRotLightHatch) * tickTime;

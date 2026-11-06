@@ -1489,6 +1489,15 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
         return this.maxDegreeOfMissile;
     }
 
+    public String getRangeDisplaySuffix() {
+        if ("aamissile".equals(this.type) || "atmissile".equals(this.type)
+            || "asmissile".equals(this.type) || "tvmissile".equals(this.type)
+            || ("bomb".equals(this.type) && this.isGPSMissile)) {
+            return " [" + this.maxLockOnRange + "m]";
+        }
+        return "";
+    }
+
     public String getWeaponTypeName() {
         switch (this.type.toLowerCase()) {
             case "machinegun1":

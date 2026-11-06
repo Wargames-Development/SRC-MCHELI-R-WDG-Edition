@@ -245,29 +245,54 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void renderWorldLast(RenderWorldLastEvent event) {
+        collectEntityMarkers(event.partialTicks);
+    }
+
+    public static void collectEntityMarkers(float partialTicks) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityClientPlayerMP clientPlayer = mc.thePlayer;
         if (clientPlayer == null || mc.theWorld == null || !MCH_GuiTargetMarker.isEnableEntityMarker()) {
             return;
         }
 
-        // Player markers used to be registered only from RenderLivingEvent.Post.
-        // A player culled by Minecraft's entity renderer therefore lost the HUD marker too.
-        // Register player positions independently without forcing their model or chunk to render.
-        for (Object obj : mc.theWorld.playerEntities) {
-            if (!(obj instanceof EntityPlayer)) {
+        MCH_GuiTargetMarker.beginEntityMarkerPass();
+        try {
+            collectEntityMarkers(mc, partialTicks);
+        } finally {
+            MCH_GuiTargetMarker.endEntityMarkerPass();
+        }
+    }
+
+    private static void collectEntityMarkers(Minecraft mc, float partialTicks) {
+        EntityClientPlayerMP clientPlayer = mc.thePlayer;
+        // Use the active camera's origin and unmodified world matrices. Model visibility,
+        // renderer replacement and nested rider transforms must not own HUD markers.
+        double cameraX = RenderManager.instance.viewerPosX;
+        double cameraY = RenderManager.instance.viewerPosY;
+        double cameraZ = RenderManager.instance.viewerPosZ;
+        for (Object obj : mc.theWorld.loadedEntityList) {
+            if (!(obj instanceof EntityLivingBase) && !(obj instanceof MCH_EntityAircraft)) {
                 continue;
             }
 
-            EntityPlayer target = (EntityPlayer) obj;
+            Entity target = (Entity) obj;
             if (target == clientPlayer || target.isDead) {
                 continue;
             }
 
-            double x = target.lastTickPosX + (target.posX - target.lastTickPosX) * event.partialTicks - RenderManager.renderPosX;
-            double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * event.partialTicks - RenderManager.renderPosY
-                + (double) target.height + 0.5D;
-            double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * event.partialTicks - RenderManager.renderPosZ;
+            double markerHeight = target.height + 0.5D;
+            if (target instanceof MCH_EntityAircraft) {
+                MCH_EntityAircraft aircraft = (MCH_EntityAircraft) target;
+                if (aircraft.getAcInfo() == null || MCH_EntityInfoClientTracker.shouldSuppressAircraftRender(aircraft)) {
+                    continue;
+                }
+                markerHeight = aircraft.getAcInfo().markerHeight;
+            } else if (target instanceof EntityPlayer) {
+                markerHeight -= target.yOffset + (target.isSneaking() ? 0.125D : 0.0D);
+            }
+            double x = target.lastTickPosX + (target.posX - target.lastTickPosX) * partialTicks - cameraX;
+            double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks - cameraY + markerHeight;
+            double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * partialTicks - cameraZ;
             MCH_GuiTargetMarker.addMarkEntityPos(2, target, x, y, z);
         }
 
@@ -296,26 +321,22 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
             double posX;
             double posY;
             double posZ;
-            if (localEntity != null && !localEntity.isDead) {
-                posX = localEntity.lastTickPosX + (localEntity.posX - localEntity.lastTickPosX) * event.partialTicks;
-                posY = localEntity.lastTickPosY + (localEntity.posY - localEntity.lastTickPosY) * event.partialTicks;
-                posZ = localEntity.lastTickPosZ + (localEntity.posZ - localEntity.lastTickPosZ) * event.partialTicks;
-                if (localEntity instanceof EntityPlayer) {
-                    markerHeight = localEntity.height + 0.5D;
-                }
-            } else {
-                double dx = info.posX - info.lastTickPosX;
-                double dy = info.posY - info.lastTickPosY;
-                double dz = info.posZ - info.lastTickPosZ;
-                boolean continuous = dx * dx + dy * dy + dz * dz <= MARKER_SNAPSHOT_DISCONTINUITY_SQ;
-                double partialTicks = continuous ? event.partialTicks : 1.0D;
-                posX = info.lastTickPosX + dx * partialTicks;
-                posY = info.lastTickPosY + dy * partialTicks;
-                posZ = info.lastTickPosZ + dz * partialTicks;
+            if (localEntity != null) {
+                // Loaded entities were classified above using their current team/mount/death state.
+                // A delayed snapshot must not resurrect or override their marker.
+                continue;
             }
-            double x = posX - RenderManager.renderPosX;
-            double y = posY - RenderManager.renderPosY + markerHeight;
-            double z = posZ - RenderManager.renderPosZ;
+            double dx = info.posX - info.lastTickPosX;
+            double dy = info.posY - info.lastTickPosY;
+            double dz = info.posZ - info.lastTickPosZ;
+            boolean continuous = dx * dx + dy * dy + dz * dz <= MARKER_SNAPSHOT_DISCONTINUITY_SQ;
+            double interpolation = continuous ? partialTicks : 1.0D;
+            posX = info.lastTickPosX + dx * interpolation;
+            posY = info.lastTickPosY + dy * interpolation;
+            posZ = info.lastTickPosZ + dz * interpolation;
+            double x = posX - cameraX;
+            double y = posY - cameraY + markerHeight;
+            double z = posZ - cameraZ;
             MCH_GuiTargetMarker.addMarkEntityInfoPos(info, x, y, z);
         }
     }
