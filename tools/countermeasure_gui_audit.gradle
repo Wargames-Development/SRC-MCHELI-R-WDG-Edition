@@ -1,0 +1,28 @@
+allprojects {
+    afterEvaluate {
+        def auditDir = project.file('build/countermeasure-gui-audit')
+        task compileCountermeasureGuiAudit(dependsOn: classes) {
+            doLast {
+                new File(auditDir, 'classes').mkdirs()
+                ant.javac(srcdir: project.file('tools'), includes: 'CountermeasureGuiAudit.java',
+                    destdir: new File(auditDir, 'classes'), source: '1.8', target: '1.8',
+                    encoding: 'UTF-8', debug: true, includeantruntime: false, classpath: sourceSets.main.runtimeClasspath.asPath) {
+                    compilerarg(value: '-proc:none')
+                }
+            }
+        }
+        task auditCountermeasureGui(type: JavaExec, dependsOn: compileCountermeasureGuiAudit) {
+            classpath = project.files(new File(auditDir, 'classes')) + sourceSets.main.runtimeClasspath
+            main = 'mcheli.aircraft.CountermeasureGuiAudit'
+            args project.property('guiAuditPack'), project.projectDir.absolutePath, auditDir.absolutePath
+            jvmArgs '-Dorg.lwjgl.librarypath=' + new File(auditDir, 'natives').absolutePath
+            doFirst {
+                def natives = project.fileTree(new File(gradle.gradleUserHomeDir,
+                    'caches/modules-2/files-2.1/org.lwjgl.lwjgl/lwjgl-platform/2.9.1')) {
+                    include '**/*natives-windows.jar'
+                }.singleFile
+                project.copy { from project.zipTree(natives); include '*.dll'; into new File(auditDir, 'natives') }
+            }
+        }
+    }
+}

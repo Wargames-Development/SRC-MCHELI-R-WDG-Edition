@@ -48,6 +48,7 @@ public class MCH_CountermeasureReloadTest {
         Class<?> scenarios = loader.loadClass(Scenarios.class.getName());
         for (String scenario : new String[]{
                 "onePackFillsBothStoresAndFullStoresNeverConsumeAnother",
+                "oneFullStoreDoesNotPreventTheOtherFromBeingRefilled",
                 "enabledTypesAndLargeCapacitiesStillCostOnlyOnePack",
                 "missingPackAndVehiclesWithoutCountermeasuresCannotReload",
                 "creativeReloadDoesNotRequireOrConsumeAPack",
@@ -123,6 +124,17 @@ public class MCH_CountermeasureReloadTest {
                 assertEquals((types & 1) != 0 ? 10000 : 0, aircraft.getRemainingFlarePairs());
                 assertEquals((types & 2) != 0 ? 10000 : 0, aircraft.getRemainingChaffPairs());
                 assertNull(player.inventory.mainInventory[5]);
+            }
+        }
+
+        public void oneFullStoreDoesNotPreventTheOtherFromBeingRefilled() {
+            for (int type = 0; type < 2; type++) {
+                aircraft.setCountermeasureStateClient(type == 0 ? 36 : 5, type == 0 ? 19 : 128);
+                player.inventory.mainInventory[5] = new ItemStack(MCH_MOD.itemCountermeasureReload, 2);
+                assertTrue(aircraft.rearmCountermeasures(player));
+                assertEquals(36, aircraft.getRemainingFlarePairs());
+                assertEquals(128, aircraft.getRemainingChaffPairs());
+                assertEquals(1, player.inventory.mainInventory[5].stackSize);
             }
         }
 

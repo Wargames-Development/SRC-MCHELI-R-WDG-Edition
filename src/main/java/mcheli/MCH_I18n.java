@@ -101,6 +101,10 @@ public class MCH_I18n {
         addTranslation("gui.mcheli.reload_all_hud", "zh_CN", "重新加载所有HUD");
         addTranslation("gui.mcheli.reload", "en_US", "Reload");
         addTranslation("gui.mcheli.reload", "zh_CN", "装填弹药");
+        addTranslation("gui.mcheli.countermeasures", "en_US", "Countermeasures");
+        addTranslation("gui.mcheli.countermeasures", "zh_CN", "干扰弹");
+        addTranslation("gui.mcheli.countermeasures_not_equipped", "en_US", "Not equipped");
+        addTranslation("gui.mcheli.countermeasures_not_equipped", "zh_CN", "未装备干扰弹");
         addTranslation("gui.mcheli.reload_countermeasures", "en_US", "Reload countermeasures");
         addTranslation("gui.mcheli.reload_countermeasures", "zh_CN", "补给干扰弹");
         addTranslation("gui.mcheli.countermeasure_reload_cost", "en_US", "Survival: 1x Countermeasures");
