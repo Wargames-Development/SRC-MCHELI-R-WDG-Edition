@@ -40,7 +40,10 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GLContext;
 import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
@@ -264,7 +267,7 @@ public class MCH_RenderFarVehicle {
                 pose.updateFromAircraft(aircraft, definition, now, renderNanos, this.renderFrame, event.partialTicks);
             pose.visualAircraft = aircraft;
             pose.visualSeenFrame = this.renderFrame;
-            pose.lightmapBrightness = aircraft.getBrightnessForRender(event.partialTicks);
+            pose.lightmapBrightness = resolveLightmapBrightness(mc, pose, aircraft, event.partialTicks);
         }
 
         if (this.smoothedPoses.isEmpty()) {
@@ -378,10 +381,7 @@ public class MCH_RenderFarVehicle {
                 candidate.definition = definition;
                 candidate.aircraft = current;
                 candidate.id = entry.getKey().intValue();
-                candidate.brightness = trueDistance >= transitionStart - 32.0D
-                        ? distantVehicleBrightness(pose.lightmapBrightness,
-                                mc.theWorld.skylightSubtracted, mc.theWorld.provider.hasNoSky)
-                        : pose.lightmapBrightness;
+                candidate.brightness = pose.lightmapBrightness;
                 candidate.projected = projectedBvr;
                 // Acquire the mask before the native/LOD boundary. Native models
                 // in this band still draw at their original physical position.
@@ -585,9 +585,14 @@ public class MCH_RenderFarVehicle {
 
         float oldBrightnessX = OpenGlHelper.lastBrightnessX;
         float oldBrightnessY = OpenGlHelper.lastBrightnessY;
+        boolean shadersSupported = GLContext.getCapabilities().OpenGL20;
+        int previousProgram = shadersSupported ? GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM) : 0;
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
             | GL11.GL_TEXTURE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_POLYGON_BIT | GL11.GL_FOG_BIT
-            | GL11.GL_VIEWPORT_BIT);
+            | GL11.GL_VIEWPORT_BIT | GL11.GL_CURRENT_BIT);
+        // This unified pass draws both near and projected models. A late world/sky
+        // shader has different samplers and outputs; use the same vanilla lighting for both.
+        if (shadersSupported) GL20.glUseProgram(0);
         RenderHelper.enableStandardItemLighting();
         GL11.glPushMatrix();
         try {
@@ -613,7 +618,8 @@ public class MCH_RenderFarVehicle {
                 GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             }
             GL11.glAlphaFunc(GL11.GL_GREATER, 0.001F);
-            GL11.glColorMaterial(GL11.GL_FRONT, GL11.GL_AMBIENT);
+            GL11.glColorMaterial(GL11.GL_FRONT_AND_BACK, GL11.GL_AMBIENT_AND_DIFFUSE);
+            GL11.glDisable(GL12.GL_RESCALE_NORMAL);
             GL11.glEnable(GL11.GL_NORMALIZE);
             GL11.glShadeModel(definition.info.smoothShading && MCH_Config.SmoothShading.prmBool
                 ? GL11.GL_SMOOTH : GL11.GL_FLAT);
@@ -665,6 +671,7 @@ public class MCH_RenderFarVehicle {
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
             GL11.glPopMatrix();
             GL11.glPopAttrib();
+            if (shadersSupported) GL20.glUseProgram(previousProgram);
         }
     }
 
@@ -683,31 +690,27 @@ public class MCH_RenderFarVehicle {
     }
 
     private int resolveLightmapBrightness(Minecraft mc, SmoothedPose pose, MCH_EntityAircraft localAircraft, float partialTicks) {
-        if (localAircraft != null && !localAircraft.isDead) {
-            return localAircraft.getBrightnessForRender(partialTicks);
-        }
-
-        int blockX = MathHelper.floor_double(pose.x);
-        int blockY = MathHelper.floor_double(pose.y);
-        int blockZ = MathHelper.floor_double(pose.z);
+        boolean loadedAircraft = localAircraft != null && !localAircraft.isDead;
+        int blockX = MathHelper.floor_double(loadedAircraft ? localAircraft.posX : pose.x);
+        int blockY = MathHelper.floor_double(loadedAircraft ? localAircraft.posY : pose.y);
+        int blockZ = MathHelper.floor_double(loadedAircraft ? localAircraft.posZ : pose.z);
         Chunk chunk = mc.theWorld.getChunkProvider().provideChunk(blockX >> 4, blockZ >> 4);
-        if (chunk != null && !chunk.isEmpty()) {
-            return mc.theWorld.getLightBrightnessForSkyBlocks(blockX, blockY, blockZ, 0);
-        }
-
-        // Unloaded chunks have no light data. Approximate exposed-sky light from the world's current
-        // day/night and weather subtraction instead of making every far contact permanently bright.
-        int skyLight = mc.theWorld.provider.hasNoSky ? 0 : Math.max(0, 15 - mc.theWorld.skylightSubtracted);
-        return skyLight << 20;
+        int nativeLight = chunk != null && !chunk.isEmpty()
+                ? loadedAircraft ? localAircraft.getBrightnessForRender(partialTicks)
+                    : mc.theWorld.getLightBrightnessForSkyBlocks(blockX, blockY, blockZ, 0)
+                : -1;
+        int snapshotLight = pose.contact != null ? pose.contact.packedLight : -1;
+        return vehicleLightmapBrightness(nativeLight, snapshotLight, pose.lightmapBrightness,
+                mc.theWorld.provider.hasNoSky);
     }
 
-    static int distantVehicleBrightness(int packedLight, int skylightSubtracted, boolean noSky) {
-        if (packedLight < 0 || noSky) return packedLight;
-        // A loaded aircraft returns zero light when its chunk drops, while a snapshot carries
-        // the raw block sample. Neither should black out an exposed distant model at handoff.
-        int ambientSky = Math.max(0, 15 - skylightSubtracted) << 4;
-        return (Math.max((packedLight >>> 16) & 0xffff, ambientSky) << 16)
-                | (packedLight & 0xffff);
+    static int vehicleLightmapBrightness(int nativeLight, int snapshotLight, int previousLight, boolean noSky) {
+        if (nativeLight >= 0) return nativeLight;
+        if (snapshotLight >= 0) return snapshotLight;
+        if (previousLight >= 0) return previousLight;
+        // These are raw lightmap coordinates, not time-adjusted brightness. The
+        // lightmap texture already applies sun, weather, gamma and night vision.
+        return noSky ? 0 : 15 << 20;
     }
 
     static double getVehicleRenderDistance() {
@@ -776,6 +779,11 @@ public class MCH_RenderFarVehicle {
         return dx * dx + dy * dy + dz * dz <= range * range;
     }
 
+    static float snapshotLandingGearRotation(MCH_EntityInfo contact, float previous) {
+        float rotation = contact != null ? contact.landingGearRotation : Float.NaN;
+        return Float.isFinite(rotation) && rotation >= 0.0F && rotation <= 90.0F ? rotation : previous;
+    }
+
     private void renderLightweightParts(MCH_AircraftInfo info, SmoothedPose pose) {
         this.renderWeaponParts(info, pose);
         this.renderRestingParts(info, info.hatchList);
@@ -783,7 +791,7 @@ public class MCH_RenderFarVehicle {
         this.renderRestingParts(info, info.partWeaponBay);
         this.renderRestingParts(info, info.partTurretWeaponBay);
         this.renderRestingParts(info, info.canopyList);
-        this.renderRestingParts(info, info.landingGear);
+        MCH_RenderAircraft.renderLandingGear(info, pose.landingGearRotation, pose.landingGearRotation, 0.0F);
         this.renderRestingParts(info, info.partThrottle);
         this.renderRestingParts(info, info.partRotPart);
         this.renderRestingParts(info, info.partTurretRotPart);
@@ -1147,6 +1155,7 @@ public class MCH_RenderFarVehicle {
         private float roll;
         private float turretYaw;
         private float turretPitch;
+        private float landingGearRotation;
         private ResourceLocation texture;
         private String textureName;
         private String entityClassName;
@@ -1186,6 +1195,7 @@ public class MCH_RenderFarVehicle {
                 this.contact = null;
                 this.visualAircraft = null;
                 this.lightmapBrightness = -1;
+                this.landingGearRotation = 0.0F;
                 this.clearTerrainOcclusion();
                 this.initialized = false;
             }
@@ -1205,9 +1215,12 @@ public class MCH_RenderFarVehicle {
             if (this.aircraftUuid != null && !this.aircraftUuid.equals(aircraft.getUniqueID())) {
                 this.contact = null;
                 this.initialized = false;
+                this.landingGearRotation = 0.0F;
                 this.clearTerrainOcclusion();
             }
             this.aircraftUuid = aircraft.getUniqueID();
+            this.landingGearRotation = aircraft.getPrevLandingGearRotation()
+                + (aircraft.getLandingGearRotation() - aircraft.getPrevLandingGearRotation()) * partialTicks;
             double targetX = aircraft.lastTickPosX + (aircraft.posX - aircraft.lastTickPosX) * partialTicks;
             double targetY = aircraft.lastTickPosY + (aircraft.posY - aircraft.lastTickPosY) * partialTicks;
             double targetZ = aircraft.lastTickPosZ + (aircraft.posZ - aircraft.lastTickPosZ) * partialTicks;
@@ -1268,6 +1281,7 @@ public class MCH_RenderFarVehicle {
 
         private void update(MCH_EntityInfo contact, long now, int renderFrame) {
             this.ensureIdentity(contact.entityClassName, contact.entityName);
+            this.landingGearRotation = snapshotLandingGearRotation(contact, this.landingGearRotation);
             double ageTicks = Math.max(0.0D, Math.min(2.0D, (now - contact.lastUpdateTime) / 50.0D));
             double targetX = contact.posX + (contact.posX - contact.lastTickPosX) * ageTicks;
             double targetY = contact.posY + (contact.posY - contact.lastTickPosY) * ageTicks;
@@ -1311,6 +1325,7 @@ public class MCH_RenderFarVehicle {
                 this.aircraftUuid = null;
                 this.visualAircraft = null;
                 this.lightmapBrightness = -1;
+                this.landingGearRotation = 0.0F;
                 this.clearTerrainOcclusion();
                 this.initialized = false;
             }

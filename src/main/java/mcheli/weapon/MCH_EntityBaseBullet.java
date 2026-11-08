@@ -109,6 +109,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     private boolean dataLinkTwsSelectedOnly = false;
     private boolean countermeasureDiversionActive = false;
     private long radarJammedUntilTick = -1L;
+    private Entity radarNotchTarget;
+    private int radarNotchInsideTicks;
+    private int radarNotchOutsideTicks;
+    private boolean radarNotchHadCapture;
     private final Set<Long> resistedFlareReleaseIds = new HashSet<Long>();
     private final Set<Long> processedFlareReleaseIds = new HashSet<Long>();
     private final Set<Long> processedChaffReleaseIds = new HashSet<Long>();
@@ -409,6 +413,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void setSnapshotTarget(int targetId, double px, double py, double pz, double vx, double vy, double vz) {
+        if (!this.worldObj.isRemote && this.radarNotchTarget != null) {
+            return;
+        }
         this.snapshotTargetId = targetId;
         this.snapshotPosX = px;
         this.snapshotPosY = py;
@@ -447,6 +454,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         }
         long untilTick = this.worldObj.getTotalWorldTime() + Math.max(1, holdTicks);
         this.radarJammedUntilTick = Math.max(this.radarJammedUntilTick, untilTick);
+        this.resetRadarNotch();
         this.setTargetEntity(null);
         this.clearTargetMemory();
         this.setDataLinkRelayMode(false);
@@ -457,6 +465,111 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         this.snapshotTargetId = 0;
         this.snapshotLastUpdate = 0L;
         this.hasLastKnownTarget = false;
+    }
+
+    static boolean isVelocityInNotch(double mx, double my, double mz, double tx, double ty, double tz, float degrees) {
+        if (!(degrees > 0.0F && degrees < 90.0F)) return false;
+        double cosine = velocityCosine(mx, my, mz, tx, ty, tz);
+        return Double.isFinite(cosine) && Math.abs(cosine) <= Math.cos(Math.toRadians(degrees)) + 1.0E-12D;
+    }
+
+    private static double velocityCosine(double ax, double ay, double az, double bx, double by, double bz) {
+        double a = Math.sqrt(ax * ax + ay * ay + az * az);
+        double b = Math.sqrt(bx * bx + by * by + bz * bz);
+        if (!Double.isFinite(a) || !Double.isFinite(b) || a < 1.0E-6D || b < 1.0E-6D) return Double.NaN;
+        return (ax / a) * (bx / b) + (ay / a) * (by / b) + (az / a) * (bz / b);
+    }
+
+    private boolean isRadarNotchEnabled() {
+        MCH_WeaponInfo info = this.getInfo();
+        return this instanceof MCH_EntityAAMissile && info != null && !info.antiRadiationMissile
+            && info.notchDegrees > 0.0F && info.notchDegrees < 90.0F
+            && (info.isRadarMissile || info.activeRadar || info.passiveRadar || info.semiActiveRadar);
+    }
+
+    protected boolean isTargetNotching(Entity target) {
+        return this.isRadarNotchEnabled() && target instanceof MCH_EntityAircraft
+            && isVelocityInNotch(this.motionX, this.motionY, this.motionZ,
+                target.motionX, target.motionY, target.motionZ, this.getInfo().notchDegrees);
+    }
+
+    private void resetRadarNotch() {
+        this.radarNotchTarget = null;
+        this.radarNotchInsideTicks = 0;
+        this.radarNotchOutsideTicks = 0;
+        this.radarNotchHadCapture = false;
+    }
+
+    protected boolean isRadarNotchTargetSupported(Entity target) {
+        if (!(this.getInfo().passiveRadar || this.getInfo().semiActiveRadar)) return true;
+        return this.shootingAircraft != null && MCH_MOD.rwrThreatManager != null
+            && MCH_MOD.rwrThreatManager.isEmitterTrackingTarget(this.shootingAircraft.getEntityId(),
+                target.getEntityId(), MCH_MOD.rwrThreatManager.getCurrentTick());
+    }
+
+    private boolean canReacquireRadarNotchTarget(Entity target) {
+        double range = this.getInfo().maxLockOnRange;
+        if (this.shootingEntity == null || target == this.shootingAircraft
+            || this.getDistanceSqToEntity(target) > range * range
+            || MCH_WeaponGuidanceSystem.isEntityOnGround(target, this.getInfo().lockMinHeight)
+            || !this.isRadarNotchTargetSupported(target)) return false;
+        if (this.shootingEntity instanceof EntityLivingBase && target.riddenByEntity instanceof EntityPlayer
+            && ((EntityPlayer)target.riddenByEntity).isOnSameTeam((EntityLivingBase)this.shootingEntity)) return false;
+        double cosine = velocityCosine(this.motionX, this.motionY, this.motionZ,
+            target.posX - this.posX, target.posY - this.posY, target.posZ - this.posZ);
+        double cone = Math.max(0.0D, Math.min(180.0D, this.getCurrentMaxDegreeOfMissile()));
+        return Double.isFinite(cosine) && cosine >= Math.cos(Math.toRadians(cone));
+    }
+
+    /** True means coast this tick, including all snapshot and relay fallback paths. */
+    protected boolean updateRadarNotch() {
+        if (this.worldObj.isRemote) return false;
+        if (!this.isRadarNotchEnabled() || this.isRadarGuidanceJammed() || this.countermeasureDiversionActive) {
+            this.resetRadarNotch();
+            return false;
+        }
+        if (this.radarNotchTarget != null) {
+            Entity candidate = this.radarNotchTarget;
+            if (candidate.isDead || candidate.worldObj != this.worldObj
+                || this.worldObj.getEntityByID(candidate.getEntityId()) != candidate) {
+                boolean captured = this.radarNotchHadCapture;
+                this.resetRadarNotch();
+                this.setActiveRadarCaptured(captured);
+                return false;
+            }
+            if (this.isTargetNotching(candidate) || !this.canReacquireRadarNotchTarget(candidate)) {
+                this.radarNotchOutsideTicks = 0;
+                return true;
+            }
+            if (++this.radarNotchOutsideTicks < this.getInfo().notchReacquireTicks) return true;
+            boolean captured = this.radarNotchHadCapture;
+            this.resetRadarNotch();
+            this.setTargetEntity(candidate);
+            this.setActiveRadarCaptured(captured);
+            if (MCH_RadarDebug.isEnabled()) {
+                MCH_RadarDebug.trace(this.worldObj, this, "notch reacquire msl=%d target=%d",
+                    this.getEntityId(), candidate.getEntityId());
+            }
+            return false;
+        }
+        if (this.getCountOnUpdate() <= this.getInfo().rigidityTime || this.targetEntity == null
+            || this.targetEntity.isDead || !this.isTargetNotching(this.targetEntity)) {
+            this.radarNotchInsideTicks = 0;
+            return false;
+        }
+        if (++this.radarNotchInsideTicks < this.getInfo().notchBreakTicks) return false;
+        Entity candidate = this.targetEntity;
+        boolean captured = this.isActiveRadarCaptured();
+        this.setTargetEntity(null);
+        this.clearTargetMemory();
+        this.radarNotchTarget = candidate;
+        this.radarNotchHadCapture = captured;
+        this.radarNotchOutsideTicks = 0;
+        if (MCH_RadarDebug.isEnabled()) {
+            MCH_RadarDebug.trace(this.worldObj, this, "notch break msl=%d target=%d degrees=%.1f",
+                this.getEntityId(), candidate.getEntityId(), this.getInfo().notchDegrees);
+        }
+        return true;
     }
 
     private long getCountermeasureReleaseId(Entity decoy) {
@@ -558,6 +671,10 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void setTargetEntity(Entity entity) {
+        // Datalink packets express intent; they cannot restore a suppressed seeker.
+        if (!this.worldObj.isRemote && this.radarNotchTarget != null && entity != null) {
+            return;
+        }
         if (entity != null && this.isRadarGuidanceJammed()) {
             entity = null;
         }
@@ -565,6 +682,9 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
         // riding vehicles are targeted through the vehicle entity instead.
         if (entity instanceof EntityPlayer || this.isForbiddenAirToGroundIrTarget(entity)) {
             entity = null;
+        }
+        if (this.targetEntity != entity) {
+            this.radarNotchInsideTicks = 0;
         }
         this.targetEntity = entity;
         if (entity != null) {
@@ -869,6 +989,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
     public void guidanceToPos(double targetPosX, double targetPosY, double targetPosZ) {
 
+        if (!this.worldObj.isRemote && this.radarNotchTarget != null) return;
+
         if (getInfo().tickEndHoming > 0 && ticksExisted > getInfo().tickEndHoming) {
             return;
         }
@@ -935,6 +1057,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public void guidanceToTarget(double targetPosX, double targetPosY, double targetPosZ, float accelerationFactor) {
+
+        if (!this.worldObj.isRemote && this.radarNotchTarget != null) return;
 
         if (getInfo().tickEndHoming > 0 && ticksExisted > getInfo().tickEndHoming) {
             return;
@@ -2516,6 +2640,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
 
 
     protected void scanForTargets() {
+        if (!this.worldObj.isRemote && this.radarNotchTarget != null) return;
         if (this.isRadarGuidanceJammed()) {
             this.setTargetEntity(null);
             return;
@@ -2543,6 +2668,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             Entity closestArmTarget = null;
 
             for (Entity entity : list) {
+                if (this.isTargetNotching(entity)) continue;
                 // Active seekers may reacquire after launch, so keep the same
                 // no-player rule here as the launch-time guidance system.
                 if (entity instanceof EntityPlayer) {

@@ -22,8 +22,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
+import net.minecraft.world.World;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+
+import java.nio.FloatBuffer;
 
 public class MCH_RenderGPSPosition {
 
@@ -33,14 +38,65 @@ public class MCH_RenderGPSPosition {
     private double cachedDistance = Double.NaN;
     private boolean cachedGps;
     private String cachedDistanceText;
+    private final FloatBuffer worldModelView = BufferUtils.createFloatBuffer(16);
+    private final FloatBuffer worldProjection = BufferUtils.createFloatBuffer(16);
+    private World projectionWorld;
+    private boolean projectionReady;
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onRenderWorldLast(RenderWorldLastEvent event) {
+        if (MCH_FMURThermal.isHeatPass() || MCH_FMURThermal.isParticlePass()) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        this.projectionReady = false;
+        this.projectionWorld = mc.theWorld;
+        if (mc.thePlayer == null || mc.theWorld == null) return;
+        this.worldModelView.clear();
+        this.worldProjection.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, this.worldModelView);
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, this.worldProjection);
+        this.projectionReady = true;
+        this.renderPositionMarker(event.partialTicks, false);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
+        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        boolean ready = this.projectionReady;
+        World capturedWorld = this.projectionWorld;
+        this.projectionReady = false;
+        this.projectionWorld = null;
+        if (!ready || mc.thePlayer == null || mc.theWorld == null || capturedWorld != mc.theWorld
+                || mc.gameSettings.hideGUI) return;
+
+        // Thermal replaces the world at HELMET. Draw designation graphics afterwards,
+        // using the real world camera matrices so zoom, roll and long-range aim still match.
+        int matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
+                | GL11.GL_CURRENT_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_LINE_BIT);
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glLoadMatrix(this.worldProjection);
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+        GL11.glLoadMatrix(this.worldModelView);
+        try {
+            mcheli.weapon.MCH_RenderLockBox.renderGuidanceHUD();
+            this.renderPositionMarker(event.partialTicks, true);
+        } finally {
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            GL11.glPopMatrix();
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glPopMatrix();
+            GL11.glMatrixMode(matrixMode);
+            GL11.glPopAttrib();
+        }
+    }
+
+    private void renderPositionMarker(float partialTicks, boolean laserOverlay) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
         if (player == null || mc.theWorld == null) return;
-        // Laser targets may have no loaded chunk/entity renderer beyond the vanilla view distance.
-        mcheli.weapon.MCH_RenderLockBox.renderGuidanceHUD();
 
         // —— 载具判定（与原逻辑一致）——
         MCH_EntityAircraft ac = null;
@@ -51,8 +107,8 @@ public class MCH_RenderGPSPosition {
         } else if (player.ridingEntity instanceof MCH_EntityUavStation) {
             ac = ((MCH_EntityUavStation) player.ridingEntity).getControlAircract();
         }
-        boolean renderGps = isAircraftGpsWeaponContext(player, ac);
-        boolean renderLzr = isHandheldLaserContext(player, ac);
+        boolean renderGps = !laserOverlay && isAircraftGpsWeaponContext(player, ac);
+        boolean renderLzr = laserOverlay && isHandheldLaserContext(player, ac);
         if (!renderGps && !renderLzr) {
             return;
         }
@@ -84,9 +140,9 @@ public class MCH_RenderGPSPosition {
         final double x = gx - camX, y = gy - camY, z = gz - camZ;
 
         // —— 视线夹角用于透明度/锁定 ——
-        double px = player.prevPosX + (player.posX - player.prevPosX) * event.partialTicks;
-        double py = player.prevPosY + (player.posY - player.prevPosY) * event.partialTicks + player.getEyeHeight();
-        double pz = player.prevPosZ + (player.posZ - player.prevPosZ) * event.partialTicks;
+        double px = player.prevPosX + (player.posX - player.prevPosX) * partialTicks;
+        double py = player.prevPosY + (player.posY - player.prevPosY) * partialTicks + player.getEyeHeight();
+        double pz = player.prevPosZ + (player.posZ - player.prevPosZ) * partialTicks;
 
         double vx = gx - px, vy = gy - py, vz = gz - pz;
         double vlen = Math.sqrt(vx*vx + vy*vy + vz*vz);
@@ -109,7 +165,7 @@ public class MCH_RenderGPSPosition {
         float sPerPixel = (float)((2.0 * drawDistance * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
 
         // —— 取得视角 roll（度）并在 billboard 后抵消 ——
-        float rollDeg = getViewRollDeg(mc, ac, event.partialTicks); // 正负方向以 MCH 的右手坐标为准
+        float rollDeg = getViewRollDeg(mc, ac, partialTicks); // 正负方向以 MCH 的右手坐标为准
         // 如果无法获取则返回 0
 
         // —— 渲染 ——
@@ -181,6 +237,7 @@ public class MCH_RenderGPSPosition {
             int color = inLock ? 0xFF0000 : 0x00FF00;
             GL11.glTranslatef(0.0F, ICON_SIZE_PX * 0.5f + 8.0f, 0.0F);
             int fw = mc.fontRenderer.getStringWidth(text);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
             mc.fontRenderer.drawString(text, -fw / 2, 0, color, false);
 
         } finally {

@@ -784,8 +784,12 @@ public abstract class MCH_RenderAircraft extends W_Render {
 
     public static void renderLandingGear(MCH_EntityAircraft ac, MCH_AircraftInfo info, float tickTime) {
         if (info.haveLandingGear() && ac.partLandingGear != null) {
-            float rot = ac.getLandingGearRotation();
-            float prevRot = ac.getPrevLandingGearRotation();
+            renderLandingGear(info, ac.getLandingGearRotation(), ac.getPrevLandingGearRotation(), tickTime);
+        }
+    }
+
+    public static void renderLandingGear(MCH_AircraftInfo info, float rot, float prevRot, float tickTime) {
+        if (info.haveLandingGear()) {
             float revR = 90.0F - rot;
             float revPr = 90.0F - prevRot;
             float rot1 = prevRot + (rot - prevRot) * tickTime;

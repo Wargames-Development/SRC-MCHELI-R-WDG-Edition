@@ -1,6 +1,5 @@
 package mcheli.weapon;
 
-import mcheli.MCH_Camera;
 import mcheli.MCH_I18n;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
@@ -10,8 +9,6 @@ import mcheli.wrapper.W_Render;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
@@ -81,7 +78,7 @@ public class MCH_RenderLockBox extends W_Render {
             }
 
             GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
-                    | GL11.GL_CURRENT_BIT | GL11.GL_LINE_BIT);
+                    | GL11.GL_CURRENT_BIT | GL11.GL_LINE_BIT | GL11.GL_TEXTURE_BIT);
             GL11.glPushMatrix();
             GL11.glTranslated(x * scale, y * scale, z * scale);
             GL11.glScaled(scale, scale, scale);
@@ -116,19 +113,13 @@ public class MCH_RenderLockBox extends W_Render {
                 tessellator.setColorRGBA_F(0.0F, 1.0F, 0.0F, 1.0F);
             }
 
-            if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION) {
-                RenderHelper.disableStandardItemLighting();
-                OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-                GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
-            }
-
             tessellator.addVertex(-size - 1.0F, -size, 0.0D);
             tessellator.addVertex(-size - 1.0F, size, 0.0D);
             tessellator.addVertex(size + 1.0F, size, 0.0D);
             tessellator.addVertex(size + 1.0F, -size, 0.0D);
             tessellator.draw();
 
-            if (distance > 10) {
+            if (distance > 0) {
                 FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
                 {
                     GL11.glPushMatrix();
@@ -141,10 +132,11 @@ public class MCH_RenderLockBox extends W_Render {
                         text = MCH_I18n.format("message.mcheli.jamming");
                         color = 0xff0000;
                     } else {
-                        text = String.format("%.1f", distance);
+                        text = String.format("%.1fm", distance);
                         color = 0x00ff00;
                     }
                     GL11.glScalef(fontSize, fontSize, fontSize);
+                    GL11.glEnable(GL11.GL_TEXTURE_2D);
                     fontRenderer.drawString(text, -fontRenderer.getStringWidth(text) / 2, 0, color);
                     GL11.glPopMatrix();
                 }
@@ -164,6 +156,6 @@ public class MCH_RenderLockBox extends W_Render {
 
     @Override
     public void doRender(Entity entity, double posX, double posY, double posZ, float par8, float tickTime) {
-        // The world-last overlay draws once, independently of this entity's chunk/frustum culling.
+        // The HUD overlay draws once, independently of this entity's chunk/frustum culling.
     }
 }

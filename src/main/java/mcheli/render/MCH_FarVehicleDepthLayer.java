@@ -94,8 +94,11 @@ final class MCH_FarVehicleDepthLayer {
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         boolean projectionPushed = false;
         try {
+            // An inherited shader-pack program cannot render into this single-color FBO.
+            GL20.glUseProgram(0);
             if (!ensureResources(vw, vh)) {
                 restoreFramebuffers();
+                GL20.glUseProgram(previousProgram);
                 GL13.glActiveTexture(previousActiveTexture);
                 GL11.glPopAttrib();
                 unavailable = true;
@@ -103,6 +106,7 @@ final class MCH_FarVehicleDepthLayer {
                 return false;
             }
             GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, framebuffer);
+            GL11.glDrawBuffer(GL30.GL_COLOR_ATTACHMENT0);
             GL11.glViewport(0, 0, vw, vh);
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
             GL11.glScissor(left, bottom, right - left, top - bottom);
@@ -132,6 +136,7 @@ final class MCH_FarVehicleDepthLayer {
                 GL11.glPopMatrix();
             }
             restoreFramebuffers();
+            GL20.glUseProgram(previousProgram);
             GL11.glMatrixMode(previousMatrixMode);
             GL13.glActiveTexture(previousActiveTexture);
             GL11.glPopAttrib();
@@ -270,6 +275,9 @@ final class MCH_FarVehicleDepthLayer {
     }
 
     private void composite(double near, double far, float worldZ, float worldOffset) {
+        // Only the visible color target belongs to this already-lit image. Shader
+        // packs may have normals/material targets attached; GL_COLOR_BUFFER_BIT restores the mapping.
+        GL11.glDrawBuffer(GL11.glGetInteger(GL20.GL_DRAW_BUFFER0));
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_FOG);
         GL11.glDisable(GL11.GL_ALPHA_TEST);

@@ -10,6 +10,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MCH_AircraftSnapshotRotationTest {
+    @Test public void distantGearUsesSnapshotRotationAndLegacyPacketsPreserveTheLastPose() {
+        MCH_EntityInfo sample = snapshot(0, 0, 0, 0);
+        assertEquals(90, MCH_RenderFarVehicle.snapshotLandingGearRotation(sample, 90), 0);
+        sample.landingGearRotation = 0;
+        assertEquals(0, MCH_RenderFarVehicle.snapshotLandingGearRotation(sample, 90), 0);
+        sample.landingGearRotation = 45;
+        assertEquals(45, MCH_RenderFarVehicle.snapshotLandingGearRotation(sample, 0), 0);
+        sample.landingGearRotation = 90;
+        assertEquals(90, MCH_RenderFarVehicle.snapshotLandingGearRotation(sample, 45), 0);
+        for (float invalid : new float[]{-1, 91, Float.NaN, Float.POSITIVE_INFINITY}) {
+            sample.landingGearRotation = invalid;
+            assertEquals(45, MCH_RenderFarVehicle.snapshotLandingGearRotation(sample, 45), 0);
+        }
+        assertEquals(45, MCH_RenderFarVehicle.snapshotLandingGearRotation(null, 45), 0);
+    }
+
     private MCH_EntityInfo snapshot(long millis, float yaw, float pitch, float roll) {
         MCH_EntityInfo sample = new MCH_EntityInfo(1, "world", "plane", "mcheli.plane.MCP_EntityPlane",
             0, 64, 0, 0, 64, 0);

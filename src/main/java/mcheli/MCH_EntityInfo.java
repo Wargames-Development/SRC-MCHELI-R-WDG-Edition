@@ -31,6 +31,8 @@ public class MCH_EntityInfo {
     public float rotationRoll;
     public float turretYaw;
     public float turretPitch;
+    /** Server part rotation: 0 is extended, 90 is retracted; NaN means unavailable. */
+    public float landingGearRotation = Float.NaN;
     public boolean destroyed;
     /** Server-owned ARM eligibility; false when an older server does not supply it. */
     public boolean armEmitter;
@@ -146,6 +148,7 @@ public class MCH_EntityInfo {
         if (aircraft != null) {
             info.aircraftUuid = e.getUniqueID();
             info.armEmitter = aircraft.isArmEmitterRadiating();
+            info.landingGearRotation = aircraft.getLandingGearRotation();
         }
         info.altitudeAboveGround = computeServerAgl(e);
         if (!e.worldObj.isRemote && aircraft != null) {

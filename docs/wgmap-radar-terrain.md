@@ -8,9 +8,17 @@ tracking validation and RWR behavior. The client depth buffer is not authoritati
 `WGMapRadarServerBridge` is loaded only behind `Loader.isModLoaded("wgmap")`.
 It uses public `RadarTerrainAccess` API 1 and returns no extra evidence if WGMap
 or that API is absent. No reflection, new dependency, packet change or save-format
-change is introduced. The existing compile-only dev jar must contain the new API;
-alternatively build WGMap first, then compile/test this repository with
+change is introduced. The checked-in compile-only `dev-deps/WGMap-dev-local.jar`
+includes `RadarTerrainAccess` and `RadarTerrainAccess$Query`, compiled for Java 8.
+Normal builds use that jar without an override. To work against newer sibling
+development output instead, build WGMap first, then compile/test with
 `-PwgmapDevelopmentClasses=<absolute WGMap build/classes/java/main>`.
+
+Default-build repair verified on 2026-11-07: the bundled development jar now
+contains both Java 8 radar API classes. `gradlew.bat build --offline`, without
+the sibling override, passed compilation, 209 tests (two optional tests skipped),
+reobfuscation and production-jar verification, producing X199. WGMap classes
+remain compile-only and are not included in the MCHR output jar.
 
 Live loaded chunks take precedence over historical snapshots. Loaded lookup uses
 the server's loaded table and owning physical world height, never a chunk-loading

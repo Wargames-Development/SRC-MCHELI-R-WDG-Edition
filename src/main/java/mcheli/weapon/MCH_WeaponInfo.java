@@ -237,6 +237,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
      */
     public boolean semiActiveRadar = false;
 
+    /** Zero disables notching; 85 enables the symmetric 85..95 degree window. */
+    public float notchDegrees = 0.0F;
+    public int notchBreakTicks = 2;
+    public int notchReacquireTicks = 3;
+
     /**
      * 主动雷达弹 扫描间隔
      */
@@ -974,6 +979,13 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.maxLockOnAngle = this.toInt(data, 0, 200);
             } else if (item.equalsIgnoreCase("PDHDNMaxDegree")) {
                 this.pdHDNMaxDegree = this.toFloat(data, -1, 90);
+            } else if (item.equalsIgnoreCase("NotchDegrees")) {
+                float degrees = this.toFloat(data);
+                this.notchDegrees = Float.isFinite(degrees) && degrees > 0.0F && degrees < 90.0F ? degrees : 0.0F;
+            } else if (item.equalsIgnoreCase("NotchBreakTicks")) {
+                this.notchBreakTicks = this.toInt(data, 1, 200);
+            } else if (item.equalsIgnoreCase("NotchReacquireTicks")) {
+                this.notchReacquireTicks = this.toInt(data, 1, 200);
             } else if (item.equalsIgnoreCase("PDHDNMaxDegreeLockOutCount")) {
                 this.pdHDNMaxDegreeLockOutCount = this.toInt(data, 0, 200);
             } else if (item.equalsIgnoreCase("AntiFlareCount")) {

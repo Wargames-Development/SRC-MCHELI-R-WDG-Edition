@@ -25,6 +25,7 @@ public class PacketEntityInfoSync extends PacketBase {
     private static final int VEHICLE_ID_EXTENSION_MAGIC = 0x56494431; // "VID1"
     private static final int RADAR_TERRAIN_EXTENSION_MAGIC = 0x52414431; // "RAD1"
     private static final int ARM_EXTENSION_MAGIC = 0x41524D31; // "ARM1"
+    private static final int LANDING_GEAR_EXTENSION_MAGIC = 0x47454152; // "GEAR"
 
     private List<MCH_EntityInfo> entities;
     private long snapshotSeq; // 新增：包级快照序号
@@ -103,6 +104,9 @@ public class PacketEntityInfoSync extends PacketBase {
         buf.writeInt(ARM_EXTENSION_MAGIC);
         buf.writeInt(entities.size());
         for (MCH_EntityInfo info : entities) buf.writeBoolean(info.armEmitter);
+        buf.writeInt(LANDING_GEAR_EXTENSION_MAGIC);
+        buf.writeInt(entities.size());
+        for (MCH_EntityInfo info : entities) buf.writeFloat(info.landingGearRotation);
     }
 
     @Override
@@ -138,6 +142,20 @@ public class PacketEntityInfoSync extends PacketBase {
         readVehicleIdExtension(buf);
         readRadarTerrainExtension(buf);
         readArmExtension(buf);
+        readLandingGearExtension(buf);
+    }
+
+    private void readLandingGearExtension(ByteBuf buf) {
+        if (buf.readableBytes() < 8 || buf.getInt(buf.readerIndex()) != LANDING_GEAR_EXTENSION_MAGIC) return;
+        buf.readInt();
+        int count = buf.readInt();
+        if (count != entities.size() || count < 0 || count > buf.readableBytes() / 4) return;
+        for (int i = 0; i < count; ++i) {
+            float rotation = buf.readFloat();
+            if (Float.isFinite(rotation) && rotation >= 0.0F && rotation <= 90.0F) {
+                entities.get(i).landingGearRotation = rotation;
+            }
+        }
     }
 
     private void readArmExtension(ByteBuf buf) {
