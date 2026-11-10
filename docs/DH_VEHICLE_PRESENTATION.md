@@ -1,0 +1,13 @@
+# DH vehicle source adapter
+
+Work branch: feature/dh-lods. The optional common API currently captures visual state only; it does not claim rendering or disable any legacy entry point. Radar/entity-info packets, tracking, locks, WGMap and existing renderers are unchanged.
+
+`MCH_ExternalVehiclePresentation` API v1 captures supported live, visible, undestroyed helicopter, plane, tank and vehicle classes on the server thread. `MCH_VehicleVisualSnapshot` is immutable, versioned and limited to 512 bytes: identity, asset names, position, body/turret orientation, source rotor phase, hatch/canopy/gear, plane nozzle/wing, throttle, occupancy/steering/ground flags and saved lighting. Asset names, UTF-8, counts, numeric values and part angles are checked at the boundary. Light access first proves the chunk is loaded; capture does not query altitude, generate chunks or call the radar snapshot helper.
+
+Server source audit found meaningful rotor phase updates on both server and client, but wheel, track and generic rotating-part fields have client-only update guards. Those frozen server arrays are deliberately absent from this contract. The DH client provider must derive their cosmetic animation from valid source inputs using the existing content rules, or extend this adapter with an explicit shared animation kernel. It must not advertise complete animation parity from these initial fields alone. Texture/model bounds, folded blades, weapon recoil, tracks/wheels, carried vehicles, private cameras and thermal views remain acceptance work.
+
+Workflow review: B1, the minimum legal one-character asset envelope is 107 bytes, corrected before testing. B2, client-only part arrays cannot stand in for authoritative animation, excluded after inspecting the source update guards. T1, transport/render ownership and runtime model acceptance remain pending. The read-only API cannot disable legacy delivery or rendering by itself.
+
+Validation: Java 8 `compileJava test --offline` passed 228 tests across 45 suites. Four new tests cover pose/identity round trips and defensive copies, all truncated lengths and malformed envelopes/UTF-8, invalid assets/numerics, and direct server-capture bytecode checks against client calls, world simulation and chunk-generation APIs. These tests do not replace a dedicated-server/client launch.
+
+Next in-game acceptance, once the DH provider is wired: compare the same vehicle crossing native tracking range at 750 blocks and the configured server ceiling; check body/turret/gear/rotor and all content-specific parts, terrain gaps and partial cover, respawn/dimension/world changes, destroyed/reused identities, shaderless/Angelica, FMUR scopes/thermal cameras and MCHELI remote views. Keep the old path available until those pass.
