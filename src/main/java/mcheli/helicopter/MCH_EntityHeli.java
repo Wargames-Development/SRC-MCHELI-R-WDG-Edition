@@ -30,6 +30,8 @@ public class MCH_EntityHeli extends MCH_EntityAircraft {
     public static final byte FOLD_STAT_UNFOLDING = 3;
     public double prevRotationRotor = 0.0D;
     public double rotationRotor = 0.0D;
+    /** Unwrapped cosmetic phase for distant sampling; never used by flight or weapon simulation. */
+    public double presentationRotorPhase;
     public MCH_Rotor[] rotors;
     public byte lastFoldBladeStat;
     public int foldBladesCooldown;
@@ -124,6 +126,7 @@ public class MCH_EntityHeli extends MCH_EntityAircraft {
 
         this.setCurrentThrottle(par1NBTTagCompound.getDouble("RotorSpeed"));
         this.rotationRotor = par1NBTTagCompound.getDouble("rotetionRotor");
+        this.presentationRotorPhase = this.rotationRotor;
         this.setFoldBladeStat((byte) (par1NBTTagCompound.getBoolean("FoldBlade") ? 0 : 2));
         if (this.heliInfo == null) {
             this.heliInfo = MCH_HeliInfoManager.get(this.getTypeName());
@@ -529,7 +532,9 @@ public class MCH_EntityHeli extends MCH_EntityAircraft {
 
         this.prevRotationRotor = this.rotationRotor;
         float rp1 = (float) (1.0D - this.getCurrentThrottle());
-        this.rotationRotor += (double) ((1.0F - rp1 * rp1 * rp1) * this.getAcInfo().rotorSpeed);
+        double rotorStep = (double) ((1.0F - rp1 * rp1 * rp1) * this.getAcInfo().rotorSpeed);
+        this.presentationRotorPhase += rotorStep;
+        this.rotationRotor += rotorStep;
         this.rotationRotor %= 360.0D;
     }
 

@@ -8,17 +8,23 @@ import java.util.UUID;
 
 /** Immutable source visual state. DH owns recipient policy, timing and transport envelopes. */
 public final class MCH_VehicleVisualSnapshot {
-    public static final int VERSION=1,MAX_BYTES=512,STATE_COUNT=12;
+    public static final int VERSION=2,MAX_BYTES=512,STATE_COUNT=12;
     public static final int HELICOPTER=1,PLANE=2,TANK=3,VEHICLE=4;
     public static final int YAW=0,PITCH=1,ROLL=2,TURRET_YAW=3,TURRET_PITCH=4,ROTOR=5,
         HATCH=6,CANOPY=7,GEAR=8,NOZZLE=9,WING=10,THROTTLE=11;
     public final UUID uuid;
     public final int entityId,kind,age,flags,light;
     public final String type,texture;
-    public final double x,y,z;
+    public final double x,y,z,rotorPhase;
     private final float[] state;
     public MCH_VehicleVisualSnapshot(UUID uuid,int entityId,int kind,int age,int flags,int light,String type,String texture,
             double x,double y,double z,float[] state) {
+        this(uuid,entityId,kind,age,flags,light,type,texture,x,y,z,state,state!=null && state.length>ROTOR?state[ROTOR]:0);
+    }
+    public MCH_VehicleVisualSnapshot(UUID uuid,int entityId,int kind,int age,int flags,int light,String type,String texture,
+            double x,double y,double z,float[] state,double rotorPhase) {
+        if(!Double.isFinite(rotorPhase) || Math.abs(rotorPhase)>1e14) throw new IllegalArgumentException("Invalid rotor phase");
+        this.rotorPhase=rotorPhase;
         if(uuid==null || entityId<0 || kind<HELICOPTER || kind>VEHICLE || age<0 || (flags & ~15)!=0
                 || (light & ~0x00F000F0)!=0 || !Double.isFinite(x+y+z) || Math.abs(x)>30000000 || Math.abs(z)>30000000
                 || Math.abs(y)>65536 || state==null || state.length!=STATE_COUNT) throw new IllegalArgumentException("Invalid vehicle presentation");
@@ -42,20 +48,22 @@ public final class MCH_VehicleVisualSnapshot {
         out.put((byte)VERSION).put((byte)kind).putInt(entityId).putLong(uuid.getMostSignificantBits()).putLong(uuid.getLeastSignificantBits());
         out.putInt(age).put((byte)flags).putInt(light).putDouble(x).putDouble(y).putDouble(z);
         for(float value:state) out.putFloat(value);
+        out.putDouble(rotorPhase);
         for(String value:new String[]{type,texture}) { byte[] text=name(value);out.put((byte)text.length).put(text); }
         byte[] bytes=new byte[out.position()];out.flip();out.get(bytes);return bytes;
     }
     public static MCH_VehicleVisualSnapshot decode(byte[] bytes) {
-        if(bytes==null || bytes.length<107 || bytes.length>MAX_BYTES) throw new IllegalArgumentException("Invalid vehicle envelope");
+        if(bytes==null || bytes.length<115 || bytes.length>MAX_BYTES) throw new IllegalArgumentException("Invalid vehicle envelope");
         try {
             ByteBuffer in=ByteBuffer.wrap(bytes);
             if((in.get()&255)!=VERSION) throw new IllegalArgumentException("Unsupported vehicle envelope");
             int kind=in.get()&255,id=in.getInt();UUID uuid=new UUID(in.getLong(),in.getLong());
             int age=in.getInt(),flags=in.get()&255,light=in.getInt();double x=in.getDouble(),y=in.getDouble(),z=in.getDouble();
             float[] state=new float[STATE_COUNT];for(int i=0;i<state.length;i++) state[i]=in.getFloat();
+            double rotorPhase=in.getDouble();
             String type=readName(in),texture=readName(in);
             if(in.hasRemaining()) throw new IllegalArgumentException("Trailing vehicle data");
-            return new MCH_VehicleVisualSnapshot(uuid,id,kind,age,flags,light,type,texture,x,y,z,state);
+            return new MCH_VehicleVisualSnapshot(uuid,id,kind,age,flags,light,type,texture,x,y,z,state,rotorPhase);
         } catch(java.nio.BufferUnderflowException | CharacterCodingException invalid) {
             throw new IllegalArgumentException("Truncated or malformed vehicle envelope",invalid);
         }

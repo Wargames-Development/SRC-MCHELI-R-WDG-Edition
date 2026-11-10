@@ -33,6 +33,8 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
     public MCH_Parts partNozzle;
     public MCH_Parts partWing;
     public float rotationRotor;
+    /** Unwrapped cosmetic phase for distant sampling; never used by flight or weapon simulation. */
+    public double presentationRotorPhase;
     public float prevRotationRotor;
     public float addkeyRotValue;
     private MCP_PlaneInfo planeInfo = null;
@@ -180,6 +182,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             this.onUpdate_Control();
             this.prevRotationRotor = this.rotationRotor;
             this.rotationRotor = (float) ((double) this.rotationRotor + this.getCurrentThrottle() * (double) this.getAcInfo().rotorSpeed);
+            this.presentationRotorPhase += (double)this.rotationRotor - (double)this.prevRotationRotor;
             if (this.rotationRotor > 360.0F) {
                 this.rotationRotor -= 360.0F;
                 this.prevRotationRotor -= 360.0F;

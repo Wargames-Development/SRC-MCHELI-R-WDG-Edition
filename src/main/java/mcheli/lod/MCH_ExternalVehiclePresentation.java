@@ -11,7 +11,7 @@ import net.minecraft.world.EnumSkyBlock;
 
 /** Optional source adapter, with no DH or client dependency. Does not claim legacy ownership. */
 public final class MCH_ExternalVehiclePresentation {
-    public static final int API_VERSION=1;
+    public static final int API_VERSION=2;
     private MCH_ExternalVehiclePresentation() { }
     public static boolean eligible(Entity entity) {
         if(!(entity instanceof MCH_EntityAircraft) || entity.worldObj==null || entity.worldObj.isRemote) return false;
@@ -38,9 +38,11 @@ public final class MCH_ExternalVehiclePresentation {
         }
         state[6]=aircraft.getHatchRotation();state[7]=aircraft.getCanopyRotation();state[8]=aircraft.getLandingGearRotation();
         state[11]=(float)aircraft.getCurrentThrottle();
+        double rotorPhase=kind==MCH_VehicleVisualSnapshot.HELICOPTER?((MCH_EntityHeli)aircraft).presentationRotorPhase
+            :kind==MCH_VehicleVisualSnapshot.PLANE?((MCP_EntityPlane)aircraft).presentationRotorPhase:0;
         int flags=(aircraft.getRiddenByEntity()!=null?1:0)|(aircraft.moveLeft?2:0)|(aircraft.moveRight?4:0)|(aircraft.onGround?8:0);
         return new MCH_VehicleVisualSnapshot(aircraft.getUniqueID(),aircraft.getEntityId(),kind,aircraft.ticksExisted,flags,light(aircraft),
-            aircraft.getAcInfo().name,aircraft.getTextureName(),aircraft.posX,aircraft.posY,aircraft.posZ,state).encode();
+            aircraft.getAcInfo().name,aircraft.getTextureName(),aircraft.posX,aircraft.posY,aircraft.posZ,state,rotorPhase).encode();
     }
     private static int light(MCH_EntityAircraft aircraft) {
         int x=MathHelper.floor_double(aircraft.posX),z=MathHelper.floor_double(aircraft.posZ);
