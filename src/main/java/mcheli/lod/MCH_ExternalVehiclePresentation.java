@@ -13,10 +13,16 @@ import net.minecraft.world.EnumSkyBlock;
 public final class MCH_ExternalVehiclePresentation {
     public static final int API_VERSION=1;
     private MCH_ExternalVehiclePresentation() { }
-    public static byte[] capture(Entity entity) {
-        if(!(entity instanceof MCH_EntityAircraft) || entity.worldObj==null || entity.worldObj.isRemote) return null;
+    public static boolean eligible(Entity entity) {
+        if(!(entity instanceof MCH_EntityAircraft) || entity.worldObj==null || entity.worldObj.isRemote) return false;
         MCH_EntityAircraft aircraft=(MCH_EntityAircraft)entity;
-        if(aircraft.isDead || aircraft.isDestroyed() || aircraft.isInvisible() || aircraft.getAcInfo()==null) return null;
+        if(aircraft.isDead || aircraft.isDestroyed() || aircraft.isInvisible() || aircraft.getAcInfo()==null) return false;
+        Class<?> type=aircraft.getClass();
+        return type==MCH_EntityHeli.class || type==MCP_EntityPlane.class || type==MCH_EntityTank.class || type==MCH_EntityVehicle.class;
+    }
+    public static byte[] capture(Entity entity) {
+        if(!eligible(entity)) return null;
+        MCH_EntityAircraft aircraft=(MCH_EntityAircraft)entity;
         int kind=aircraft.getClass()==MCH_EntityHeli.class?MCH_VehicleVisualSnapshot.HELICOPTER
             :aircraft.getClass()==MCP_EntityPlane.class?MCH_VehicleVisualSnapshot.PLANE
             :aircraft.getClass()==MCH_EntityTank.class?MCH_VehicleVisualSnapshot.TANK
