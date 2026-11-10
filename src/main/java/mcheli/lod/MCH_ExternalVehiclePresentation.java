@@ -11,7 +11,7 @@ import net.minecraft.world.EnumSkyBlock;
 
 /** Optional source adapter, with no DH or client dependency. Does not claim legacy ownership. */
 public final class MCH_ExternalVehiclePresentation {
-    public static final int API_VERSION=2;
+    public static final int API_VERSION=3;
     private MCH_ExternalVehiclePresentation() { }
     public static boolean eligible(Entity entity) {
         if(!(entity instanceof MCH_EntityAircraft) || entity.worldObj==null || entity.worldObj.isRemote) return false;
@@ -40,9 +40,47 @@ public final class MCH_ExternalVehiclePresentation {
         state[11]=(float)aircraft.getCurrentThrottle();
         double rotorPhase=kind==MCH_VehicleVisualSnapshot.HELICOPTER?((MCH_EntityHeli)aircraft).presentationRotorPhase
             :kind==MCH_VehicleVisualSnapshot.PLANE?((MCP_EntityPlane)aircraft).presentationRotorPhase:0;
-        int flags=(aircraft.getRiddenByEntity()!=null?1:0)|(aircraft.moveLeft?2:0)|(aircraft.moveRight?4:0)|(aircraft.onGround?8:0);
+        int flags=(aircraft.getRiddenByEntity()!=null?1:0)|(aircraft.moveLeft?2:0)|(aircraft.moveRight?4:0)|(aircraft.onGround?8:0)|(aircraft.isSearchLightON()?16:0)|(aircraft.isRadarEnabledRuntime()?32:0);
         return new MCH_VehicleVisualSnapshot(aircraft.getUniqueID(),aircraft.getEntityId(),kind,aircraft.ticksExisted,flags,light(aircraft),
-            aircraft.getAcInfo().name,aircraft.getTextureName(),aircraft.posX,aircraft.posY,aircraft.posZ,state,rotorPhase).encode();
+            aircraft.getAcInfo().name,aircraft.getTextureName(),aircraft.posX,aircraft.posY,aircraft.posZ,state,rotorPhase,parts(aircraft,kind).encode()).encode();
+    }
+    private static MCH_VehicleVisualParts parts(MCH_EntityAircraft aircraft,int kind) {
+        if(aircraft.weaponBays.length+aircraft.turretWeaponBays.length>MCH_VehicleVisualParts.MAX_PARTS) throw new IllegalArgumentException("Too many source bays");
+        float[] bays=new float[aircraft.weaponBays.length],turret=new float[aircraft.turretWeaponBays.length];
+        for(int i=0;i<bays.length;i++) bays[i]=aircraft.weaponBays[i].rot;
+        for(int i=0;i<turret.length;i++) turret[i]=aircraft.turretWeaponBays[i].rot;
+        float[][] blades=new float[0][];int fold=2;
+        if(kind==MCH_VehicleVisualSnapshot.HELICOPTER) {
+            MCH_EntityHeli heli=(MCH_EntityHeli)aircraft;fold=heli.getDataWatcher().getWatchableObjectByte(30);
+            if(heli.rotors.length>MCH_VehicleVisualParts.MAX_ROTORS) throw new IllegalArgumentException("Too many source rotors");
+            blades=new float[heli.rotors.length][];
+            for(int i=0;i<blades.length;i++) {
+                if(heli.rotors[i].blades.length>MCH_VehicleVisualParts.MAX_BARRELS) throw new IllegalArgumentException("Too many source blades");
+                blades[i]=new float[heli.rotors[i].blades.length];
+                for(int j=0;j<blades[i].length;j++) blades[i][j]=heli.rotors[i].blades[j].getRotation();
+            }
+        }
+        int count=aircraft.getAcInfo().weaponSetList.isEmpty()?0:aircraft.weapons.length;
+        if(count>MCH_VehicleVisualParts.MAX_WEAPONS) throw new IllegalArgumentException("Too many source weapon sets");
+        MCH_VehicleVisualParts.Weapon[] weapons=new MCH_VehicleVisualParts.Weapon[count];
+        for(int i=0;i<count;i++) {
+            mcheli.weapon.MCH_WeaponSet weapon=aircraft.weapons[i];
+            if(weapon.getWeaponNum()>32) throw new IllegalArgumentException("Too many source weapon barrels");
+            float[] recoil=new float[weapon.getWeaponNum()];int mask=0;
+            for(int j=0;j<recoil.length;j++) { recoil[j]=weapon.recoilBuf[j].recoilBuf;if(aircraft.isWeaponNotCooldown(weapon,j)) mask|=1<<j; }
+            weapons[i]=new MCH_VehicleVisualParts.Weapon(weapon.rotationYaw,weapon.rotationPitch,weapon.rotationTurretYaw,weapon.rotBarrel,weapon.getAmmoNum(),mask,recoil);
+        }
+        int eraCount=0;long eraMask=0;
+        for(mcheli.aircraft.MCH_BoundingBox box:aircraft.extraBoundingBox) if(box.isERA) {
+            if(eraCount==64) throw new IllegalArgumentException("Too many source ERA panels");
+            if(box.eraActive) eraMask|=1L<<eraCount;eraCount++;
+        }
+        net.minecraft.entity.Entity lightUser=aircraft.getEntityBySeatId(1);if(lightUser==null) lightUser=aircraft.getEntityBySeatId(0);
+        float searchYaw=lightUser==null?aircraft.getLastRiderYaw():lightUser.rotationYaw;
+        float searchPitch=lightUser==null?aircraft.getLastRiderPitch():lightUser.rotationPitch;
+        float steering=kind==MCH_VehicleVisualSnapshot.TANK && ((MCH_EntityTank)aircraft).isWheeledHandling()
+            ?-aircraft.getDataWatcher().getWatchableObjectFloat(18):0;
+        return new MCH_VehicleVisualParts(aircraft.throttleBack,aircraft.rotLightHatch,steering,searchYaw,searchPitch,fold,bays,turret,blades,weapons,eraCount,eraMask);
     }
     private static int light(MCH_EntityAircraft aircraft) {
         int x=MathHelper.floor_double(aircraft.posX),z=MathHelper.floor_double(aircraft.posZ);

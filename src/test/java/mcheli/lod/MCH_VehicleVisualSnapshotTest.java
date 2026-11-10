@@ -27,8 +27,8 @@ public class MCH_VehicleVisualSnapshotTest {
         invalid(()->MCH_VehicleVisualSnapshot.decode(Arrays.copyOf(good,good.length+1)));
         byte[] version=good.clone();version[0]=99;invalid(()->MCH_VehicleVisualSnapshot.decode(version));
         byte[] flags=good.clone();flags[26]=(byte)128;invalid(()->MCH_VehicleVisualSnapshot.decode(flags));
-        byte[] utf8=good.clone();utf8[112]=(byte)255;invalid(()->MCH_VehicleVisualSnapshot.decode(utf8));
-        byte[] excessive=good.clone();excessive[111]=(byte)255;invalid(()->MCH_VehicleVisualSnapshot.decode(excessive));
+        byte[] utf8=good.clone();utf8[114]=(byte)255;invalid(()->MCH_VehicleVisualSnapshot.decode(utf8));
+        byte[] excessive=good.clone();excessive[113]=(byte)255;invalid(()->MCH_VehicleVisualSnapshot.decode(excessive));
     }
     @Test public void invalidAssetsAndNonfiniteAnimationFailAtBoundary() {
         for(String name:new String[]{"", "../tank", "a/b", "a\\b", "a\nb",new String(new char[97]).replace('\0','a')})

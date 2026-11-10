@@ -127,6 +127,9 @@ public class MCH_RenderFarVehicle {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onRenderWorldLast(RenderWorldLastEvent event) {
+        if(mcheli.lod.MCH_ExternalVehicleRenderer.ownsLegacy()) {
+            smoothedPoses.clear();retiredEntityIds.clear();newestByUuid.clear();loadedByUuid.clear();loadedAircraft.clear();candidates.clear();return;
+        }
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) {
             this.smoothedPoses.clear();
@@ -721,6 +724,7 @@ public class MCH_RenderFarVehicle {
     /** Client presentation query; no entities are created and tracker ownership is unchanged. */
     public static LaserTarget findLaserTarget(World world, Vec3 start, Vec3 end,
             UUID preferred, int excludedId) {
+        if(mcheli.lod.MCH_ExternalVehicleRenderer.ownsLegacy()) return mcheli.lod.MCH_ExternalVehicleRenderer.findLaserTarget(world,start,end,preferred,excludedId);
         MCH_RenderFarVehicle renderer = activeRenderer;
         if (world == null || renderer == null || renderer.lastWorld != world
                 || System.currentTimeMillis() - renderer.colorFrameMillis > 250L) return null;
@@ -770,7 +774,7 @@ public class MCH_RenderFarVehicle {
         public final UUID uuid;
         public final Vec3 centre;
         public final double hitDistanceSq;
-        LaserTarget(UUID uuid, Vec3 centre, double hitDistanceSq) {
+        public LaserTarget(UUID uuid, Vec3 centre, double hitDistanceSq) {
             this.uuid = uuid; this.centre = centre; this.hitDistanceSq = hitDistanceSq;
         }
     }
@@ -1057,6 +1061,7 @@ public class MCH_RenderFarVehicle {
     }
 
     public static boolean usesUnifiedRender(MCH_EntityAircraft aircraft) {
+        if(mcheli.lod.MCH_ExternalVehicleRenderer.ownsLegacy()) return false;
         if (aircraft == null || aircraft.isDestroyed() || aircraft.getAcInfo() == null || aircraft.getAcInfo().model == null
             || !isSupportedVehicleClass(aircraft.getClass().getName())) {
             return false;
