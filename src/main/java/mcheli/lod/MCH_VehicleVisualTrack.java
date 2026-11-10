@@ -41,6 +41,12 @@ public final class MCH_VehicleVisualTrack {
         return true;
     }
     private static double mix(double a,double b,double t) { return a+(b-a)*t; }
+    /** Anchor to the actual source blade, using the unwrapped phase only to recover whole turns. */
+    public static float bladeRotation(Sample sample,float first,float last,boolean unfolded) {
+        double delta=last-first;delta-=Math.floor((delta+180)/360)*360;
+        if(unfolded) delta+=360*Math.rint(((sample.last.rotorPhase-sample.first.rotorPhase)-delta)/360);
+        return (float)(first+delta*sample.fraction);
+    }
     private static float angle(float a,float b,double t) { double d=b-a;d-=Math.floor((d+180)/360)*360;return (float)(a+d*t); }
     public static final class Sample {
         public MCH_VehicleVisualSnapshot first,last,appearance;

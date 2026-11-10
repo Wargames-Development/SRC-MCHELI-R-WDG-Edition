@@ -6,6 +6,27 @@ import static org.junit.Assert.*;
 
 public class MCH_VehicleVisualTrackTest {
     private static final long RECEIPT=1000000000L;
+    @Test public void stationarySnapshotsDoNotAnimateWithWallTimeForAnyVehicleKind() {
+        for(int kind=1;kind<=4;kind++) for(int interval=1;interval<=20;interval++) {
+            float[] state=new float[MCH_VehicleVisualSnapshot.STATE_COUNT];state[MCH_VehicleVisualSnapshot.GEAR]=73;
+            MCH_VehicleVisualTrack track=new MCH_VehicleVisualTrack();MCH_VehicleVisualTrack.Sample sample=new MCH_VehicleVisualTrack.Sample();
+            for(int i=0;i<4;i++) track.observe(new MCH_VehicleVisualSnapshot(new UUID(1,2),7,kind,100+i*interval,0,0,"any_type","skin",10,65,20,state,127),i*interval,RECEIPT+i*interval*50000000L,interval);
+            long received=RECEIPT+3*interval*50000000L;
+            for(long elapsed=0;elapsed<=900000000L;elapsed+=10000000L) {
+                assertTrue(track.sample(received+elapsed,sample));assertEquals(65,sample.y,0);assertEquals(127,sample.rotorPhase,0);
+                assertEquals(73,sample.state[MCH_VehicleVisualSnapshot.GEAR],0);
+                assertEquals(219,MCH_VehicleVisualTrack.bladeRotation(sample,219,219,true),0);
+            }
+        }
+    }
+    @Test public void bladePoseKeepsSourceOffsetAndDoesNotInferMotionFromAnUnrelatedPhase() {
+        MCH_VehicleVisualTrack.Sample sample=new MCH_VehicleVisualTrack.Sample();sample.fraction=.5F;
+        sample.first=pose(7,0,0,10,0,0,"skin");sample.last=pose(7,2,0,55,0,0,"skin");
+        assertEquals(219,MCH_VehicleVisualTrack.bladeRotation(sample,219,219,true),0);
+        sample.last=pose(7,2,0,730,0,0,"skin");
+        assertEquals(579,MCH_VehicleVisualTrack.bladeRotation(sample,219,219,true),0);
+        assertEquals(219,MCH_VehicleVisualTrack.bladeRotation(sample,219,219,false),0);
+    }
     private MCH_VehicleVisualSnapshot pose(int id,int age,double x,double phase,float yaw,float gear,String texture) {
         float[] states=new float[MCH_VehicleVisualSnapshot.STATE_COUNT];
         states[MCH_VehicleVisualSnapshot.YAW]=yaw;states[MCH_VehicleVisualSnapshot.GEAR]=gear;states[MCH_VehicleVisualSnapshot.ROTOR]=(float)(phase%360);

@@ -11,7 +11,7 @@ import net.minecraft.world.EnumSkyBlock;
 
 /** Optional source adapter, with no DH or client dependency. Does not claim legacy ownership. */
 public final class MCH_ExternalVehiclePresentation {
-    public static final int API_VERSION=3;
+    public static final int API_VERSION=4;
     private MCH_ExternalVehiclePresentation() { }
     public static boolean eligible(Entity entity) {
         if(!(entity instanceof MCH_EntityAircraft) || entity.worldObj==null || entity.worldObj.isRemote) return false;
@@ -80,7 +80,8 @@ public final class MCH_ExternalVehiclePresentation {
         float searchPitch=lightUser==null?aircraft.getLastRiderPitch():lightUser.rotationPitch;
         float steering=kind==MCH_VehicleVisualSnapshot.TANK && ((MCH_EntityTank)aircraft).isWheeledHandling()
             ?-aircraft.getDataWatcher().getWatchableObjectFloat(18):0;
-        return new MCH_VehicleVisualParts(aircraft.throttleBack,aircraft.rotLightHatch,steering,searchYaw,searchPitch,fold,bays,turret,blades,weapons,eraCount,eraMask);
+        return new MCH_VehicleVisualParts(aircraft.throttleBack,aircraft.rotLightHatch,steering,searchYaw,searchPitch,fold,bays,turret,blades,weapons,eraCount,eraMask,
+            aircraft.rotPartRotation,aircraft.turretRotPartRotation);
     }
     private static int light(MCH_EntityAircraft aircraft) {
         int x=MathHelper.floor_double(aircraft.posX),z=MathHelper.floor_double(aircraft.posZ);

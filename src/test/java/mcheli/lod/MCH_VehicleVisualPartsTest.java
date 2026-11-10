@@ -6,6 +6,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class MCH_VehicleVisualPartsTest {
+    @Test public void rotatingPartsRoundTripWithoutAliasingOrAutonomousPhase() {
+        float[] rotating={19,240},turret={71};
+        MCH_VehicleVisualParts parts=new MCH_VehicleVisualParts(0,0,0,0,0,2,new float[0],new float[0],new float[0][],new MCH_VehicleVisualParts.Weapon[0],0,0,rotating,turret);
+        rotating[0]=99;turret[0]=99;
+        MCH_VehicleVisualParts decoded=MCH_VehicleVisualParts.decode(parts.encode());
+        assertEquals(2,decoded.rotatingCount(false));assertEquals(19,decoded.rotating(false,0),0);assertEquals(71,decoded.rotating(true,0),0);
+        invalid(()->new MCH_VehicleVisualParts(0,0,0,0,0,2,new float[0],new float[0],new float[0][],new MCH_VehicleVisualParts.Weapon[0],0,0,new float[65],new float[0]));
+    }
     private MCH_VehicleVisualParts fixture() {
         return new MCH_VehicleVisualParts(.2F,.5F,-.7F,120,-30,1,new float[]{0,45,90},new float[]{20},new float[][]{{5,185}},
             new MCH_VehicleVisualParts.Weapon[]{new MCH_VehicleVisualParts.Weapon(35,-10,20,270,2,1,new float[]{.6F,0})},2,1);
@@ -23,7 +31,7 @@ public class MCH_VehicleVisualPartsTest {
         MCH_VehicleVisualParts.Weapon[] weapons=new MCH_VehicleVisualParts.Weapon[32];
         for(int i=0;i<weapons.length;i++) weapons[i]=new MCH_VehicleVisualParts.Weapon(0,0,0,0,1,15,new float[4]);
         float[][] blades=new float[16][8];
-        MCH_VehicleVisualParts source=new MCH_VehicleVisualParts(0,0,0,0,0,2,new float[32],new float[32],blades,weapons,64,-1);
+        MCH_VehicleVisualParts source=new MCH_VehicleVisualParts(0,0,0,0,0,2,new float[32],new float[32],blades,weapons,64,-1,new float[32],new float[32]);
         byte[] bytes=source.encode();assertTrue(bytes.length<=MCH_VehicleVisualParts.MAX_BYTES);
         MCH_VehicleVisualParts decoded=MCH_VehicleVisualParts.decode(bytes);
         assertEquals(32,decoded.weaponCount());assertEquals(16,decoded.rotorCount());assertEquals(-1,decoded.eraMask);

@@ -8,11 +8,17 @@ public final class MCH_VehicleVisualParts {
     public final float throttleBack,lightHatch,steering,searchYaw,searchPitch;
     public final int foldState,eraCount;
     public final long eraMask;
-    private final float[] bays,turretBays;
+    private final float[] bays,turretBays,rotating,turretRotating;
     private final float[][] blades;
     private final Weapon[] weapons;
     public MCH_VehicleVisualParts(float throttleBack,float lightHatch,float steering,float searchYaw,float searchPitch,int foldState,
             float[] bays,float[] turretBays,float[][] blades,Weapon[] weapons,int eraCount,long eraMask) {
+        this(throttleBack,lightHatch,steering,searchYaw,searchPitch,foldState,bays,turretBays,blades,weapons,eraCount,eraMask,new float[0],new float[0]);
+    }
+    public MCH_VehicleVisualParts(float throttleBack,float lightHatch,float steering,float searchYaw,float searchPitch,int foldState,
+            float[] bays,float[] turretBays,float[][] blades,Weapon[] weapons,int eraCount,long eraMask,float[] rotating,float[] turretRotating) {
+        if(rotating==null || turretRotating==null || rotating.length+turretRotating.length>MAX_PARTS) throw new IllegalArgumentException("Too many rotating parts");
+        this.rotating=angles(rotating,360);this.turretRotating=angles(turretRotating,360);
         if(!finite(throttleBack,lightHatch,steering,searchYaw,searchPitch) || throttleBack<0 || throttleBack>10 || lightHatch<0 || lightHatch>1
                 || Math.abs(steering)>1 || foldState<0 || foldState>3 || eraCount<0 || eraCount>64
                 || (eraCount<64 && (eraMask>>>eraCount)!=0) || bays==null || turretBays==null || bays.length+turretBays.length>MAX_PARTS
@@ -40,15 +46,15 @@ public final class MCH_VehicleVisualParts {
     public Weapon weapon(int index) { return weapons[index]; }
     public byte[] encode() {
         ByteBuffer out=ByteBuffer.allocate(MAX_BYTES);
-        out.put((byte)1).putFloat(throttleBack).putFloat(lightHatch).putFloat(steering).putFloat(searchYaw).putFloat(searchPitch).put((byte)foldState);
+        out.put((byte)2).putFloat(throttleBack).putFloat(lightHatch).putFloat(steering).putFloat(searchYaw).putFloat(searchPitch).put((byte)foldState);
         write(out,bays);write(out,turretBays);out.put((byte)blades.length);for(float[] rotor:blades) write(out,rotor);
         out.put((byte)weapons.length);for(Weapon weapon:weapons) weapon.write(out);
-        out.put((byte)eraCount).putLong(eraMask);byte[] bytes=new byte[out.position()];out.flip();out.get(bytes);return bytes;
+        out.put((byte)eraCount).putLong(eraMask);write(out,rotating);write(out,turretRotating);byte[] bytes=new byte[out.position()];out.flip();out.get(bytes);return bytes;
     }
     public static MCH_VehicleVisualParts decode(byte[] bytes) {
         if(bytes==null || bytes.length<35 || bytes.length>MAX_BYTES) throw new IllegalArgumentException("Invalid parts envelope");
         try {
-            ByteBuffer in=ByteBuffer.wrap(bytes);if((in.get()&255)!=1) throw new IllegalArgumentException("Unsupported parts version");
+            ByteBuffer in=ByteBuffer.wrap(bytes);if((in.get()&255)!=2) throw new IllegalArgumentException("Unsupported parts version");
             float back=in.getFloat(),hatch=in.getFloat(),steering=in.getFloat(),yaw=in.getFloat(),pitch=in.getFloat();int fold=in.get()&255;
             float[] bays=read(in,MAX_PARTS),turret=read(in,MAX_PARTS);
             int count=in.get()&255;if(count>MAX_ROTORS) throw new IllegalArgumentException("Too many rotors");
@@ -61,11 +67,14 @@ public final class MCH_VehicleVisualParts {
                 float[] recoil=read(in,MAX_BARRELS-total);total+=recoil.length;weapons[i]=new Weapon(wy,wp,wt,barrel,ammo,mask,recoil);
             }
             int era=in.get()&255;long mask=in.getLong();
+            float[] rotating=read(in,MAX_PARTS),turretRotating=read(in,MAX_PARTS-rotating.length);
             if(in.hasRemaining()) throw new IllegalArgumentException("Trailing part state");
-            return new MCH_VehicleVisualParts(back,hatch,steering,yaw,pitch,fold,bays,turret,blades,weapons,era,mask);
+            return new MCH_VehicleVisualParts(back,hatch,steering,yaw,pitch,fold,bays,turret,blades,weapons,era,mask,rotating,turretRotating);
         } catch(java.nio.BufferUnderflowException invalid) { throw new IllegalArgumentException("Truncated vehicle parts",invalid); }
     }
     private static void write(ByteBuffer out,float[] values) { out.put((byte)values.length);for(float value:values) out.putFloat(value); }
+    public int rotatingCount(boolean turret) { return (turret?turretRotating:rotating).length; }
+    public float rotating(boolean turret,int index) { return (turret?turretRotating:rotating)[index]; }
     private static float[] read(ByteBuffer in,int maximum) {
         int count=in.get()&255;if(count>maximum || count*4>in.remaining()) throw new IllegalArgumentException("Invalid part array length");
         float[] values=new float[count];for(int i=0;i<count;i++) values[i]=in.getFloat();return values;

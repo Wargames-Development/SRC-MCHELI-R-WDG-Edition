@@ -18,11 +18,12 @@ import org.lwjgl.opengl.GL11;
 /** Render-only detached models. No entity tick, world insertion, packets or source gameplay methods. */
 @SideOnly(Side.CLIENT)
 public final class MCH_ExternalVehicleRenderer {
-    public static final int API_VERSION=3;
+    public static final int API_VERSION=4;
     private static final Set<Context> contexts=Collections.newSetFromMap(new IdentityHashMap<Context,Boolean>());
     private static java.util.function.BooleanSupplier owner;
     private static java.util.function.Predicate<Entity> replacement,observation;
     private static boolean ownerFailed;
+    private static Entity visualSource;
     private MCH_ExternalVehicleRenderer() { }
     public static void setOwner(java.util.function.BooleanSupplier owner,java.util.function.Predicate<Entity> replacement,java.util.function.Predicate<Entity> observation) {
         MCH_ExternalVehicleRenderer.owner=owner;MCH_ExternalVehicleRenderer.replacement=replacement;MCH_ExternalVehicleRenderer.observation=observation;ownerFailed=false;
@@ -80,13 +81,16 @@ public final class MCH_ExternalVehicleRenderer {
     }
     public static Context create(World world) { if(world==null || !world.isRemote) throw new IllegalArgumentException("Client world required");if(contexts.size()>=128) throw new IllegalStateException("Visual context limit");Context context=new Context(world);contexts.add(context);return context; }
     private interface Detached { }
-    public static boolean isVisual(Entity entity) { return entity instanceof Detached; }
+    public static boolean isVisual(Entity entity) { return entity instanceof Detached || entity!=null && entity==visualSource; }
     public static final class Context implements AutoCloseable {
         private final World world;
         private final MCH_VehicleVisualTrack track=new MCH_VehicleVisualTrack();
         private final MCH_VehicleVisualTrack.Sample sample=new MCH_VehicleVisualTrack.Sample();
         private MCH_AircraftInfo definition;
         private MCH_EntityAircraft actor;
+        private MCH_EntityAircraft tracked;
+        private float trackedPartial;
+        private int sampledLight;
         private MCH_VehicleVisualParts first,last,current;
         private int visualTick=-1;
         private double previousX,previousY,previousZ,radius;
@@ -113,10 +117,23 @@ public final class MCH_ExternalVehicleRenderer {
             if(definition!=info) { actor=null;visualTick=-1;definition=info;radius=MCH_VisualModelBounds.radius(info); }
             double envelope=radius*Math.max(1,sample.state[MCH_VehicleVisualSnapshot.THROTTLE]);
             if(!Double.isFinite(envelope) || envelope<=0 || envelope>128) { invalidate();return false; }
-            out[0]=sample.x;out[1]=sample.y;out[2]=sample.z;out[3]=envelope;out[4]=pose.light;out[5]=sample.age-(int)sample.age;return true;
+            tracked=null;
+            Entity nativeEntity=world.getEntityByID(pose.entityId);
+            if(nativeEntity instanceof MCH_EntityAircraft && !(nativeEntity instanceof Detached) && !nativeEntity.isDead
+                    && nativeEntity.getUniqueID().equals(pose.uuid) && ((MCH_EntityAircraft)nativeEntity).getAcInfo()==definition)
+                tracked=(MCH_EntityAircraft)nativeEntity;
+            trackedPartial=mcheli.MCH_ClientEventHook.smoothing;
+            out[0]=tracked==null?sample.x:tracked.lastTickPosX+(tracked.posX-tracked.lastTickPosX)*trackedPartial;
+            out[1]=tracked==null?sample.y:tracked.lastTickPosY+(tracked.posY-tracked.lastTickPosY)*trackedPartial;
+            out[2]=tracked==null?sample.z:tracked.lastTickPosZ+(tracked.posZ-tracked.lastTickPosZ)*trackedPartial;
+            sampledLight=tracked==null?pose.light:tracked.getBrightnessForRender(trackedPartial);
+            out[3]=envelope;out[4]=sampledLight;out[5]=tracked==null?sample.age-(int)sample.age:trackedPartial;return true;
         }
         public boolean prepare() {
             if(!sampled || definition==null) return false;
+            // Match the legacy unified pass: the real tracked model already owns its
+            // interpolation, rotor/blade phases and wheel/gear state. Never simulate it here.
+            if(tracked!=null) return true;
             first=sample.first.decodedParts();last=sample.last.decodedParts();current=sample.appearance.decodedParts();
             if(first==null || last==null || current==null) { invalidate();return false; }
             if(actor==null || actor.getEntityId()!=sample.appearance.entityId) {
@@ -136,11 +153,13 @@ public final class MCH_ExternalVehicleRenderer {
             int steps=tick-visualTick;
             for(int i=0;i<steps;i++) {
                 actor.motionX=(sample.x-previousX)/Math.max(1,steps);actor.motionY=(sample.y-previousY)/Math.max(1,steps);actor.motionZ=(sample.z-previousZ)/Math.max(1,steps);
-                actor.updatePartWheel();actor.updatePartCrawlerTrack();rotateParts();
+                actor.updatePartWheel();actor.updatePartCrawlerTrack();
             }
             visualTick=tick;previousX=sample.x;previousY=sample.y;previousZ=sample.z;
             actor.setPosition(sample.x,sample.y,sample.z);actor.prevPosX=actor.lastTickPosX=sample.x;actor.prevPosY=actor.lastTickPosY=sample.y;actor.prevPosZ=actor.lastTickPosZ=sample.z;
             actor.ticksExisted=tick;
+            for(int i=0;i<actor.rotPartRotation.length;i++) actor.prevRotPartRotation[i]=actor.rotPartRotation[i]=angle(first.rotating(false,i),last.rotating(false,i));
+            for(int i=0;i<actor.turretRotPartRotation.length;i++) actor.prevTurretRotPartRotation[i]=actor.turretRotPartRotation[i]=angle(first.rotating(true,i),last.rotating(true,i));
             part(actor.partHatch,sample.state[6]);part(actor.partCanopy,sample.state[7]);part(actor.partLandingGear,sample.state[8]);
             actor.prevRotLightHatch=actor.rotLightHatch=mix(first.lightHatch,last.lightHatch);
             actor.lastSearchLightYaw=angle(first.searchYaw,last.searchYaw);actor.lastSearchLightPitch=mix(first.searchPitch,last.searchPitch);
@@ -153,7 +172,7 @@ public final class MCH_ExternalVehicleRenderer {
                 MCH_EntityHeli heli=(MCH_EntityHeli)actor;heli.prevRotationRotor=heli.rotationRotor=sample.state[5];
                 for(int r=0;r<current.rotorCount();r++) for(int b=0;b<current.bladeCount(r);b++) {
                     MCH_Blade blade=heli.rotors[r].blades[b];
-                    float rotation=first.foldState==2 && last.foldState==2?(float)(sample.rotorPhase%360)+blade.getBaseRotation():angle(first.blade(r,b),last.blade(r,b));
+                    float rotation=MCH_VehicleVisualTrack.bladeRotation(sample,first.blade(r,b),last.blade(r,b),first.foldState==2 && last.foldState==2);
                     blade.setPrevRotation(rotation);blade.setRotation(rotation);
                 }
             }
@@ -169,21 +188,11 @@ public final class MCH_ExternalVehicleRenderer {
             int era=0;for(MCH_BoundingBox box:actor.extraBoundingBox) if(box.isERA) box.eraActive=(current.eraMask&(1L<<era++))!=0;
             return true;
         }
-        private void rotateParts() {
-            boolean occupied=(sample.appearance.flags&1)!=0;
-            for(int i=0;i<actor.rotPartRotation.length;i++) {
-                MCH_AircraftInfo.RotPart part=(MCH_AircraftInfo.RotPart)definition.partRotPart.get(i);
-                actor.prevRotPartRotation[i]=actor.rotPartRotation[i];
-                if(part.rotAlways || occupied) actor.rotPartRotation[i]=(actor.rotPartRotation[i]+part.rotSpeed)%360;
-            }
-            for(int i=0;i<actor.turretRotPartRotation.length;i++) {
-                MCH_AircraftInfo.TurretRotPart part=(MCH_AircraftInfo.TurretRotPart)definition.partTurretRotPart.get(i);
-                actor.prevTurretRotPartRotation[i]=actor.turretRotPartRotation[i];
-                if((sample.appearance.flags&32)!=0 && (part.rotAlways || sample.state[11]>.01F || occupied))
-                    actor.turretRotPartRotation[i]=(actor.turretRotPartRotation[i]+360F/(definition.radarScanTick>0?definition.radarScanTick:40))%360;
-            }
-        }
         private boolean matches(MCH_VehicleVisualParts parts) {
+            for(boolean turret:new boolean[]{false,true}) {
+                int count=turret?actor.turretRotPartRotation.length:actor.rotPartRotation.length;
+                if(parts.rotatingCount(turret)!=count || first.rotatingCount(turret)!=count || last.rotatingCount(turret)!=count) return false;
+            }
             int weapons=definition.weaponSetList.isEmpty()?0:actor.weapons.length;
             if(parts.weaponCount()!=weapons || parts.bayCount(false)!=actor.weaponBays.length || parts.bayCount(true)!=actor.turretWeaponBays.length) return false;
             if(first.weaponCount()!=parts.weaponCount() || last.weaponCount()!=parts.weaponCount()
@@ -205,26 +214,34 @@ public final class MCH_ExternalVehicleRenderer {
             for(int i=0;i<current.weaponCount();i++) if(actor.weapons[i]==weapon) return (current.weapon(i).usedMask&(1<<index))!=0;return false;
         }
         public void render(double x,double y,double z,float partial) {
-            if(actor==null) return;
-            Object renderer=RenderManager.instance.getEntityRenderObject(actor);
+            MCH_EntityAircraft vehicle=tracked!=null?tracked:actor;
+            if(vehicle==null) return;
+            Object renderer=RenderManager.instance.getEntityRenderObject(vehicle);
             if(!(renderer instanceof MCH_RenderAircraft)) return;
             MCH_RenderAircraft draw=(MCH_RenderAircraft)renderer;
-            GL11.glPushMatrix();
+            Entity previousVisual=visualSource;visualSource=vehicle;GL11.glPushMatrix();
             try {
-                draw.setCommonRenderParam(definition.smoothShading,sample.appearance.light);
+                draw.setCommonRenderParam(definition.smoothShading,sampledLight);
                 // Preserve coverage alpha in the capture while matching native RGB blending.
                 org.lwjgl.opengl.GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA,GL11.GL_ONE_MINUS_SRC_ALPHA,GL11.GL_ONE,GL11.GL_ONE_MINUS_SRC_ALPHA);
                 GL11.glEnable(GL11.GL_ALPHA_TEST);GL11.glColor4f(1,1,1,1);
-                draw.renderAircraft(actor,x,y,z,sample.state[0],sample.state[1],sample.state[2],partial);
-                draw.renderCommonPart(actor,definition,0,0,0,partial);
-                renderedNanos=System.nanoTime();renderValid=true;nativeSinceRender=false;renderedPose=sample.appearance;renderX=sample.x;renderY=sample.y;renderZ=sample.z;
-            } finally { draw.restoreCommonRenderParam();GL11.glPopMatrix(); }
+                float yaw=tracked==null?sample.state[0]:nativeAngle(vehicle.prevRotationYaw,vehicle.getRotYaw(),partial);
+                float pitch=tracked==null?sample.state[1]:vehicle.calcRotPitch(partial);
+                float roll=tracked==null?sample.state[2]:nativeAngle(vehicle.prevRotationRoll,vehicle.getRotRoll(),partial);
+                draw.renderAircraft(vehicle,x,y,z,yaw,pitch,roll,partial);
+                draw.renderCommonPart(vehicle,definition,0,0,0,partial);
+                renderedNanos=System.nanoTime();renderValid=true;nativeSinceRender=false;renderedPose=sample.appearance;
+                renderX=tracked==null?sample.x:tracked.lastTickPosX+(tracked.posX-tracked.lastTickPosX)*partial;
+                renderY=tracked==null?sample.y:tracked.lastTickPosY+(tracked.posY-tracked.lastTickPosY)*partial;
+                renderZ=tracked==null?sample.z:tracked.lastTickPosZ+(tracked.posZ-tracked.lastTickPosZ)*partial;
+            } finally { try { draw.restoreCommonRenderParam();GL11.glPopMatrix(); } finally { visualSource=previousVisual; } }
         }
         private float mix(float a,float b) { return a+(b-a)*sample.fraction; }
+        private static float nativeAngle(float a,float b,float fraction) { float d=b-a;d-=Math.floor((d+180)/360)*360;return a+d*fraction; }
         private float angle(float a,float b) { float d=b-a;d-=Math.floor((d+180)/360)*360;return a+d*sample.fraction; }
         private static void part(MCH_Parts part,float value) { if(part!=null) part.prevRotation=part.rotation=value; }
         public void invalidate() { renderValid=false; }
-        public void close() { contexts.remove(this);actor=null;definition=null;sampled=false; }
+        public void close() { contexts.remove(this);actor=null;tracked=null;definition=null;sampled=false; }
     }
     private static MCH_AircraftInfo info(int kind,String name) {
         switch(kind) {

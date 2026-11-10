@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /** Immutable source visual state. DH owns recipient policy, timing and transport envelopes. */
 public final class MCH_VehicleVisualSnapshot {
-    public static final int VERSION=3,MAX_BYTES=4096,STATE_COUNT=12;
+    public static final int VERSION=4,MAX_BYTES=4096,STATE_COUNT=12;
     public static final int HELICOPTER=1,PLANE=2,TANK=3,VEHICLE=4;
     public static final int YAW=0,PITCH=1,ROLL=2,TURRET_YAW=3,TURRET_PITCH=4,ROTOR=5,
         HATCH=6,CANOPY=7,GEAR=8,NOZZLE=9,WING=10,THROTTLE=11;
