@@ -94,6 +94,19 @@ public class MCH_LaserVegetationTest {
         for (Block solid : new Block[] {Blocks.grass, Blocks.dirt, Blocks.log, Blocks.log2,
                 Blocks.leaves, Blocks.leaves2, Blocks.glass, Blocks.stone_slab, Blocks.fence,
                 Blocks.brown_mushroom_block, Blocks.red_mushroom_block}) assertFalse(MCH_LaserTargeting.ignoresPlant(solid));
+        int registryId = 3900;
+        for (String name : new String[] {"etfuturum:short_dry_grass", "etfuturum:tall_dry_grass"}) {
+            Block efrGrass = new Block(Material.plants) { };
+            // Raw insertion supplies the real namespace without a discovered active mod container.
+            java.lang.reflect.Method add = Block.blockRegistry.getClass().getDeclaredMethod("addObjectRaw", int.class, String.class, Object.class);
+            add.setAccessible(true); add.invoke(Block.blockRegistry, registryId++, name, efrGrass);
+            assertTrue("EFR registry name=" + Block.blockRegistry.getNameForObject(efrGrass), MCH_LaserTargeting.ignoresPlant(efrGrass));
+            world.plant = efrGrass;
+            for (int metadata = 0; metadata < 16; metadata++) {
+                world.metadata = metadata;
+                assertNull(MCH_LaserTargeting.nativeBlockHit(world, 0, 66, 0, from, to));
+            }
+        }
         assertFalse(MCH_LaserTargeting.ignoresPlant(null));
         assertFalse(MCH_LaserTargeting.ignoresPlant(new Block(Material.plants) { }));
         world.plant = Blocks.tallgrass; world.metadata = 1;

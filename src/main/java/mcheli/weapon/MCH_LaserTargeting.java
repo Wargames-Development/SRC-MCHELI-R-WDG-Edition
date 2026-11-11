@@ -182,7 +182,13 @@ public final class MCH_LaserTargeting {
                 || block == Blocks.yellow_flower || block == Blocks.red_flower || block == Blocks.double_plant
                 || block == Blocks.sapling || block == Blocks.brown_mushroom || block == Blocks.red_mushroom
                 || block == Blocks.wheat || block == Blocks.carrots || block == Blocks.potatoes
-                || block == Blocks.nether_wart || block == Blocks.reeds || block == Blocks.vine);
+                || block == Blocks.nether_wart || block == Blocks.reeds || block == Blocks.vine
+                || isEfrGrass(block));
+    }
+
+    private static boolean isEfrGrass(Block block) {
+        String name = String.valueOf(Block.blockRegistry.getNameForObject(block));
+        return name.equals("etfuturum:short_dry_grass") || name.equals("etfuturum:tall_dry_grass");
     }
 
     /** Caller must have established that this chunk is already loaded on the owning thread. */
