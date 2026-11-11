@@ -20,6 +20,7 @@
 package mcheli.wrapper;
 
 import cpw.mods.fml.common.ObfuscationReflectionHelper;
+import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.renderer.EntityRenderer;
@@ -34,6 +35,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -56,18 +58,42 @@ public class W_Reflection {
     public static float getThirdPersonDistance() {
         try {
             Minecraft e = Minecraft.getMinecraft();
-            return ObfuscationReflectionHelper.getPrivateValue(EntityRenderer.class, e.entityRenderer, new String[]{"field_78490_B", "thirdPersonDistance"});
+            return CameraDistance.CURRENT.getFloat(e.entityRenderer);
         } catch (Exception var1) {
             var1.printStackTrace();
             return 4.0F;
         }
     }
 
+    public static float getPreviousThirdPersonDistance(EntityRenderer renderer) {
+        try {
+            return CameraDistance.PREVIOUS.getFloat(renderer);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static void setRenderThirdPersonDistances(EntityRenderer renderer, float previous, float current) {
+        try {
+            CameraDistance.PREVIOUS.setFloat(renderer, previous);
+            CameraDistance.CURRENT.setFloat(renderer, current);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static final class CameraDistance {
+        private static final Field PREVIOUS = ReflectionHelper.findField(EntityRenderer.class,
+            "field_78491_C", "thirdPersonDistanceTemp");
+        private static final Field CURRENT = ReflectionHelper.findField(EntityRenderer.class,
+            "field_78490_B", "thirdPersonDistance");
+    }
+
     public static void setThirdPersonDistance(float dist) {
         if ((double) dist >= 0.1D) {
             try {
                 Minecraft e = Minecraft.getMinecraft();
-                ObfuscationReflectionHelper.setPrivateValue(EntityRenderer.class, e.entityRenderer, dist, "field_78490_B", "thirdPersonDistance");
+                CameraDistance.CURRENT.setFloat(e.entityRenderer, dist);
             } catch (Exception var2) {
                 var2.printStackTrace();
             }

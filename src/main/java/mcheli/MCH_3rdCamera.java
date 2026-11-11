@@ -7,165 +7,210 @@ import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.vehicle.MCH_EntityVehicle;
+import mcheli.vector.Quaternion;
+import mcheli.wrapper.W_Reflection;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 @SideOnly(Side.CLIENT)
 public class MCH_3rdCamera extends EntityLivingBase {
 
-    public static float lerpAmount = 0.3F;
+    private static final float VANILLA_EYE_OFFSET = 1.62F;
+    private static final double ROTATION_HALF_LIFE = 0.025D;
     private static final double HARD_SNAP_DISTANCE_SQ = 64.0D * 64.0D;
-    public MCH_EntityAircraft entity;
+    public final MCH_EntityAircraft entity;
 
-    public MCH_3rdCamera(World w) {
-        super(w);
-        setSize(0F, 0F);
+    private final Quaternion orientation = new Quaternion();
+    private final Quaternion target = new Quaternion();
+    private final Quaternion vehicleRotation = new Quaternion();
+    private final double pivotHeight;
+    private double pivotX;
+    private double pivotY;
+    private double pivotZ;
+    private long lastFrameNanos;
+    private boolean framePending;
+    private boolean frontView;
+    private EntityRenderer frameRenderer;
+    private float previousDistance;
+    private float currentDistance;
+    private float originalRoll;
+
+    public MCH_3rdCamera(World world, MCH_EntityAircraft aircraft, EntityPlayer player) {
+        super(world);
+        entity = aircraft;
+        pivotHeight = getPivotHeight(aircraft);
+        setSize(0.0F, 0.0F);
+        // With this offset, vanilla places the eye at the entity origin.
+        yOffset = VANILLA_EYE_OFFSET;
+        updatePivot(1.0F);
+        publishPosition(pivotX, pivotY + VANILLA_EYE_OFFSET, pivotZ);
+        prevRotationYaw = rotationYaw = player.rotationYaw;
+        prevRotationPitch = rotationPitch = cameraPitch(player);
+        setOrientation(orientation, rotationYaw, rotationPitch, 0.0F);
     }
 
-    public MCH_3rdCamera(World world, MCH_EntityAircraft ac) {
-        this(world);
-        entity = ac;
-        hardSnap("create");
+    public void beginRenderFrame() {
+        framePending = true;
+    }
+
+    public void endRenderFrame() {
+        framePending = false;
+        if (frameRenderer != null) {
+            W_Reflection.setRenderThirdPersonDistances(frameRenderer, previousDistance, currentDistance);
+            W_Reflection.setCameraRoll(originalRoll);
+            frameRenderer = null;
+        }
     }
 
     @Override
-    public void onUpdate() {
-        lastTickPosX = posX;
-        lastTickPosY = posY;
-        lastTickPosZ = posZ;
-        prevPosX = posX;
-        prevPosY = posY;
-        prevPosZ = posZ;
+    public MovingObjectPosition rayTrace(double reach, float partialTicks) {
+        // World rendering picks after vanilla mouse-look and before it samples the view entity.
+        if (framePending) {
+            framePending = false;
+            updateRenderPose(Minecraft.getMinecraft(), partialTicks);
+        }
+        return super.rayTrace(reach, partialTicks);
+    }
+
+    @Override
+    public Vec3 getPosition(float partialTicks) {
+        // Vanilla's block and entity picking must originate at the vehicle pivot.
+        return Vec3.createVectorHelper(pivotX, pivotY, pivotZ);
+    }
+
+    @Override
+    public Vec3 getLookVec() {
+        return forward(orientation, frontView);
+    }
+
+    private void updateRenderPose(Minecraft mc, float partialTicks) {
+        updatePivot(partialTicks);
+        frontView = mc.gameSettings.thirdPersonView == 2;
+        originalRoll = W_Reflection.getPrevCameraRoll();
+        setOrientation(target, mc.thePlayer.rotationYaw, cameraPitch(mc.thePlayer), originalRoll);
+
+        long now = System.nanoTime();
+        double seconds = lastFrameNanos == 0L ? 0.0D : (now - lastFrameNanos) * 1.0e-9D;
+        float blend = lastFrameNanos == 0L || seconds > 0.25D
+            ? 1.0F : (float) (1.0D - Math.pow(0.5D, seconds / ROTATION_HALF_LIFE));
+        interpolate(orientation, target, blend);
+        lastFrameNanos = now;
+
+        Vec3 look = forward(orientation, false);
+        float yaw = (float) Math.toDegrees(Math.atan2(-look.xCoord, look.zCoord));
+        rotationYaw += MathHelper.wrapAngleTo180_float(yaw - rotationYaw);
         prevRotationYaw = rotationYaw;
-        prevRotationPitch = rotationPitch;
+        prevRotationPitch = rotationPitch = (float) Math.toDegrees(Math.asin(
+            Math.max(-1.0D, Math.min(1.0D, -look.yCoord))));
+        float roll = (float) Math.toDegrees(Math.atan2(
+            2.0D * (orientation.x * orientation.y + orientation.z * orientation.w),
+            1.0D - 2.0D * (orientation.x * orientation.x + orientation.z * orientation.z)));
 
-        if (entity == null || entity.isDead || entity.worldObj != this.worldObj) {
-            setDead();
-            return;
+        EntityRenderer renderer = mc.entityRenderer;
+        previousDistance = W_Reflection.getPreviousThirdPersonDistance(renderer);
+        currentDistance = W_Reflection.getThirdPersonDistance();
+        double distance = previousDistance + (currentDistance - previousDistance) * partialTicks;
+        Vec3 eye = clipEye(forward(orientation, !frontView), distance);
+        publishPosition(eye.xCoord, eye.yCoord, eye.zCoord);
+
+        // DH and waypoint renderers get the same eye through the usual vanilla render origin.
+        // The chase distance is already in that origin, so disable vanilla's second setback.
+        frameRenderer = renderer;
+        W_Reflection.setRenderThirdPersonDistances(renderer, 0.0F, 0.0F);
+        W_Reflection.setCameraRoll(roll);
+    }
+
+    private void updatePivot(float partialTicks) {
+        setOrientation(vehicleRotation, entity.prevRotationYaw, entity.prevRotationPitch, entity.prevRotationRoll);
+        setOrientation(target, entity.getRotYaw(), entity.getRotPitch(), entity.getRotRoll());
+        interpolate(vehicleRotation, target, partialTicks);
+
+        double dx = entity.posX - entity.lastTickPosX;
+        double dy = entity.posY - entity.lastTickPosY;
+        double dz = entity.posZ - entity.lastTickPosZ;
+        float positionFraction = dx * dx + dy * dy + dz * dz > HARD_SNAP_DISTANCE_SQ ? 1.0F : partialTicks;
+        double x = vehicleRotation.x, y = vehicleRotation.y, z = vehicleRotation.z, w = vehicleRotation.w;
+        pivotX = entity.lastTickPosX + dx * positionFraction + 2.0D * (x * y - z * w) * pivotHeight;
+        pivotY = entity.lastTickPosY + dy * positionFraction + (1.0D - 2.0D * (x * x + z * z)) * pivotHeight;
+        pivotZ = entity.lastTickPosZ + dz * positionFraction + 2.0D * (y * z + x * w) * pivotHeight;
+    }
+
+    private Vec3 clipEye(Vec3 backward, double distance) {
+        double eyeY = pivotY + VANILLA_EYE_OFFSET;
+        double clippedDistance = distance;
+        for (int corner = 0; corner < 8; ++corner) {
+            double x = pivotX + ((corner & 1) == 0 ? -0.1D : 0.1D);
+            double y = eyeY + ((corner & 2) == 0 ? -0.1D : 0.1D);
+            double z = pivotZ + ((corner & 4) == 0 ? -0.1D : 0.1D);
+            MovingObjectPosition hit = worldObj.rayTraceBlocks(Vec3.createVectorHelper(x, y, z),
+                Vec3.createVectorHelper(x + backward.xCoord * distance, y + backward.yCoord * distance,
+                    z + backward.zCoord * distance));
+            if (hit != null) {
+                double hitDistance = (hit.hitVec.xCoord - x) * backward.xCoord
+                    + (hit.hitVec.yCoord - y) * backward.yCoord + (hit.hitVec.zCoord - z) * backward.zCoord;
+                clippedDistance = Math.min(clippedDistance, Math.max(0.0D, hitDistance - 0.05D));
+            }
         }
-
-        Vec3 target = getTargetPosition();
-        double dX = target.xCoord - posX;
-        double dY = target.yCoord - posY;
-        double dZ = target.zCoord - posZ;
-        double distanceSq = dX * dX + dY * dY + dZ * dZ;
-        if (distanceSq > HARD_SNAP_DISTANCE_SQ) {
-            hardSnap("distance");
-        } else {
-            setPosition(posX + dX * lerpAmount, posY + dY * lerpAmount, posZ + dZ * lerpAmount);
-        }
-
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
-        if (player != null) {
-            rotationYaw   = player.rotationYaw;
-            rotationPitch = clampPitch(player.rotationPitch + 2.0F);
-        } else {
-            rotationYaw   = entity.rotationYaw;
-            rotationPitch = clampPitch(entity.rotationPitch + 2.0F);
-        }
-
-        for (; rotationYaw - prevRotationYaw >= 180F; rotationYaw -= 360F) ;
-        for (; rotationYaw - prevRotationYaw <  -180F; rotationYaw += 360F) ;
+        return Vec3.createVectorHelper(pivotX + backward.xCoord * clippedDistance,
+            eyeY + backward.yCoord * clippedDistance, pivotZ + backward.zCoord * clippedDistance);
     }
 
-    /**
-     * Plane and helicopter flight controls update every render frame, while this camera's
-     * normal onUpdate() runs at 20 TPS. Sync only the view rotation here so the
-     * aircraft cannot visually rotate ahead of the chase camera and snap back.
-     */
-    public void syncRotationForRender(EntityPlayer player) {
-        if (player == null || this.isDead) {
-            return;
-        }
-
-        float yaw = player.rotationYaw;
-        float pitch = clampPitch(player.rotationPitch + 2.0F);
-
-        // Do not interpolate a 20 Hz camera angle over a per-frame mouse angle.
-        this.rotationYaw = yaw;
-        this.prevRotationYaw = yaw;
-        this.rotationPitch = pitch;
-        this.prevRotationPitch = pitch;
+    private void publishPosition(double x, double y, double z) {
+        prevPosX = lastTickPosX = posX = x;
+        prevPosY = lastTickPosY = posY = y;
+        prevPosZ = lastTickPosZ = posZ = z;
+        boundingBox.setBounds(pivotX, pivotY, pivotZ, pivotX, pivotY, pivotZ);
     }
 
-    public void hardSnap(String reason) {
-        if (this.entity == null) {
-            return;
-        }
-        Vec3 target = getTargetPosition();
-        double dx = target.xCoord - this.posX;
-        double dy = target.yCoord - this.posY;
-        double dz = target.zCoord - this.posZ;
-        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        setPosition(target.xCoord, target.yCoord, target.zCoord);
-        this.prevPosX = this.lastTickPosX = this.posX;
-        this.prevPosY = this.lastTickPosY = this.posY;
-        this.prevPosZ = this.lastTickPosZ = this.posZ;
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
-        MCH_Lib.DbgTrace(this.worldObj,
-            "event=third_camera_snap reason=%s distance=%.2f camera=%s player=%s riding=%s aircraft=%s",
-            reason, Double.valueOf(distance), describe(this), describe(player),
-            describe(player != null ? player.ridingEntity : null), describe(this.entity));
+    private static void setOrientation(Quaternion result, float yaw, float pitch, float roll) {
+        double halfYaw = Math.toRadians(-yaw) * 0.5D;
+        double halfPitch = Math.toRadians(pitch) * 0.5D;
+        double halfRoll = Math.toRadians(roll) * 0.5D;
+        double cy = Math.cos(halfYaw), sy = Math.sin(halfYaw);
+        double cp = Math.cos(halfPitch), sp = Math.sin(halfPitch);
+        double cr = Math.cos(halfRoll), sr = Math.sin(halfRoll);
+        result.set((float) (cy * sp * cr + sy * cp * sr), (float) (sy * cp * cr - cy * sp * sr),
+            (float) (cy * cp * sr - sy * sp * cr), (float) (cy * cp * cr + sy * sp * sr));
     }
 
-    private Vec3 getTargetPosition() {
-        Vec3 camCfg = getCameraPositions(entity);
-        final double upHeight = camCfg.yCoord;
-        final double yawRad   = Math.toRadians(entity.rotationYaw);
-        final double pitchRad = Math.toRadians(entity.rotationPitch);
-        final double rollRad  = Math.toRadians(entity.getRotRoll());
-        final double cy = Math.cos(yawRad),  sy = Math.sin(yawRad);
-        final double cp = Math.cos(pitchRad), sp = Math.sin(pitchRad);
-
-        Vec3 f = Vec3.createVectorHelper(-sy * cp, -sp, cy * cp).normalize();
-        Vec3 worldUp = Vec3.createVectorHelper(0, 1, 0);
-        Vec3 r = f.crossProduct(worldUp);
-        if (r.lengthVector() < 1.0e-6) r = Vec3.createVectorHelper(1, 0, 0);
-        else r = r.normalize();
-        Vec3 u = r.crossProduct(f).normalize();
-        Vec3 uRoll = rotateAroundAxis(u, f, rollRad).normalize();
-
-        return Vec3.createVectorHelper(entity.posX + uRoll.xCoord * upHeight,
-            entity.posY + uRoll.yCoord * upHeight, entity.posZ + uRoll.zCoord * upHeight);
+    private static void interpolate(Quaternion from, Quaternion to, float fraction) {
+        // q and -q encode the same orientation. Keep the interpolation on the shorter arc.
+        float signedFraction = Quaternion.dot(from, to) < 0.0F ? -fraction : fraction;
+        float remaining = 1.0F - fraction;
+        from.set(from.x * remaining + to.x * signedFraction, from.y * remaining + to.y * signedFraction,
+            from.z * remaining + to.z * signedFraction, from.w * remaining + to.w * signedFraction);
+        Quaternion.normalise(from, from);
     }
 
-    private static String describe(Entity value) {
-        return value == null ? "null" : value.getClass().getSimpleName() + "#" + value.getEntityId()
-            + "@" + System.identityHashCode(value);
+    private static Vec3 forward(Quaternion rotation, boolean front) {
+        double x = rotation.x, y = rotation.y, z = rotation.z, w = rotation.w;
+        double sign = front ? -1.0D : 1.0D;
+        return Vec3.createVectorHelper(sign * 2.0D * (x * z + y * w), sign * 2.0D * (y * z - x * w),
+            sign * (1.0D - 2.0D * (x * x + y * y)));
     }
 
-    private static Vec3 rotateAroundAxis(Vec3 v, Vec3 kUnit, double angle) {
-        Vec3 k = kUnit.normalize();
-        double c = Math.cos(angle), s = Math.sin(angle);
-        Vec3 kv = k.crossProduct(v);
-        double kdotv = k.xCoord * v.xCoord + k.yCoord * v.yCoord + k.zCoord * v.zCoord;
-        double rx = v.xCoord * c + kv.xCoord * s + k.xCoord * kdotv * (1.0 - c);
-        double ry = v.yCoord * c + kv.yCoord * s + k.yCoord * kdotv * (1.0 - c);
-        double rz = v.zCoord * c + kv.zCoord * s + k.zCoord * kdotv * (1.0 - c);
-        return Vec3.createVectorHelper(rx, ry, rz);
+    private static float cameraPitch(EntityPlayer player) {
+        return MathHelper.clamp_float(player.rotationPitch + 2.0F, -89.9F, 89.9F);
     }
 
-    private static float clampPitch(float p) {
-        if (p > 89.9F)  return 89.9F;
-        return Math.max(p, -89.9F);
-    }
-
-    private Vec3 getCameraPositions(Entity entity) {
+    private static double getPivotHeight(MCH_EntityAircraft entity) {
         if (entity instanceof MCP_EntityPlane) {
-            return Vec3.createVectorHelper(0, 10, 0);
+            return 10.0D;
         } else if (entity instanceof MCH_EntityHeli) {
-            return Vec3.createVectorHelper(0, 5, 0);
+            return 5.0D;
         } else if (entity instanceof MCH_EntityTank) {
-            return Vec3.createVectorHelper(0, 4, 0);
+            return 4.0D;
         } else if (entity instanceof MCH_EntityVehicle) {
-            return Vec3.createVectorHelper(0, 2, 0);
+            return 2.0D;
         }
-        return Vec3.createVectorHelper(0, 0, 0);
+        return 0.0D;
     }
 
     @Override

@@ -1,7 +1,9 @@
 package mcheli;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.aircraft.*;
@@ -49,13 +51,18 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
@@ -421,6 +428,32 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
     }
 
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onVehicleAttackInput(InputEvent event) {
+        if (this.mc.currentScreen == null) {
+            discardInvalidCameraAttacks(this.mc.renderViewEntity, this.mc.thePlayer,
+                this.mc.objectMouseOver, this.mc.gameSettings.keyBindAttack);
+        }
+    }
+
+    private static void discardInvalidCameraAttacks(EntityLivingBase view, EntityPlayer player,
+            MovingObjectPosition hit, KeyBinding attack) {
+        if (player == null || (!(view instanceof MCH_3rdCamera) && !(view instanceof MCH_ViewEntityDummy))
+                || hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY) {
+            return;
+        }
+
+        Entity target = hit.entityHit;
+        if (target == player || target instanceof EntityItem || target instanceof EntityXPOrb
+                || target instanceof EntityArrow) {
+            // Vanilla excludes the view entity from picking. With a camera dummy, that can leave
+            // the local player in the pick list. AttackEntityEvent fires after the packet is sent.
+            while (attack.isPressed()) {
+                // Consume only queued vanilla attack clicks. Vehicle controls poll physical input.
+            }
+        }
+    }
+
     public void onTick() {
         Minecraft minecraft = Minecraft.getMinecraft();
         MCH_ClientTickHandlerBase.initRotLimit();
@@ -541,8 +574,6 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             }
         }
 
-        updateThirdPersonCamera(minecraft);
-
         // GPS cleanup: avoid one-tick flicker around shot/reload transitions for handheld laser guidance.
         boolean holdingLightWeapon = minecraft.thePlayer.getHeldItem() != null
             && minecraft.thePlayer.getHeldItem().getItem() instanceof MCH_ItemLightWeaponBase;
@@ -573,7 +604,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         EntityClientPlayerMP player = minecraft != null ? minecraft.thePlayer : null;
         WorldClient world = minecraft != null ? minecraft.theWorld : null;
         if (!enableNew3rdCamera || player == null || world == null || player.isDead
-            || player.worldObj != world || minecraft.gameSettings.thirdPersonView == 0) {
+            || player.worldObj != world || minecraft.gameSettings.thirdPersonView == 0
+            || minecraft.gameSettings.debugCamEnable) {
             teardownThirdPersonCamera("view_invalid");
             return;
         }
@@ -603,7 +635,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             || cameraPlayer != player || cameraMount != mount;
         if (replaced) {
             teardownThirdPersonCamera("target_or_mount_replaced");
-            camera = new MCH_3rdCamera(world, aircraft);
+            camera = new MCH_3rdCamera(world, aircraft, player);
             cameraWorld = world;
             cameraPlayer = player;
             cameraMount = mount;
@@ -613,13 +645,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 describeCameraEntity(aircraft));
         }
 
-        MCH_3rdCamera thirdCamera = (MCH_3rdCamera)camera;
-        minecraft.renderViewEntity = thirdCamera;
-        thirdCamera.onUpdate();
-        if (thirdCamera.isDead) {
-            teardownThirdPersonCamera("camera_update_invalid");
-            return;
-        }
+        minecraft.renderViewEntity = camera;
         showVehicleCrossHair = true;
     }
 
@@ -633,6 +659,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         Minecraft minecraft = Minecraft.getMinecraft();
         EntityLivingBase oldCamera = camera;
         if (oldCamera != null) {
+            if (oldCamera instanceof MCH_3rdCamera) {
+                ((MCH_3rdCamera) oldCamera).endRenderFrame();
+            }
             MCH_Lib.DbgTrace(oldCamera.worldObj,
                 "event=third_camera_transition action=destroy reason=%s camera=%s player=%s riding=%s aircraft=%s",
                 reason, describeCameraEntity(oldCamera), describeCameraEntity(cameraPlayer),
@@ -846,6 +875,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPre(float partialTicks) {
+        if (camera instanceof MCH_3rdCamera) {
+            ((MCH_3rdCamera) camera).endRenderFrame();
+        }
         MCH_RenderAircraft.beginRenderFrame();
         restoreRenderMouse();
         restoreRiderRenderPositions("next_render_start");
@@ -867,6 +899,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             this.lastAircraftControlNanos = 0L;
             this.lastControlledAircraft = null;
             applyLocalCameraMode(0);
+            teardownThirdPersonCamera("render_view_invalid");
             return;
         }
 
@@ -1118,18 +1151,18 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     }
                 }
 
-                // Plane and helicopter controls update per frame; keep the chase camera
-                // on that same final rotation instead of letting its 20 TPS update catch up later.
-                if ((var19 instanceof MCP_EntityPlane || var19 instanceof MCH_EntityHeli)
-                        && camera instanceof MCH_3rdCamera && super.mc.renderViewEntity == camera) {
-                    ((MCH_3rdCamera) camera).syncRotationForRender(var17);
-                }
-
                 prevTick = partialTicks;
             }
         } else {
             this.lastAircraftControlNanos = 0L;
             this.lastControlledAircraft = null;
+        }
+
+        // Older FMUR clients install their MCHeli camera at client tick END.
+        // Select the chase camera after tick handlers finish and before vanilla picks and draws the world.
+        updateThirdPersonCamera(this.mc);
+        if (camera instanceof MCH_3rdCamera) {
+            ((MCH_3rdCamera) camera).beginRenderFrame();
         }
     }
 
@@ -1450,6 +1483,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPost(float partialTicks) {
+        if (camera instanceof MCH_3rdCamera) {
+            ((MCH_3rdCamera) camera).endRenderFrame();
+        }
         restoreRenderMouse();
         // Generic vehicles intentionally use vanilla mouse-look instead of the aircraft mouse handler.
         // RenderTick START snapshots pre-input rotation, so keep the vanilla rotation applied later in the frame.

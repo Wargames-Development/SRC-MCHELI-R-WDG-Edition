@@ -12,13 +12,12 @@ copying the jar into `build/libs`. Development intermediates stay in
 ## Build numbers
 
 - A successful production packaging invocation increments `modBuildNumber` once.
-  The jar filename, `@Mod` version, and `mcmod.info` use that same new number.
+  The jar filename, `@Mod` version, and `mcmod.info` use the same version, such as
+  `1.9.01_X204`. The counter comes from `gradle.properties`.
 - Compilation, tests, configuration/help, dry runs, and development launches do
   not increment the counter. Failed packaging does not persist its candidate
   number or replace a previously verified output jar.
 - Requesting several packaging tasks together still increments only once.
-- `-PmodBuildNumber=<number>` pins a deliberate build version without changing
-  the saved counter.
 - Run development launches and production packaging in separate invocations.
 
 ## Reported startup crash

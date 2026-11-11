@@ -513,6 +513,8 @@ public class MCH_Explosion extends Explosion {
 
     @Override
     public void doExplosionA() {
+        final boolean wgCorePartialDamage = Integrations.prepareExplosionWGC(this, param.sizeBlock,
+            destroyBlocksByRule && param.isSmoking && param.sizeBlock > 0.0F);
         // === 1) 采样射线，收集会受影响的方块（供 doExplosionB 真正处理） ===
         final int RAYS = getDynamicRayCount(this.param.sizeBlock);
         final double STEP = getDynamicRayStep(this.param.sizeBlock);
@@ -544,6 +546,7 @@ public class MCH_Explosion extends Explosion {
                 final int blockId = W_WorldFunc.getBlockId(this.world, bx, by, bz);
                 if (blockId > 0) {
                     final Block block = W_WorldFunc.getBlock(this.world, bx, by, bz);
+                    final float incomingBlast = blast;
                     float resistance;
                     if (this.exploder != null) {
                         resistance = W_Entity.getBlockExplosionResistance(this.exploder, this, this.world, bx, by, bz, block);
@@ -555,6 +558,11 @@ public class MCH_Explosion extends Explosion {
                         resistance *= this.world.rand.nextFloat() * 0.2F + 0.2F;
                     }
                     blast -= (resistance + 0.3F) * 0.3F;
+                    // Native survivors already enter affected below. Only add the absorbing surface here.
+                    if (blast <= 0F && incomingBlast > 0F && wgCorePartialDamage
+                            && (this.exploder == null || W_Entity.shouldExplodeBlock(this.exploder,this,this.world,bx,by,bz,blockId,incomingBlast))) {
+                        affected.add(new ChunkPosition(bx,by,bz));
+                    }
                 }
 
                 if (blast > 0.0F && (this.exploder == null ||

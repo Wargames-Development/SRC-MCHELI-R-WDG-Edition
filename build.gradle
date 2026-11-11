@@ -24,10 +24,12 @@ archivesBaseName = jarBaseName
 def mcVersion = "1.7.10"
 def forgeVersion = "${mcVersion}-10.13.4.1614-1.7.10"
 
-def buildNumber = (project.findProperty("modBuildNumber") ?: "0").toInteger()
-def baseVersion = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${buildNumber}"
-def branchSuffix = (project.hasProperty("branch") && project.branch) ? "-${project.branch}" : ""
-def modVersionString = "${baseVersion}${branchSuffix}"
+def propertiesFile = file('gradle.properties')
+def buildProperties = new Properties()
+propertiesFile.withInputStream { buildProperties.load(it) }
+def buildNumber = buildProperties.getProperty('modBuildNumber').toInteger()
+def versionForBuild = { number -> "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${number}" }
+def modVersionString = versionForBuild(buildNumber)
 
 version = modVersionString
 
@@ -83,10 +85,19 @@ tasks.withType(JavaCompile) {
 sourceSets {
     main {
         compileClasspath += configurations.provided
+        if (project.hasProperty('wgcoreDevelopmentClasses')) {
+            compileClasspath = files(project.property('wgcoreDevelopmentClasses')) + compileClasspath
+        }
     }
     test {
         compileClasspath += configurations.provided
         runtimeClasspath += configurations.provided
+    }
+}
+
+if (project.hasProperty('wgcoreDevelopmentClasses')) {
+    tasks.withType(JavaCompile) {
+        classpath = files(project.property('wgcoreDevelopmentClasses')) + classpath
     }
 }
 
@@ -130,9 +141,7 @@ processResources {
 }
 
 jar {
-    def fullVersion = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${buildNumber}"
-    def suffix = (project.hasProperty("branch") && project.branch) ? "-${project.branch}" : ""
-    baseName = "${jarBaseName}-${fullVersion}${suffix}"
+    baseName = "${jarBaseName}-${modVersionString}"
     version = null
     // MCP-named classes must never appear in the deployable output directory.
     destinationDir = file("build/intermediates/reobf")
@@ -203,11 +212,10 @@ gradle.taskGraph.whenReady { graph ->
     }
     // Choose once before compilation/resource processing, but persist only after success.
     if (!developmentRuntime && !gradle.startParameter.dryRun
-            && !gradle.startParameter.projectProperties.containsKey('modBuildNumber')
             && graph.hasTask(packageMod) && graph.hasTask(jar) && graph.hasTask(reobf)
             && packageMod.enabled && jar.enabled && reobf.enabled) {
         nextBuildNumber = Math.addExact(buildNumber, 1)
-        project.version = "${modMainVersion}.${modSubVersion}.${modPatchVersion}_X${nextBuildNumber}${branchSuffix}"
+        project.version = versionForBuild(nextBuildNumber)
         jar.baseName = "${jarBaseName}-${project.version}"
         sourceMainJava.replace '@VERSION@', project.version.toString()
     }
@@ -216,7 +224,6 @@ gradle.taskGraph.whenReady { graph ->
 gradle.buildFinished { result ->
     if (nextBuildNumber != null && result.failure == null
             && packageMod.state.executed && !packageMod.state.skipped) {
-        def propertiesFile = file('gradle.properties')
         def content = propertiesFile.getText('UTF-8')
         if (!(content =~ /(?m)^modBuildNumber=[0-9]+[ \t]*\r?$/).find()) {
             throw new GradleException('Missing or invalid modBuildNumber in gradle.properties.')
