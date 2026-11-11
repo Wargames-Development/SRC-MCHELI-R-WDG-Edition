@@ -9,6 +9,7 @@ import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -16,8 +17,31 @@ import java.util.UUID;
 final class WGCoreCompat {
 
     private static final String SOURCE_MOD_ID = "mcheli";
+    private static final Method PREPARE_EXPLOSION = findPrepareExplosion();
 
     private WGCoreCompat() {
+    }
+
+    private static Method findPrepareExplosion() {
+        try {
+            return WGCoreIntegrationAccess.class.getMethod("prepareExplosion",
+                    Explosion.class, double.class, boolean.class, boolean.class);
+        } catch (NoSuchMethodException ignored) {
+            // Older WGCore releases still support protection checks without partial blast damage.
+            return null;
+        }
+    }
+
+    static boolean prepareExplosion(Explosion explosion, double strength, boolean terrainEnabled) {
+        if (PREPARE_EXPLOSION == null) {
+            return false;
+        }
+        try {
+            PREPARE_EXPLOSION.invoke(null, explosion, strength, terrainEnabled, true);
+            return true;
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to prepare WGCore explosion", e);
+        }
     }
 
     static boolean canHarmPlayer(UUID actingPlayerId, UUID targetPlayerId, World world) {

@@ -26,6 +26,10 @@ public final class Integrations {
                 && MCH_Config.EnableWGCoreIntegration.prmBool;
     }
 
+    public static boolean prepareExplosionWGC(Explosion explosion, double strength, boolean terrainEnabled) {
+        return isWGCoreIntegrationEnabled() && WGCoreCompat.prepareExplosion(explosion, strength, terrainEnabled);
+    }
+
     public static boolean canHarmPlayerWGC(Entity actingEntity, Entity targetEntity, World world) {
         if (!isWGCoreIntegrationEnabled()) {
             return true;
