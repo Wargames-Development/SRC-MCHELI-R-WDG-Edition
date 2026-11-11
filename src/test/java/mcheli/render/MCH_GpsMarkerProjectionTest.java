@@ -31,4 +31,16 @@ public class MCH_GpsMarkerProjectionTest {
         assertEquals(MCH_RenderGPSPosition.markerProjectionScale(5_000, 8),
                 MCH_RenderGPSPosition.markerProjectionScale(5_000, 0), 0.0D);
     }
+    @org.junit.Test public void cameraEyeOffsetSurvivesLongRangePositionClamping() {
+        java.nio.FloatBuffer m=java.nio.FloatBuffer.allocate(16);m.put(0,1);m.put(5,1);m.put(10,1);m.put(15,1);
+        for(float eyeHeight:new float[]{0,1.62F,4}) {
+            m.put(13,-eyeHeight);double[] eye=new double[3];org.junit.Assert.assertTrue(MCH_MarkerProjection.eye(m,eye));
+            for(double scale:new double[]{1,.5,.01}) {
+                double x=MCH_MarkerProjection.scaled(30,eye[0],scale),y=MCH_MarkerProjection.scaled(25,eye[1],scale),z=MCH_MarkerProjection.scaled(-750,eye[2],scale);
+                org.junit.Assert.assertEquals(30.0/750,x/-z,1e-12);
+                org.junit.Assert.assertEquals((25.0-eyeHeight)/750.0,(y-eyeHeight)/-z,1e-12);
+                org.junit.Assert.assertEquals(750*scale,MCH_MarkerProjection.depth(m,x,y,z),1e-12);
+            }
+        }
+    }
 }

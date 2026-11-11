@@ -18,6 +18,8 @@ import org.lwjgl.opengl.GL11;
 import java.util.List;
 
 public class MCH_RenderLockBox extends W_Render {
+    private static final java.nio.FloatBuffer modelview=org.lwjgl.BufferUtils.createFloatBuffer(16);
+    private static final double[] eye=new double[3];
 
     public static void renderGuidanceHUD() {
         EntityClientPlayerMP player = Minecraft.getMinecraft().thePlayer;
@@ -77,10 +79,15 @@ public class MCH_RenderLockBox extends W_Render {
                 }
             }
 
+            modelview.clear();GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX,modelview);
+            if(!mcheli.render.MCH_MarkerProjection.eye(modelview,eye)) return;
+
             GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
                     | GL11.GL_CURRENT_BIT | GL11.GL_LINE_BIT | GL11.GL_TEXTURE_BIT);
             GL11.glPushMatrix();
-            GL11.glTranslated(x * scale, y * scale, z * scale);
+            GL11.glTranslated(mcheli.render.MCH_MarkerProjection.scaled(x,eye[0],scale),
+                    mcheli.render.MCH_MarkerProjection.scaled(y,eye[1],scale),
+                    mcheli.render.MCH_MarkerProjection.scaled(z,eye[2],scale));
             GL11.glScaled(scale, scale, scale);
             GL11.glNormal3f(0.0F, 1.0F, 0.0F);
             GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);

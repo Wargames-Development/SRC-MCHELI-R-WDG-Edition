@@ -42,6 +42,8 @@ public class MCH_RenderGPSPosition {
     private final FloatBuffer worldProjection = BufferUtils.createFloatBuffer(16);
     private World projectionWorld;
     private boolean projectionReady;
+    private double originX,originY,originZ;
+    private final double[] eyeOffset=new double[3];
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onRenderWorldLast(RenderWorldLastEvent event) {
@@ -54,6 +56,8 @@ public class MCH_RenderGPSPosition {
         this.worldProjection.clear();
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, this.worldModelView);
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, this.worldProjection);
+        this.originX=RenderManager.renderPosX;this.originY=RenderManager.renderPosY;this.originZ=RenderManager.renderPosZ;
+        if(!MCH_MarkerProjection.eye(this.worldModelView,this.eyeOffset)) return;
         this.projectionReady = true;
         this.renderPositionMarker(event.partialTicks, false);
     }
@@ -136,7 +140,7 @@ public class MCH_RenderGPSPosition {
 
         // —— 世界/相机坐标 ——
         RenderManager rm = RenderManager.instance;
-        final double camX = rm.viewerPosX, camY = rm.viewerPosY, camZ = rm.viewerPosZ;
+        final double camX = this.originX, camY = this.originY, camZ = this.originZ;
         final double x = gx - camX, y = gy - camY, z = gz - camZ;
 
         // —— 视线夹角用于透明度/锁定 ——
@@ -156,13 +160,17 @@ public class MCH_RenderGPSPosition {
 
         // —— 基于 FOV 的恒定像素大小 ——
         ScaledResolution sc = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
-        double dist = Math.sqrt(x*x + y*y + z*z);
+        double ex=x-eyeOffset[0],ey=y+0.2-eyeOffset[1],ez=z-eyeOffset[2];
+        double dist = Math.sqrt(ex*ex + ey*ey + ez*ez);
         double projectionScale = markerProjectionScale(dist, mc.gameSettings.renderDistanceChunks);
         if (!Double.isFinite(projectionScale)) return;
-        double drawDistance = dist * projectionScale;
-        double fovDeg = mc.gameSettings.fovSetting;
-        double fovRad = Math.toRadians(fovDeg);
-        float sPerPixel = (float)((2.0 * drawDistance * Math.tan(fovRad * 0.5)) / sc.getScaledHeight_double());
+        double drawX=MCH_MarkerProjection.scaled(x,eyeOffset[0],projectionScale);
+        double drawY=MCH_MarkerProjection.scaled(y+0.2,eyeOffset[1],projectionScale);
+        double drawZ=MCH_MarkerProjection.scaled(z,eyeOffset[2],projectionScale);
+        double depth=MCH_MarkerProjection.depth(worldModelView,drawX,drawY,drawZ);
+        double yScale=Math.abs(worldProjection.get(5));
+        if(depth<=0 || yScale<=1e-6) return;
+        float sPerPixel = (float)(2.0 * depth / (yScale * sc.getScaledHeight_double()));
 
         // —— 取得视角 roll（度）并在 billboard 后抵消 ——
         float rollDeg = getViewRollDeg(mc, ac, partialTicks); // 正负方向以 MCH 的右手坐标为准
@@ -174,7 +182,7 @@ public class MCH_RenderGPSPosition {
         GL11.glPushMatrix();
         try {
             // Equal position/icon scaling preserves direction and pixel size, like vehicle LODs.
-            GL11.glTranslated(x * projectionScale, (y + 0.2) * projectionScale, z * projectionScale);
+            GL11.glTranslated(drawX,drawY,drawZ);
 
             // billboard 朝向 yaw、pitch：
             GL11.glRotatef(-rm.playerViewY, 0.0F, 1.0F, 0.0F);

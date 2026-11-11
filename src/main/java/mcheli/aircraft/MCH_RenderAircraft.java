@@ -1152,9 +1152,11 @@ public abstract class MCH_RenderAircraft extends W_Render {
             // A carried aircraft is drawn recursively by its parent. The unified pass skips it
             // outside that recursion, so the nested call must retain normal model ownership.
             boolean nestedCarriedRender = renderingEntity && ac.isSkipNormalRender();
-            boolean farRenderOwnsModel = MCH_RenderFarVehicle.usesUnifiedRender(ac) && !nestedCarriedRender;
+            boolean externalOwner=mcheli.lod.MCH_ExternalVehicleRenderer.ownsLegacy();
+            boolean farRenderOwnsModel = externalOwner?mcheli.lod.MCH_ExternalVehicleRenderer.replaceNative(ac)
+                :MCH_RenderFarVehicle.usesUnifiedRender(ac) && !nestedCarriedRender;
             if (!skipNormalRender && !farRenderOwnsModel) {
-                boolean terrainSuppressed = !nestedCarriedRender
+                boolean terrainSuppressed = !externalOwner && !nestedCarriedRender
                     && MCH_WGMapOcclusion.shouldSuppressAircraft(ac, tickTime);
                 if (terrainSuppressed) return;
             }
@@ -1196,6 +1198,7 @@ public abstract class MCH_RenderAircraft extends W_Render {
                 this.renderCommonPart(ac, info, posX, posY, posZ, tickTime);
                 renderLight(posX, posY, posZ, tickTime, ac, info);
                 this.restoreCommonRenderParam();
+                if(externalOwner) mcheli.lod.MCH_ExternalVehicleRenderer.observedNative(ac);
             }
 
             GL11.glPopMatrix();
@@ -1634,9 +1637,11 @@ public abstract class MCH_RenderAircraft extends W_Render {
     }
 
     public void renderCommonPart(MCH_EntityAircraft ac, MCH_AircraftInfo info, double x, double y, double z, float tickTime) {
-        renderRope(ac, info, x, y, z, tickTime);
-        this.renderRadarDisplayPart(ac, info, tickTime);
-        this.renderRWRDisplayPart(ac, info, tickTime);
+        if(!mcheli.lod.MCH_ExternalVehicleRenderer.isVisual(ac)) {
+            renderRope(ac, info, x, y, z, tickTime);
+            this.renderRadarDisplayPart(ac, info, tickTime);
+            this.renderRWRDisplayPart(ac, info, tickTime);
+        }
         renderERA(ac, info);
         renderWeapon(ac, info, tickTime);
         renderRotPart(ac, info, tickTime);

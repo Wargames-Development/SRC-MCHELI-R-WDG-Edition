@@ -59,6 +59,7 @@ public class MCH_RenderBVRLockBox {
     private final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
     private final IntBuffer viewportBuffer = BufferUtils.createIntBuffer(4);
     private boolean activeProjectionValid;
+    private double projectionOriginX,projectionOriginY,projectionOriginZ;
 
     // Best “hard lock” candidate this frame (red box target)
     public static volatile MCH_EntityInfo bestLockedEntity = null;
@@ -178,6 +179,7 @@ public class MCH_RenderBVRLockBox {
         if (mc == null || mc.displayWidth <= 0 || mc.displayHeight <= 0) {
             return;
         }
+        this.projectionOriginX=RenderManager.renderPosX;this.projectionOriginY=RenderManager.renderPosY;this.projectionOriginZ=RenderManager.renderPosZ;
         this.matrixBuffer.clear();
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, this.matrixBuffer);
         this.matrixBuffer.get(this.activeModelView);
@@ -195,9 +197,9 @@ public class MCH_RenderBVRLockBox {
         if (!this.activeProjectionValid || worldPos == null || mc == null) {
             return null;
         }
-        double x = worldPos.x - RenderManager.renderPosX;
-        double y = worldPos.y - RenderManager.renderPosY;
-        double z = worldPos.z - RenderManager.renderPosZ;
+        double x = worldPos.x - this.projectionOriginX;
+        double y = worldPos.y - this.projectionOriginY;
+        double z = worldPos.z - this.projectionOriginZ;
         double eyeX = this.activeModelView[0] * x + this.activeModelView[4] * y + this.activeModelView[8] * z + this.activeModelView[12];
         double eyeY = this.activeModelView[1] * x + this.activeModelView[5] * y + this.activeModelView[9] * z + this.activeModelView[13];
         double eyeZ = this.activeModelView[2] * x + this.activeModelView[6] * y + this.activeModelView[10] * z + this.activeModelView[14];
@@ -424,7 +426,7 @@ public class MCH_RenderBVRLockBox {
             if (projection != null && effectiveHudAlpha > 0.01F) {
                 int heatSeekerRingColor = isHeatSeekerDatalink ? (dist <= 350.0D ? 0xFF0000 : 0xFFFFFF) : 0;
                 projection = avoidHudOverlap(projection, occupiedHudRects, mc, markerSize, stateText, text, detailText, drawText);
-                drawHudMarker(mc, projection, isMSL, markerColor, highlight, hardLock, markerSize, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, detailText, color, drawText, effectiveHudAlpha);
+                drawHudMarker(gx,gy+0.2D,gz,MCH_DhMarkerOverlay.radius(entity),mc, projection, isMSL, markerColor, highlight, hardLock, markerSize, showDataLinkRings, isHeatSeekerDatalink, heatSeekerRingColor, stateText, text, detailText, color, drawText, effectiveHudAlpha);
             }
         }
         if (MCH_RadarDebug.isEnabled() && MCH_RadarDebug.isVerbose() && ac.worldObj != null && ac.worldObj.getTotalWorldTime() % 10L == 0L) {
@@ -505,7 +507,7 @@ public class MCH_RenderBVRLockBox {
             float effectiveHudAlpha = alpha;
             if (projection != null && effectiveHudAlpha > 0.01F) {
                 projection = avoidHudOverlap(projection, occupiedHudRects, mc, markerSize, stateText, text, detailText, true);
-                drawHudMarker(mc, projection, false, markerColor, highlight, hardLock, markerSize, showArmLockRings, false, 0, stateText, text, detailText, textColor, true, effectiveHudAlpha);
+                drawHudMarker(gx,gy+0.2D,gz,MCH_DhMarkerOverlay.radius(targetInfo),mc, projection, false, markerColor, highlight, hardLock, markerSize, showArmLockRings, false, 0, stateText, text, detailText, textColor, true, effectiveHudAlpha);
             }
         }
     }
@@ -524,7 +526,18 @@ public class MCH_RenderBVRLockBox {
         return true;
     }
 
-    private void drawHudMarker(Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean hardLock, int markerSize, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor,
+    private void drawHudMarker(double worldX,double worldY,double worldZ,double radius,Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean hardLock, int markerSize, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor,
+                               String stateText, String text, String detailText, int textColor, boolean drawText, float alpha) {
+        Runnable draw=()->drawHudMarkerNow(mc,projection,isMSL,markerColor,highlight,hardLock,markerSize,showDataLinkRings,isHeatSeekerDatalink,heatSeekerRingColor,stateText,text,detailText,textColor,drawText,alpha);
+        HudRect rect=buildHudRect(projection,mc,markerSize,stateText,text,detailText,drawText);
+        double sx=mc.displayWidth/projection.screenW,sy=mc.displayHeight/projection.screenH;
+        int left=(int)Math.floor((rect.left-16)*sx),right=(int)Math.ceil((rect.right+16)*sx);
+        int bottom=(int)Math.floor((projection.screenH-rect.bottom-16)*sy),top=(int)Math.ceil((projection.screenH-rect.top+16)*sy);
+        if(!projection.edgeClamped && MCH_DhMarkerOverlay.enqueue(worldX,worldY,worldZ,radius,left,bottom,right,top,draw)) return;
+        draw.run();
+    }
+
+    private void drawHudMarkerNow(Minecraft mc, HudProjection projection, boolean isMSL, int markerColor, boolean highlight, boolean hardLock, int markerSize, boolean showDataLinkRings, boolean isHeatSeekerDatalink, int heatSeekerRingColor,
                                String stateText, String text, String detailText, int textColor, boolean drawText, float alpha) {
         boolean lightingEnabled = GL11.glIsEnabled(GL11.GL_LIGHTING);
         boolean depthEnabled = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
@@ -568,7 +581,7 @@ public class MCH_RenderBVRLockBox {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
         GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         float mr = ((markerColor >> 16) & 0xFF) / 255.0F;
@@ -807,7 +820,7 @@ public class MCH_RenderBVRLockBox {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
         GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         float r = ((color >> 16) & 0xFF) / 255.0F;
