@@ -65,6 +65,7 @@ public final class MCH_LaserTargeting {
                 return nativeBlockHit(world, bx, by, bz, from, to);
             }
             public Vec3 missingHit(Vec3 from, Vec3 to) {
+                if(mcheli.integration.dh.DhLaserTerrainBridge.isPresent()) return mcheli.integration.dh.DhLaserTerrainBridge.trace(world,from,to);
                 return Loader.isModLoaded("wgmap") ? WGMapLaserServerBridge.trace(world, from, to) : null;
             }
         }, start, end);

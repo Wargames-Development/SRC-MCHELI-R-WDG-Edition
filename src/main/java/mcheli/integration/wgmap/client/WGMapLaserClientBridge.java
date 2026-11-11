@@ -37,7 +37,7 @@ public final class WGMapLaserClientBridge {
         if (!Double.isFinite(distance) || distance <= 0 || distance > 1500.01D) return new Trace(liveHit, false);
         // Warm the bounded complete corridor once, so a chain of initially missing
         // chunks can arrive together. Its coarse result is never a hit position.
-        MCH_WGMapOcclusion.traceSegment(world.provider.dimensionId,
+        if(!mcheli.integration.dh.DhLaserTerrainBridge.isPresent()) MCH_WGMapOcclusion.traceSegment(world.provider.dimensionId,
                 start.xCoord, start.yCoord, start.zCoord,
                 limit.xCoord, limit.yCoord, limit.zCoord);
         final double[] coordinates = new double[3];
@@ -49,6 +49,10 @@ public final class WGMapLaserClientBridge {
                 return MCH_LaserTargeting.nativeBlockHit(world, x, y, z, from, to);
             }
             @Override public Vec3 missingHit(Vec3 from, Vec3 to) {
+                if(mcheli.integration.dh.DhLaserTerrainBridge.isPresent()) {
+                    String result=mcheli.integration.dh.DhLaserTerrainBridge.query(world,from,to,coordinates);
+                    return "CLEAR".equals(result)?to:"BLOCKED".equals(result)?Vec3.createVectorHelper(coordinates[0],coordinates[1],coordinates[2]):null;
+                }
                 Result result = MCH_WGMapOcclusion.traceFirstHit(world.provider.dimensionId,
                         from.xCoord, from.yCoord, from.zCoord, to.xCoord, to.yCoord, to.zCoord, coordinates);
                 if (result == Result.UNAVAILABLE) {

@@ -101,15 +101,11 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             // 计算方向的距离
             double maxDist = 1500.0;
 
-            double posX = RenderManager.renderPosX;
-            double posY = RenderManager.renderPosY;
-            double posZ = RenderManager.renderPosZ;
-
-            if (ac != null) {
-                posX = RenderManager.renderPosX;
-                posY = RenderManager.renderPosY;
-                posZ = RenderManager.renderPosZ;
-            }
+            // Logic ticks must not use RenderManager's previous rendered frame origin.
+            // FOV/zoom changes projection, not the world-space designation ray.
+            Entity camera=net.minecraft.client.Minecraft.getMinecraft().renderViewEntity;
+            if(camera==null || camera.worldObj!=worldObj) camera=user;
+            double posX=camera.posX,posY=camera.posY,posZ=camera.posZ;
 
             // 计算发射源
             Vec3 src = W_WorldFunc.getWorldVec3(this.worldObj, posX, posY, posZ);
