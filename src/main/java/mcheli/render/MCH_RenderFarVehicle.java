@@ -8,6 +8,7 @@ import mcheli.MCH_Camera;
 import mcheli.MCH_ClientEventHook;
 import mcheli.MCH_Config;
 import mcheli.MCH_EntityInfo;
+import mcheli.MCH_EntityInfo.WeaponAim;
 import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.MCH_EntityInfoManager;
 import mcheli.MCH_Lib;
@@ -26,6 +27,7 @@ import mcheli.tank.MCH_TankInfoManager;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vehicle.MCH_VehicleInfo;
 import mcheli.vehicle.MCH_VehicleInfoManager;
+import mcheli.weapon.MCH_WeaponSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
@@ -90,6 +92,7 @@ public class MCH_RenderFarVehicle {
     private int candidateCount;
     private int lastBvrCount = -1, lastGpuReadyCount = -1;
     private boolean lastDepthAvailable;
+    private boolean physicalCapture;
     private static long nextVisibilityDiagnosticMillis;
     private World lastWorld;
     private int renderFrame;
@@ -97,6 +100,7 @@ public class MCH_RenderFarVehicle {
 
     public MCH_RenderFarVehicle() {
         activeRenderer = this;
+        MCH_DistantVisuals.register(partial -> onRenderWorldLast(new RenderWorldLastEvent(Minecraft.getMinecraft().renderGlobal,(float)partial)));
         MCH_FMURThermal.register(new java.util.function.Consumer<Float>() {
             @Override public void accept(Float partialTicks) {
                 Minecraft mc = Minecraft.getMinecraft();
@@ -127,6 +131,7 @@ public class MCH_RenderFarVehicle {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onRenderWorldLast(RenderWorldLastEvent event) {
+        if(MCH_DistantVisuals.supported() && !MCH_DistantVisuals.collecting()) return;
         if(mcheli.lod.MCH_ExternalVehicleRenderer.ownsLegacy()) {
             smoothedPoses.clear();retiredEntityIds.clear();newestByUuid.clear();loadedByUuid.clear();loadedAircraft.clear();candidates.clear();return;
         }
@@ -278,11 +283,12 @@ public class MCH_RenderFarVehicle {
         }
         this.candidateCount = 0;
         double visualRange = getVehicleRenderDistance();
-        MCH_WGMapDepth.setViewDistance(visualRange);
+        boolean distantVisuals=MCH_DistantVisuals.supported();
+        if(!distantVisuals) MCH_WGMapDepth.setViewDistance(visualRange);
         double transitionStart = getTransitionStart(mc);
-        boolean depthAvailable = MCH_WGMapDepth.isAvailable();
-        Frustrum frustum = new Frustrum();
-        frustum.setPosition(RenderManager.instance.viewerPosX,
+        boolean depthAvailable = !distantVisuals && MCH_WGMapDepth.isAvailable();
+        Frustrum frustum = distantVisuals ? null : new Frustrum();
+        if (frustum != null) frustum.setPosition(RenderManager.instance.viewerPosX,
                 RenderManager.instance.viewerPosY, RenderManager.instance.viewerPosZ);
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT);
         mc.entityRenderer.enableLightmap(event.partialTicks);
@@ -368,7 +374,10 @@ public class MCH_RenderFarVehicle {
                 double projectedDistance = projectedBvr && depthAvailable
                         ? MCH_CompressedDepthProjection.projected(trueDistance, transitionStart)
                         : cpuProjectedDistance(trueDistance, transitionStart, getTransitionEnd(mc));
-                if (!couldContributeToFrame(frustum, definition.info, dx, dy, dz,
+                // DH projects the physical model with its captured camera and full
+                // model envelope. A second test of a compressed legacy position
+                // against the current GL frustum can reject that visible model.
+                if (!distantVisuals && !couldContributeToFrame(frustum, definition.info, dx, dy, dz,
                         projectedBvr ? projectedDistance / trueDistance : 1.0D)) {
                     reportVisibility(pose, entry.getKey().intValue(), false, "OUTSIDE_FRUSTUM", now);
                     pose.report("OUTSIDE_FRUSTUM", entry.getKey().intValue());
@@ -395,6 +404,23 @@ public class MCH_RenderFarVehicle {
                         || configureVehicleDepth(candidate, dx, dy, dz, trueDistance, transitionStart);
             }
 
+            if(distantVisuals) {
+                for(int i=0;i<candidateCount;i++) {
+                    final RenderCandidate candidate=candidates.get(i);
+                    final SmoothedPose pose=candidate.pose;
+                    if(MCH_FMURThermal.isHeatPass() && candidate.aircraft!=null
+                            && MCH_EntityAircraft.getAircraft_RiddenOrControl(mc.thePlayer)==candidate.aircraft) continue;
+                    MCH_AircraftInfo info=candidate.definition.info;
+                    double radius=Math.max(64,2*Math.max(info.bodyWidth,Math.max(info.bodyHeight,Math.max(Math.abs(info.bbZmin),Math.abs(info.bbZmax)))));
+                    final int brightness=candidate.brightness<0?resolveLightmapBrightness(mc,pose,null,event.partialTicks):candidate.brightness;
+                    MCH_DistantVisuals.submit(mc.theWorld,pose.x,pose.y,pose.z,pose.y,radius,event.partialTicks,brightness,()-> {
+                        physicalCapture=true;
+                        try { renderContact(mc,pose,candidate.definition,candidate.aircraft,event.partialTicks,brightness,false,true,0,1); }
+                        finally { physicalCapture=false; }
+                    });
+                }
+                return;
+            }
             int projectedCount = 0, depthCandidateCount = 0;
             for (int i = 0; i < candidateCount; i++) {
                 RenderCandidate candidate = candidates.get(i);
@@ -581,7 +607,7 @@ public class MCH_RenderFarVehicle {
         double projectedDistance = gpuDepth || precisionPass
                 ? MCH_CompressedDepthProjection.projected(distance, safeDistance)
                 : cpuProjectedDistance(distance, safeDistance, getTransitionEnd(mc));
-        double projectionScale = distance > 0.0D ? projectedDistance / distance : 1.0D;
+        double projectionScale = physicalCapture?1.0D:distance > 0.0D ? projectedDistance / distance : 1.0D;
         x *= projectionScale;
         y *= projectionScale;
         z *= projectionScale;
@@ -595,7 +621,7 @@ public class MCH_RenderFarVehicle {
             | GL11.GL_VIEWPORT_BIT | GL11.GL_CURRENT_BIT);
         // This unified pass draws both near and projected models. A late world/sky
         // shader has different samplers and outputs; use the same vanilla lighting for both.
-        if (shadersSupported) GL20.glUseProgram(0);
+        if (shadersSupported && !physicalCapture) GL20.glUseProgram(0);
         RenderHelper.enableStandardItemLighting();
         GL11.glPushMatrix();
         try {
@@ -658,8 +684,16 @@ public class MCH_RenderFarVehicle {
                 MCH_RenderAircraft aircraftRenderer = (MCH_RenderAircraft)renderer;
                 aircraftRenderer.renderAircraft(localAircraft, 0.0D, 0.0D, 0.0D,
                     pose.yaw, pose.pitch, pose.roll, partialTicks);
-                aircraftRenderer.renderCommonPart(localAircraft, localAircraft.getAcInfo(),
-                    0.0D, 0.0D, 0.0D, partialTicks);
+                boolean snapshotAim = localAircraft instanceof MCH_EntityTank
+                    && !localAircraft.isMountedEntity(mc.thePlayer)
+                    && MCH_EntityAircraft.getAircraft_RiddenOrControl(mc.thePlayer) != localAircraft
+                    && pose.beginTankAim(localAircraft);
+                try {
+                    aircraftRenderer.renderCommonPart(localAircraft, localAircraft.getAcInfo(),
+                        0.0D, 0.0D, 0.0D, partialTicks);
+                } finally {
+                    if (snapshotAim) pose.endTankAim(localAircraft);
+                }
                 MCH_RenderAircraft.renderLight(0.0D, 0.0D, 0.0D, partialTicks,
                     localAircraft, localAircraft.getAcInfo());
             } else {
@@ -882,8 +916,17 @@ public class MCH_RenderFarVehicle {
     private void renderWeaponParts(MCH_AircraftInfo info, SmoothedPose pose) {
         float turretYaw = wrapAngle(pose.turretYaw - pose.yaw);
         float turretPitch = clamp(pose.turretPitch, info.minRotationPitch, info.maxRotationPitch);
+        WeaponAim[] aims = pose.contact == null ? null : pose.contact.tankWeaponAim;
+        boolean hasTankAim = aims != null && aims.length == info.getWeaponNum();
         for (Object part : info.partWeapon) {
             MCH_AircraftInfo.PartWeapon weapon = (MCH_AircraftInfo.PartWeapon)part;
+            int weaponId = hasTankAim ? info.getWeaponIdByName(weapon.name[0]) : -1;
+            WeaponAim aim = weaponId < 0 ? null : aims[weaponId];
+            WeaponAim previous = pose.previousWeaponAim(weaponId, aims);
+            float gunYaw = aim == null ? turretYaw
+                : SmoothedPose.interpolateAngle(previous.yaw, aim.yaw, pose.weaponAimBlend) - aim.defaultYaw;
+            float gunPitch = aim == null ? turretPitch
+                : SmoothedPose.interpolateAngle(previous.pitch, aim.pitch, pose.weaponAimBlend);
             GL11.glPushMatrix();
             if (weapon.turret) {
                 GL11.glTranslated(info.turretPosition.xCoord, info.turretPosition.yCoord, info.turretPosition.zCoord);
@@ -891,12 +934,15 @@ public class MCH_RenderFarVehicle {
                 GL11.glTranslated(-info.turretPosition.xCoord, -info.turretPosition.yCoord, -info.turretPosition.zCoord);
             }
             GL11.glTranslated(weapon.pos.xCoord, weapon.pos.yCoord, weapon.pos.zCoord);
-            if (weapon.yaw && !weapon.turret) {
-                GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
+            if (weapon.yaw && (aim != null || !weapon.turret)) {
+                GL11.glRotatef(gunYaw, 0.0F, -1.0F, 0.0F);
             }
-            if (weapon.pitch) {
-                GL11.glRotatef(turretPitch, 1.0F, 0.0F, 0.0F);
+            if (aim != null && weapon.turret) {
+                // Match the tracked renderer's correction at the gun pivot.
+                float weaponTurret = SmoothedPose.interpolateAngle(previous.turretYaw, aim.turretYaw, pose.weaponAimBlend);
+                GL11.glRotatef(weaponTurret - turretYaw, 0.0F, -1.0F, 0.0F);
             }
+            applyWeaponPitch(weapon.pitch, gunPitch, aim == null ? 0.0F : aim.defaultYaw);
             GL11.glTranslated(-weapon.pos.xCoord, -weapon.pos.yCoord, -weapon.pos.zCoord);
             MCH_RenderAircraft.renderPart(weapon.model, info.model, weapon.modelName);
             for (Object childPart : weapon.child) {
@@ -904,17 +950,23 @@ public class MCH_RenderFarVehicle {
                 GL11.glPushMatrix();
                 GL11.glTranslated(child.pos.xCoord, child.pos.yCoord, child.pos.zCoord);
                 if (child.yaw) {
-                    GL11.glRotatef(turretYaw, 0.0F, -1.0F, 0.0F);
+                    GL11.glRotatef(gunYaw, 0.0F, -1.0F, 0.0F);
                 }
-                if (child.pitch) {
-                    GL11.glRotatef(turretPitch, 1.0F, 0.0F, 0.0F);
-                }
+                applyWeaponPitch(child.pitch, gunPitch, aim == null ? 0.0F : aim.defaultYaw);
                 GL11.glTranslated(-child.pos.xCoord, -child.pos.yCoord, -child.pos.zCoord);
                 MCH_RenderAircraft.renderPart(child.model, info.model, child.modelName);
                 GL11.glPopMatrix();
             }
             GL11.glPopMatrix();
         }
+    }
+
+    private static void applyWeaponPitch(boolean rotates, float pitch, float defaultYaw) {
+        if (!rotates) return;
+        float heading = Math.abs(wrapAngle(defaultYaw));
+        if ((int)defaultYaw != 0) GL11.glRotatef(-defaultYaw, 0.0F, -1.0F, 0.0F);
+        GL11.glRotatef(heading >= 45.0F && heading <= 135.0F ? -pitch : pitch, 1.0F, 0.0F, 0.0F);
+        if ((int)defaultYaw != 0) GL11.glRotatef(defaultYaw, 0.0F, -1.0F, 0.0F);
     }
 
     private void renderVehiclePart(MCH_VehicleInfo info, MCH_VehicleInfo.VPart part, SmoothedPose pose) {
@@ -1061,6 +1113,7 @@ public class MCH_RenderFarVehicle {
     }
 
     public static boolean usesUnifiedRender(MCH_EntityAircraft aircraft) {
+        if(MCH_DistantVisuals.supported() && !MCH_DistantVisuals.ready()) return false;
         if(mcheli.lod.MCH_ExternalVehicleRenderer.ownsLegacy()) return false;
         if (aircraft == null || aircraft.isDestroyed() || aircraft.getAcInfo() == null || aircraft.getAcInfo().model == null
             || !isSupportedVehicleClass(aircraft.getClass().getName())) {
@@ -1160,6 +1213,9 @@ public class MCH_RenderFarVehicle {
         private float roll;
         private float turretYaw;
         private float turretPitch;
+        private MCH_EntityInfo previousAimContact;
+        private float weaponAimBlend = 1.0F;
+        private float[] savedTankAim = new float[0];
         private float landingGearRotation;
         private ResourceLocation texture;
         private String textureName;
@@ -1207,6 +1263,7 @@ public class MCH_RenderFarVehicle {
             this.aircraftUuid = contact.aircraftUuid;
             this.lastContactSeenMillis = now;
             if (this.contact == null || contact.lastUpdateTime >= this.contact.lastUpdateTime) {
+                if (contact != this.contact) this.previousAimContact = this.contact;
                 this.contact = contact;
                 if (contact.packedLight >= 0) {
                     this.lightmapBrightness = contact.packedLight;
@@ -1282,6 +1339,9 @@ public class MCH_RenderFarVehicle {
             this.lastUpdateMillis = now;
             this.lastRenderFrame = renderFrame;
             this.initialized = true;
+            if (aircraft instanceof MCH_EntityTank && this.contact != null) {
+                this.updateWeaponAim(now);
+            }
         }
 
         private void update(MCH_EntityInfo contact, long now, int renderFrame) {
@@ -1318,6 +1378,72 @@ public class MCH_RenderFarVehicle {
             }
             this.lastUpdateMillis = now;
             this.lastRenderFrame = renderFrame;
+            this.updateWeaponAim(now);
+        }
+
+        private void updateWeaponAim(long now) {
+            if (this.contact == null || this.contact.tankWeaponAim == null) return;
+            MCH_EntityInfo previous = this.previousAimContact;
+            long interval = previous == null ? 0L : this.contact.lastUpdateTime - previous.lastUpdateTime;
+            this.weaponAimBlend = interval > 0L && interval <= 250L
+                ? clamp((float)(now - this.contact.lastUpdateTime) / interval, 0.0F, 1.0F) : 1.0F;
+            if (previous == null) previous = this.contact;
+            this.turretYaw = interpolateAngle(previous.turretYaw, this.contact.turretYaw, this.weaponAimBlend);
+            this.turretPitch = interpolateAngle(previous.turretPitch, this.contact.turretPitch, this.weaponAimBlend);
+        }
+
+        // The server snapshot owns observed aim in both loaded and detached draws.
+        // Save the client simulation values and restore them even when a part renderer fails.
+        private boolean beginTankAim(MCH_EntityAircraft aircraft) {
+            WeaponAim[] aims = this.contact == null ? null : this.contact.tankWeaponAim;
+            if (aims == null || aims.length != aircraft.weapons.length
+                    || !aircraft.getUniqueID().equals(this.contact.aircraftUuid)) return false;
+            for (MCH_WeaponSet weapon : aircraft.weapons) if (weapon == null) return false;
+            int count = aims.length * 5;
+            if (this.savedTankAim.length != count + 4) this.savedTankAim = new float[count + 4];
+            this.savedTankAim[count] = aircraft.lastRiderYaw;
+            this.savedTankAim[count + 1] = aircraft.prevLastRiderYaw;
+            this.savedTankAim[count + 2] = aircraft.lastRiderPitch;
+            this.savedTankAim[count + 3] = aircraft.prevLastRiderPitch;
+            aircraft.lastRiderYaw = aircraft.prevLastRiderYaw = this.turretYaw;
+            aircraft.lastRiderPitch = aircraft.prevLastRiderPitch = this.turretPitch;
+            for (int i = 0; i < aims.length; ++i) {
+                MCH_WeaponSet weapon = aircraft.weapons[i];
+                int offset = i * 5;
+                this.savedTankAim[offset] = weapon.rotationYaw;
+                this.savedTankAim[offset + 1] = weapon.prevRotationYaw;
+                this.savedTankAim[offset + 2] = weapon.rotationPitch;
+                this.savedTankAim[offset + 3] = weapon.prevRotationPitch;
+                this.savedTankAim[offset + 4] = weapon.rotationTurretYaw;
+                WeaponAim previous = this.previousWeaponAim(i, aims);
+                weapon.rotationYaw = weapon.prevRotationYaw = interpolateAngle(previous.yaw, aims[i].yaw, this.weaponAimBlend);
+                weapon.rotationPitch = weapon.prevRotationPitch = interpolateAngle(previous.pitch, aims[i].pitch, this.weaponAimBlend);
+                weapon.rotationTurretYaw = interpolateAngle(previous.turretYaw, aims[i].turretYaw, this.weaponAimBlend);
+            }
+            return true;
+        }
+
+        private void endTankAim(MCH_EntityAircraft aircraft) {
+            int count = aircraft.weapons.length * 5;
+            aircraft.lastRiderYaw = this.savedTankAim[count];
+            aircraft.prevLastRiderYaw = this.savedTankAim[count + 1];
+            aircraft.lastRiderPitch = this.savedTankAim[count + 2];
+            aircraft.prevLastRiderPitch = this.savedTankAim[count + 3];
+            for (int i = 0; i < aircraft.weapons.length; ++i) {
+                MCH_WeaponSet weapon = aircraft.weapons[i];
+                int offset = i * 5;
+                weapon.rotationYaw = this.savedTankAim[offset];
+                weapon.prevRotationYaw = this.savedTankAim[offset + 1];
+                weapon.rotationPitch = this.savedTankAim[offset + 2];
+                weapon.prevRotationPitch = this.savedTankAim[offset + 3];
+                weapon.rotationTurretYaw = this.savedTankAim[offset + 4];
+            }
+        }
+
+        private WeaponAim previousWeaponAim(int weaponId, WeaponAim[] current) {
+            if (weaponId < 0) return null;
+            WeaponAim[] previous = this.previousAimContact == null ? null : this.previousAimContact.tankWeaponAim;
+            return previous != null && previous.length == current.length ? previous[weaponId] : current[weaponId];
         }
 
         private void ensureIdentity(String className, String name) {

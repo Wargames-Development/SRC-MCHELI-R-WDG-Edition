@@ -1,7 +1,9 @@
 package mcheli;
 
 import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.tank.MCH_EntityTank;
 import mcheli.weapon.MCH_EntityBaseBullet;
+import mcheli.weapon.MCH_WeaponSet;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.scoreboard.Team;
@@ -31,6 +33,8 @@ public class MCH_EntityInfo {
     public float rotationRoll;
     public float turretYaw;
     public float turretPitch;
+    /** Tank weapon sets in definition order. Absent on legacy snapshots. */
+    public WeaponAim[] tankWeaponAim;
     /** Server part rotation: 0 is extended, 90 is retracted; NaN means unavailable. */
     public float landingGearRotation = Float.NaN;
     public boolean destroyed;
@@ -47,6 +51,38 @@ public class MCH_EntityInfo {
     public byte countermeasureFlags;
     public long countermeasureUntilTick;
     public long lastUpdateTime;
+
+    public static final class WeaponAim {
+        public static final int MAX_SETS = 32;
+        public final float yaw, pitch, turretYaw, defaultYaw;
+
+        public WeaponAim(float yaw, float pitch, float turretYaw, float defaultYaw) {
+            this.yaw = yaw;
+            this.pitch = pitch;
+            this.turretYaw = turretYaw;
+            this.defaultYaw = defaultYaw;
+        }
+
+        public boolean isFinite() {
+            return Float.isFinite(yaw) && Float.isFinite(pitch)
+                && Float.isFinite(turretYaw) && Float.isFinite(defaultYaw);
+        }
+    }
+
+    static WeaponAim[] captureTankWeaponAim(MCH_WeaponSet[] weapons, int definitionCount) {
+        if (definitionCount == 0 || definitionCount > WeaponAim.MAX_SETS
+                || weapons.length != definitionCount) return null;
+        WeaponAim[] result = new WeaponAim[definitionCount];
+        for (int i = 0; i < definitionCount; ++i) {
+            MCH_WeaponSet weapon = weapons[i];
+            if (weapon == null) return null;
+            WeaponAim aim = new WeaponAim(weapon.rotationYaw, weapon.rotationPitch,
+                weapon.rotationTurretYaw, weapon.defaultRotationYaw);
+            if (!aim.isFinite()) return null;
+            result[i] = aim;
+        }
+        return result;
+    }
 
     public MCH_EntityInfo(int entityId, String worldName, String entityName, String entityClassName, double posX, double posY, double posZ, double lastTickPosX, double lastTickPosY, double lastTickPosZ) {
         this(entityId, worldName, entityName, entityClassName, posX, posY, posZ, lastTickPosX, lastTickPosY, lastTickPosZ, 0.0F, 0.0F, (byte)0, -1L);
@@ -149,6 +185,9 @@ public class MCH_EntityInfo {
             info.aircraftUuid = e.getUniqueID();
             info.armEmitter = aircraft.isArmEmitterRadiating();
             info.landingGearRotation = aircraft.getLandingGearRotation();
+            if (aircraft instanceof MCH_EntityTank && aircraft.getAcInfo() != null && !destroyed) {
+                info.tankWeaponAim = captureTankWeaponAim(aircraft.weapons, aircraft.getAcInfo().getWeaponNum());
+            }
         }
         info.altitudeAboveGround = computeServerAgl(e);
         if (!e.worldObj.isRemote && aircraft != null) {

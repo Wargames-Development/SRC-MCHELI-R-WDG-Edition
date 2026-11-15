@@ -3,6 +3,7 @@ package mcheli.network.packets;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import mcheli.MCH_EntityInfo;
+import mcheli.MCH_EntityInfo.WeaponAim;
 import mcheli.MCH_EntityInfoClientTracker;
 import mcheli.network.PacketBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,6 +27,8 @@ public class PacketEntityInfoSync extends PacketBase {
     private static final int RADAR_TERRAIN_EXTENSION_MAGIC = 0x52414431; // "RAD1"
     private static final int ARM_EXTENSION_MAGIC = 0x41524D31; // "ARM1"
     private static final int LANDING_GEAR_EXTENSION_MAGIC = 0x47454152; // "GEAR"
+    private static final int TANK_AIM_EXTENSION_MAGIC = 0x41494D31; // "AIM1"
+    private static final int WEAPON_AIM_BYTES = 4 * Float.BYTES;
 
     private List<MCH_EntityInfo> entities;
     private long snapshotSeq; // 新增：包级快照序号
@@ -107,6 +110,7 @@ public class PacketEntityInfoSync extends PacketBase {
         buf.writeInt(LANDING_GEAR_EXTENSION_MAGIC);
         buf.writeInt(entities.size());
         for (MCH_EntityInfo info : entities) buf.writeFloat(info.landingGearRotation);
+        writeTankAimExtension(buf);
     }
 
     @Override
@@ -143,6 +147,48 @@ public class PacketEntityInfoSync extends PacketBase {
         readRadarTerrainExtension(buf);
         readArmExtension(buf);
         readLandingGearExtension(buf);
+        readTankAimExtension(buf);
+    }
+
+    private void writeTankAimExtension(ByteBuf buf) {
+        int records = 0;
+        for (MCH_EntityInfo info : entities) {
+            if (info.tankWeaponAim != null) ++records;
+        }
+        if (records == 0) return;
+        buf.writeInt(TANK_AIM_EXTENSION_MAGIC).writeInt(records);
+        for (int i = 0; i < entities.size(); ++i) {
+            WeaponAim[] aims = entities.get(i).tankWeaponAim;
+            if (aims == null) continue;
+            buf.writeInt(i).writeByte(aims.length);
+            for (WeaponAim aim : aims) {
+                buf.writeFloat(aim.yaw).writeFloat(aim.pitch).writeFloat(aim.turretYaw).writeFloat(aim.defaultYaw);
+            }
+        }
+    }
+
+    private void readTankAimExtension(ByteBuf buf) {
+        if (buf.readableBytes() < 8 || buf.getInt(buf.readerIndex()) != TANK_AIM_EXTENSION_MAGIC) return;
+        buf.readInt();
+        int records = buf.readInt();
+        if (records < 0 || records > entities.size() || records > buf.readableBytes() / (5 + WEAPON_AIM_BYTES)) return;
+        int previousIndex = -1;
+        for (int i = 0; i < records; ++i) {
+            if (buf.readableBytes() < 5) return;
+            int index = buf.readInt();
+            int count = buf.readUnsignedByte();
+            if (index <= previousIndex || index >= entities.size() || count == 0
+                    || count > WeaponAim.MAX_SETS || count * WEAPON_AIM_BYTES > buf.readableBytes()) return;
+            previousIndex = index;
+            WeaponAim[] aims = new WeaponAim[count];
+            boolean valid = true;
+            for (int w = 0; w < count; ++w) {
+                WeaponAim aim = new WeaponAim(buf.readFloat(), buf.readFloat(), buf.readFloat(), buf.readFloat());
+                valid &= aim.isFinite();
+                aims[w] = aim;
+            }
+            if (valid) entities.get(index).tankWeaponAim = aims;
+        }
     }
 
     private void readLandingGearExtension(ByteBuf buf) {

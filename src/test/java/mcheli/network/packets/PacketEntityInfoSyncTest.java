@@ -159,6 +159,46 @@ public final class PacketEntityInfoSyncTest {
         }
     }
 
+    @Test public void tankAimExtensionKeepsWeaponAnglesIndependentOfPilotAim() throws Exception {
+        MCH_EntityInfo plane = aircraft(1);
+        MCH_EntityInfo tank = new MCH_EntityInfo(2, "world", "tank", "mcheli.tank.MCH_EntityTank",
+            0, 64, 0, 0, 64, 0);
+        tank.tankWeaponAim = new MCH_EntityInfo.WeaponAim[] {
+            new MCH_EntityInfo.WeaponAim(53, -13, 40, 0),
+            new MCH_EntityInfo.WeaponAim(-100, 5, 40, -90)
+        };
+        ByteBuf bytes = Unpooled.buffer();
+        try {
+            new PacketEntityInfoSync(java.util.Arrays.asList(plane, tank), 8L).encodeInto(null, bytes);
+            PacketEntityInfoSync decoded = new PacketEntityInfoSync();
+            decoded.decodeInto(null, bytes.duplicate());
+            assertNull(getEntities(decoded).get(0).tankWeaponAim);
+            MCH_EntityInfo parsed = getEntities(decoded).get(1);
+            assertEquals(0, parsed.turretYaw, 0);
+            assertEquals(0, parsed.turretPitch, 0);
+            for (int i = 0; i < 2; ++i) {
+                assertEquals(tank.tankWeaponAim[i].yaw, parsed.tankWeaponAim[i].yaw, 0);
+                assertEquals(tank.tankWeaponAim[i].pitch, parsed.tankWeaponAim[i].pitch, 0);
+                assertEquals(tank.tankWeaponAim[i].turretYaw, parsed.tankWeaponAim[i].turretYaw, 0);
+                assertEquals(tank.tankWeaponAim[i].defaultYaw, parsed.tankWeaponAim[i].defaultYaw, 0);
+            }
+
+            int end = bytes.writerIndex();
+            bytes.setFloat(end - 4, Float.NaN);
+            decoded.decodeInto(null, bytes.duplicate());
+            assertNull(getEntities(decoded).get(1).tankWeaponAim);
+            bytes.setFloat(end - 4, -90);
+            bytes.writerIndex(end - 1);
+            decoded.decodeInto(null, bytes.duplicate());
+            assertNull(getEntities(decoded).get(1).tankWeaponAim);
+            bytes.writerIndex(end - 8 - 5 - 2 * 16);
+            decoded.decodeInto(null, bytes.duplicate());
+            assertNull(getEntities(decoded).get(1).tankWeaponAim);
+        } finally {
+            bytes.release();
+        }
+    }
+
     private static MCH_EntityInfo aircraft(int id) {
         return new MCH_EntityInfo(id, "world", "plane", "mcheli.plane.MCP_EntityPlane", 0, 64, 0, 0, 64, 0);
     }

@@ -1,6 +1,17 @@
 package mcheli.render;
 
+import mcheli.MCH_EntityInfo;
+import mcheli.aircraft.MCH_AircraftInfo;
+import mcheli.aircraft.MCH_RenderAircraft;
 import mcheli.plane.MCP_PlaneInfo;
+import mcheli.tank.MCH_EntityTank;
+import mcheli.tank.MCH_TankInfo;
+import mcheli.weapon.MCH_WeaponInfo;
+import mcheli.weapon.MCH_WeaponMachineGun2;
+import mcheli.weapon.MCH_WeaponSet;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.util.Vec3;
+import net.minecraftforge.client.model.IModelCustom;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -18,6 +29,9 @@ import org.lwjgl.opengl.PixelFormat;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
@@ -132,6 +146,152 @@ public class MCH_FarVehicleDepthLayerLightingTest {
         GL11.glVertex3f(-20, 20, -120);
         GL11.glEnd();
         layer.finish(completed, 0, 1, projection.get(10), projection.get(14));
+    }
+
+    @Test public void bomberCaptureContainsTailAndNoseAcrossHandoff() {
+        MCP_PlaneInfo bomber = new MCP_PlaneInfo("b1b_capture");
+        bomber.bbZmin = -53; bomber.bbZmax = 12;
+        for (double distance : new double[] {112.01, 128, 150, 160, 750}) {
+            MCH_FarVehicleDepthLayer layer = new MCH_FarVehicleDepthLayer();
+            assertTrue("B1b distance " + distance, layer.begin(0, 0, -distance, bomber,
+                    0, 0, 0, 112, modelview, projection));
+            try {
+                FloatBuffer local = BufferUtils.createFloatBuffer(16);
+                GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, local);
+                double scale = MCH_CompressedDepthProjection.projected(distance, 112) / distance;
+                for (double offset : new double[] {-53, 12, -106, 106}) {
+                    double eye = (-distance + offset) * scale;
+                    double clip = (local.get(10) * eye + local.get(14)) / -eye;
+                    assertTrue("Animated envelope clipped: " + distance + "/" + offset,
+                            clip >= -1.00001 && clip <= 1.00001);
+                }
+            } finally { layer.finish(false, 0, 1, projection.get(10), projection.get(14)); }
+        }
+    }
+
+    @Test public void detachedTankKeepsTrackedTurretAndBarrelTransforms() throws Exception {
+        MCH_TankInfo info = new MCH_TankInfo("tank_handoff");
+        info.turretPosition = Vec3.createVectorHelper(0, 2, 1);
+        MCH_AircraftInfo.WeaponSet definition = info.new WeaponSet("test_gun");
+        info.weaponSetList.add(definition);
+        String[] names = { "test_gun" };
+        MCH_AircraftInfo.PartWeapon part = info.new PartWeapon(names, false, false, false, true, false,
+            0, 2, 2, "weapon0", 0, 0, 0, 0, true);
+        MCH_AircraftInfo.PartWeaponChild child = info.new PartWeaponChild(names, false, true,
+            0, 2, 3, "weapon0_0", 0, 0, 0, 0);
+        info.partWeapon.add(part);
+        part.child.add(child);
+        MatrixProbe turret = new MatrixProbe();
+        MatrixProbe barrel = new MatrixProbe();
+        part.model = turret;
+        child.model = barrel;
+
+        Field singleton = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+        singleton.setAccessible(true);
+        sun.misc.Unsafe allocator = (sun.misc.Unsafe)singleton.get(null);
+        MCH_EntityTank tank = (MCH_EntityTank)allocator.allocateInstance(MCH_EntityTank.class);
+        WorldClient world = (WorldClient)allocator.allocateInstance(WorldClient.class);
+        MCH_WeaponInfo weaponInfo = new MCH_WeaponInfo("test_gun");
+        MCH_WeaponSet weapon = new MCH_WeaponSet(new MCH_WeaponMachineGun2(world,
+            Vec3.createVectorHelper(0, 0, 0), 0, 0, "test_gun", weaponInfo));
+        weapon.prevRotationYaw = weapon.rotationYaw = 92;
+        weapon.prevRotationPitch = weapon.rotationPitch = -14;
+        weapon.defaultRotationYaw = 90;
+        weapon.rotationTurretYaw = 35;
+        tank.weapons = new MCH_WeaponSet[] { weapon };
+        MCH_RenderAircraft.renderWeapon(tank, info, 1.0F);
+        float[] nativeTurret = turret.values;
+        float[] nativeBarrel = barrel.values;
+
+        MCH_EntityInfo contact = new MCH_EntityInfo(10, "world", info.name, tank.getClass().getName(), 0, 0, 0, 0, 0, 0);
+        Method capture = MCH_EntityInfo.class.getDeclaredMethod("captureTankWeaponAim", MCH_WeaponSet[].class, int.class);
+        capture.setAccessible(true);
+        contact.tankWeaponAim = (MCH_EntityInfo.WeaponAim[])capture.invoke(null, tank.weapons, info.getWeaponNum());
+
+        Class<?> poseType = Class.forName(MCH_RenderFarVehicle.class.getName() + "$SmoothedPose");
+        Constructor<?> constructor = poseType.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        Object pose = constructor.newInstance();
+        Method observe = poseType.getDeclaredMethod("observe", MCH_EntityInfo.class, long.class);
+        observe.setAccessible(true);
+        observe.invoke(pose, contact, contact.lastUpdateTime);
+        Method update = poseType.getDeclaredMethod("update", MCH_EntityInfo.class, long.class, int.class);
+        update.setAccessible(true);
+        update.invoke(pose, contact, contact.lastUpdateTime, 1);
+        Method render = MCH_RenderFarVehicle.class.getDeclaredMethod("renderWeaponParts", MCH_AircraftInfo.class, poseType);
+        render.setAccessible(true);
+        // The fixture calls the model draw directly, without registering an event/collection callback.
+        MCH_RenderFarVehicle renderer = (MCH_RenderFarVehicle)allocator.allocateInstance(MCH_RenderFarVehicle.class);
+        render.invoke(renderer, info, pose);
+        assertArrayEquals(nativeTurret, turret.values, 0.00001F);
+        assertArrayEquals(nativeBarrel, barrel.values, 0.00001F);
+
+        // A loaded client copy can retain a different aim after dismounting.
+        // Both representations must sample the server pose, including on repeated crossings.
+        java.util.UUID identity = java.util.UUID.randomUUID();
+        Field uuid = net.minecraft.entity.Entity.class.getDeclaredField("entityUniqueID");
+        uuid.setAccessible(true);
+        uuid.set(tank, identity);
+        contact.aircraftUuid = identity;
+        weapon.rotationYaw = 31;
+        weapon.prevRotationYaw = 29;
+        weapon.rotationPitch = 3;
+        weapon.prevRotationPitch = 2;
+        weapon.rotationTurretYaw = 12;
+        tank.lastRiderYaw = 80;
+        tank.prevLastRiderYaw = 79;
+        tank.lastRiderPitch = 7;
+        tank.prevLastRiderPitch = 6;
+        Method begin = poseType.getDeclaredMethod("beginTankAim", mcheli.aircraft.MCH_EntityAircraft.class);
+        Method end = poseType.getDeclaredMethod("endTankAim", mcheli.aircraft.MCH_EntityAircraft.class);
+        begin.setAccessible(true);
+        end.setAccessible(true);
+        for (int crossing = 0; crossing < 8; ++crossing) {
+            assertEquals(Boolean.TRUE, begin.invoke(pose, tank));
+            try {
+                MCH_RenderAircraft.renderWeapon(tank, info, 0.5F);
+                assertArrayEquals(nativeTurret, turret.values, 0.00001F);
+                assertArrayEquals(nativeBarrel, barrel.values, 0.00001F);
+                if (crossing % 2 == 0) throw new IllegalStateException("part failure");
+            } catch (IllegalStateException expected) {
+                assertEquals("part failure", expected.getMessage());
+            } finally {
+                end.invoke(pose, tank);
+            }
+            assertEquals(31, weapon.rotationYaw, 0);
+            assertEquals(29, weapon.prevRotationYaw, 0);
+            assertEquals(3, weapon.rotationPitch, 0);
+            assertEquals(2, weapon.prevRotationPitch, 0);
+            assertEquals(12, weapon.rotationTurretYaw, 0);
+            assertEquals(80, tank.lastRiderYaw, 0);
+            assertEquals(79, tank.prevLastRiderYaw, 0);
+            assertEquals(7, tank.lastRiderPitch, 0);
+            assertEquals(6, tank.prevLastRiderPitch, 0);
+            render.invoke(renderer, info, pose);
+            assertArrayEquals(nativeTurret, turret.values, 0.00001F);
+            assertArrayEquals(nativeBarrel, barrel.values, 0.00001F);
+        }
+        contact.aircraftUuid = java.util.UUID.randomUUID();
+        assertEquals(Boolean.FALSE, begin.invoke(pose, tank));
+        contact.tankWeaponAim = null; // A server with the old snapshot sends only the neutral pilot aim.
+        assertEquals(Boolean.FALSE, begin.invoke(pose, tank));
+        render.invoke(renderer, info, pose);
+        assertNotEquals(nativeTurret[2], turret.values[2], 0.00001F);
+        assertNotEquals(nativeBarrel[4], barrel.values[4], 0.00001F);
+    }
+
+    private static final class MatrixProbe implements IModelCustom {
+        private float[] values;
+        @Override public String getType() { return "matrix-probe"; }
+        @Override public void renderAll() {
+            FloatBuffer matrix = BufferUtils.createFloatBuffer(16);
+            GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, matrix);
+            values = new float[16];
+            matrix.get(values);
+        }
+        @Override public void renderOnly(String... parts) { renderAll(); }
+        @Override public void renderPart(String part) { renderAll(); }
+        @Override public void renderAllExcept(String... parts) { renderAll(); }
     }
 
     private static void assertPixel(int attachment, int red, int green, int blue) {

@@ -18,8 +18,6 @@ import java.nio.IntBuffer;
 /** Keeps a distant model's self-depth separate from the compressed world depth. Render thread only. */
 @SideOnly(Side.CLIENT)
 final class MCH_FarVehicleDepthLayer {
-    private static final double LOCAL_NEAR = 16.0D;
-    private static final double LOCAL_FAR = 256.0D;
     private static final int DEPTH_COMPONENT24 = 0x81A6;
     static final String DEPTH_FUNCTION =
             "uniform float worldZ, worldOffset, eyeOrigin, objectScale, transitionStart, transitionDepth;\n"
@@ -84,7 +82,11 @@ final class MCH_FarVehicleDepthLayer {
         // conservatively, the caller withholds the projected model.
         double radius = Math.max(64.0D, 2.0D * Math.max(info.bodyWidth,
                 Math.max(info.bodyHeight, Math.max(Math.abs(info.bbZmin), Math.abs(info.bbZmax))))) * scale;
-        if (radius >= 80.0D || !bounds(dx * scale, dy * scale, dz * scale,
+        double eye = -(modelview.get(2) * dx * scale + modelview.get(6) * dy * scale
+                + modelview.get(10) * dz * scale + modelview.get(14));
+        double extent = radius * (Math.abs(modelview.get(2)) + Math.abs(modelview.get(6)) + Math.abs(modelview.get(10)));
+        if (!Double.isFinite(radius) || radius <= 0 || radius > 512 || eye + extent <= 0.05
+                || !bounds(dx * scale, dy * scale, dz * scale,
                 radius, modelview, projection, vw, vh)) return false;
         previousReadFramebuffer = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
         previousDrawFramebuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
@@ -119,8 +121,10 @@ final class MCH_FarVehicleDepthLayer {
             GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
             localProjection.clear();
             for (int i = 0; i < 16; i++) localProjection.put(i, projection.get(i));
-            double localNear = Math.min(LOCAL_NEAR, transitionStart * 0.25D);
-            double localFar = Math.max(LOCAL_FAR, transitionStart + 128.0D);
+            // Fit the actual capture envelope, including long/animated aircraft.
+            // A fixed near/far interval previously rejected the B1b at handoff.
+            double localNear = Math.max(0.05D, eye - extent);
+            double localFar = Math.max(localNear + 1.0D, eye + extent);
             localProjection.put(10, (float)(-(localFar + localNear) / (localFar - localNear)));
             localProjection.put(14, (float)(-2.0D * localFar * localNear / (localFar - localNear)));
             GL11.glMatrixMode(GL11.GL_PROJECTION);
@@ -188,7 +192,10 @@ final class MCH_FarVehicleDepthLayer {
             double ey = m.get(1) * px + m.get(5) * py + m.get(9) * pz + m.get(13);
             double ez = m.get(2) * px + m.get(6) * py + m.get(10) * pz + m.get(14);
             double cw = p.get(3) * ex + p.get(7) * ey + p.get(11) * ez + p.get(15);
-            if (cw <= 0.001D) return false;
+            if (cw <= 0.001D) {
+                // A conservative box crossing the eye plane can cover the screen.
+                left = bottom = 0; right = w; top = h; return true;
+            }
             double sx = (1.0D + (p.get(0) * ex + p.get(4) * ey + p.get(8) * ez + p.get(12)) / cw) * w * 0.5D;
             double sy = (1.0D + (p.get(1) * ex + p.get(5) * ey + p.get(9) * ez + p.get(13)) / cw) * h * 0.5D;
             minX = Math.min(minX, sx); maxX = Math.max(maxX, sx);
