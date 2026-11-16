@@ -42,6 +42,7 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
     private static int spotedEntityCountdown = 0;
     private static boolean collectingEntityMarkers;
     private int cameraWidth, cameraHeight;
+    private boolean thermalCamera;
 
 
     public MCH_GuiTargetMarker(Minecraft minecraft) {
@@ -387,6 +388,12 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         finally { cameraWidth = 0; cameraHeight = 0; }
     }
 
+    public void drawThermalGui(EntityPlayer player, boolean thirdPerson, int width, int height) {
+        thermalCamera = true;
+        try { drawCameraGui(player, thirdPerson, width, height); }
+        finally { thermalCamera = false; }
+    }
+
     void drawMark() {
         int[] COLOR_TABLE = new int[]{0, -808464433, -805371904, -805306624, -822018049, -805351649, -65536, 0};
         int scale = MCH_Gui.scaleFactor > 0 ? MCH_Gui.scaleFactor : 2;
@@ -439,13 +446,15 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
                     MARK_SIZE = MCH_Config.BlockMarkerSize.prmDouble;
                     double S;
                     if (z < 1.0D && x >= 0.0D && x <= (double) (DSW - 20) && y >= 0.0D && y <= (double) (DSH - 40)) {
-                        S = super.mc.thePlayer.getDistanceToEntity(e.entity);
-                        GL11.glEnable(3553);
-                        this.drawCenteredString(String.format("%.0fm", S), (int) x, (int) (y + MARK_SIZE * 1.1D + 16.0D), color);
-                        if (x >= (double) (DSW / 2 - 20) && x <= (double) (DSW / 2 + 20) && y >= (double) (DSH / 2 - 20) && y <= (double) (DSH / 2 + 20)) {
-                            this.drawString(String.format("x : %.0f", e.entity.posX), (int) (x + MARK_SIZE + 18.0D), (int) y - 12, color);
-                            this.drawString(String.format("y : %.0f", e.entity.posY), (int) (x + MARK_SIZE + 18.0D), (int) y - 4, color);
-                            this.drawString(String.format("z : %.0f", e.entity.posZ), (int) (x + MARK_SIZE + 18.0D), (int) y + 4, color);
+                        if (!thermalCamera) {
+                            S = super.mc.thePlayer.getDistanceToEntity(e.entity);
+                            GL11.glEnable(3553);
+                            this.drawCenteredString(String.format("%.0fm", S), (int) x, (int) (y + MARK_SIZE * 1.1D + 16.0D), color);
+                            if (x >= (double) (DSW / 2 - 20) && x <= (double) (DSW / 2 + 20) && y >= (double) (DSH / 2 - 20) && y <= (double) (DSH / 2 + 20)) {
+                                this.drawString(String.format("x : %.0f", e.entity.posX), (int) (x + MARK_SIZE + 18.0D), (int) y - 12, color);
+                                this.drawString(String.format("y : %.0f", e.entity.posY), (int) (x + MARK_SIZE + 18.0D), (int) y - 4, color);
+                                this.drawString(String.format("z : %.0f", e.entity.posZ), (int) (x + MARK_SIZE + 18.0D), (int) y + 4, color);
+                            }
                         }
 
                         GL11.glDisable(3553);
