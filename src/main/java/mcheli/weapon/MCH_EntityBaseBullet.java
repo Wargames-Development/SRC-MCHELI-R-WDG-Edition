@@ -2061,34 +2061,36 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
             }
             p = (float) this.explosionPower * damageFactor;
             float i = (float) this.explosionPowerInWater * damageFactor;
+            // Old torpedo definitions without ExplosionBlock inherit their underwater blast strength.
+            float waterTerrain = this.getInfo().hasExplicitExplosionBlock ? this.getInfo().explosionBlock : i;
             if (this.piercing > 0) {
                 --this.piercing;
                 if (p > 0.0F) {
-                    this.newExplosion(hitX, hitY, hitZ, 1.0F, 1.0F, false);
+                    this.newExplosion(hitX, hitY, hitZ, 1.0F, Math.min(1, this.getInfo().explosionBlock), false, null, m);
                 }
             } else {
                 if (i == 0.0F) {
                     if (this.getInfo().isFAE) {
                         this.newFAExplosion(super.posX, super.posY, super.posZ, p, (float) this.getInfo().explosionBlock);
                     } else if (p > 0.0F) {
-                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit, m);
                     } else if (p < 0.0F) {
                         this.playExplosionSound();
                     }
                 } else if (m.entityHit != null) {
                     if (this.isInWater()) {
-                        this.newExplosion(hitX, hitY, hitZ, i, i, true, m.entityHit);
+                        this.newExplosion(hitX, hitY, hitZ, i, waterTerrain, true, m.entityHit, m);
                     } else {
-                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit, m);
                     }
                 } else if (!this.isInWater() && !MCH_Lib.isBlockInWater(super.worldObj, m.blockX, m.blockY, m.blockZ)) {
                     if (p > 0.0F) {
-                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit);
+                        this.newExplosion(hitX, hitY, hitZ, p, (float) this.getInfo().explosionBlock, false, m.entityHit, m);
                     } else if (p < 0.0F) {
                         this.playExplosionSound();
                     }
                 } else {
-                    this.newExplosion(m.blockX, m.blockY, m.blockZ, i, i, true);
+                    this.newExplosion(m.blockX, m.blockY, m.blockZ, i, waterTerrain, true, null, m);
                 }
 
                 if (getInfo() != null && getInfo().enableChunkLoader) {
@@ -2324,6 +2326,11 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
     }
 
     public MCH_Explosion.ExplosionResult newExplosion(double x, double y, double z, float exp, float expBlock, boolean inWater, Entity directAttackEntity) {
+        return newExplosion(x, y, z, exp, expBlock, inWater, directAttackEntity, null);
+    }
+
+    private MCH_Explosion.ExplosionResult newExplosion(double x, double y, double z, float exp, float expBlock,
+            boolean inWater, Entity directAttackEntity, MovingObjectPosition terrainImpact) {
         MCH_Explosion.ExplosionResult result;
         boolean playSound = (this.isBomblet != 1) || (super.rand.nextInt(3) == 0);
         EntityPlayer creditedPlayer = (this.shootingEntity instanceof EntityPlayer)
@@ -2405,6 +2412,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         .isDestroyBlock(destroyBlocks)
                         .isInWater(false)
                         .directAttackEntity(directAttackEntity)
+                        .terrainImpact(terrainImpact)
                         .damageVsPlayer(getInfo().explosionDamageVsPlayer)
                         .damageVsLiving(getInfo().explosionDamageVsLiving)
                         .damageVsPlane(getInfo().explosionDamageVsPlane)
@@ -2436,6 +2444,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     .isDestroyBlock(destroyBlocks)
                     .isInWater(false)
                     .directAttackEntity(directAttackEntity)
+                    .terrainImpact(terrainImpact)
                     .damageVsPlayer(getInfo().explosionDamageVsPlayer)
                     .damageVsLiving(getInfo().explosionDamageVsLiving)
                     .damageVsPlane(getInfo().explosionDamageVsPlane)
@@ -2466,6 +2475,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                 .isDestroyBlock(destroyBlocks)
                 .isInWater(true)
                 .directAttackEntity(directAttackEntity)
+                .terrainImpact(terrainImpact)
                 .damageVsPlayer(getInfo().explosionDamageVsPlayer)
                 .damageVsLiving(getInfo().explosionDamageVsLiving)
                 .damageVsPlane(getInfo().explosionDamageVsPlane)

@@ -10,6 +10,7 @@ import net.minecraft.world.World;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public final class Integrations {
@@ -28,6 +29,24 @@ public final class Integrations {
 
     public static boolean prepareExplosionWGC(Explosion explosion, double strength, boolean terrainEnabled) {
         return isWGCoreIntegrationEnabled() && WGCoreCompat.prepareExplosion(explosion, strength, terrainEnabled);
+    }
+
+    public static boolean supportsTerrainImpact() {
+        return !isWGCoreIntegrationEnabled() || WGCoreCompat.supportsTerrainImpact();
+    }
+
+    public static double terrainResistance(World world, int x, int y, int z, double nativeResistance) {
+        return isWGCoreIntegrationEnabled() && WGCoreCompat.supportsTerrainImpact()
+                ? WGCoreCompat.terrainResistance(world, x, y, z, nativeResistance) : nativeResistance;
+    }
+
+    public static ExplosionResult evaluateTerrainImpact(World world, Entity actor, Explosion explosion,
+            Map<ChunkPosition, Double> impact) {
+        if (!isWGCoreIntegrationEnabled()) return ExplosionResult.allowAll();
+        if (!WGCoreCompat.supportsTerrainImpact()) return null;
+        return WGCoreCompat.evaluateExplosion(world, resolveActingPlayerId(actor), explosion,
+                explosion.explosionX, explosion.explosionY, explosion.explosionZ, "mcheli:explosion",
+                new java.util.ArrayList<>(impact.keySet()), impact);
     }
 
     public static boolean canHarmPlayerWGC(Entity actingEntity, Entity targetEntity, World world) {
@@ -137,7 +156,8 @@ public final class Integrations {
                 originY,
                 originZ,
                 explosionTypeId,
-                affectedBlocks
+                affectedBlocks,
+                null
         );
     }
 

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.MovingObjectPosition;
 
 @Builder
 @NoArgsConstructor
@@ -47,12 +48,12 @@ public class MCH_ExplosionParam {
     public float size;
 
     /**
-     * The radius used when destroying or altering blocks.  Separating
-     * {@link #size} and {@link #sizeBlock} allows explosions which damage
-     * entities over a larger area than they destroy terrain, for example
-     * high‐explosive munitions.
+     * Terrain blast strength. Entity splash uses {@link #size}.
      */
     public float sizeBlock;
+
+    /** Direct projectile impact, if it struck a block face before detonating. */
+    public MovingObjectPosition terrainImpact;
 
     /**
      * 直击的实体，用于应用固定伤害

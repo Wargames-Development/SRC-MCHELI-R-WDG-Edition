@@ -427,6 +427,11 @@ public class MCH_MOD {
     }
 
     @EventHandler
+    public void onStopServer(FMLServerStoppedEvent event) {
+        MCH_TerrainExplosion.clear();
+    }
+
+    @EventHandler
     public void onMissingMappings(FMLMissingMappingsEvent event) {
         for (FMLMissingMappingsEvent.MissingMapping mapping : event.get()) {
             if (mapping.type != GameRegistry.Type.ITEM) continue;

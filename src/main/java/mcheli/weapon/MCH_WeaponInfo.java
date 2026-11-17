@@ -41,6 +41,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public float accelerationInWater;
     public int explosion;
     public int explosionBlock;
+    public boolean hasExplicitExplosionBlock;
     public int explosionInWater;
     public int explosionAltitude;
     public int delayFuse;
@@ -887,6 +888,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.explosion = this.toInt(data, 0, 200);
         } else if (item.equalsIgnoreCase("explosionBlock")) {
             this.explosionBlock = this.toInt(data, 0, 200);
+            this.hasExplicitExplosionBlock = true;
         } else if (item.equalsIgnoreCase("explosioninwater")) {
             this.explosionInWater = this.toInt(data, 0, 50);
         } else if (item.equalsIgnoreCase("ExplosionAltitude")) {

@@ -12,23 +12,41 @@ import net.minecraft.world.World;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 final class WGCoreCompat {
 
     private static final String SOURCE_MOD_ID = "mcheli";
     private static final Method PREPARE_EXPLOSION = findPrepareExplosion();
+    private static final Method TERRAIN_IMPACT = findMethod("evaluateTerrainImpact", ExplosionActionContext.class, Map.class);
+    private static final Method RESISTANCE = findMethod("getBlockResistanceOverride",
+            World.class, int.class, int.class, int.class, double.class);
 
     private WGCoreCompat() {
     }
 
     private static Method findPrepareExplosion() {
+        return findMethod("prepareExplosion", Explosion.class, double.class, boolean.class, boolean.class);
+    }
+
+    private static Method findMethod(String name, Class<?>... parameters) {
         try {
-            return WGCoreIntegrationAccess.class.getMethod("prepareExplosion",
-                    Explosion.class, double.class, boolean.class, boolean.class);
+            return WGCoreIntegrationAccess.class.getMethod(name, parameters);
         } catch (NoSuchMethodException ignored) {
-            // Older WGCore releases still support protection checks without partial blast damage.
             return null;
+        }
+    }
+
+    static boolean supportsTerrainImpact() {
+        return TERRAIN_IMPACT != null && RESISTANCE != null;
+    }
+
+    static double terrainResistance(World world, int x, int y, int z, double nativeResistance) {
+        try {
+            return (Double) RESISTANCE.invoke(null, world, x, y, z, nativeResistance);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Could not query WGCore terrain resistance", failure);
         }
     }
 
@@ -65,7 +83,8 @@ final class WGCoreCompat {
                                                           double originY,
                                                           double originZ,
                                                           String explosionTypeId,
-                                                          List<ChunkPosition> affectedBlocks) {
+                                                          List<ChunkPosition> affectedBlocks,
+                                                          Map<ChunkPosition, Double> terrainImpact) {
         ActionAttribution attribution = buildAttribution(world, actingPlayerId, ActionSourceType.EXPLOSIVE);
         ExplosionActionContext context = new ExplosionActionContext(
                 world,
@@ -77,7 +96,13 @@ final class WGCoreCompat {
                 normaliseExplosionTypeId(explosionTypeId),
                 affectedBlocks != null ? affectedBlocks : Collections.<ChunkPosition>emptyList()
         );
-        ExplosionDecision decision = WGCoreIntegrationAccess.evaluateExplosion(context);
+        ExplosionDecision decision;
+        try {
+            decision = terrainImpact == null ? WGCoreIntegrationAccess.evaluateExplosion(context)
+                    : (ExplosionDecision) TERRAIN_IMPACT.invoke(null, context, terrainImpact);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Could not evaluate WGCore terrain impact", failure);
+        }
 
         if (decision == null) {
             return null;

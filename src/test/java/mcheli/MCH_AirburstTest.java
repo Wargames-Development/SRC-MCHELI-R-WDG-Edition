@@ -15,7 +15,9 @@ import net.minecraft.launchwrapper.LaunchClassLoader;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.util.*;
 import net.minecraft.world.*;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.ChunkProviderFlat;
 import org.junit.Test;
 
 import java.io.File;
@@ -26,8 +28,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -35,6 +39,15 @@ import static org.junit.Assert.*;
 public class MCH_AirburstTest {
     private TestWorld world;
     private static int nextEntityId = 100;
+
+    @Test public void aLowResistanceFencePassesMoreBlastThanASolidBlock() {
+        double fence = MCH_TerrainExplosion.blockTransmission(.15D, 1D, 2D, true);
+        double solid = MCH_TerrainExplosion.blockTransmission(.15D, 1D, 2D, false);
+        double resistantFence = MCH_TerrainExplosion.blockTransmission(25D, 1D, 2D, true);
+        assertTrue(fence > .5D);
+        assertTrue(solid < .2D);
+        assertTrue(resistantFence < solid);
+    }
 
     @Test public void airburstScenariosPassWithRealVanillaRegistries() throws Throwable {
         Set<URL> paths = new LinkedHashSet<URL>();
@@ -65,12 +78,51 @@ public class MCH_AirburstTest {
             "rotatedPartUsesOrientedSurfaceRatherThanItsEnvelope",
             "rotatedPartRayHitsOnlyItsActualShape",
             "blastAtVehicleOriginDoesNotSkipDamageForZeroDirection",
+            "terrainImpactBreaksAnExposedSurfaceAndKeepsCraterShallow",
+            "fab3000ScaleFillsInTheCraterSurfaceWithoutDiggingDeep",
             "airburstOnlyExplosiveUsesItsOwnRadiusAndServerAuthority",
             "programmingPacketRequiresControlledVehicleCapableWeaponAndValidRange"}) {
             MCH_AirburstTest fixture = new MCH_AirburstTest();
             fixture.setup();
             MCH_AirburstTest.class.getMethod(name).invoke(fixture);
         }
+    }
+
+    public void terrainImpactBreaksAnExposedSurfaceAndKeepsCraterShallow() {
+        FlatTerrainWorld terrain = runTerrainImpact(10F, 2000);
+        assertTrue(terrain.isAirBlock(0, 63, 0));
+        assertTrue(terrain.isAirBlock(4, 63, 0));
+        assertTrue(terrain.isAirBlock(-4, 63, 0));
+        assertFalse(terrain.isAirBlock(0, 61, 0));
+        assertFalse(terrain.isAirBlock(10, 63, 0));
+    }
+
+    public void fab3000ScaleFillsInTheCraterSurfaceWithoutDiggingDeep() {
+        FlatTerrainWorld terrain = runTerrainImpact(75F, 30_000);
+        for (int z = -16; z <= 16; z++) {
+            for (int x = -16; x <= 16; x++) {
+                assertTrue("Surface gap at " + x + ", " + z, terrain.isAirBlock(x, 63, z));
+            }
+        }
+        assertFalse(terrain.isAirBlock(0, 59, 0));
+        assertFalse(terrain.isAirBlock(40, 63, 0));
+    }
+
+    private FlatTerrainWorld runTerrainImpact(float strength, int maxSlices) {
+        FlatTerrainWorld terrain = new FlatTerrainWorld();
+        terrain.getGameRules().setOrCreateGameRule("doTileDrops", "false");
+        MovingObjectPosition contact = new MovingObjectPosition(0, 63, 0, 1, vec(.5D, 64D, .5D));
+        MCH_Explosion blast = new MCH_Explosion(terrain, MCH_ExplosionParam.builder()
+                .x(.5D).y(64.00001D).z(.5D).size(strength).sizeBlock(strength)
+                .terrainImpact(contact).build());
+        MCH_TerrainExplosion job = new MCH_TerrainExplosion(blast);
+        assertFalse(job.runSlice());
+        assertFalse(terrain.isAirBlock(0, 63, 0));
+        int slices = 1;
+        while (!job.runSlice()) {
+            assertTrue("Terrain tracing did not finish", ++slices < maxSlices);
+        }
+        return terrain;
     }
 
     public void setup() {
@@ -244,7 +296,7 @@ public class MCH_AirburstTest {
         }
     }
 
-    private static final class TestWorld extends World {
+    private static class TestWorld extends World {
         int wallX = Integer.MIN_VALUE;
         final List<Entity> query = new ArrayList<Entity>();
         TestWorld() {
@@ -263,5 +315,33 @@ public class MCH_AirburstTest {
         @Override protected IChunkProvider createChunkProvider() { return null; }
         @Override protected int func_152379_p() { return 0; }
         @Override public void calculateInitialSkylight() { }
+    }
+
+    private static final class FlatTerrainWorld extends TestWorld {
+        private final Set<ChunkPosition> removed = new LinkedHashSet<>();
+        private final Map<Long, Chunk> loadedChunks = new HashMap<>();
+        private final IChunkProvider chunks = new ChunkProviderFlat(this, 0L, false, "2;1;1;");
+
+        @Override public IChunkProvider getChunkProvider() { return chunks; }
+
+        @Override public Chunk getChunkFromChunkCoords(int cx, int cz) {
+            long key = ((long) cx << 32) | (cz & 0xffffffffL);
+            return loadedChunks.computeIfAbsent(key, unused -> new Chunk(this, cx, cz) {
+                @Override public Block getBlock(int x, int y, int z) {
+                    return FlatTerrainWorld.this.getBlock((cx << 4) + x, y, (cz << 4) + z);
+                }
+            });
+        }
+
+        @Override public boolean blockExists(int x, int y, int z) { return y >= 0 && y < 256; }
+        @Override public boolean isAirBlock(int x, int y, int z) { return getBlock(x, y, z) == Blocks.air; }
+
+        @Override public Block getBlock(int x, int y, int z) {
+            return y >= 64 || removed.contains(new ChunkPosition(x, y, z)) ? Blocks.air : Blocks.grass;
+        }
+
+        @Override public boolean setBlockToAir(int x, int y, int z) {
+            return removed.add(new ChunkPosition(x, y, z));
+        }
     }
 }

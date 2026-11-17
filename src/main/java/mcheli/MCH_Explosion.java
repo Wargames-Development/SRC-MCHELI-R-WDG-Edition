@@ -29,6 +29,7 @@ import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class MCH_Explosion extends Explosion {
 
@@ -500,7 +501,7 @@ public class MCH_Explosion extends Explosion {
         return this.world.isRemote;
     }
 
-    private Entity getWGCoreActingEntity() {
+    Entity getWGCoreActingEntity() {
         return Integrations.resolveActingEntity(
                 this.param != null ? this.param.player : null,
                 this.param != null ? this.param.exploder : null
@@ -513,6 +514,35 @@ public class MCH_Explosion extends Explosion {
 
     @Override
     public void doExplosionA() {
+        boolean deferredTerrain = Integrations.supportsTerrainImpact();
+        if (!deferredTerrain) {
+            collectLegacyTerrain();
+        }
+        this.wgcoreExplosionDecision = Integrations.evaluateExplosionWGC(
+                this.world, getWGCoreActingEntity(), this, this.explosionX, this.explosionY, this.explosionZ,
+                getWGCoreExplosionTypeId(), this.affectedBlockPositions);
+        boolean terrainAllowed = this.wgcoreExplosionDecision != null
+                && this.wgcoreExplosionDecision.isExplosionAllowed()
+                && this.wgcoreExplosionDecision.isBlockDamageAllowed();
+
+        if (deferredTerrain && terrainAllowed && terrainDamageEnabled()) {
+            MCH_TerrainExplosion.enqueue(this);
+        } else if (!terrainAllowed) {
+            this.affectedBlockPositions.clear();
+        } else if (this.wgcoreExplosionDecision.isFiltered()) {
+            this.affectedBlockPositions.clear();
+            this.affectedBlockPositions.addAll(this.wgcoreExplosionDecision.getFilteredAffectedBlocks());
+        }
+        applyEntityDamage();
+    }
+
+    boolean terrainDamageEnabled() {
+        return destroyBlocksByRule && this.isSmoking && param.sizeBlock > 0F
+                && MCH_Config.Explosion_DestroyBlock.prmBool
+                && world.getGameRules().getGameRuleBooleanValue("mobGriefing");
+    }
+
+    private void collectLegacyTerrain() {
         final boolean wgCorePartialDamage = Integrations.prepareExplosionWGC(this, param.sizeBlock,
             destroyBlocksByRule && param.isSmoking && param.sizeBlock > 0.0F);
         // === 1) 采样射线，收集会受影响的方块（供 doExplosionB 真正处理） ===
@@ -579,30 +609,12 @@ public class MCH_Explosion extends Explosion {
             this.applyNewExplosionBreakRule(affected);
         }
         this.affectedBlockPositions.addAll(affected);
+    }
 
-        this.wgcoreExplosionDecision = Integrations.evaluateExplosionWGC(
-                this.world,
-                getWGCoreActingEntity(),
-                this,
-                this.explosionX,
-                this.explosionY,
-                this.explosionZ,
-                getWGCoreExplosionTypeId(),
-                this.affectedBlockPositions
-        );
-
+    private void applyEntityDamage() {
         final boolean allowExplosionEntityDamage = this.wgcoreExplosionDecision != null
                 && this.wgcoreExplosionDecision.isExplosionAllowed()
                 && this.wgcoreExplosionDecision.isEntityDamageAllowed();
-
-        if (this.wgcoreExplosionDecision == null || !this.wgcoreExplosionDecision.isExplosionAllowed()) {
-            this.affectedBlockPositions.clear();
-        } else if (!this.wgcoreExplosionDecision.isBlockDamageAllowed()) {
-            this.affectedBlockPositions.clear();
-        } else if (this.wgcoreExplosionDecision.isFiltered()) {
-            this.affectedBlockPositions.clear();
-            this.affectedBlockPositions.addAll(this.wgcoreExplosionDecision.getFilteredAffectedBlocks());
-        }
 
         // === 2) 处理实体伤害与击退 ===
         final float sizeBefore = this.explosionSize;
@@ -873,7 +885,7 @@ public class MCH_Explosion extends Explosion {
     /**
      * 提升大当量爆炸的角向采样密度，避免 sizeBlock>30 后“只拉长不扩圈”的体感。
      */
-    private int getDynamicRayCount(float sizeBlock) {
+    static int getDynamicRayCount(float sizeBlock) {
         if (sizeBlock <= 30.0F) {
             return 20;
         }
@@ -905,7 +917,7 @@ public class MCH_Explosion extends Explosion {
         return 0.18D;
     }
 
-    private int getSphericalSampleCount(int rays) {
+    static int getSphericalSampleCount(int rays) {
         int axis = Math.max(8, rays);
         return axis * axis * 6;
     }
@@ -915,6 +927,10 @@ public class MCH_Explosion extends Explosion {
             W_WorldFunc.DEF_playSoundEffect(this.world, super.explosionX, super.explosionY, super.explosionZ, "random.explode", 4.0F, (1.0F + (this.world.rand.nextFloat() - this.world.rand.nextFloat()) * 0.2F) * 0.7F);
         }
 
+        applyAffectedBlocks(super.affectedBlockPositions, position -> true);
+    }
+
+    void applyAffectedBlocks(List<ChunkPosition> positions, Predicate<ChunkPosition> unchanged) {
         Iterator iterator;
         ChunkPosition chunkposition;
         int i;
@@ -923,10 +939,11 @@ public class MCH_Explosion extends Explosion {
         int l;
         Block b;
         if (super.isSmoking) {
-            iterator = super.affectedBlockPositions.iterator();
+            iterator = positions.iterator();
 
             while (iterator.hasNext()) {
                 chunkposition = (ChunkPosition) iterator.next();
+                if (!unchanged.test(chunkposition)) continue;
                 i = W_ChunkPosition.getChunkPosX(chunkposition);
                 j = W_ChunkPosition.getChunkPosY(chunkposition);
                 k = W_ChunkPosition.getChunkPosZ(chunkposition);
@@ -944,10 +961,11 @@ public class MCH_Explosion extends Explosion {
 
         if (super.isFlaming) {
             if (MCH_Config.Explosion_FlamingBlock.prmBool) {
-                iterator = super.affectedBlockPositions.iterator();
+                iterator = positions.iterator();
 
                 while (iterator.hasNext()) {
                     chunkposition = (ChunkPosition) iterator.next();
+                    if (!unchanged.test(chunkposition)) continue;
                     i = W_ChunkPosition.getChunkPosX(chunkposition);
                     j = W_ChunkPosition.getChunkPosY(chunkposition);
                     k = W_ChunkPosition.getChunkPosZ(chunkposition);
