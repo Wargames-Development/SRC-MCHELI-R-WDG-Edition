@@ -7,6 +7,7 @@ import mcheli.network.packets.PacketAirburstDistReset;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.weapon.*;
 import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
@@ -39,14 +40,22 @@ import static org.junit.Assert.*;
 public class MCH_AirburstTest {
     private TestWorld world;
     private static int nextEntityId = 100;
+    private static int nextTerrainBlockId = 3500;
 
     @Test public void aLowResistanceFencePassesMoreBlastThanASolidBlock() {
-        double fence = MCH_TerrainExplosion.blockTransmission(.15D, 1D, 2D, true);
-        double solid = MCH_TerrainExplosion.blockTransmission(.15D, 1D, 2D, false);
-        double resistantFence = MCH_TerrainExplosion.blockTransmission(25D, 1D, 2D, true);
-        assertTrue(fence > .5D);
-        assertTrue(solid < .2D);
+        double fence = MCH_TerrainExplosion.blockTransmission(.15D, 1D, true);
+        double solid = MCH_TerrainExplosion.blockTransmission(.15D, 1D, false);
+        double resistantFence = MCH_TerrainExplosion.blockTransmission(25D, 1D, true);
+        assertTrue(fence > solid);
+        assertTrue(solid > .9D);
         assertTrue(resistantFence < solid);
+    }
+
+    @Test public void zeroResistanceAddsNoMaterialLossAndNearZeroResistancePassesBlast() {
+        assertEquals(1D, MCH_TerrainExplosion.blockTransmission(0D, 10D, false), 0D);
+        assertEquals(1D, MCH_TerrainExplosion.blockTransmission(0D, 10D, true), 0D);
+        assertTrue(MCH_TerrainExplosion.blockTransmission(.001D, 10D, false) > .99D);
+        assertTrue(MCH_TerrainExplosion.blockTransmission(6D, 1D, false) < .13D);
     }
 
     @Test public void airburstScenariosPassWithRealVanillaRegistries() throws Throwable {
@@ -78,7 +87,7 @@ public class MCH_AirburstTest {
             "rotatedPartUsesOrientedSurfaceRatherThanItsEnvelope",
             "rotatedPartRayHitsOnlyItsActualShape",
             "blastAtVehicleOriginDoesNotSkipDamageForZeroDirection",
-            "terrainImpactBreaksAnExposedSurfaceAndKeepsCraterShallow",
+            "terrainResistanceControlsCraterDepth",
             "fab3000ScaleFillsInTheCraterSurfaceWithoutDiggingDeep",
             "airburstOnlyExplosiveUsesItsOwnRadiusAndServerAuthority",
             "programmingPacketRequiresControlledVehicleCapableWeaponAndValidRange"}) {
@@ -88,17 +97,19 @@ public class MCH_AirburstTest {
         }
     }
 
-    public void terrainImpactBreaksAnExposedSurfaceAndKeepsCraterShallow() {
-        FlatTerrainWorld terrain = runTerrainImpact(10F, 2000);
+    public void terrainResistanceControlsCraterDepth() throws Exception {
+        FlatTerrainWorld terrain = runTerrainImpact(10F, 2000, 3D);
+        FlatTerrainWorld lowResistance = runTerrainImpact(10F, 2000, .001D);
         assertTrue(terrain.isAirBlock(0, 63, 0));
-        assertTrue(terrain.isAirBlock(4, 63, 0));
-        assertTrue(terrain.isAirBlock(-4, 63, 0));
-        assertFalse(terrain.isAirBlock(0, 61, 0));
+        assertTrue(terrain.isAirBlock(3, 63, 0));
+        assertTrue(terrain.isAirBlock(-3, 63, 0));
+        assertFalse(terrain.isAirBlock(0, 60, 0));
+        assertTrue(lowResistance.isAirBlock(0, 60, 0));
         assertFalse(terrain.isAirBlock(10, 63, 0));
     }
 
-    public void fab3000ScaleFillsInTheCraterSurfaceWithoutDiggingDeep() {
-        FlatTerrainWorld terrain = runTerrainImpact(75F, 30_000);
+    public void fab3000ScaleFillsInTheCraterSurfaceWithoutDiggingDeep() throws Exception {
+        FlatTerrainWorld terrain = runTerrainImpact(75F, 30_000, 3D);
         for (int z = -16; z <= 16; z++) {
             for (int x = -16; x <= 16; x++) {
                 assertTrue("Surface gap at " + x + ", " + z, terrain.isAirBlock(x, 63, z));
@@ -108,8 +119,8 @@ public class MCH_AirburstTest {
         assertFalse(terrain.isAirBlock(40, 63, 0));
     }
 
-    private FlatTerrainWorld runTerrainImpact(float strength, int maxSlices) {
-        FlatTerrainWorld terrain = new FlatTerrainWorld();
+    private FlatTerrainWorld runTerrainImpact(float strength, int maxSlices, double resistance) throws Exception {
+        FlatTerrainWorld terrain = new FlatTerrainWorld(resistance);
         terrain.getGameRules().setOrCreateGameRule("doTileDrops", "false");
         MovingObjectPosition contact = new MovingObjectPosition(0, 63, 0, 1, vec(.5D, 64D, .5D));
         MCH_Explosion blast = new MCH_Explosion(terrain, MCH_ExplosionParam.builder()
@@ -321,6 +332,18 @@ public class MCH_AirburstTest {
         private final Set<ChunkPosition> removed = new LinkedHashSet<>();
         private final Map<Long, Chunk> loadedChunks = new HashMap<>();
         private final IChunkProvider chunks = new ChunkProviderFlat(this, 0L, false, "2;1;1;");
+        private final Block ground;
+
+        FlatTerrainWorld(double resistance) throws Exception {
+            ground = new Block(Material.ground) {
+                @Override public float getExplosionResistance(Entity source) { return (float) resistance; }
+            }.setHardness(.6F);
+            Method register = Block.blockRegistry.getClass().getDeclaredMethod("addObjectRaw",
+                    int.class, String.class, Object.class);
+            register.setAccessible(true);
+            int id = nextTerrainBlockId++;
+            register.invoke(Block.blockRegistry, id, "test:terrain_" + id, ground);
+        }
 
         @Override public IChunkProvider getChunkProvider() { return chunks; }
 
@@ -337,7 +360,7 @@ public class MCH_AirburstTest {
         @Override public boolean isAirBlock(int x, int y, int z) { return getBlock(x, y, z) == Blocks.air; }
 
         @Override public Block getBlock(int x, int y, int z) {
-            return y >= 64 || removed.contains(new ChunkPosition(x, y, z)) ? Blocks.air : Blocks.grass;
+            return y >= 64 || removed.contains(new ChunkPosition(x, y, z)) ? Blocks.air : ground;
         }
 
         @Override public boolean setBlockToAir(int x, int y, int z) {

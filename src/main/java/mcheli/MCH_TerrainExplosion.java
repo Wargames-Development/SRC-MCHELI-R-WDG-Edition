@@ -40,7 +40,6 @@ final class MCH_TerrainExplosion {
     private final double radiusSquared;
     private final double radius;
     private final double sourceDamage;
-    private final double materialAbsorption;
     private final int rayCount;
     private final double rayX;
     private final double rayY;
@@ -106,7 +105,6 @@ final class MCH_TerrainExplosion {
         this.radius = 2D * param.size;
         this.radiusSquared = radius * radius;
         this.sourceDamage = 1.35D * param.sizeBlock * param.sizeBlock;
-        this.materialAbsorption = param.isNewExplosionBreak ? 2.0D : 0.75D;
         this.rayCount = MCH_Explosion.getSphericalSampleCount(MCH_Explosion.getDynamicRayCount(param.sizeBlock));
         this.hit = param.terrainImpact != null
                 && param.terrainImpact.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK
@@ -206,7 +204,7 @@ final class MCH_TerrainExplosion {
             Block block = current.chunk.getBlock(x & 15, y, z & 15);
             if (!block.isAir(world, x, y, z)) {
                 double resistance = record(x, y, z, block, current.transmission);
-                current.transmission *= blockTransmission(resistance, length, materialAbsorption, block instanceof BlockFence);
+                current.transmission *= blockTransmission(resistance, length, block instanceof BlockFence);
             } else if (ignite && y > 0 && world.getBlock(x, y - 1, z).isOpaqueCube()
                     && distanceSquared(x, y, z) <= radiusSquared) {
                 targets.putIfAbsent(new ChunkPosition(x, y, z), new Target(block, 0, 0D));
@@ -249,10 +247,10 @@ final class MCH_TerrainExplosion {
         return sourceDamage * transmission / Math.max(1D, distanceSquared);
     }
 
-    static double blockTransmission(double resistance, double length, double absorption, boolean fence) {
+    static double blockTransmission(double resistance, double length, boolean fence) {
         // Fence rails and posts are a quarter of a block thick. Approximate a crossing through the panel.
         double materialLength = fence ? length * 0.25D : length;
-        return Math.exp(-(absorption + 0.35D * resistance) * materialLength);
+        return Math.exp(-0.35D * resistance * materialLength);
     }
 
     private double distanceSquared(int x, int y, int z) {
