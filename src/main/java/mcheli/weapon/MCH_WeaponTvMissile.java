@@ -159,7 +159,7 @@ public class MCH_WeaponTvMissile extends MCH_WeaponBase {
                 // mode 0 = TV guide, mode 1 = laser/terminal attack
                 this.guidanceSystem.targeting = this.getCurrentMode() == 1;
                 this.guidanceSystem.update();
-                if (this.guidanceSystem.targeting && prm != null && prm.user != null) {
+                if (this.guidanceSystem.targeting && this.guidanceSystem.targetConfirmed && prm != null && prm.user != null) {
                     this.publishAircraftLaserState(prm.user, true, this.guidanceSystem.targetPosX, this.guidanceSystem.targetPosY, this.guidanceSystem.targetPosZ);
                 } else if (prm != null && prm.user != null) {
                     this.publishAircraftLaserState(prm.user, false, 0.0D, 0.0D, 0.0D);

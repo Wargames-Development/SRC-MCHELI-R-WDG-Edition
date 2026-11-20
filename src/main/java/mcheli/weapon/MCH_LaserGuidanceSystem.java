@@ -31,6 +31,8 @@ import static mcheli.MCH_RayTracer.rayTraceAllBlocks;
 
 public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
 
+    private static final int PENDING_MARKER_TICKS = 3;
+
     public World worldObj;
     public double targetPosX;
     public double targetPosY;
@@ -38,6 +40,10 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
     public boolean targeting = false;
     public boolean targetConfirmed;
     private java.util.UUID followedVehicle;
+    private World markerWorld;
+    private Entity markerUser;
+    private long markerConfirmedAt = Long.MIN_VALUE;
+    private boolean terrainMarkerPending;
     @SideOnly(Side.CLIENT)
     public MCH_EntityLockBox lockBox;
     public MCH_WeaponParam param;
@@ -71,7 +77,14 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
     @SideOnly(Side.CLIENT)
     private void updateClient() {
             targetConfirmed = false;
-            if (!targeting) { followedVehicle = null; return; }
+            terrainMarkerPending = false;
+            if (!targeting || user == null || user.worldObj != worldObj) {
+                followedVehicle = null;
+                markerWorld = null;
+                markerUser = null;
+                markerConfirmedAt = Long.MIN_VALUE;
+                return;
+            }
 
             float yaw;
             float pitch;
@@ -134,8 +147,8 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
             } else lod = null;
             targetConfirmed = lod != null || terrain.known;
             if (!targetConfirmed) {
-                // Keep only the identity while terrain refreshes. Do not publish or
-                // follow a point until the visibility query is trusted again.
+                // Only the HUD can retain the previous point while DH reads the new aim path.
+                terrainMarkerPending = terrain.dhPending;
                 if (sendToServer) MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(false, 0, 0, 0));
                 return; // Pending terrain is not a confirmed 1,500 m designation.
             }
@@ -179,6 +192,9 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 targetPosZ = hitResult.hitVec.zCoord;
             }
 
+            markerWorld = worldObj;
+            markerUser = user;
+            markerConfirmedAt = worldObj.getTotalWorldTime();
             if(sendToServer) {
                 MCH_MOD.getPacketHandler().sendToServer(new PacketLaserGuidanceTargeting(true, targetPosX, targetPosY, targetPosZ));
             }
@@ -189,6 +205,17 @@ public class MCH_LaserGuidanceSystem implements MCH_IGuidanceSystem {
                 lockBox = new MCH_EntityLockBox(worldObj);
                 worldObj.spawnEntityInWorld(lockBox);
             }
+    }
+
+    @SideOnly(Side.CLIENT)
+    public boolean shouldDrawMarker(Entity viewer) {
+        return targeting && viewer != null && viewer == markerUser && viewer.worldObj == markerWorld
+                && worldObj == markerWorld && (targetConfirmed || showPendingMarker(
+                        terrainMarkerPending, markerConfirmedAt, markerWorld.getTotalWorldTime()));
+    }
+
+    static boolean showPendingMarker(boolean pending, long confirmedAt, long tick) {
+        return pending && confirmedAt != Long.MIN_VALUE && tick >= confirmedAt && tick - confirmedAt <= PENDING_MARKER_TICKS;
     }
 
     public static boolean canHitByLaser(Entity entity, Entity user, Entity ac) {

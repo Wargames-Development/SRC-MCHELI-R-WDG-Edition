@@ -5,6 +5,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class MCH_LaserTargetingTest {
+    @Test public void pendingHudMarkerRequiresARecentConfirmedPoint() {
+        assertFalse(MCH_LaserGuidanceSystem.showPendingMarker(true, Long.MIN_VALUE, 100));
+        assertFalse(MCH_LaserGuidanceSystem.showPendingMarker(false, 100, 101));
+        assertFalse(MCH_LaserGuidanceSystem.showPendingMarker(true, 100, 99));
+        assertTrue(MCH_LaserGuidanceSystem.showPendingMarker(true, 100, 101));
+        assertTrue(MCH_LaserGuidanceSystem.showPendingMarker(true, 100, 103));
+        assertFalse(MCH_LaserGuidanceSystem.showPendingMarker(true, 100, 104));
+    }
     @Test public void movingSnapshotResolutionKeepsTheExistingAimConeAndRangeChecks() {
         Vec3 start = Vec3.createVectorHelper(0, 64.5, 0.5), look = Vec3.createVectorHelper(1, 0, 0);
         Vec3 requested = Vec3.createVectorHelper(500, 64.5, 0.5);

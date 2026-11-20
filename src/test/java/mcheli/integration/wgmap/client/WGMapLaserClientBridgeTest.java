@@ -48,6 +48,31 @@ public class WGMapLaserClientBridgeTest {
         assertNull(WGMapLaserClientBridge.cachedHit(Result.BLOCKED, new double[] {Double.NaN, 0, 0}, end));
     }
 
+    @Test public void unknownDhGapWarmsRestOfAimWithoutConfirmingItsResult() {
+        Vec3 from = point(200), gapEnd = point(216), aimEnd = point(1500);
+        double[] coordinates = new double[3];
+        AtomicInteger calls = new AtomicInteger();
+        assertNull(WGMapLaserClientBridge.traceDhGap(from, gapEnd, aimEnd, coordinates, (start, end) -> {
+            assertSame(from, start);
+            if (calls.getAndIncrement() == 0) {
+                assertSame(gapEnd, end);
+                return "UNKNOWN";
+            }
+            assertSame(aimEnd, end);
+            coordinates[0] = 731.125;
+            return "BLOCKED";
+        }));
+        assertEquals(2, calls.get());
+    }
+
+    @Test public void confirmedDhGapNeedsNoWarmup() {
+        Vec3 from = point(200), gapEnd = point(216), aimEnd = point(1500);
+        assertSame(gapEnd, WGMapLaserClientBridge.traceDhGap(from, gapEnd, aimEnd, new double[3], (start, end) -> {
+            assertSame(gapEnd, end);
+            return "CLEAR";
+        }));
+    }
+
     private static Vec3 point(double x) { return Vec3.createVectorHelper(x, 64.5, 0.5); }
 
     private static final class MixedTerrain implements MCH_LaserTargeting.Terrain {

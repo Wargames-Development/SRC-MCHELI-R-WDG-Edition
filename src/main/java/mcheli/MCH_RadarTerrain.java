@@ -12,6 +12,7 @@ import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
 import cpw.mods.fml.common.Loader;
+import mcheli.integration.dh.DhRadarTerrainBridge;
 import mcheli.integration.wgmap.WGMapRadarServerBridge;
 
 import java.lang.ref.WeakReference;
@@ -58,7 +59,10 @@ public final class MCH_RadarTerrain {
             Block block = chunk.getBlock(x & 15, y, z & 15);
             return block.getMaterial() != Material.leaves && block.isOpaqueCube() ? 1 : 0;
         };
-        Terrain stored = Loader.isModLoaded("wgmap") ? WGMapRadarServerBridge.open(world, ox, oy, oz) : null;
+        Terrain stored = DhRadarTerrainBridge.open(world, ox, oy, oz);
+        if (stored == null && Loader.isModLoaded("wgmap")) {
+            stored = WGMapRadarServerBridge.open(world, ox, oy, oz);
+        }
         Terrain terrain = combine(live, stored);
         MCH_EntityAircraft aircraft = (MCH_EntityAircraft)target;
         boolean blocked = isBoxBlocked(terrain, ox, oy, oz, target.boundingBox);

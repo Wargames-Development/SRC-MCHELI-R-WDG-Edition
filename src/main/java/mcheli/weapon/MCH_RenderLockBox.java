@@ -41,9 +41,9 @@ public class MCH_RenderLockBox extends W_Render {
         }
 
         if (guidanceSystem instanceof MCH_LaserGuidanceSystem) {
-
-            if (!((MCH_LaserGuidanceSystem) guidanceSystem).targeting
-                    || !((MCH_LaserGuidanceSystem) guidanceSystem).targetConfirmed) return;
+            MCH_LaserGuidanceSystem laser = (MCH_LaserGuidanceSystem) guidanceSystem;
+            if (!laser.shouldDrawMarker(player)) return;
+            boolean pending = !laser.targetConfirmed;
 
             double lockPosX = guidanceSystem.getLockPosX();
             double lockPosY = guidanceSystem.getLockPosY();
@@ -114,7 +114,9 @@ public class MCH_RenderLockBox extends W_Render {
             tessellator.setBrightness(240);
 
             GL11.glLineWidth((float) MCH_Gui.scaleFactor * 1.5F);
-            if (jammed) {
+            if (pending) {
+                tessellator.setColorRGBA_F(1.0F, 0.8F, 0.4F, 0.55F);
+            } else if (jammed) {
                 tessellator.setColorRGBA_F(1.0F, 0.0F, 0.0F, 1.0F);
             } else {
                 tessellator.setColorRGBA_F(0.0F, 1.0F, 0.0F, 1.0F);
@@ -135,7 +137,10 @@ public class MCH_RenderLockBox extends W_Render {
                     fontSize = Math.max(5.0F, Math.min(40.0F, fontSize));
                     String text;
                     int color;
-                    if (jammed) {
+                    if (pending) {
+                        text = "...";
+                        color = 0xffcc66;
+                    } else if (jammed) {
                         text = MCH_I18n.format("message.mcheli.jamming");
                         color = 0xff0000;
                     } else {

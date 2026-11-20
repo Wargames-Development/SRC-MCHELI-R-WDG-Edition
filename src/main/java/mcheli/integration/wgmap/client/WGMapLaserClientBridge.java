@@ -2,6 +2,7 @@ package mcheli.integration.wgmap.client;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import mcheli.integration.dh.DhLaserTerrainBridge;
 import mcheli.render.MCH_WGMapOcclusion;
 import mcheli.render.MCH_WGMapOcclusion.Result;
 import mcheli.weapon.MCH_LaserTargeting;
@@ -12,6 +13,8 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.IChunkProvider;
+
+import java.util.function.BiFunction;
 
 /** Client prediction only: cached terrain never replaces a live block or nearer entity hit. */
 @SideOnly(Side.CLIENT)
@@ -25,22 +28,31 @@ public final class WGMapLaserClientBridge {
     public static final class Trace {
         public final MovingObjectPosition hit;
         public final boolean known;
-        Trace(MovingObjectPosition hit, boolean known) { this.hit = hit; this.known = known; }
+        public final boolean dhPending;
+
+        Trace(MovingObjectPosition hit, boolean known, boolean dhPending) {
+            this.hit = hit;
+            this.known = known;
+            this.dhPending = dhPending;
+        }
     }
 
     public static Trace traceDetailed(World world, Vec3 start, Vec3 end, MovingObjectPosition liveHit) {
-        if (world == null || !world.isRemote || world.provider == null) return new Trace(liveHit, false);
+        if (world == null || !world.isRemote || world.provider == null) return new Trace(liveHit, false, false);
         // Vanilla's initial aim can hit a soft plant. Do not use it to truncate the laser ray.
         if (isIgnoredPlantHit(world, liveHit)) liveHit = null;
         Vec3 limit = liveHit != null && liveHit.hitVec != null ? liveHit.hitVec : end;
         double distance = start.distanceTo(limit);
-        if (!Double.isFinite(distance) || distance <= 0 || distance > 1500.01D) return new Trace(liveHit, false);
+        if (!Double.isFinite(distance) || distance <= 0 || distance > 1500.01D) return new Trace(liveHit, false, false);
+        final boolean useDh = DhLaserTerrainBridge.isPresent();
         // Warm the bounded complete corridor once, so a chain of initially missing
         // chunks can arrive together. Its coarse result is never a hit position.
-        if(!mcheli.integration.dh.DhLaserTerrainBridge.isPresent()) MCH_WGMapOcclusion.traceSegment(world.provider.dimensionId,
+        if (!useDh) MCH_WGMapOcclusion.traceSegment(world.provider.dimensionId,
                 start.xCoord, start.yCoord, start.zCoord,
                 limit.xCoord, limit.yCoord, limit.zCoord);
         final double[] coordinates = new double[3];
+        final BiFunction<Vec3, Vec3, String> dhQuery = useDh
+                ? (from, to) -> DhLaserTerrainBridge.query(world, from, to, coordinates) : null;
         Vec3 hit = traceTerrain(new MCH_LaserTargeting.Terrain() {
             @Override public boolean loaded(int x, int z) {
                 return nativeChunkPresent(world.getChunkProvider(), x >> 4, z >> 4);
@@ -49,10 +61,7 @@ public final class WGMapLaserClientBridge {
                 return MCH_LaserTargeting.nativeBlockHit(world, x, y, z, from, to);
             }
             @Override public Vec3 missingHit(Vec3 from, Vec3 to) {
-                if(mcheli.integration.dh.DhLaserTerrainBridge.isPresent()) {
-                    String result=mcheli.integration.dh.DhLaserTerrainBridge.query(world,from,to,coordinates);
-                    return "CLEAR".equals(result)?to:"BLOCKED".equals(result)?Vec3.createVectorHelper(coordinates[0],coordinates[1],coordinates[2]):null;
-                }
+                if (useDh) return traceDhGap(from, to, limit, coordinates, dhQuery);
                 Result result = MCH_WGMapOcclusion.traceFirstHit(world.provider.dimensionId,
                         from.xCoord, from.yCoord, from.zCoord, to.xCoord, to.yCoord, to.zCoord, coordinates);
                 if (result == Result.UNAVAILABLE) {
@@ -68,11 +77,24 @@ public final class WGMapLaserClientBridge {
                 return cachedHit(result, coordinates, to);
             }
         }, start, limit);
-        if (hit == null) return new Trace(liveHit, false);
-        if (hit == limit) return new Trace(liveHit, true);
+        if (hit == null) return new Trace(liveHit, false, useDh);
+        if (hit == limit) return new Trace(liveHit, true, false);
         int x = MathHelper.floor_double(hit.xCoord), y = MathHelper.floor_double(hit.yCoord);
         int z = MathHelper.floor_double(hit.zCoord);
-        return new Trace(new MovingObjectPosition(x, y, z, -1, hit), true);
+        return new Trace(new MovingObjectPosition(x, y, z, -1, hit), true, false);
+    }
+
+    static Vec3 traceDhGap(Vec3 from, Vec3 to, Vec3 limit, double[] coordinates,
+                          BiFunction<Vec3, Vec3, String> query) {
+        String result = query.apply(from, to);
+        if ("CLEAR".equals(result)) return to;
+        if ("BLOCKED".equals(result)) return cachedHit(Result.BLOCKED, coordinates, to);
+        if ("UNKNOWN".equals(result) && to.squareDistanceTo(limit) > 1.0D) {
+            // DH warms the longer corridor within its read budget. Only the regular
+            // traversal can confirm a new point, including any loaded chunks beyond this gap.
+            query.apply(from, limit);
+        }
+        return null;
     }
 
     static boolean nativeChunkPresent(IChunkProvider provider, int x, int z) {
