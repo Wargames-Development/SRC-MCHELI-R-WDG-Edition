@@ -3,25 +3,107 @@ package mcheli.integration.wgmap.client;
 import com.wdg.wgmap.integration.mchr.WaypointGpsAccess;
 import com.wdg.wgmap.waypoint.model.Waypoint;
 import com.wdg.wgmap.waypoint.model.WaypointAuthority;
+import mcheli.MCH_ClientTickHandlerBase;
+import mcheli.aircraft.MCH_EntityAircraft;
+import mcheli.integration.dh.DhLaserTerrainBridge;
 import mcheli.integration.wgmap.WGMapGpsTarget;
 import mcheli.weapon.MCH_GPSPosition;
+import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
 /** Loaded by client input only when WGMap is installed. */
 public final class WGMapGpsClientBridge {
+    private static final double GUNNER_MARK_RANGE = 1500.0D; // Within DH's finest-data ray limit.
+    private static final int GUNNER_MARK_RETRY_TICKS = 40;
+    private static final int MAX_PENDING_MARKS = 4;
+    private static final ArrayDeque<GunnerMark> pendingMarks = new ArrayDeque<GunnerMark>();
     private static WeakReference<World> selectionWorld = new WeakReference<World>(null);
     private static int selectionOwnerId;
     private static UUID selectedId;
     private static boolean cycled;
+    private static boolean legacyArmedLookup;
     private static WGMapGpsTarget selectedTarget;
     private static long lastSelectionCheck = Long.MIN_VALUE;
     private WGMapGpsClientBridge() { }
+
+    public static void tickGunnerWaypoint(Minecraft mc, boolean pressed) {
+        if (!pressed && pendingMarks.isEmpty()) return;
+        EntityPlayer player = mc.thePlayer;
+        MCH_EntityAircraft aircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
+        if (player == null || player.isDead || player.worldObj != mc.theWorld || mc.currentScreen != null
+                || !mc.inGameHasFocus || aircraft == null || aircraft.isDead || aircraft.isDestroyed()
+                || !aircraft.getIsGunnerMode(player)) {
+            pendingMarks.clear();
+            return;
+        }
+
+        if (pressed) {
+            EntityLivingBase view = mc.renderViewEntity;
+            if (view == null || view.worldObj != mc.theWorld || !DhLaserTerrainBridge.isPresent()
+                    || pendingMarks.size() >= MAX_PENDING_MARKS) {
+                MCH_ClientTickHandlerBase.playSoundNG();
+            } else {
+                pendingMarks.addLast(new GunnerMark(player, aircraft, view));
+            }
+        }
+
+        for (Iterator<GunnerMark> iterator = pendingMarks.iterator(); iterator.hasNext();) {
+            GunnerMark request = iterator.next();
+            if (request.player != player || request.world != mc.theWorld
+                    || request.aircraft != aircraft || request.mount != player.ridingEntity) {
+                iterator.remove();
+                continue;
+            }
+            String result = DhLaserTerrainBridge.query(request.world, request.start, request.end, request.hit);
+            if ("UNKNOWN".equals(result) && --request.ticksLeft > 0) continue;
+
+            iterator.remove();
+            if ("BLOCKED".equals(result) && saveGunnerMark(request)) MCH_ClientTickHandlerBase.playSound("mark");
+            else MCH_ClientTickHandlerBase.playSoundNG();
+        }
+    }
+
+    private static boolean saveGunnerMark(GunnerMark request) {
+        try {
+            return WaypointGpsAccess.apiVersion() == 1 && WaypointGpsAccess.createClientPersonalGps(
+                    request.hit[0], request.hit[1], request.hit[2], request.player.dimension);
+        } catch (LinkageError incompatible) {
+            return false;
+        }
+    }
+
+    private static final class GunnerMark {
+        final EntityPlayer player;
+        final MCH_EntityAircraft aircraft;
+        final Entity mount;
+        final World world;
+        final Vec3 start, end;
+        final double[] hit = new double[3];
+        int ticksLeft = GUNNER_MARK_RETRY_TICKS;
+
+        GunnerMark(EntityPlayer player, MCH_EntityAircraft aircraft, EntityLivingBase view) {
+            this.player = player;
+            this.aircraft = aircraft;
+            this.mount = player.ridingEntity;
+            this.world = player.worldObj;
+            // Freeze the same view origin and direction used for picking while DH warms its data.
+            this.start = view.getPosition(1.0F);
+            Vec3 look = view.getLookVec();
+            this.end = start.addVector(look.xCoord * GUNNER_MARK_RANGE, look.yCoord * GUNNER_MARK_RANGE,
+                    look.zCoord * GUNNER_MARK_RANGE);
+        }
+    }
 
     public static WGMapGpsTarget cycle(EntityPlayer player) {
         if (player == null || player.worldObj == null) return null;
@@ -37,7 +119,7 @@ public final class WGMapGpsClientBridge {
         selectedTarget = null;
         for (int checked = 0; checked < points.size(); checked++) {
             Waypoint point = points.get((next + checked) % points.size());
-            if (isGpsEnabled(point)) {
+            if (!legacyArmedLookup || isGpsEnabled(point)) {
                 selectedId = point.getId();
                 selectedTarget = target(point);
                 break;
@@ -63,7 +145,7 @@ public final class WGMapGpsClientBridge {
         selectedTarget = null;
         for (Waypoint point : gpsPoints(player)) {
             if (point.getId().equals(selectedId)) {
-                if (isGpsEnabled(point)) selectedTarget = target(point);
+                if (!legacyArmedLookup || isGpsEnabled(point)) selectedTarget = target(point);
                 break;
             }
         }
@@ -84,13 +166,19 @@ public final class WGMapGpsClientBridge {
 
     private static List<Waypoint> gpsPoints(EntityPlayer player) {
         try {
-            if (WaypointGpsAccess.apiVersion() == 1) {
-                // Finite world-wide range; WGMap bounds this API to 128 enabled GPS points.
-                return new ArrayList<Waypoint>(WaypointGpsAccess.clientRadarPoints(
-                        player.posX, player.posZ, player.dimension, 100_000_000.0D));
+            if (WaypointGpsAccess.apiVersion() != 1) return Collections.emptyList();
+            if (!legacyArmedLookup) {
+                try {
+                    return new ArrayList<Waypoint>(WaypointGpsAccess.clientArmedPoints(player.dimension));
+                } catch (NoSuchMethodError olderWgMap) {
+                    legacyArmedLookup = true;
+                }
             }
-        } catch (LinkageError incompatible) { }
-        return new ArrayList<Waypoint>();
+            return new ArrayList<Waypoint>(WaypointGpsAccess.clientRadarPoints(
+                    player.posX, player.posZ, player.dimension, 100_000_000.0D));
+        } catch (LinkageError incompatible) {
+            return Collections.emptyList();
+        }
     }
 
     private static WGMapGpsTarget target(Waypoint point) {
@@ -118,6 +206,12 @@ public final class WGMapGpsClientBridge {
         WGMapGpsTarget target = peek(player, originX, originZ);
         if (target != null) MCH_GPSPosition.clientSet(target.x, target.y, target.z, true, player);
         return target;
+    }
+
+    public static WGMapGpsTarget getSelectedTarget(EntityPlayer player) {
+        if (player == null || player.worldObj == null) return null;
+        refreshSelection(player);
+        return selectedTarget;
     }
 
     /** Read-only half of the firing selection; select() also updates MCHR's client GPS state. */

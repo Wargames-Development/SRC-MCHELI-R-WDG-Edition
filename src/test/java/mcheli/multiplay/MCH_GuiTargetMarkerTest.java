@@ -87,6 +87,12 @@ public class MCH_GuiTargetMarkerTest {
     }
 
     @Test
+    public void triangleMovesOnlyAsFarAsNeededToClearNameplate() {
+        assertEquals(57.0D, MCH_GuiTargetMarker.positionAboveNameplate(70.0D, 50.0D), 0.0D);
+        assertEquals(53.0D, MCH_GuiTargetMarker.positionAboveNameplate(53.0D, 50.0D), 0.0D);
+    }
+
+    @Test
     public void scopeUsesItsOwnViewportAndFieldOfView() {
         MCH_MarkEntityPos primary = project(10, 2, -40, 2560, 1440, 1);
         MCH_MarkEntityPos scope = project(10, 2, -40, 1024, 768, 2);

@@ -11,6 +11,9 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.util.AxisAlignedBB;
@@ -96,12 +99,19 @@ public class MCH_GunnerEngagementTest {
             }
             f.call(ws, "update", new Class[]{Entity.class, boolean.class, boolean.class}, f.turret, true, false);
             f.call(ws, "setAmmoNum", new Class[]{int.class}, 2);
+            f.call(ws, "setRestAllAmmoNum", new Class[]{int.class}, 50);
             Object last = f.type("mcheli.weapon.MCH_WeaponParam").newInstance();
             f.field(last, "user").set(last, f.gunner); f.field(last, "entity").set(last, f.turret);
             int before = f.world.spawned.size();
             assertTrue((Boolean) f.call(ws, "use", new Class[]{last.getClass()}, last));
             assertEquals("A partial belt cannot spawn free rounds", before + 2, f.world.spawned.size());
             assertEquals(0, f.call(ws, "getAmmoNum", new Class[0]));
+            for (int tick = 0; tick < 40; ++tick) {
+                f.call(ws, "update", new Class[]{Entity.class, boolean.class, boolean.class}, f.turret, true, false);
+            }
+            f.field(last, "result").setBoolean(last, false);
+            assertFalse((Boolean) f.call(ws, "use", new Class[]{last.getClass()}, last));
+            assertEquals(50, f.call(ws, "getRestAllAmmoNum", new Class[0]));
             f.field(ws, "countReloadWait").setInt(ws, 0); f.field(ws, "countWait").setInt(ws, 0);
             f.call(ws, "setAmmoNum", new Class[]{int.class}, 100);
             f.world.rejectProjectileSpawns = true;
@@ -789,6 +799,94 @@ public class MCH_GunnerEngagementTest {
         assertTrue((Boolean) f.call(fresh, "getGunnerStatus", new Class[0]));
     }
 
+    @Test public void survivalCiwsReloadsOnlyOnGroundAndKeepsAmmoAcrossMountsAndSaves() throws Exception {
+        Fixture f = new Fixture(0);
+        Object originalWeapon = f.call(f.turret, "getFirstSeatWeapon", new Class[0]);
+        Object info = f.call(originalWeapon, "getInfo", new Class[0]);
+        f.call(info, "checkData", new Class[0]);
+        assertEquals(100, f.integer(info, "maxAmmo"));
+        f.load(info, "round", "4");
+        f.load(info, "MaxAmmo", "12");
+        f.load(info, "SuppliedNum", "8");
+        f.load(info, "reloadtime", "3");
+        f.load(info, "Item", "1, iron_ingot");
+        f.load(info, "Item", "1, iron_ingot");
+        Item material = new Item();
+        for (Object cost : (List) f.value(info, "roundItems")) {
+            f.field(cost, "itemStack").set(cost, new ItemStack(material));
+        }
+        f.call(info, "checkData", new Class[0]);
+
+        Entity turret = (Entity) f.type(TestVehicle.class.getName()).getConstructor(World.class).newInstance(f.world);
+        f.call(turret, "setTypeName", new Class[]{String.class}, "test_vehicle");
+        turret.setPosition(0, 64 + turret.yOffset, 0);
+        Object weapon = f.call(turret, "getFirstSeatWeapon", new Class[0]);
+        assertEquals(0, f.call(weapon, "getAmmoNum", new Class[0]));
+        assertEquals(0, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+
+        TestPlayer pilot = TestPlayer.create(f.world);
+        pilot.posY = 64;
+        pilot.inventory = new InventoryPlayer(pilot);
+        pilot.inventory.mainInventory[0] = new ItemStack(material);
+        turret.riddenByEntity = pilot;
+        pilot.ridingEntity = turret;
+        f.call(turret, "setCommonStatus", new Class[]{int.class, boolean.class}, 3, true);
+        assertFalse((Boolean) f.call(turret, "isInfinityAmmo", new Class[]{Entity.class}, pilot));
+        f.call(turret, "initCurrentWeapon", new Class[]{Entity.class}, pilot);
+        assertEquals(0, f.call(weapon, "getAmmoNum", new Class[0]));
+
+        pilot.openContainer = (net.minecraft.inventory.Container) f.type("mcheli.aircraft.MCH_AircraftGuiContainer")
+            .getConstructor(EntityPlayer.class, f.type("mcheli.aircraft.MCH_EntityAircraft")).newInstance(pilot, turret);
+        Class<?>[] requestArgs = {EntityPlayer.class, int.class};
+        turret.onGround = true;
+        f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
+        f.call(turret, "updateSupplyAmmo", new Class[0]);
+        assertEquals("One item cannot satisfy both recipe entries", 1, pilot.inventory.mainInventory[0].stackSize);
+        pilot.inventory.mainInventory[0].stackSize = 2;
+        turret.onGround = false;
+        f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
+        f.call(turret, "updateSupplyAmmo", new Class[0]);
+        assertEquals(2, pilot.inventory.mainInventory[0].stackSize);
+
+        f.world.floorY = 63;
+        f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
+        f.call(turret, "updateSupplyAmmo", new Class[0]);
+        assertNull(pilot.inventory.mainInventory[0]);
+        assertEquals(3, f.integer(weapon, "countReloadWait"));
+        assertEquals(8, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+        f.world.floorY = Integer.MIN_VALUE;
+        f.call(turret, "updateWeapons", new Class[0]);
+        assertEquals(3, f.integer(weapon, "countReloadWait"));
+
+        ItemStack packed = new ItemStack(new Item());
+        f.call(turret, "setAcDataToItem", new Class[]{ItemStack.class}, packed);
+        NBTTagCompound saved = new NBTTagCompound();
+        f.call(turret, "saveAircraft", new Class[]{NBTTagCompound.class}, saved);
+        for (boolean loadItem : new boolean[]{true, false}) {
+            Entity restored = (Entity) f.type(TestVehicle.class.getName()).getConstructor(World.class).newInstance(f.world);
+            if (loadItem) {
+                f.call(restored, "setTypeName", new Class[]{String.class}, "test_vehicle");
+                f.call(restored, "getAcDataFromItem", new Class[]{ItemStack.class}, packed);
+            } else {
+                f.call(restored, "loadAircraft", new Class[]{NBTTagCompound.class}, saved);
+            }
+            Object restoredWeapon = f.call(restored, "getFirstSeatWeapon", new Class[0]);
+            assertEquals(0, f.call(restoredWeapon, "getAmmoNum", new Class[0]));
+            assertEquals(8, f.call(restoredWeapon, "getRestAllAmmoNum", new Class[0]));
+            assertEquals(3, f.integer(restoredWeapon, "countReloadWait"));
+        }
+
+        turret.riddenByEntity = null;
+        turret.onGround = true;
+        for (int tick = 0; tick < 3; ++tick) f.call(turret, "updateWeapons", new Class[0]);
+        assertEquals(4, f.call(weapon, "getAmmoNum", new Class[0]));
+        f.call(weapon, "setAmmoNum", new Class[]{int.class}, 2);
+        turret.riddenByEntity = pilot;
+        f.call(turret, "initCurrentWeapon", new Class[]{Entity.class}, pilot);
+        assertEquals(2, f.call(weapon, "getAmmoNum", new Class[0]));
+        assertEquals(4, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+    }
+
     private static final class Fixture {
         final HeadlessLoader loader = new HeadlessLoader();
         final TestWorld world = new TestWorld();
@@ -971,9 +1069,11 @@ public class MCH_GunnerEngagementTest {
     private static final class TestWorld extends World {
         private static final Block AIR = new Block(Material.air) {
             @Override public boolean canCollideCheck(int metadata, boolean stopOnLiquid) { return false; }
+            @Override public AxisAlignedBB getCollisionBoundingBoxFromPool(World world, int x, int y, int z) { return null; }
         };
         private static final Block WALL = new Block(Material.rock) { };
         int wallZ = Integer.MIN_VALUE;
+        int floorY = Integer.MIN_VALUE;
         int blockQueries;
         boolean chunksLoaded = true;
         boolean blocked;
@@ -989,7 +1089,7 @@ public class MCH_GunnerEngagementTest {
         @Override protected IChunkProvider createChunkProvider() { return null; }
         @Override protected int func_152379_p() { return 0; }
         @Override public void calculateInitialSkylight() { }
-        @Override public Block getBlock(int x, int y, int z) { ++blockQueries; return z == wallZ ? WALL : AIR; }
+        @Override public Block getBlock(int x, int y, int z) { ++blockQueries; return z == wallZ || y == floorY ? WALL : AIR; }
         @Override public int getBlockMetadata(int x, int y, int z) { return 0; }
         @Override public boolean spawnEntityInWorld(Entity entity) {
             if (rejectProjectileSpawns) return false;
@@ -1050,6 +1150,17 @@ public class MCH_GunnerEngagementTest {
                                     super.visitEnd();
                                 }
                                 @Override public MethodVisitor visitMethod(int access, String method, String descriptor, String signature, String[] exceptions) {
+                                    if (name.equals("mcheli.wrapper.W_Network")) {
+                                        if (method.equals("<clinit>")) return null;
+                                        if (method.equals("sendToAllAround")) {
+                                            MethodVisitor stub = super.visitMethod(access, method, descriptor, signature, exceptions);
+                                            stub.visitCode();
+                                            stub.visitInsn(Opcodes.RETURN);
+                                            stub.visitMaxs(0, 4);
+                                            stub.visitEnd();
+                                            return null;
+                                        }
+                                    }
                                     return (name.equals("mcheli.MCH_MOD") || name.equals("com.flansmod.common.FlansMod")) && method.equals("<clinit>") ? null
                                         : super.visitMethod(access, method, descriptor, signature, exceptions);
                                 }

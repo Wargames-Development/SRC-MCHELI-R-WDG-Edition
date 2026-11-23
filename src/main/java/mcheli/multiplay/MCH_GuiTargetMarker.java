@@ -1,5 +1,6 @@
 package mcheli.multiplay;
 
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Config;
@@ -11,6 +12,7 @@ import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.gui.MCH_Gui;
 import mcheli.mob.MCH_EntityGunner;
 import mcheli.particles.MCH_ParticlesUtil;
+import mcheli.render.MCH_FMURThermal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.renderer.Tessellator;
@@ -22,6 +24,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 
+import java.lang.reflect.Method;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -32,6 +35,8 @@ import java.util.Iterator;
 @SideOnly(Side.CLIENT)
 public class MCH_GuiTargetMarker extends MCH_Gui {
 
+    private static final double TRIANGLE_TIP_OFFSET = 10.0D;
+    private static final double NAMEPLATE_GAP = 3.0D;
     private static FloatBuffer matModel = BufferUtils.createFloatBuffer(16);
     private static FloatBuffer matProjection = BufferUtils.createFloatBuffer(16);
     private static IntBuffer matViewport = BufferUtils.createIntBuffer(16);
@@ -178,6 +183,11 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
                     || (spotType != MCH_TargetType.POINT && !isFrontProjection(e1))) {
                     return;
                 }
+                if (spotType != MCH_TargetType.POINT && entity instanceof EntityPlayer && !MCH_FMURThermal.isHeatPass()) {
+                    // Use the same render-relative feet position as the nameplate renderer.
+                    e1.nameplateTop = WGCoreNameplates.screenTop((EntityPlayer) entity,
+                        x, y - entity.height - 0.5D, z);
+                }
                 if (entityId != null && !markedEntityIds.add(entityId)) {
                     return;
                 }
@@ -281,6 +291,34 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
 
     private static boolean isFinite(float value) {
         return !Float.isNaN(value) && !Float.isInfinite(value);
+    }
+
+    private static final class WGCoreNameplates {
+        private static final Method SCREEN_TOP = findScreenTop();
+
+        private static Method findScreenTop() {
+            if (!Loader.isModLoaded("wgcore")) {
+                return null;
+            }
+            try {
+                return Class.forName("com.wdg.wgcore.client.nameplate.NameplateOverlayRenderer").getMethod(
+                    "getNameplateScreenTop", EntityPlayer.class, double.class, double.class, double.class,
+                    FloatBuffer.class, FloatBuffer.class, IntBuffer.class);
+            } catch (ReflectiveOperationException | LinkageError unavailable) {
+                return null;
+            }
+        }
+
+        private static float screenTop(EntityPlayer target, double x, double y, double z) {
+            if (SCREEN_TOP != null) {
+                try {
+                    return (Float) SCREEN_TOP.invoke(null, target, x, y, z, matModel, matProjection, matViewport);
+                } catch (ReflectiveOperationException | LinkageError unavailable) {
+                    return Float.NaN;
+                }
+            }
+            return Float.NaN;
+        }
     }
 
     public static void clearMarkEntityPos() {
@@ -439,6 +477,9 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
                 double MARK_SIZE;
                 if (i == 0) {
                     MARK_SIZE = MCH_Config.EntityMarkerSize.prmDouble;
+                    if (isFinite(e.nameplateTop)) {
+                        y = positionAboveNameplate(y, DSH - e.nameplateTop / scale);
+                    }
                     if (e.type < MCH_TargetType.POINT.ordinal() && z < 1.0D && x >= 0.0D && x <= (double) DSW && y >= 0.0D && y <= (double) DSH) {
                         this.drawTriangle1(tessellator, x, y, MARK_SIZE, color);
                     }
@@ -493,11 +534,16 @@ public class MCH_GuiTargetMarker extends MCH_Gui {
         GL11.glDisable(3042);
     }
 
+    static double positionAboveNameplate(double markerY, double nameplateTopY) {
+        return Math.min(markerY, nameplateTopY + TRIANGLE_TIP_OFFSET - NAMEPLATE_GAP);
+    }
+
     public void drawTriangle1(Tessellator tessellator, double x, double y, double size, int color) {
         tessellator.setColorRGBA_I(16777215 & color, color >> 24 & 255);
-        tessellator.addVertex(x + size / 2.0D, y - 10.0D - size, super.zLevel);
-        tessellator.addVertex(x - size / 2.0D, y - 10.0D - size, super.zLevel);
-        tessellator.addVertex(x + 0.0D, y - 10.0D, super.zLevel);
+        double tipY = y - TRIANGLE_TIP_OFFSET;
+        tessellator.addVertex(x + size / 2.0D, tipY - size, super.zLevel);
+        tessellator.addVertex(x - size / 2.0D, tipY - size, super.zLevel);
+        tessellator.addVertex(x, tipY, super.zLevel);
     }
 
     public void drawTriangle2(Tessellator tessellator, double x, double y, double size, int color) {

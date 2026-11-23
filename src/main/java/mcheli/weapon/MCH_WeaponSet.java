@@ -120,24 +120,7 @@ public class MCH_WeaponSet {
     }
 
     public void supplyRestAllAmmo() {
-        int maxAmmo = this.getInfo().maxAmmo;
-        if (this.getRestAllAmmoNum() + this.getAmmoNum() < maxAmmo) {
-            this.setRestAllAmmoNum(this.getRestAllAmmoNum() + this.getInfo().suppliedNum);
-
-            int delay = this.getCurrentWeapon().getReloadCount();
-            if (delay > 0) {
-                if (!this.getFirstWeapon().worldObj.isRemote) {
-                    delay -= 20;
-                    if (delay <= 0) {
-                        delay = 1;
-                    }
-                }
-
-                if (this.countReloadWait < delay) {
-                    this.countReloadWait = delay;
-                }
-            }
-        }
+        this.setRestAllAmmoNum(this.getRestAllAmmoNum() + this.getInfo().suppliedNum);
     }
 
     public boolean isInPreparation() {
@@ -196,24 +179,14 @@ public class MCH_WeaponSet {
     }
 
     public void reload() {
-        MCH_WeaponBase crtWpn = this.getCurrentWeapon();
-        if (this.getAmmoNumMax() > 0 && this.getAmmoNum() < this.getAmmoNumMax() && crtWpn.getReloadCount() > 0) {
-            this.countReloadWait = crtWpn.getReloadCount();
-            if (crtWpn.worldObj.isRemote) {
-                this.setAmmoNum(0);
-            }
-
-            if (!crtWpn.worldObj.isRemote) {
-                this.countReloadWait -= 20;
-                if (this.countReloadWait <= 0) {
-                    this.countReloadWait = 1;
-                }
-            }
+        MCH_WeaponBase weapon = this.getCurrentWeapon();
+        if (!weapon.worldObj.isRemote && this.countReloadWait == 0
+            && this.getRestAllAmmoNum() > 0 && this.getAmmoNum() < this.getAmmoNumMax()) {
+            this.countReloadWait = Math.max(1, weapon.getReloadCount());
         }
-
     }
 
-    public void reloadMag() {
+    private void reloadMag() {
         int restAmmo = this.getRestAllAmmoNum();
         int nAmmo = this.getAmmoNumMax() - this.getAmmoNum();
         if (nAmmo > 0) {
@@ -256,7 +229,7 @@ public class MCH_WeaponSet {
 
     }
 
-    public void onSwitchWeapon(boolean isRemote, boolean isCreative) {
+    public void onSwitchWeapon() {
         int cntSwitch = getCurrentWeapon().getInfo().weaponSwitchCount;
         if (this.countWait >= -cntSwitch) {
             if (this.countWait > cntSwitch) {
@@ -267,9 +240,6 @@ public class MCH_WeaponSet {
         }
 
         this.currentWeaponIndex = 0;
-        if (isCreative) {
-            this.setAmmoNum(this.getAmmoNumMax());
-        }
     }
 
     public boolean isUsed(int index) {
@@ -282,13 +252,11 @@ public class MCH_WeaponSet {
         }
     }
 
-    public void update(Entity shooter, boolean isSelected, boolean isUsed) {
+    public void update(Entity shooter, boolean canContinueReload, boolean isUsed) {
         if (this.getCurrentWeapon().getInfo() != null) {
-            // Reload state belongs to the weapon set because magazine and reserve ammo are shared.
-            // Keep the existing behavior where a reload pauses while this weapon set is not selected.
-            if (isSelected && this.countReloadWait > 0) {
+            if (canContinueReload && this.countReloadWait > 0) {
                 --this.countReloadWait;
-                if (this.countReloadWait == 0) {
+                if (this.countReloadWait == 0 && !this.getFirstWeapon().worldObj.isRemote) {
                     this.reloadMag();
                 }
             }
@@ -296,7 +264,7 @@ public class MCH_WeaponSet {
             for (int arr$ = 0; arr$ < this.lastUsedCount.length; ++arr$) {
                 if (this.lastUsedCount[arr$] > 0) {
                     if (this.lastUsedCount[arr$] == 4) {
-                        if (0 == this.getCurrentWeaponIndex() && this.canUse() && (this.getAmmoNum() > 0 || this.getAllAmmoNum() <= 0)) {
+                        if (this.countWait == 0 && (this.getCurrentWeaponIndex() == 0 || this.getAmmoNum() == 0)) {
                             --this.lastUsedCount[arr$];
                         }
                     } else {
@@ -444,7 +412,8 @@ public class MCH_WeaponSet {
                 }
             }
 
-            if ((this.getAmmoNumMax() <= 0 || this.getAmmoNum() > 0) && (info.maxHeatCount <= 0 || this.currentHeat < info.maxHeatCount)) {
+            boolean usesStoredAmmo = this.getAmmoNumMax() > 0 && !prm.isInfinity;
+            if ((!usesStoredAmmo || this.getAmmoNum() > 0) && (info.maxHeatCount <= 0 || this.currentHeat < info.maxHeatCount)) {
                 crtWpn.canPlaySound = this.soundWait == 0;
                 setWeaponRotation(prm, crtWpn);
                 if (info.accuracy > 0.0F && info.roundsPerShot == 1) {
@@ -458,11 +427,9 @@ public class MCH_WeaponSet {
 
                 prm.rotYaw = MathHelper.wrapAngleTo180_float(prm.rotYaw);
                 prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
-                int ammoBeforeClientPrediction = this.getAmmoNum();
-                int restAmmoBeforeClientPrediction = this.getRestAllAmmoNum();
                 int heatBeforeClientPrediction = this.currentHeat;
                 int cooldownSpeedBeforeClientPrediction = this.cooldownSpeed;
-                prm.roundsFired = Math.min(info.roundsPerShot, this.getAmmoNumMax() > 0 ? this.getAmmoNum() : info.roundsPerShot);
+                prm.roundsFired = usesStoredAmmo ? Math.min(info.roundsPerShot, this.getAmmoNum()) : info.roundsPerShot;
                 if (crtWpn.use(prm)) {
                     // Predict timing and visuals locally, but keep ammo and heat unchanged until
                     // the server confirms that it accepted and spawned the projectile.
@@ -491,24 +458,12 @@ public class MCH_WeaponSet {
 
                         this.currentWeaponIndex = (this.currentWeaponIndex + 1) % this.weapons.length;
                         this.countWait = crtWpn.interval;
-                        this.countReloadWait = 0;
-                        if (this.getAmmoNum() > 0) {
+                        if (usesStoredAmmo && !prm.entity.worldObj.isRemote) {
                             this.setAmmoNum(this.getAmmoNum() - prm.roundsFired);
-                        }
-
-                        if (this.getAmmoNum() <= 0) {
-                            if (prm.isInfinity && this.getRestAllAmmoNum() < this.getAmmoNumMax()) {
-                                this.setRestAllAmmoNum(this.getAmmoNumMax());
-                            }
-
-                            this.reload();
-                            prm.reload = true;
                         }
 
                         prm.result = true;
                         if (prm.entity.worldObj.isRemote) {
-                            this.setAmmoNum(ammoBeforeClientPrediction);
-                            this.setRestAllAmmoNum(restAmmoBeforeClientPrediction);
                             this.currentHeat = heatBeforeClientPrediction;
                             this.cooldownSpeed = cooldownSpeedBeforeClientPrediction;
                         }
@@ -538,20 +493,10 @@ public class MCH_WeaponSet {
         prm.rotPitch = MathHelper.wrapAngleTo180_float(prm.rotPitch);
     }
 
-    public void waitAndReloadByOther(boolean reload) {
+    public void applyGroupedCooldown() {
         MCH_WeaponBase crtWpn = this.getCurrentWeapon();
         if (crtWpn != null && crtWpn.getInfo() != null) {
             this.countWait = crtWpn.interval;
-            this.countReloadWait = 0;
-            if (reload && this.getAmmoNumMax() > 0 && crtWpn.getReloadCount() > 0) {
-                this.countReloadWait = crtWpn.getReloadCount();
-                if (!crtWpn.worldObj.isRemote) {
-                    this.countReloadWait -= 20;
-                    if (this.countReloadWait <= 0) {
-                        this.countReloadWait = 1;
-                    }
-                }
-            }
         }
 
     }

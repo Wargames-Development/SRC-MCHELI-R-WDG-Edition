@@ -2034,7 +2034,7 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                     && MCH_Config.Explosion_DestroyBlock.prmBool) {
                     java.util.UUID ownerParty = this.shootingEntity != null
                         ? this.shootingEntity.getUniqueID() : null;
-                    boolean handedOff = MCH_HBMUtil.spawnMediumBunkerBuster(
+                    boolean handedOff = MCH_HBMUtil.spawnBunkerBuster(
                         super.worldObj,
                         m.hitVec.xCoord,
                         m.hitVec.yCoord,
@@ -2042,7 +2042,8 @@ public abstract class MCH_EntityBaseBullet extends W_Entity implements MCH_IChun
                         super.motionX * this.accelerationFactor,
                         super.motionY * this.accelerationFactor,
                         super.motionZ * this.accelerationFactor,
-                        ownerParty
+                        ownerParty,
+                        this.getInfo().useConcreteCrackerWarhead
                     );
 
                     if (handedOff) {

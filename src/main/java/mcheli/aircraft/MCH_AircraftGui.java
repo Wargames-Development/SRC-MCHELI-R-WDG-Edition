@@ -146,7 +146,6 @@ public class MCH_AircraftGui extends W_GuiContainer {
                                 MCH_AircraftGuiContainer.RELOAD_COUNTERMEASURES);
                         } else {
                             MCH_PacketIndReload.send(this.aircraft, this.currentWeaponId);
-                            this.aircraft.supplyAmmo(this.currentWeaponId);
                         }
                         this.reloadWait = 3;
                         this.buttonReload.enabled = false;

@@ -55,6 +55,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int round;
     public int suppliedNum;
     public int maxAmmo;
+    private boolean hasMaxAmmo;
     public boolean spawnWithAmmo;
     public List roundItems;
     public int soundDelay;
@@ -75,6 +76,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
     public int fixMode;
     public int piercing;
     public boolean isBunkerBuster;
+    public boolean useConcreteCrackerWarhead;
     public int heatCount;
     public int maxHeatCount;
     public boolean isFAE;
@@ -712,6 +714,11 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
             this.fixMode = 0;
         }
 
+        if (!this.hasMaxAmmo && this.maxAmmo == 0 && this.round > 0) {
+            // A definition that specifies only a magazine has no additional reserve.
+            this.maxAmmo = this.round;
+        }
+
         if (this.round <= 0) {
             this.round = this.maxAmmo;
         }
@@ -1100,6 +1107,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.disableDestroyBlock = this.toBool(data);
             } else if (item.equalsIgnoreCase("IsBunkerBuster")) {
                 this.isBunkerBuster = this.toBool(data);
+            } else if (item.equalsIgnoreCase("UseConcreteCrackerWarhead")) {
+                this.useConcreteCrackerWarhead = this.toBool(data);
             } else if (item.equalsIgnoreCase("RailgunSound")) {
                 this.railgunSound = data.toLowerCase().trim();
             } else if (item.equalsIgnoreCase("CanBeIntercepted")) {
@@ -1298,6 +1307,7 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                 this.round = this.toInt(data, 1, 30000);
             } else if (item.equalsIgnoreCase("MaxAmmo")) {
                 this.maxAmmo = this.toInt(data, 0, 30000);
+                this.hasMaxAmmo = true;
             } else if (item.equalsIgnoreCase("SpawnWithAmmo")) {
                 this.spawnWithAmmo = this.toBool(data, this.spawnWithAmmo);
             } else if (item.equalsIgnoreCase("SuppliedNum")) {
@@ -1359,6 +1369,8 @@ public class MCH_WeaponInfo extends MCH_BaseInfo {
                     this.piercing = this.toInt(data, 0, 100000);
                 } else if (item.equalsIgnoreCase("IsBunkerBuster")) {
                     this.isBunkerBuster = this.toBool(data);
+                } else if (item.equalsIgnoreCase("UseConcreteCrackerWarhead")) {
+                    this.useConcreteCrackerWarhead = this.toBool(data);
                 } else if (item.compareTo("heatcount") == 0) {
                     this.heatCount = this.toInt(data, 0, 100000);
                 } else if (item.compareTo("maxheatcount") == 0) {

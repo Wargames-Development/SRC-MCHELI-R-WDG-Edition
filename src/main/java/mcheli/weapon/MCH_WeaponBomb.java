@@ -11,6 +11,12 @@ import net.minecraft.world.World;
 
 public class MCH_WeaponBomb extends MCH_WeaponBase {
 
+    public static final String SELECT_GPS_TARGET_MESSAGE = "Right-click to select a GPS target before dropping a GPS bomb.";
+
+    public static boolean requiresSelectedGpsTarget(MCH_WeaponInfo info) {
+        return info != null && info.isGPSMissile && "bomb".equalsIgnoreCase(info.type);
+    }
+
     public MCH_WeaponBomb(World w, Vec3 v, float yaw, float pitch, String nm, MCH_WeaponInfo wi) {
         super(w, v, yaw, pitch, nm, wi);
         super.acceleration = 0.5F;
@@ -20,6 +26,12 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
     }
 
     public boolean shot(MCH_WeaponParam prm) {
+        boolean gpsBomb = this.getInfo() != null && this.getInfo().isGPSMissile;
+        MCH_GPSPosition gpsPosition = prm.gpsTarget;
+        if (gpsBomb && !MCH_GPSPosition.isUsableTarget(gpsPosition)) {
+            return false;
+        }
+
         //自毁
         if (this.getInfo() != null && this.getInfo().destruct) {
             if (prm.entity instanceof MCH_EntityAircraft) {
@@ -84,21 +96,13 @@ public class MCH_WeaponBomb extends MCH_WeaponBase {
                 }
             }
         } else {
-            MCH_GPSPosition gpsPosition = null;
-            if (this.getInfo() != null && this.getInfo().isGPSMissile) {
-                gpsPosition = prm.gpsTarget != null ? prm.gpsTarget
-                    : (super.worldObj.isRemote ? MCH_GPSPosition.currentClientGPSPosition : MCH_GPSPosition.get(prm.user));
-                if (!MCH_GPSPosition.isUsableTarget(gpsPosition)) {
-                    return false;
-                }
-            }
             if (super.worldObj.isRemote) {
                 return true;
             }
             MCH_EntityBomb e = new MCH_EntityBomb(super.worldObj, prm.posX, prm.posY, prm.posZ, prm.entity.motionX, prm.entity.motionY, prm.entity.motionZ, prm.entity.rotationYaw, 0.0F, (double) super.acceleration);
             e.setInfoByName(super.name);
             e.setParameterFromWeapon(this, prm.entity, prm.user);
-            if (gpsPosition != null) {
+            if (gpsBomb) {
                 e.setGpsTarget(gpsPosition.x, gpsPosition.y, gpsPosition.z);
             }
             e.motionX = prm.entity.motionX;

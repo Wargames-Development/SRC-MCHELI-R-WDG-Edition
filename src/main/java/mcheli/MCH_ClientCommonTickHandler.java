@@ -1,6 +1,7 @@
 package mcheli;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
@@ -16,6 +17,7 @@ import mcheli.gui.MCH_Gui;
 import mcheli.helicopter.MCH_ClientHeliTickHandler;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.helicopter.MCH_GuiHeli;
+import mcheli.integration.wgmap.client.WGMapGpsClientBridge;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.lweapon.MCH_GuiLightWeapon;
 import mcheli.lweapon.MCH_ItemLightWeaponBase;
@@ -157,6 +159,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public MCH_Key KeyCamDistDown;
     public MCH_Key KeyScoreboard;
     public MCH_Key KeyMultiplayManager;
+    private MCH_Key keyMarkGunnerGps;
     // Client-side cache of missile IDs we should keep sending BVR lock packets to
     private static final java.util.HashMap<Integer, Long> BVR_MISSILE_ID_CACHE = new java.util.HashMap<Integer, Long>();
     private static final long BVR_MISSILE_ID_TTL_MS = 30_000L; // keep for 30 seconds
@@ -739,6 +742,13 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onTickPost() {
+        int markKey = MCH_Config.KeyMarkGunnerGPS.prmInt;
+        boolean bindingChanged = this.keyMarkGunnerGps == null || this.keyMarkGunnerGps.key != markKey;
+        if (bindingChanged) this.keyMarkGunnerGps = new MCH_Key(markKey);
+        this.keyMarkGunnerGps.update();
+        if (Loader.isModLoaded("wgmap")) {
+            WGMapGpsClientBridge.tickGunnerWaypoint(this.mc, !bindingChanged && this.keyMarkGunnerGps.isKeyDown());
+        }
         World world = super.mc.theWorld;
         if (world != null) {
             long worldTick = world.getTotalWorldTime();

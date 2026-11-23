@@ -6,19 +6,25 @@ import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.aircraft.MCH_EntitySeat;
 import mcheli.integration.wgmap.WGMapGpsServerBridge;
+import mcheli.integration.wgmap.WGMapGpsTarget;
 import mcheli.network.PacketBase;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.uav.MCH_EntityUavStation;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.weapon.MCH_GPSPosition;
+import mcheli.weapon.MCH_WeaponBomb;
 import mcheli.weapon.MCH_WeaponInfo;
 import mcheli.weapon.MCH_WeaponParam;
 import mcheli.weapon.MCH_WeaponSet;
+import mcheli.wrapper.W_EntityPlayer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.world.World;
 import cpw.mods.fml.common.Loader;
 import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class PacketUseWeapon extends PacketBase {
@@ -26,7 +32,11 @@ public class PacketUseWeapon extends PacketBase {
     /** Reserved negative option values; the five-field wire layout stays unchanged. */
     public static final int WGM_LOCAL_GPS = Integer.MIN_VALUE;
     public static final int WGM_SHARED_GPS = Integer.MIN_VALUE + 1;
-    private static final ArrayBlockingQueue<WaypointShot> WAYPOINT_SHOTS = new ArrayBlockingQueue<WaypointShot>(128);
+    private static final int WGM_SELECT_LOCAL_GPS_BOMB = Integer.MIN_VALUE + 2;
+    private static final int WGM_SELECT_SHARED_GPS_BOMB = Integer.MIN_VALUE + 3;
+    private static final int WGM_CLEAR_GPS_BOMB = Integer.MIN_VALUE + 4;
+    private static final ArrayBlockingQueue<WaypointRequest> WAYPOINT_REQUESTS = new ArrayBlockingQueue<>(128);
+    private static final Map<EntityPlayerMP, SelectedGpsBombTarget> GPS_BOMB_TARGETS = new WeakHashMap<>();
 
     private static final long AMMO_MASK = 0x7FFFL;
     private static final long HEAT_MASK = 0x1FFFFL;
@@ -46,6 +56,14 @@ public class PacketUseWeapon extends PacketBase {
     }
 
     public PacketUseWeapon() {
+    }
+
+    public static PacketUseWeapon selectGpsBombTarget(WGMapGpsTarget target) {
+        if (target == null) {
+            return new PacketUseWeapon(0, WGM_CLEAR_GPS_BOMB, 0.0D, 0.0D, 0.0D);
+        }
+        int option = target.shared ? WGM_SELECT_SHARED_GPS_BOMB : WGM_SELECT_LOCAL_GPS_BOMB;
+        return new PacketUseWeapon(0, option, target.x, target.y, target.z);
     }
 
     @Override
@@ -68,23 +86,23 @@ public class PacketUseWeapon extends PacketBase {
 
     @Override
     public void handleServerSide(EntityPlayerMP player) {
-        if (useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS) {
-            // Personal points are client-owned, so the server need not have WGMap.
-            // Shared points still need WGMap's authoritative visibility check.
-            if (player != null && (useWeaponOption2 == WGM_LOCAL_GPS || Loader.isModLoaded("wgmap")))
-                WAYPOINT_SHOTS.offer(new WaypointShot(this, player));
+        if (isWaypointShot() || isGpsBombSelection()) {
+            if (player != null && (useWeaponOption2 != WGM_SHARED_GPS || Loader.isModLoaded("wgmap"))) {
+                WAYPOINT_REQUESTS.offer(new WaypointRequest(this, player));
+            }
             return;
         }
         handleServerOnWorldThread(player);
     }
 
-    /** WGMap reads world-saved faction state, so waypoint fire intents cross to the server tick. */
+    /** Process selection and fire intents in order on the server tick. */
     public static void drainWaypointShots() {
         for (int i = 0; i < 32; i++) {
-            WaypointShot next = WAYPOINT_SHOTS.poll();
+            WaypointRequest next = WAYPOINT_REQUESTS.poll();
             if (next == null) break;
             EntityPlayerMP player = next.player.get();
             if (player == null || player.worldObj == null || player.worldObj.isRemote
+                    || next.world.get() != player.worldObj
                     || !player.worldObj.playerEntities.contains(player)
                     || System.nanoTime() - next.receivedAt > 2_000_000_000L) continue;
             next.packet.handleServerOnWorldThread(player);
@@ -110,17 +128,28 @@ public class PacketUseWeapon extends PacketBase {
             MCH_WeaponSet currentWeapon = ac.getCurrentWeapon(player);
             int weaponId = ac.getCurrentWeaponID(player);
             MCH_WeaponInfo weaponInfo = currentWeapon != null ? currentWeapon.getInfo() : null;
-            boolean waypointShot = weaponInfo != null && weaponInfo.isGPSMissile
-                    && (useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS);
-            if (!waypointShot && (useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS)) {
+            boolean gpsWeapon = weaponInfo != null && weaponInfo.isGPSMissile;
+            if (isGpsBombSelection()) {
+                if (gpsWeapon) selectGpsBombTarget(player);
+                return;
+            }
+            boolean waypointShot = isWaypointShot();
+            if (waypointShot && !gpsWeapon) {
                 sendWeaponState(ac, player, weaponId, currentWeapon);
                 return;
             }
-            MCH_GPSPosition waypointPosition = waypointShot ? applyGpsWaypointTarget(player) : null;
+            boolean shared = useWeaponOption2 == WGM_SHARED_GPS;
+            MCH_GPSPosition waypointPosition = waypointShot ? resolveWaypointTarget(player, shared) : null;
+            if (MCH_WeaponBomb.requiresSelectedGpsTarget(weaponInfo)
+                    && (!waypointShot || !matchesGpsBombSelection(player, waypointPosition, shared))) {
+                W_EntityPlayer.addChatMessage(player, MCH_WeaponBomb.SELECT_GPS_TARGET_MESSAGE);
+                sendWeaponState(ac, player, weaponId, currentWeapon);
+                return;
+            }
             if (waypointShot && waypointPosition == null) {
                 sendWeaponState(ac, player, weaponId, currentWeapon); return;
             }
-            if (weaponInfo != null && weaponInfo.isGPSMissile && useWeaponOption2 < 0 && !waypointShot) {
+            if (gpsWeapon && useWeaponOption2 < 0 && !waypointShot) {
                 int radarTargetId = -useWeaponOption2;
                 if (radarTargetId <= 0 || !applyGpsRadarTarget(ac, player, radarTargetId)) {
                     sendWeaponState(ac, player, weaponId, currentWeapon);
@@ -137,7 +166,7 @@ public class PacketUseWeapon extends PacketBase {
             param.option2 = useWeaponOption2;
             if (waypointPosition != null) {
                 param.gpsTarget = waypointPosition;
-            } else if (weaponInfo != null && weaponInfo.isGPSMissile) {
+            } else if (gpsWeapon) {
                 MCH_GPSPosition current = MCH_GPSPosition.get(player);
                 if (MCH_GPSPosition.isUsableTarget(current)) {
                     param.gpsTarget = new MCH_GPSPosition(current.x, current.y, current.z);
@@ -152,22 +181,64 @@ public class PacketUseWeapon extends PacketBase {
         }
     }
 
-    private static final class WaypointShot {
+    private static final class WaypointRequest {
         private final PacketUseWeapon packet;
         private final WeakReference<EntityPlayerMP> player;
+        private final WeakReference<World> world;
         private final long receivedAt = System.nanoTime();
-        private WaypointShot(PacketUseWeapon packet, EntityPlayerMP player) {
-            this.packet = packet; this.player = new WeakReference<EntityPlayerMP>(player);
+        private WaypointRequest(PacketUseWeapon packet, EntityPlayerMP player) {
+            this.packet = packet;
+            this.player = new WeakReference<EntityPlayerMP>(player);
+            this.world = new WeakReference<World>(player.worldObj);
         }
     }
 
-    private MCH_GPSPosition applyGpsWaypointTarget(EntityPlayerMP player) {
-        if (useWeaponOption2 == WGM_SHARED_GPS && !Loader.isModLoaded("wgmap")) return null;
+    private boolean isWaypointShot() {
+        return useWeaponOption2 == WGM_LOCAL_GPS || useWeaponOption2 == WGM_SHARED_GPS;
+    }
+
+    private boolean isGpsBombSelection() {
+        return useWeaponOption2 == WGM_SELECT_LOCAL_GPS_BOMB
+            || useWeaponOption2 == WGM_SELECT_SHARED_GPS_BOMB || useWeaponOption2 == WGM_CLEAR_GPS_BOMB;
+    }
+
+    private void selectGpsBombTarget(EntityPlayerMP player) {
+        boolean shared = useWeaponOption2 == WGM_SELECT_SHARED_GPS_BOMB;
+        MCH_GPSPosition target = useWeaponOption2 == WGM_CLEAR_GPS_BOMB ? null : resolveWaypointTarget(player, shared);
+        if (target == null) {
+            GPS_BOMB_TARGETS.remove(player);
+        } else {
+            GPS_BOMB_TARGETS.put(player, new SelectedGpsBombTarget(player.worldObj, target, shared));
+        }
+    }
+
+    private static boolean matchesGpsBombSelection(EntityPlayerMP player, MCH_GPSPosition target, boolean shared) {
+        SelectedGpsBombTarget selected = GPS_BOMB_TARGETS.get(player);
+        return selected != null && target != null && selected.world.get() == player.worldObj
+            && shared == selected.shared && target.x == selected.x && target.y == selected.y && target.z == selected.z;
+    }
+
+    private static final class SelectedGpsBombTarget {
+        private final WeakReference<World> world;
+        private final double x, y, z;
+        private final boolean shared;
+
+        private SelectedGpsBombTarget(World world, MCH_GPSPosition target, boolean shared) {
+            this.world = new WeakReference<World>(world);
+            this.x = target.x;
+            this.y = target.y;
+            this.z = target.z;
+            this.shared = shared;
+        }
+    }
+
+    private MCH_GPSPosition resolveWaypointTarget(EntityPlayerMP player, boolean shared) {
+        if (shared && !Loader.isModLoaded("wgmap")) return null;
         MCH_GPSPosition position = new MCH_GPSPosition(useWeaponPosX, useWeaponPosY, useWeaponPosZ);
         position.owner = player;
         position.isActive = true;
         if (!MCH_GPSPosition.isUsableTarget(position)) return null;
-        if (useWeaponOption2 == WGM_SHARED_GPS) {
+        if (shared) {
             try {
                 if (!WGMapGpsServerBridge.matchesShared(player, position.x, position.y, position.z)) return null;
             } catch (LinkageError incompatible) { return null; }

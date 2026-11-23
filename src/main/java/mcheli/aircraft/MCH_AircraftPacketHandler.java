@@ -155,10 +155,9 @@ public class MCH_AircraftPacketHandler {
                 Entity e = player.worldObj.getEntityByID(ind.entityID_Ac);
                 if (e instanceof MCH_EntityAircraft) {
                     MCH_EntityAircraft ac = (MCH_EntityAircraft) e;
-                    if (W_Entity.isEqual(ac.getRiddenByEntity(), player)
+                    if (ac.getRiddenByEntity() == player
                         && ind.weaponID >= 0 && ind.weaponID < ac.getWeaponNum()) {
-                        MCH_Lib.DbgLog(e.worldObj, "onPacketIndReload :%s", ac.getAcInfo().displayName);
-                        ac.supplyAmmo(ind.weaponID);
+                        ac.requestWeaponReload(player, ind.weaponID);
                     }
                 }
 

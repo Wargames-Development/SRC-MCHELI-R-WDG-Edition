@@ -40,6 +40,7 @@ import net.minecraft.entity.item.EntityMinecartEmpty;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPickaxe;
 import net.minecraft.item.ItemStack;
@@ -240,6 +241,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private int fuelSuppliedCount;
     private int supplyAmmoWait;
     private boolean beforeSupplyAmmo;
+    private EntityPlayer pendingWeaponReloadPlayer;
+    private int pendingWeaponReloadId;
     private boolean isParachuting;
     private MCH_Queue prevPosition;
     private int tickRepelling;
@@ -526,7 +529,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean isInfinityAmmo(Entity player) {
-        return this.isCreative(player) || this.getCommonStatus(3);
+        // Survival ammunition stays finite even on servers with legacy InfinityAmmo enabled.
+        return this.isCreative(player);
     }
 
     public boolean isInfinityFuel(Entity player, boolean checkOtherSeet) {
@@ -3124,6 +3128,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     public void updateSupplyAmmo() {
         if (!super.worldObj.isRemote) {
+            this.processWeaponReloadRequest();
             boolean isReloading = false;
             if (this.getRiddenByEntity() instanceof EntityPlayer && !this.getRiddenByEntity().isDead && ((EntityPlayer) this.getRiddenByEntity()).openContainer instanceof MCH_AircraftGuiContainer) {
                 isReloading = true;
@@ -3147,51 +3152,64 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
     }
 
-    public void supplyAmmo(int weaponID) {
-        if (super.worldObj.isRemote) {
-            MCH_WeaponSet player = this.getWeapon(weaponID);
-            player.supplyRestAllAmmo();
-        } else {
-            MCH_Achievement.addStat(super.riddenByEntity, MCH_Achievement.supplyAmmo, 1);
-            if (this.getRiddenByEntity() instanceof EntityPlayer) {
-                EntityPlayer var9 = (EntityPlayer) this.getRiddenByEntity();
-                if (this.canPlayerSupplyAmmo(var9, weaponID)) {
-                    MCH_WeaponSet ws = this.getWeapon(weaponID);
-                    Iterator i$ = ws.getInfo().roundItems.iterator();
+    public synchronized void requestWeaponReload(EntityPlayer player, int weaponId) {
+        // The Forge packet handler can run off-thread. Apply the request on the aircraft tick.
+        if (this.pendingWeaponReloadPlayer == null) {
+            this.pendingWeaponReloadPlayer = player;
+            this.pendingWeaponReloadId = weaponId;
+        }
+    }
 
-                    while (i$.hasNext()) {
-                        MCH_WeaponInfo.RoundItem ri = (MCH_WeaponInfo.RoundItem) i$.next();
-                        int num = ri.num;
-
-                        for (int i = 0; i < var9.inventory.mainInventory.length; ++i) {
-                            ItemStack itemStack = var9.inventory.mainInventory[i];
-                            if (itemStack != null && itemStack.isItemEqual(ri.itemStack)) {
-                                if (itemStack.getItem() != W_Item.getItemByName("water_bucket") && itemStack.getItem() != W_Item.getItemByName("lava_bucket")) {
-                                    if (itemStack.stackSize > num) {
-                                        itemStack.stackSize -= num;
-                                        num = 0;
-                                    } else {
-                                        num -= itemStack.stackSize;
-                                        itemStack.stackSize = 0;
-                                        var9.inventory.mainInventory[i] = null;
-                                    }
-                                } else if (itemStack.stackSize == 1) {
-                                    var9.inventory.setInventorySlotContents(i, new ItemStack(W_Item.getItemByName("bucket"), 1));
-                                    --num;
-                                }
-                            }
-
-                            if (num <= 0) {
-                                break;
-                            }
-                        }
-                    }
-
-                    ws.supplyRestAllAmmo();
-                }
-            }
+    private void processWeaponReloadRequest() {
+        EntityPlayer player;
+        int weaponId;
+        synchronized (this) {
+            player = this.pendingWeaponReloadPlayer;
+            weaponId = this.pendingWeaponReloadId;
+            this.pendingWeaponReloadPlayer = null;
+        }
+        if (player == null || !(player.openContainer instanceof MCH_AircraftGuiContainer)
+            || ((MCH_AircraftGuiContainer) player.openContainer).aircraft != this
+            || !this.canPlayerSupplyAmmo(player, weaponId)) {
+            return;
         }
 
+        MCH_WeaponSet weapon = this.getWeapon(weaponId);
+        if (!canReloadFromReserve(weapon)) {
+            if (!player.capabilities.isCreativeMode && !useWeaponReloadItems(player, weapon, true)) {
+                return;
+            }
+            weapon.supplyRestAllAmmo();
+        }
+        weapon.reload();
+        MCH_Achievement.addStat(player, MCH_Achievement.supplyAmmo, 1);
+        this.syncWeaponReloadState(weaponId, weapon);
+    }
+
+    private void syncWeaponReloadState(int weaponId, MCH_WeaponSet weapon) {
+        for (int seatId = 0; seatId <= this.getSeatNum(); ++seatId) {
+            Entity rider = this.getEntityBySeatId(seatId);
+            if (rider instanceof EntityPlayerMP) {
+                PacketUseWeapon.sendWeaponState(this, (EntityPlayerMP) rider, weaponId, weapon);
+            }
+        }
+    }
+
+    private boolean canReloadWeaponsHere() {
+        if (this.isDead || this.isDestroyed()) {
+            return false;
+        }
+        if (this.isInWater()) {
+            return this.canFloatWater();
+        }
+        if (!this.worldObj.isRemote && this.onGround) {
+            return true;
+        }
+        // Check for block contact when a parked vehicle has no downward movement this tick.
+        AxisAlignedBB box = this.boundingBox;
+        AxisAlignedBB below = AxisAlignedBB.getBoundingBox(box.minX, box.minY - 0.05D, box.minZ,
+            box.maxX, box.minY, box.maxZ);
+        return !this.worldObj.func_147461_a(below).isEmpty();
     }
 
     public void supplyAmmoToOtherAircraft() {
@@ -3202,7 +3220,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
 
                 for (int i = 0; i < list.size(); ++i) {
                     MCH_EntityAircraft ac = (MCH_EntityAircraft) list.get(i);
-                    if (!W_Entity.isEqual(this, ac) && ac.canSupply()) {
+                    if (!W_Entity.isEqual(this, ac) && ac.canReloadWeaponsHere()) {
                         for (int wid = 0; wid < ac.getWeaponNum(); ++wid) {
                             MCH_WeaponSet ws = ac.getWeapon(wid);
                             int num = ws.getRestAllAmmoNum() + ws.getAmmoNum();
@@ -3213,13 +3231,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                                 }
 
                                 ws.setRestAllAmmoNum(ws.getRestAllAmmoNum() + ammo);
-                                EntityPlayer player = ac.getEntityByWeaponId(wid);
                                 if (num != ws.getRestAllAmmoNum() + ws.getAmmoNum()) {
-                                    if (ws.getAmmoNum() <= 0) {
-                                        ws.reloadMag();
-                                    }
-
-                                    MCH_PacketNotifyAmmoNum.sendAmmoNum(ac, player, wid);
+                                    MCH_PacketNotifyAmmoNum.sendAmmoNum(ac, null, wid);
                                 }
                             }
                         }
@@ -3231,47 +3244,66 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean canPlayerSupplyAmmo(EntityPlayer player, int weaponId) {
-        if (MCH_Lib.getBlockIdY(this, 1, -3) == 0) {
+        if (player == null || player.isDead || player.worldObj != this.worldObj
+            || this.getRiddenByEntity() != player || player.getDistanceSqToEntity(this) > 144.0D
+            || weaponId < 0 || weaponId >= this.getWeaponNum() || !this.canReloadWeaponsHere()) {
             return false;
-        } else if (!this.canSupply()) {
-            return false;
-        } else {
-            MCH_WeaponSet ws = this.getWeapon(weaponId);
-            if (ws.getRestAllAmmoNum() + ws.getAmmoNum() >= ws.getAllAmmoNum()) {
+        }
+        MCH_WeaponSet weapon = this.getWeapon(weaponId);
+        return weapon.countReloadWait == 0 && (canReloadFromReserve(weapon)
+            || (weapon.getAmmoNum() + weapon.getRestAllAmmoNum() < weapon.getAllAmmoNum()
+                && (player.capabilities.isCreativeMode || useWeaponReloadItems(player, weapon, false))));
+    }
+
+    private static boolean canReloadFromReserve(MCH_WeaponSet weapon) {
+        return weapon.getAmmoNum() < weapon.getAmmoNumMax() && weapon.getRestAllAmmoNum() > 0;
+    }
+
+    private static boolean useWeaponReloadItems(EntityPlayer player, MCH_WeaponSet weapon, boolean consume) {
+        ItemStack[] inventory = player.inventory.mainInventory;
+        int[] costBySlot = new int[inventory.length];
+        for (Object entry : weapon.getInfo().roundItems) {
+            MCH_WeaponInfo.RoundItem cost = (MCH_WeaponInfo.RoundItem) entry;
+            if (cost.itemStack == null || cost.itemStack.getItem() == null) {
                 return false;
-            } else {
-                Iterator i$ = ws.getInfo().roundItems.iterator();
-
-                while (i$.hasNext()) {
-                    MCH_WeaponInfo.RoundItem ri = (MCH_WeaponInfo.RoundItem) i$.next();
-                    int num = ri.num;
-                    ItemStack[] arr$ = player.inventory.mainInventory;
-                    int len$ = arr$.length;
-                    int i$1 = 0;
-
-                    while (true) {
-                        if (i$1 < len$) {
-                            ItemStack itemStack = arr$[i$1];
-                            if (itemStack != null && itemStack.isItemEqual(ri.itemStack)) {
-                                num -= itemStack.stackSize;
-                            }
-
-                            if (num > 0) {
-                                ++i$1;
-                                continue;
-                            }
-                        }
-
-                        if (num > 0) {
-                            return false;
-                        }
-                        break;
-                    }
+            }
+            int remaining = cost.num;
+            for (int slot = 0; slot < inventory.length && remaining > 0; ++slot) {
+                ItemStack stack = inventory[slot];
+                if (stack != null && stack.isItemEqual(cost.itemStack)
+                    && (!isFilledReloadBucket(stack) || stack.stackSize == 1)) {
+                    int available = Math.max(0, stack.stackSize - costBySlot[slot]);
+                    int used = Math.min(remaining, available);
+                    remaining -= used;
+                    costBySlot[slot] += used;
                 }
-
-                return true;
+            }
+            if (remaining > 0) {
+                return false;
             }
         }
+
+        if (consume) {
+            for (int slot = 0; slot < inventory.length; ++slot) {
+                if (costBySlot[slot] > 0) {
+                    ItemStack stack = inventory[slot];
+                    if (isFilledReloadBucket(stack)) {
+                        inventory[slot] = new ItemStack(Items.bucket);
+                    } else {
+                        stack.stackSize -= costBySlot[slot];
+                        if (stack.stackSize == 0) {
+                            inventory[slot] = null;
+                        }
+                    }
+                }
+            }
+            player.inventory.markDirty();
+        }
+        return true;
+    }
+
+    private static boolean isFilledReloadBucket(ItemStack stack) {
+        return stack.getItem() == Items.water_bucket || stack.getItem() == Items.lava_bucket;
     }
 
     public String getTextureName() {
@@ -5731,12 +5763,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     var7[i].prevRotationYaw = var8;
                     var7[i].rotationYaw = var8;
                     var7[i].defaultRotationYaw = var8;
-                    // Fresh aircraft are loaded by default; strategic weapons can explicitly opt out.
-                    boolean spawnWithAmmo = var7[i].getInfo().spawnWithAmmo;
-                    int mag = spawnWithAmmo ? var7[i].getAmmoNumMax() : 0;
-                    int all = spawnWithAmmo ? var7[i].getAllAmmoNum() : 0;
-                    var7[i].setAmmoNum(Math.max(0, mag));
-                    var7[i].setRestAllAmmoNum(Math.max(0, all - mag));
                 }
             }
 
@@ -5757,16 +5783,18 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (id >= getWeaponNum())
             id = getWeaponNum() - 1;
         MCH_Lib.DbgLog(this.worldObj, "switchWeapon:" + W_Entity.getEntityId(entity) + " -> " + id, new Object[0]);
-        // Switching selection must not force the outgoing weapon's partial magazine to reload.
-        // Empty magazines already enter reload state in MCH_WeaponSet.use().
         this.currentWeaponID[sid] = id;
         MCH_WeaponSet ws = getCurrentWeapon(entity);
-        ws.onSwitchWeapon(this.worldObj.isRemote, isInfinityAmmo(entity));
+        ws.onSwitchWeapon();
         //if(this.worldObj.isRemote) {
         W_WorldFunc.MOD_playSoundAtEntity(entity, ws.getInfo().weaponSwitchSound, 2.0F, 1.0F);
         //}
-        if (!this.worldObj.isRemote)
+        if (!this.worldObj.isRemote) {
             MCH_PacketNotifyWeaponID.send((Entity) this, sid, id, ws.getAmmoNum(), ws.getRestAllAmmoNum());
+            if (id >= 0 && entity instanceof EntityPlayerMP) {
+                PacketUseWeapon.sendWeaponState(this, (EntityPlayerMP) entity, id, ws);
+            }
+        }
     }
 
     public void updateWeaponID(int sid, int id) {
@@ -5825,10 +5853,15 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public void reloadAllWeapon() {
-        for (int i = 0; i < this.getWeaponNum(); ++i) {
-            this.getWeapon(i).reloadMag();
+        if (!this.worldObj.isRemote && this.canReloadWeaponsHere()) {
+            for (int i = 0; i < this.getWeaponNum(); ++i) {
+                MCH_WeaponSet weapon = this.getWeapon(i);
+                weapon.reload();
+                if (weapon.countReloadWait > 0) {
+                    this.syncWeaponReloadState(i, weapon);
+                }
+            }
         }
-
     }
 
     public MCH_WeaponSet getFirstSeatWeapon() {
@@ -6000,7 +6033,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     for (len$ = 0; len$ < arr$; ++len$) {
                         MCH_WeaponSet i$ = shift[len$];
                         if (i$ != currentWs && !i$.getInfo().group.isEmpty() && i$.getInfo().group.equals(currentWs.getInfo().group)) {
-                            i$.waitAndReloadByOther(prm.reload);
+                            i$.applyGroupedCooldown();
                         }
                     }
 
@@ -6177,15 +6210,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         isLongDelay = w.isLongDelayWeapon();
                     }
 
-                    boolean isSelected = false;
-
-                    for (int swid : this.currentWeaponID) {
-                        if (swid == wid) {
-                            isSelected = true;
-                            break;
-                        }
-                    }
-
                     boolean isWpnUsed = false;
 
                     for (int index = 0; index < w.getWeaponNum(); ++index) {
@@ -6219,7 +6243,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                         ++id;
                     }
 
-                    w.update(this, isSelected, isWpnUsed);
+                    boolean wasReloading = w.countReloadWait > 0;
+                    w.update(this, wasReloading && this.canReloadWeaponsHere(), isWpnUsed);
+                    if (!this.worldObj.isRemote && wasReloading && w.countReloadWait == 0) {
+                        this.syncWeaponReloadState(wid, w);
+                    }
                     if (!this.worldObj.isRemote && w.hasPendingServerUse() && w.canUse()) {
                         MCH_WeaponParam pendingUse = w.consumePendingServerUse(this);
                         if (pendingUse != null && this.getCurrentWeapon(pendingUse.user) == w) {
@@ -6651,12 +6679,12 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 this.setCurrentThrottle(this.beforeHoverThrottle);
                 this.isGunnerMode = false;
                 this.camera.setCameraZoom(1.0F);
-                this.getCurrentWeapon(pilot).onSwitchWeapon(super.worldObj.isRemote, this.isInfinityAmmo(pilot));
+                this.getCurrentWeapon(pilot).onSwitchWeapon();
             } else if (!this.isGunnerMode && mode) {
                 this.beforeHoverThrottle = this.getCurrentThrottle();
                 this.isGunnerMode = true;
                 this.camera.setCameraZoom(1.0F);
-                this.getCurrentWeapon(pilot).onSwitchWeapon(super.worldObj.isRemote, this.isInfinityAmmo(pilot));
+                this.getCurrentWeapon(pilot).onSwitchWeapon();
             }
         }
 

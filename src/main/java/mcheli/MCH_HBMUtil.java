@@ -23,6 +23,7 @@ public class MCH_HBMUtil {
     private static Class<?> explosionCreatorClass;
     private static Class<?> explosionSmallCreatorClass;
     private static Class<?> mediumBunkerBusterClass;
+    private static Class<?> concreteCrackerClass;
     private static Class<?> EntityBulletBaseMK4Class;
     private static Class<?> PacketThreading;
     private static Class<?> explosionVNTClass;
@@ -37,6 +38,7 @@ public class MCH_HBMUtil {
         explosionCreatorClass = optionalClass("com.hbm.particle.helper.ExplosionCreator");
         explosionSmallCreatorClass = optionalClass("com.hbm.particle.helper.ExplosionSmallCreator");
         mediumBunkerBusterClass = optionalClass("com.hbm.entity.missile.EntityMissileTier2$EntityMissileBusterStrong");
+        concreteCrackerClass = optionalClass("com.hbm.entity.missile.EntityMissileTier3$EntityMissileDrill");
         EntityBulletBaseMK4Class = optionalClass("com.hbm.entity.projectile.EntityBulletBaseMK4");
         PacketThreading = optionalClass("com.hbm.handler.threading.PacketThreading");
         explosionVNTClass = optionalClass("com.hbm.explosion.vanillant.ExplosionVNT");
@@ -46,6 +48,7 @@ public class MCH_HBMUtil {
             || explosionCreatorClass != null
             || explosionSmallCreatorClass != null
             || mediumBunkerBusterClass != null
+            || concreteCrackerClass != null
             || EntityBulletBaseMK4Class != null
             || PacketThreading != null
             || explosionVNTClass != null;
@@ -341,7 +344,14 @@ public class MCH_HBMUtil {
     public static boolean spawnMediumBunkerBuster(World world, double posX, double posY, double posZ,
                                                    double motionX, double motionY, double motionZ,
                                                    UUID ownerParty) {
-        if (mediumBunkerBusterClass == null || world == null || world.isRemote) {
+        return spawnBunkerBuster(world, posX, posY, posZ, motionX, motionY, motionZ, ownerParty, false);
+    }
+
+    public static boolean spawnBunkerBuster(World world, double posX, double posY, double posZ,
+                                            double motionX, double motionY, double motionZ,
+                                            UUID ownerParty, boolean useConcreteCracker) {
+        Class<?> missileClass = useConcreteCracker ? concreteCrackerClass : mediumBunkerBusterClass;
+        if (missileClass == null || world == null || world.isRemote) {
             return false;
         }
 
@@ -364,7 +374,7 @@ public class MCH_HBMUtil {
 
         Entity entity = null;
         try {
-            Constructor<?> constructor = mediumBunkerBusterClass.getConstructor(
+            Constructor<?> constructor = missileClass.getConstructor(
                 World.class, float.class, float.class, float.class,
                 int.class, int.class, UUID.class
             );
@@ -385,9 +395,9 @@ public class MCH_HBMUtil {
             entity.prevRotationYaw = entity.rotationYaw;
             entity.prevRotationPitch = entity.rotationPitch;
 
-            mediumBunkerBusterClass.getField("velocity").setDouble(bunkerBuster, speed);
-            mediumBunkerBusterClass.getField("decelY").setDouble(bunkerBuster, 0.0D);
-            mediumBunkerBusterClass.getField("accelXZ").setDouble(bunkerBuster, 0.0D);
+            missileClass.getField("velocity").setDouble(bunkerBuster, speed);
+            missileClass.getField("decelY").setDouble(bunkerBuster, 0.0D);
+            missileClass.getField("accelXZ").setDouble(bunkerBuster, 0.0D);
 
             boolean spawned = world.spawnEntityInWorld(entity);
             if (!spawned) {
@@ -398,7 +408,7 @@ public class MCH_HBMUtil {
             if (entity != null) {
                 entity.setDead();
             }
-            warnOnce("spawnMediumBunkerBuster", e);
+            warnOnce("spawnBunkerBuster:" + missileClass.getSimpleName(), e);
         }
         return false;
     }

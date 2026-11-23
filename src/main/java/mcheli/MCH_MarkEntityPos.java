@@ -10,6 +10,7 @@ public class MCH_MarkEntityPos {
     public FloatBuffer pos;
     public int type;
     public Entity entity;
+    public float nameplateTop = Float.NaN;
 
 
     public MCH_MarkEntityPos(int type, Entity entity) {
