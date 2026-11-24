@@ -15,19 +15,21 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import java.lang.ref.WeakReference;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
 /** Loaded by client input only when WGMap is installed. */
 public final class WGMapGpsClientBridge {
-    private static final double GUNNER_MARK_RANGE = 1500.0D; // Within DH's finest-data ray limit.
-    private static final int GUNNER_MARK_RETRY_TICKS = 40;
-    private static final int MAX_PENDING_MARKS = 4;
-    private static final ArrayDeque<GunnerMark> pendingMarks = new ArrayDeque<GunnerMark>();
+    private static final double GUNNER_MARK_RANGE = 1500.0D; // Matches laser terrain designation range.
+    // Cold DH snapshots can take several seconds to arrive on a multiplayer client.
+    private static final int GUNNER_MARK_RETRY_TICKS = 120;
+    private static final long GUNNER_MARK_COOLDOWN_NANOS = 1_000_000_000L;
+    private static final long GUNNER_WARMUP_INTERVAL_NANOS = 200_000_000L;
+    private static GunnerMark pendingMark;
+    private static long nextGunnerMarkAt = System.nanoTime();
+    private static long nextGunnerWarmupAt = nextGunnerMarkAt;
     private static WeakReference<World> selectionWorld = new WeakReference<World>(null);
     private static int selectionOwnerId;
     private static UUID selectedId;
@@ -37,47 +39,73 @@ public final class WGMapGpsClientBridge {
     private static long lastSelectionCheck = Long.MIN_VALUE;
     private WGMapGpsClientBridge() { }
 
-    public static void tickGunnerWaypoint(Minecraft mc, boolean pressed) {
-        if (!pressed && pendingMarks.isEmpty()) return;
+    public static void tickGunnerWaypoint(Minecraft mc, boolean enabled, boolean pressed) {
+        if (!enabled) {
+            pendingMark = null;
+            return;
+        }
+        long now = System.nanoTime();
+        boolean acceptPress = pressed && now - nextGunnerMarkAt >= 0L;
+        boolean warmAim = now - nextGunnerWarmupAt >= 0L;
+        if (pendingMark == null && !acceptPress && !warmAim) return;
+
         EntityPlayer player = mc.thePlayer;
         MCH_EntityAircraft aircraft = MCH_EntityAircraft.getAircraft_RiddenOrControl(player);
         if (player == null || player.isDead || player.worldObj != mc.theWorld || mc.currentScreen != null
                 || !mc.inGameHasFocus || aircraft == null || aircraft.isDead || aircraft.isDestroyed()
                 || !aircraft.getIsGunnerMode(player)) {
-            pendingMarks.clear();
+            pendingMark = null;
             return;
         }
 
-        if (pressed) {
+        if (pendingMark != null && (pendingMark.player != player || pendingMark.world != mc.theWorld
+                || pendingMark.aircraft != aircraft || pendingMark.mount != player.ridingEntity)) {
+            pendingMark = null;
+        }
+        if (pendingMark == null) {
+            if (!acceptPress && !warmAim) return;
+            nextGunnerWarmupAt = now + GUNNER_WARMUP_INTERVAL_NANOS;
             EntityLivingBase view = mc.renderViewEntity;
-            if (view == null || view.worldObj != mc.theWorld || !DhLaserTerrainBridge.isPresent()
-                    || pendingMarks.size() >= MAX_PENDING_MARKS) {
-                MCH_ClientTickHandlerBase.playSoundNG();
-            } else {
-                pendingMarks.addLast(new GunnerMark(player, aircraft, view));
+            if (view == null || view.worldObj != mc.theWorld || !DhLaserTerrainBridge.isPresent()) {
+                if (acceptPress) MCH_ClientTickHandlerBase.playSoundNG();
+                return;
             }
+
+            // Sample the current pose each time. The warm-up only primes DH's cache.
+            Vec3 start = view.getPosition(1.0F);
+            Vec3 look = view.getLookVec().normalize();
+            Vec3 end = start.addVector(look.xCoord * GUNNER_MARK_RANGE, look.yCoord * GUNNER_MARK_RANGE,
+                    look.zCoord * GUNNER_MARK_RANGE);
+            if (!acceptPress) {
+                WGMapLaserClientBridge.traceDetailed(mc.theWorld, start, end, null);
+                return;
+            }
+            pendingMark = new GunnerMark(player, aircraft, start, end);
         }
 
-        for (Iterator<GunnerMark> iterator = pendingMarks.iterator(); iterator.hasNext();) {
-            GunnerMark request = iterator.next();
-            if (request.player != player || request.world != mc.theWorld
-                    || request.aircraft != aircraft || request.mount != player.ridingEntity) {
-                iterator.remove();
-                continue;
-            }
-            String result = DhLaserTerrainBridge.query(request.world, request.start, request.end, request.hit);
-            if ("UNKNOWN".equals(result) && --request.ticksLeft > 0) continue;
+        // Keep the keypress aim during retries, even as the aircraft moves.
+        GunnerMark request = pendingMark;
+        WGMapLaserClientBridge.Trace terrain = WGMapLaserClientBridge.traceDetailed(
+                request.world, request.start, request.end, null);
+        if (terrain.dhPending && --request.ticksLeft > 0) return;
 
-            iterator.remove();
-            if ("BLOCKED".equals(result) && saveGunnerMark(request)) MCH_ClientTickHandlerBase.playSound("mark");
-            else MCH_ClientTickHandlerBase.playSoundNG();
+        pendingMark = null;
+        if (terrain.known && terrain.hit != null) {
+            boolean saved = saveGunnerMark(player, terrain.hit.hitVec);
+            // WGMap can store the point and still report failure if arming it fails.
+            nextGunnerMarkAt = System.nanoTime() + GUNNER_MARK_COOLDOWN_NANOS;
+            if (saved) {
+                MCH_ClientTickHandlerBase.playSound("mark");
+                return;
+            }
         }
+        MCH_ClientTickHandlerBase.playSoundNG();
     }
 
-    private static boolean saveGunnerMark(GunnerMark request) {
+    private static boolean saveGunnerMark(EntityPlayer player, Vec3 hit) {
         try {
             return WaypointGpsAccess.apiVersion() == 1 && WaypointGpsAccess.createClientPersonalGps(
-                    request.hit[0], request.hit[1], request.hit[2], request.player.dimension);
+                    hit.xCoord, hit.yCoord, hit.zCoord, player.dimension);
         } catch (LinkageError incompatible) {
             return false;
         }
@@ -89,19 +117,15 @@ public final class WGMapGpsClientBridge {
         final Entity mount;
         final World world;
         final Vec3 start, end;
-        final double[] hit = new double[3];
         int ticksLeft = GUNNER_MARK_RETRY_TICKS;
 
-        GunnerMark(EntityPlayer player, MCH_EntityAircraft aircraft, EntityLivingBase view) {
+        GunnerMark(EntityPlayer player, MCH_EntityAircraft aircraft, Vec3 start, Vec3 end) {
             this.player = player;
             this.aircraft = aircraft;
             this.mount = player.ridingEntity;
             this.world = player.worldObj;
-            // Freeze the same view origin and direction used for picking while DH warms its data.
-            this.start = view.getPosition(1.0F);
-            Vec3 look = view.getLookVec();
-            this.end = start.addVector(look.xCoord * GUNNER_MARK_RANGE, look.yCoord * GUNNER_MARK_RANGE,
-                    look.zCoord * GUNNER_MARK_RANGE);
+            this.start = start;
+            this.end = end;
         }
     }
 

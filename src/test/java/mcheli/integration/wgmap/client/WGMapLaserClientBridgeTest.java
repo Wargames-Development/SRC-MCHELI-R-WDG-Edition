@@ -21,7 +21,7 @@ public class WGMapLaserClientBridgeTest {
 
     @Test public void nativeNearTerrainNeedsNoSnapshotAndCachedDistantHitHasItsActualRange() {
         MixedTerrain terrain = new MixedTerrain();
-        Vec3 hit = WGMapLaserClientBridge.traceTerrain(terrain, point(0.5), point(1500.5));
+        Vec3 hit = terrain.traceTo(point(1500.5));
         assertEquals(731.125, hit.xCoord, 0.000001);
         assertEquals(730.625, point(0.5).distanceTo(hit), 0.000001);
         assertTrue(terrain.gaps > 0 && terrain.gaps < 100);
@@ -30,12 +30,12 @@ public class WGMapLaserClientBridgeTest {
 
     @Test public void missingDataResolvesOnTheNextQueryWithoutInventingA1500BlockHit() {
         MixedTerrain terrain = new MixedTerrain(); terrain.missing = true;
-        assertNull(WGMapLaserClientBridge.traceTerrain(terrain, point(0.5), point(1500.5)));
+        assertNull(terrain.traceTo(point(1500.5)));
         terrain.missing = false;
-        assertEquals(731.125, WGMapLaserClientBridge.traceTerrain(terrain, point(0.5), point(1500.5)).xCoord, 0.000001);
+        assertEquals(731.125, terrain.traceTo(point(1500.5)).xCoord, 0.000001);
         Vec3 entityLimit = point(480);
         assertSame("nearer existing entity hit remains the exact traversal limit", entityLimit,
-                WGMapLaserClientBridge.traceTerrain(terrain, point(0.5), entityLimit));
+                terrain.traceTo(entityLimit));
     }
 
     @Test public void directHitContractHandlesSolidGapEntryAndRejectsUntrustedCoordinates() {
@@ -76,8 +76,16 @@ public class WGMapLaserClientBridgeTest {
     private static Vec3 point(double x) { return Vec3.createVectorHelper(x, 64.5, 0.5); }
 
     private static final class MixedTerrain implements MCH_LaserTargeting.Terrain {
+        final double[] coordinates = new double[3];
         int gaps, liveReads;
         boolean missing;
+        Vec3 limit;
+
+        Vec3 traceTo(Vec3 end) {
+            limit = end;
+            return WGMapLaserClientBridge.traceTerrain(this, point(0.5), end);
+        }
+
         @Override public boolean loaded(int x, int z) { return x < 192; }
         @Override public Vec3 blockHit(int x, int y, int z, Vec3 start, Vec3 end) {
             assertTrue(loaded(x, z)); liveReads++; return null;
@@ -85,9 +93,15 @@ public class WGMapLaserClientBridgeTest {
         @Override public Vec3 missingHit(Vec3 from, Vec3 to) {
             assertTrue("never require cached data for the native camera prefix", from.xCoord >= 192);
             gaps++;
-            if (missing) return null;
-            return WGMapLaserClientBridge.cachedHit(to.xCoord >= 731.125 ? Result.BLOCKED : Result.CLEAR,
-                    new double[] {731.125, 64.5, 0.5}, to);
+            return WGMapLaserClientBridge.traceDhGap(from, to, limit, coordinates, (start, end) -> {
+                assertTrue(start.xCoord >= 192);
+                if (missing && end == to) return "UNKNOWN";
+                if (end.xCoord < 731.125) return "CLEAR";
+                coordinates[0] = 731.125;
+                coordinates[1] = 64.5;
+                coordinates[2] = 0.5;
+                return "BLOCKED";
+            });
         }
     }
 

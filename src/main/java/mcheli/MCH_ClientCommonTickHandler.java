@@ -747,7 +747,8 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         if (bindingChanged) this.keyMarkGunnerGps = new MCH_Key(markKey);
         this.keyMarkGunnerGps.update();
         if (Loader.isModLoaded("wgmap")) {
-            WGMapGpsClientBridge.tickGunnerWaypoint(this.mc, !bindingChanged && this.keyMarkGunnerGps.isKeyDown());
+            WGMapGpsClientBridge.tickGunnerWaypoint(this.mc, markKey != 0,
+                    !bindingChanged && this.keyMarkGunnerGps.isKeyDown());
         }
         World world = super.mc.theWorld;
         if (world != null) {
