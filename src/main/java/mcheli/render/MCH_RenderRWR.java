@@ -38,6 +38,8 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.renderer.texture.TextureManager;
+import mcheli.wrapper.W_TextureUtil;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -63,6 +65,11 @@ public class MCH_RenderRWR {
     private static final ResourceLocation RWR_TANK = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr_tank.png");
     private static final ResourceLocation RWR_FAC = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr_fac.png");
     private static final ResourceLocation RWR_jammed = new ResourceLocation(W_MOD.DOMAIN, "textures/rwr_jammed.png");
+    private static final ResourceLocation[] CIRCLE_TEXTURES = {RWR, RWR_HELI, RWR_TANK, RWR_FAC, RWR_jammed};
+
+    public static void preloadCircleTextures(TextureManager manager) {
+        for (ResourceLocation texture : CIRCLE_TEXTURES) W_TextureUtil.preload(manager, texture);
+    }
     private static final int RADAR_UI_COLOR_AMBER = 0xFFE400;
     private static final int RADAR_UI_COLOR_GREEN = 0x00FF00;
     private static final double PLANE_UI_BASE_WIDTH = 960.0D;

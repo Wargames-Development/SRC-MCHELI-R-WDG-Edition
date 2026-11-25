@@ -17,6 +17,8 @@ import mcheli.gui.MCH_Gui;
 import mcheli.helicopter.MCH_ClientHeliTickHandler;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.helicopter.MCH_GuiHeli;
+import mcheli.hud.MCH_Hud;
+import mcheli.hud.MCH_HudManager;
 import mcheli.integration.wgmap.client.WGMapGpsClientBridge;
 import mcheli.lweapon.MCH_ClientLightWeaponTickHandler;
 import mcheli.lweapon.MCH_GuiLightWeapon;
@@ -53,6 +55,8 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -132,6 +136,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     private static boolean isRideAircraft = false;
     private static float prevTick = 0.0F;
     private long lastAircraftControlNanos = 0L;
+    private boolean textureReloadListenerRegistered;
     private MCH_EntityAircraft lastControlledAircraft;
     private static MCH_RenderMouseHelper renderMouseHelper;
     private static boolean ownsRenderMouse;
@@ -594,6 +599,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onTickPre() {
+        registerTextureReloadListener();
         restoreRenderMouse();
         if (super.mc.thePlayer != null && super.mc.theWorld != null) {
             this.onTick();
@@ -601,6 +607,25 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
             cleanupClientState("client_tick_invalid");
         }
 
+    }
+
+    private void registerTextureReloadListener() {
+        Minecraft mc = super.mc;
+        if (textureReloadListenerRegistered || mc.getTextureManager() == null
+                || !(mc.getResourceManager() instanceof IReloadableResourceManager)) return;
+
+        // Append after Minecraft's texture listener so the HUD reads dimensions after reload.
+        textureReloadListenerRegistered = true;
+        ((IReloadableResourceManager) mc.getResourceManager()).registerReloadListener(resources -> {
+            TextureManager textures = mc.getTextureManager();
+            if (textures == null) return;
+            W_TextureUtil.clearTextureInfo();
+            for (Object hud : MCH_HudManager.getValues()) {
+                ((MCH_Hud) hud).preloadTextures(textures);
+            }
+            MCH_RenderRWR.preloadCircleTextures(textures);
+            MCH_RWRDisplayTextureManager.reloadBackgrounds(resources);
+        });
     }
 
     private static void updateThirdPersonCamera(Minecraft minecraft) {

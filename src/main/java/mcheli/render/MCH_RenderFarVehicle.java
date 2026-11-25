@@ -2,6 +2,7 @@ package mcheli.render;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.eventhandler.EventPriority;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Camera;
@@ -19,21 +20,27 @@ import mcheli.aircraft.MCH_RenderAircraft;
 import mcheli.helicopter.MCH_EntityHeli;
 import mcheli.helicopter.MCH_HeliInfo;
 import mcheli.helicopter.MCH_HeliInfoManager;
+import mcheli.helicopter.MCH_RenderHeli;
 import mcheli.plane.MCP_EntityPlane;
 import mcheli.plane.MCP_PlaneInfo;
 import mcheli.plane.MCP_PlaneInfoManager;
+import mcheli.plane.MCP_RenderPlane;
 import mcheli.tank.MCH_EntityTank;
 import mcheli.tank.MCH_TankInfoManager;
+import mcheli.tank.MCH_RenderTank;
 import mcheli.vehicle.MCH_EntityVehicle;
 import mcheli.vehicle.MCH_VehicleInfo;
 import mcheli.vehicle.MCH_VehicleInfoManager;
+import mcheli.vehicle.MCH_RenderVehicle;
 import mcheli.weapon.MCH_WeaponSet;
+import mcheli.wrapper.W_TextureUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.culling.Frustrum;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.Render;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
@@ -95,6 +102,9 @@ public class MCH_RenderFarVehicle {
     private boolean physicalCapture;
     private static long nextVisibilityDiagnosticMillis;
     private World lastWorld;
+    private World preloadWorld;
+    private Collection<MCH_EntityInfo> preloadSnapshot;
+    private Iterator<MCH_EntityInfo> preloadContacts;
     private int renderFrame;
     private long colorFrameMillis, colorFrameNanos;
 
@@ -493,6 +503,42 @@ public class MCH_RenderFarVehicle {
         }
     }
 
+    @SubscribeEvent
+    public void preloadContactTexture(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (preloadWorld != mc.theWorld) {
+            preloadWorld = mc.theWorld;
+            preloadSnapshot = null;
+            preloadContacts = null;
+        }
+        if (mc.theWorld == null || mc.renderViewEntity == null || mcheli.lod.MCH_ExternalVehicleRenderer.ownsLegacy()) return;
+        if (preloadContacts == null || !preloadContacts.hasNext()) {
+            Collection<MCH_EntityInfo> latest = MCH_EntityInfoClientTracker.getAllTrackedEntities();
+            if (latest == preloadSnapshot) return;
+            preloadSnapshot = latest;
+            preloadContacts = latest.iterator();
+        }
+        TextureManager manager = mc.getTextureManager();
+        double range = getVehicleRenderDistance();
+        // Warm one snapshot-only body per tick, including contacts currently outside the frustum.
+        for (int i = 0; i < 24 && preloadContacts.hasNext(); i++) {
+            MCH_EntityInfo contact = preloadContacts.next();
+            if (contact.destroyed || !withinVehicleRenderDistance(contact.posX - mc.renderViewEntity.posX,
+                    contact.posY - mc.renderViewEntity.posY, contact.posZ - mc.renderViewEntity.posZ, range)
+                    || mc.theWorld.getEntityByID(contact.entityId) instanceof MCH_EntityAircraft) continue;
+            RenderDefinition definition = resolveDefinition(contact);
+            if (definition == null || manager.getTexture(definition.texture) != null) continue;
+            int previous = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+            try {
+                W_TextureUtil.preload(manager, definition.texture);
+            } finally {
+                GL11.glBindTexture(GL11.GL_TEXTURE_2D, previous);
+            }
+            return;
+        }
+    }
+
     private boolean configureVehicleDepth(RenderCandidate candidate, double x, double y, double z,
             double distance, double transitionStart) {
         double scale = MCH_CompressedDepthProjection.projected(distance, transitionStart) / distance;
@@ -596,6 +642,8 @@ public class MCH_RenderFarVehicle {
             MCH_EntityAircraft localAircraft, float partialTicks, int lightmapBrightness,
             boolean gpuDepth, boolean precisionPass, double depthNear, double depthFar) {
         RenderManager renderManager = RenderManager.instance;
+        Render renderer = localAircraft != null ? renderManager.getEntityRenderObject(localAircraft) : null;
+        boolean renderLocalModel = renderer instanceof MCH_RenderAircraft && localAircraft.getAcInfo() != null;
         double x = pose.x - renderManager.viewerPosX;
         double y = pose.y - renderManager.viewerPosY;
         double z = pose.z - renderManager.viewerPosZ;
@@ -666,7 +714,10 @@ public class MCH_RenderFarVehicle {
                 int blockLight = lightmapBrightness % 65536;
                 int skyLight = lightmapBrightness / 65536;
                 OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, blockLight, skyLight);
-                mc.getTextureManager().bindTexture(pose.texture != null ? pose.texture : definition.texture);
+                // The built-in aircraft renderers bind the current skin before submitting the body.
+                if (!renderLocalModel || !bindsOwnBodyTexture(renderer)) {
+                    mc.getTextureManager().bindTexture(pose.texture != null ? pose.texture : definition.texture);
+                }
             }
             if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_NIGHTVISION) {
                 GL11.glColor4f(10.0F, 10.0F, 0.2F, 1.0F);
@@ -677,9 +728,7 @@ public class MCH_RenderFarVehicle {
                     * (float)Math.sin(MCH_ClientEventHook.smoothing * Math.PI / 2.0D);
                 GL11.glColor4f(0.8F * factor, 0.4F * factor, 0.4F * factor, 1.0F);
             }
-            Render renderer = localAircraft != null
-                ? renderManager.getEntityRenderObject(localAircraft) : null;
-            if (renderer instanceof MCH_RenderAircraft && localAircraft.getAcInfo() != null) {
+            if (renderLocalModel) {
                 // The tracked entity has all animated part state and its selected skin.
                 MCH_RenderAircraft aircraftRenderer = (MCH_RenderAircraft)renderer;
                 aircraftRenderer.renderAircraft(localAircraft, 0.0D, 0.0D, 0.0D,
@@ -710,6 +759,12 @@ public class MCH_RenderFarVehicle {
             GL11.glPopAttrib();
             if (shadersSupported) GL20.glUseProgram(previousProgram);
         }
+    }
+
+    private static boolean bindsOwnBodyTexture(Render renderer) {
+        Class<?> type = renderer.getClass();
+        return type == MCH_RenderHeli.class || type == MCP_RenderPlane.class
+            || type == MCH_RenderTank.class || type == MCH_RenderVehicle.class;
     }
 
     private static final class RenderCandidate {

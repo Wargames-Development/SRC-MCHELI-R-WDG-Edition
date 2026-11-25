@@ -2,6 +2,7 @@ package mcheli;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.client.registry.RenderingRegistry;
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import mcheli.aircraft.*;
 import mcheli.block.MCH_DraftingTableItemRender;
@@ -629,7 +630,9 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MinecraftForge.EVENT_BUS.register(new MCH_ParticlesUtil());
         MinecraftForge.EVENT_BUS.register(new MCH_ClientEventHook());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderBVRLockBox());
-        MinecraftForge.EVENT_BUS.register(new MCH_RenderFarVehicle());
+        MCH_RenderFarVehicle farVehicles = new MCH_RenderFarVehicle();
+        MinecraftForge.EVENT_BUS.register(farVehicles);
+        FMLCommonHandler.instance().bus().register(farVehicles);
         MinecraftForge.EVENT_BUS.register(new MCH_RenderRWR());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderMortarRadar());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderLaser());

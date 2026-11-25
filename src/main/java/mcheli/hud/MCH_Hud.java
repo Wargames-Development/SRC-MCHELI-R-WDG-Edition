@@ -4,6 +4,7 @@ import mcheli.MCH_BaseInfo;
 import mcheli.MCH_Lib;
 import mcheli.aircraft.MCH_EntityAircraft;
 import mcheli.wrapper.W_ScaledResolution;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.ArrayList;
@@ -39,6 +40,14 @@ public class MCH_Hud extends MCH_BaseInfo {
 
         if (this.isWaitEndif) {
             throw new RuntimeException("Endif not found!");
+        }
+    }
+
+    public void preloadTextures(TextureManager manager) {
+        for (Object item : this.list) {
+            if (item instanceof MCH_HudItemTexture) {
+                ((MCH_HudItemTexture) item).preloadTexture(manager);
+            }
         }
     }
 

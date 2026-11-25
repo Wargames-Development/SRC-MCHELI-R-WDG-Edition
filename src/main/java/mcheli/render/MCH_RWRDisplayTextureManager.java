@@ -8,6 +8,7 @@ import mcheli.vehicle.MCH_EntityVehicle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.IResource;
+import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
@@ -16,7 +17,9 @@ import net.minecraft.world.World;
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,6 +40,7 @@ public final class MCH_RWRDisplayTextureManager {
     private static final ResourceLocation RWR_FAC_TEX = new ResourceLocation("mcheli", "textures/rwr_fac.png");
 
     private static final Map<Integer, RwrTexState> CACHE = new HashMap<Integer, RwrTexState>();
+    private static final Map<ResourceLocation, int[]> BACKGROUNDS = new HashMap<>();
     private static final int[] PIXEL_COMPARISON = new int[MCH_TextureRenderUtil.TEX_SIZE * MCH_TextureRenderUtil.TEX_SIZE];
 
     private MCH_RWRDisplayTextureManager() {
@@ -62,10 +66,6 @@ public final class MCH_RWRDisplayTextureManager {
             }
         }
 
-        if (!state.backgroundLoaded) {
-            loadRWRBackground(state, ac);
-        }
-
         if (ac.jammingTick > 0) {
             return MCH_TextureRenderUtil.getSharedJamTexture(worldTick);
         }
@@ -78,7 +78,7 @@ public final class MCH_RWRDisplayTextureManager {
         }
 
         System.arraycopy(state.pixels, 0, PIXEL_COMPARISON, 0, state.pixels.length);
-        renderGraphicsFrame(state.pixels, frame, state);
+        renderGraphicsFrame(state.pixels, frame, BACKGROUNDS.get(selectRWRTexture(ac)));
         state.hasRenderedFrame = true;
         state.lastFrameHadThreats = hasThreats;
 
@@ -177,36 +177,48 @@ public final class MCH_RWRDisplayTextureManager {
         return RWR_TEX;
     }
 
-    private static void loadRWRBackground(RwrTexState state, MCH_EntityAircraft ac) {
-        if (state.backgroundLoaded) return;
-        ResourceLocation rwrRes = selectRWRTexture(ac);
+    public static void reloadBackgrounds(IResourceManager resources) {
+        BACKGROUNDS.clear();
+        for (ResourceLocation texture : new ResourceLocation[]{RWR_TEX, RWR_HELI_TEX, RWR_TANK_TEX, RWR_FAC_TEX}) {
+            int[] pixels = readBackground(resources, texture);
+            if (pixels != null) BACKGROUNDS.put(texture, pixels);
+        }
+        for (RwrTexState state : CACHE.values()) {
+            state.hasRenderedFrame = false;
+        }
+    }
+
+    private static int[] readBackground(IResourceManager resources, ResourceLocation texture) {
         try {
-            IResource resource = Minecraft.getMinecraft().getResourceManager().getResource(rwrRes);
-            BufferedImage image = ImageIO.read(resource.getInputStream());
+            IResource resource = resources.getResource(texture);
+            BufferedImage image;
+            try (InputStream input = resource.getInputStream()) {
+                image = ImageIO.read(input);
+            }
+            if (image == null) return null;
             int texSize = MCH_TextureRenderUtil.TEX_SIZE;
             BufferedImage scaled = new BufferedImage(texSize, texSize, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = scaled.createGraphics();
             int drawSize = (int) (texSize * RWR_UV_DIAMETER_RATIO);
             int offset = (texSize - drawSize) / 2;
-            g.drawImage(image, offset, offset, drawSize, drawSize, null);
-            g.dispose();
-            state.backgroundPixels = new int[texSize * texSize];
-            scaled.getRGB(0, 0, texSize, texSize, state.backgroundPixels, 0, texSize);
-            state.backgroundLoaded = true;
-            state.hasArtisticBg = true;
+            try {
+                g.drawImage(image, offset, offset, drawSize, drawSize, null);
+            } finally {
+                g.dispose();
+            }
+            // Each display copies from this already packed ARGB raster before drawing contacts.
+            return ((DataBufferInt) scaled.getRaster().getDataBuffer()).getData();
         } catch (IOException e) {
-            state.backgroundPixels = null;
-            state.backgroundLoaded = true;
-            state.hasArtisticBg = false;
+            return null;
         }
     }
 
-    private static void renderGraphicsFrame(int[] pixels, MCH_RenderRWR.RWRDisplayFrame frame, RwrTexState state) {
+    private static void renderGraphicsFrame(int[] pixels, MCH_RenderRWR.RWRDisplayFrame frame, int[] background) {
         int cx = MCH_TextureRenderUtil.TEX_SIZE / 2;
         int cy = MCH_TextureRenderUtil.TEX_SIZE / 2;
 
-        if (state.hasArtisticBg && state.backgroundPixels != null) {
-            System.arraycopy(state.backgroundPixels, 0, pixels, 0, pixels.length);
+        if (background != null) {
+            System.arraycopy(background, 0, pixels, 0, pixels.length);
         } else {
             MCH_TextureRenderUtil.fill(pixels, MCH_TextureRenderUtil.CLEAR_COLOR);
             int radius = (int) (MCH_TextureRenderUtil.TEX_SIZE * (RWR_UV_DIAMETER_RATIO * 0.5D));
@@ -236,15 +248,12 @@ public final class MCH_RWRDisplayTextureManager {
         public DynamicTexture texture;
         public ResourceLocation location;
         public int[] pixels;
-        public int[] backgroundPixels;
         public UUID aircraftUuid;
         public World world;
         public long lastUpdateTick = -1L;
         public int warmupCursor = 0;
         public boolean ready = false;
         public boolean clearUploaded = false;
-        public boolean backgroundLoaded = false;
-        public boolean hasArtisticBg = false;
         public boolean hasRenderedFrame = false;
         public boolean lastFrameHadThreats = false;
 
