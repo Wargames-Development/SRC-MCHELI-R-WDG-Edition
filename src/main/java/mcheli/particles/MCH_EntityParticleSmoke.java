@@ -3,12 +3,14 @@ package mcheli.particles;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import mcheli.MCH_Camera;
+import mcheli.MCH_MOD;
 import mcheli.aircraft.MCH_EntityAircraft;
-import mcheli.wrapper.W_McClient;
+import mcheli.render.MCH_FMURThermal;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
 
@@ -18,9 +20,10 @@ import java.util.List;
 public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
 
     public boolean thermalHot;
+    private static final ResourceLocation SMOKE_TEXTURE = new ResourceLocation(MCH_MOD.DOMAIN, "textures/particles/smoke.png");
     private static final List<MCH_EntityParticleSmoke> queued = new ArrayList<MCH_EntityParticleSmoke>();
-    private static boolean renderingQueued;
     private static float rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ;
+    private static double viewX, viewY, viewZ;
 
     public static void renderQueued(float partialTicks) {
         if (queued.isEmpty()) return;
@@ -29,23 +32,35 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
         float oldBrightnessY = OpenGlHelper.lastBrightnessY;
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
             | GL11.GL_LIGHTING_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
-        mc.entityRenderer.enableLightmap(partialTicks);
         try {
-            renderingQueued = true;
-            for (MCH_EntityParticleSmoke smoke : queued) {
-                if (!smoke.isDead && smoke.worldObj == mc.theWorld) {
-                    smoke.renderParticle(Tessellator.instance, partialTicks,
-                        rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ);
-                }
-            }
+            mc.entityRenderer.enableLightmap(partialTicks);
+            boolean legacyThermal = useLegacyThermalTint();
+            prepareSmokeDraw(mc, legacyThermal);
+            drawSmokeBatch(Tessellator.instance, queued, mc.theWorld, partialTicks, legacyThermal);
         } finally {
-            renderingQueued = false;
             queued.clear();
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit,
                 oldBrightnessX, oldBrightnessY);
             mc.entityRenderer.disableLightmap(partialTicks);
             GL11.glPopAttrib();
         }
+    }
+
+    static void drawSmokeBatch(Tessellator tessellator, List<MCH_EntityParticleSmoke> particles,
+                               World world, float partialTicks, boolean legacyThermal) {
+        boolean started = false;
+        // Keep submission order so translucent smoke blends in the same order as before.
+        for (MCH_EntityParticleSmoke smoke : particles) {
+            if (smoke.isDead || smoke.worldObj != world) continue;
+            if (!started) {
+                tessellator.startDrawingQuads();
+                tessellator.setNormal(0.0F, 1.0F, 0.0F);
+                started = true;
+            }
+            smoke.appendBillboard(tessellator, partialTicks, rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ,
+                viewX, viewY, viewZ, false, legacyThermal);
+        }
+        if (started) tessellator.draw();
     }
 
     public MCH_EntityParticleSmoke(World par1World, double x, double y, double z, double mx, double my, double mz) {
@@ -148,60 +163,90 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
         return i;
     }
 
-    public void renderParticle(Tessellator tessellator, float par2, float par3, float par4, float par5, float par6, float par7) {
-        if (!renderingQueued && !mcheli.render.MCH_FMURThermal.isParticlePass()) {
+    @Override
+    public void renderParticle(Tessellator tessellator, float partialTicks, float rotX, float rotZ, float rotYZ, float rotXY, float rotXZ) {
+        if (!MCH_FMURThermal.isParticlePass()) {
             // Vanilla renders layer-3 particles before the far-vehicle LOD pass.
+            if (queued.isEmpty()) {
+                rotationX = rotX;
+                rotationZ = rotZ;
+                rotationYZ = rotYZ;
+                rotationXY = rotXY;
+                rotationXZ = rotXZ;
+                viewX = EntityFX.interpPosX;
+                viewY = EntityFX.interpPosY;
+                viewZ = EntityFX.interpPosZ;
+            }
             queued.add(this);
-            rotationX = par3;
-            rotationZ = par4;
-            rotationYZ = par5;
-            rotationXY = par6;
-            rotationXZ = par7;
             return;
         }
-        W_McClient.MOD_bindTexture("textures/particles/smoke.png");
-        GL11.glEnable(3042);
-        int srcBlend = GL11.glGetInteger(3041);
-        int dstBlend = GL11.glGetInteger(3040);
-        GL11.glBlendFunc(770, 771);
+
+        // FMUR replays particles directly into its active sensor target.
+        boolean legacyThermal = useLegacyThermalTint();
+        int srcBlend = GL11.glGetInteger(GL11.GL_BLEND_SRC);
+        int dstBlend = GL11.glGetInteger(GL11.GL_BLEND_DST);
+        prepareSmokeDraw(Minecraft.getMinecraft(), legacyThermal);
+        try {
+            tessellator.startDrawingQuads();
+            tessellator.setNormal(0.0F, 1.0F, 0.0F);
+            appendBillboard(tessellator, partialTicks, rotX, rotZ, rotYZ, rotXY, rotXZ,
+                EntityFX.interpPosX, EntityFX.interpPosY, EntityFX.interpPosZ, true, legacyThermal);
+            tessellator.draw();
+        } finally {
+            GL11.glDepthMask(true);
+            GL11.glEnable(GL11.GL_CULL_FACE);
+            GL11.glEnable(GL11.GL_LIGHTING);
+            GL11.glBlendFunc(srcBlend, dstBlend);
+            GL11.glDisable(GL11.GL_BLEND);
+        }
+    }
+
+    private static boolean useLegacyThermalTint() {
+        return MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !MCH_FMURThermal.isAvailable();
+    }
+
+    private static void prepareSmokeDraw(Minecraft mc, boolean legacyThermal) {
+        mc.renderEngine.bindTexture(SMOKE_TEXTURE);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         // Layer-3 particles render outside vanilla's normal transparent-particle state setup.
         // Keep depth testing, but never let a translucent smoke billboard write scene depth.
         GL11.glDepthMask(false);
-        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        GL11.glDisable(2896);
-        GL11.glDisable(2884);
-        float f6 = (float) super.particleTextureIndexX / 8.0F;
-        float f7 = f6 + 0.125F;
-        float f8 = 0.0F;
-        float f9 = 1.0F;
-        float f10 = 0.1F * super.particleScale;
-        float f11 = (float) (super.prevPosX + (super.posX - super.prevPosX) * (double) par2 - EntityFX.interpPosX);
-        float f12 = (float) (super.prevPosY + (super.posY - super.prevPosY) * (double) par2 - EntityFX.interpPosY);
-        float f13 = (float) (super.prevPosZ + (super.posZ - super.prevPosZ) * (double) par2 - EntityFX.interpPosZ);
-        tessellator.startDrawingQuads();
-        tessellator.setColorRGBA_F(super.particleRed, super.particleGreen, super.particleBlue, super.particleAlpha);
-        if (this.thermalHot && mcheli.render.MCH_FMURThermal.isParticlePass()) {
-            float life = Math.min(1F, (super.particleAge + par2) / Math.max(1F, super.particleMaxAge));
-            // FMUR's particle pass reserves block-light 241..255 for cooling smoke heat.
-            // This tag is never sent to the ordinary world/lightmap rendering path.
-            tessellator.setBrightness(0xF00000 | (241 + Math.round(14F * (0.9F - 0.5F * life))));
-        } else tessellator.setBrightness(this.getBrightnessForRender(par2));
-        tessellator.setNormal(0.0F, 1.0F, 0.0F);
-        if (MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !mcheli.render.MCH_FMURThermal.isAvailable()) {
+        GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glDisable(GL11.GL_CULL_FACE);
+        if (legacyThermal) {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
             GL11.glColor4f(1.0F, 0.0F, 1.0F, 1.0F);
-            tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
-            tessellator.setBrightness(15728880);
+        } else {
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         }
-        tessellator.addVertexWithUV((double) (f11 - par3 * f10 - par6 * f10), (double) (f12 - par4 * f10), (double) (f13 - par5 * f10 - par7 * f10), (double) f7, (double) f9);
-        tessellator.addVertexWithUV((double) (f11 - par3 * f10 + par6 * f10), (double) (f12 + par4 * f10), (double) (f13 - par5 * f10 + par7 * f10), (double) f7, (double) f8);
-        tessellator.addVertexWithUV((double) (f11 + par3 * f10 + par6 * f10), (double) (f12 + par4 * f10), (double) (f13 + par5 * f10 + par7 * f10), (double) f6, (double) f8);
-        tessellator.addVertexWithUV((double) (f11 + par3 * f10 - par6 * f10), (double) (f12 - par4 * f10), (double) (f13 + par5 * f10 - par7 * f10), (double) f6, (double) f9);
-        tessellator.draw();
-        GL11.glDepthMask(true);
-        GL11.glEnable(2884);
-        GL11.glEnable(2896);
-        GL11.glBlendFunc(srcBlend, dstBlend);
-        GL11.glDisable(3042);
+    }
+
+    private void appendBillboard(Tessellator tessellator, float partialTicks, float rotX, float rotZ, float rotYZ,
+                                 float rotXY, float rotXZ, double cameraX, double cameraY, double cameraZ,
+                                 boolean thermalPass, boolean legacyThermal) {
+        if (legacyThermal) {
+            tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
+            tessellator.setBrightness(0xF000F0);
+        } else {
+            tessellator.setColorRGBA_F(super.particleRed, super.particleGreen, super.particleBlue, super.particleAlpha);
+            if (thermalPass && this.thermalHot) {
+                // FMUR's particle pass reserves block-light 241..255 for cooling smoke heat.
+                float life = Math.min(1F, (super.particleAge + partialTicks) / Math.max(1F, super.particleMaxAge));
+                tessellator.setBrightness(0xF00000 | (241 + Math.round(14F * (0.9F - 0.5F * life))));
+            } else {
+                tessellator.setBrightness(this.getBrightnessForRender(partialTicks));
+            }
+        }
+        float leftU = super.particleTextureIndexX / 8.0F;
+        float rightU = leftU + 0.125F;
+        float size = 0.1F * super.particleScale;
+        float x = (float) (super.prevPosX + (super.posX - super.prevPosX) * partialTicks - cameraX);
+        float y = (float) (super.prevPosY + (super.posY - super.prevPosY) * partialTicks - cameraY);
+        float z = (float) (super.prevPosZ + (super.posZ - super.prevPosZ) * partialTicks - cameraZ);
+        tessellator.addVertexWithUV(x - rotX * size - rotXY * size, y - rotZ * size, z - rotYZ * size - rotXZ * size, rightU, 1.0D);
+        tessellator.addVertexWithUV(x - rotX * size + rotXY * size, y + rotZ * size, z - rotYZ * size + rotXZ * size, rightU, 0.0D);
+        tessellator.addVertexWithUV(x + rotX * size + rotXY * size, y + rotZ * size, z + rotYZ * size + rotXZ * size, leftU, 0.0D);
+        tessellator.addVertexWithUV(x + rotX * size - rotXY * size, y - rotZ * size, z + rotYZ * size - rotXZ * size, leftU, 1.0D);
     }
 }
