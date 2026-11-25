@@ -30,6 +30,7 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
         super(name);
         this.sweepWingSpeed = super.speed;
         this.motionFactor = 0.975F;
+        this.stepHeight = MCP_EntityPlane.MAX_TAXI_STEP;
     }
 
     public Item getItem() {
@@ -38,10 +39,6 @@ public class MCP_PlaneInfo extends MCH_AircraftInfo {
 
     public float getDefaultRotorSpeed() {
         return 47.94F;
-    }
-
-    private float getDefaultStepHeight() {
-        return 0.6F;
     }
 
     public boolean haveNozzle() {

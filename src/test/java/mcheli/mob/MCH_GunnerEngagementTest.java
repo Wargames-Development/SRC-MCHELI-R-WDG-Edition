@@ -106,13 +106,14 @@ public class MCH_GunnerEngagementTest {
             assertTrue((Boolean) f.call(ws, "use", new Class[]{last.getClass()}, last));
             assertEquals("A partial belt cannot spawn free rounds", before + 2, f.world.spawned.size());
             assertEquals(0, f.call(ws, "getAmmoNum", new Class[0]));
-            for (int tick = 0; tick < 40; ++tick) {
+            int reloadTicks = f.integer(ws, "countReloadWait");
+            assertEquals(f.integer(info, "reloadTime"), reloadTicks);
+            for (int tick = 0; tick < reloadTicks; ++tick) {
+                assertFalse((Boolean) f.call(ws, "canUse", new Class[0]));
                 f.call(ws, "update", new Class[]{Entity.class, boolean.class, boolean.class}, f.turret, true, false);
             }
-            f.field(last, "result").setBoolean(last, false);
-            assertFalse((Boolean) f.call(ws, "use", new Class[]{last.getClass()}, last));
-            assertEquals(50, f.call(ws, "getRestAllAmmoNum", new Class[0]));
-            f.field(ws, "countReloadWait").setInt(ws, 0); f.field(ws, "countWait").setInt(ws, 0);
+            assertEquals(50, f.call(ws, "getAmmoNum", new Class[0]));
+            assertEquals(0, f.call(ws, "getRestAllAmmoNum", new Class[0]));
             f.call(ws, "setAmmoNum", new Class[]{int.class}, 100);
             f.world.rejectProjectileSpawns = true;
             last = f.type("mcheli.weapon.MCH_WeaponParam").newInstance();
@@ -311,6 +312,53 @@ public class MCH_GunnerEngagementTest {
         assertTrue((Boolean) f.call(plane, "isArmEmitterRadiating", new Class[0]));
         assertFalse("Ground HARM must still reject aircraft", (Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, plane));
         assertFalse((Boolean) f.call(guidance, "canLockEntity", new Class[]{Entity.class}, TestPlayer.create(f.world)));
+    }
+
+    @Test public void planeTaxisAcrossSlabsAndStopsAtFullBlockLedges() throws Exception {
+        Fixture f = new Fixture(0);
+        Entity plane = (Entity) f.type("mcheli.plane.MCP_EntityPlane").getConstructor(World.class).newInstance(f.world);
+        Object info = f.type("mcheli.plane.MCP_PlaneInfo").getConstructor(String.class).newInstance("taxi_test");
+        Class<?>[] infoParameter = {f.type("mcheli.aircraft.MCH_AircraftInfo")};
+        f.call(plane, "setAcInfo", infoParameter, info);
+        assertEquals(0.5F, plane.stepHeight, 0.0F);
+
+        f.world.floorY = 63;
+        f.world.riseZ = 2;
+        f.world.rise = TestWorld.SLAB;
+        plane.setPosition(100, 64.0D + plane.yOffset, 1);
+        plane.onGround = true;
+        Method frontBlocked = plane.getClass().getDeclaredMethod("hasBlockImmediatelyInFrontOfEntityBox");
+        frontBlocked.setAccessible(true);
+        assertFalse((Boolean) frontBlocked.invoke(plane));
+        plane.moveEntity(0, -0.1, 1);
+        assertEquals(2.0D, plane.posZ, 0.00001D);
+        assertEquals(64.5D, plane.boundingBox.minY, 0.00001D);
+
+        f.load(info, "StepHeight", "2");
+        f.call(plane, "setAcInfo", infoParameter, info);
+        f.world.rise = TestWorld.WALL;
+        plane.setPosition(100, 64.0D + plane.yOffset, 1);
+        plane.onGround = true;
+        assertTrue((Boolean) frontBlocked.invoke(plane));
+        plane.moveEntity(0, -0.1, 1);
+        assertEquals(1.0D, plane.posZ, 0.00001D);
+        assertEquals(64.0D, plane.boundingBox.minY, 0.00001D);
+
+        // Taxi back off the edge with either a slab or a full block under the plane.
+        for (boolean halfBlock : new boolean[]{true, false}) {
+            f.world.rise = halfBlock ? TestWorld.SLAB : TestWorld.WALL;
+            double upperSurface = halfBlock ? 64.5D : 65.0D;
+            plane.setPosition(100, upperSurface + plane.yOffset, 3);
+            plane.onGround = true;
+            plane.moveEntity(0, -0.1, -2.25);
+            plane.moveEntity(0, -0.6, 0);
+            assertEquals(halfBlock ? 0.75D : 3.0D, plane.posZ, 0.00001D);
+            assertEquals(halfBlock ? 64.0D : 65.0D, plane.boundingBox.minY, 0.00001D);
+        }
+
+        plane.moveEntity(0, 0.2, -2.25);
+        assertEquals("A plane already lifting off can leave the runway", 0.75D, plane.posZ, 0.00001D);
+        assertEquals(65.2D, plane.boundingBox.minY, 0.00001D);
     }
 
     @Test public void spawnedPlaneUsesPreciseSnapshotPitchWhileVanillaPitchHasNotChanged() throws Exception {
@@ -799,15 +847,16 @@ public class MCH_GunnerEngagementTest {
         assertTrue((Boolean) f.call(fresh, "getGunnerStatus", new Class[0]));
     }
 
-    @Test public void survivalCiwsReloadsOnlyOnGroundAndKeepsAmmoAcrossMountsAndSaves() throws Exception {
+    @Test public void singleRoundWeaponCanResupplyDuringChamberingAndKeepsAmmoAcrossSaves() throws Exception {
         Fixture f = new Fixture(0);
         Object originalWeapon = f.call(f.turret, "getFirstSeatWeapon", new Class[0]);
         Object info = f.call(originalWeapon, "getInfo", new Class[0]);
         f.call(info, "checkData", new Class[0]);
         assertEquals(100, f.integer(info, "maxAmmo"));
-        f.load(info, "round", "4");
+        f.load(info, "round", "1");
         f.load(info, "MaxAmmo", "12");
-        f.load(info, "SuppliedNum", "8");
+        f.load(info, "SuppliedNum", "4");
+        f.load(info, "delay", "1");
         f.load(info, "reloadtime", "3");
         f.load(info, "Item", "1, iron_ingot");
         f.load(info, "Item", "1, iron_ingot");
@@ -816,6 +865,11 @@ public class MCH_GunnerEngagementTest {
             f.field(cost, "itemStack").set(cost, new ItemStack(material));
         }
         f.call(info, "checkData", new Class[0]);
+        Object aircraftInfo = f.call(f.turret, "getAcInfo", new Class[0]);
+        f.load(aircraftInfo, "FlareType", "1");
+        f.load(aircraftInfo, "FlareCapacity", "10");
+        f.load(aircraftInfo, "HasChaff", "true");
+        f.load(aircraftInfo, "ChaffCapacity", "20");
 
         Entity turret = (Entity) f.type(TestVehicle.class.getName()).getConstructor(World.class).newInstance(f.world);
         f.call(turret, "setTypeName", new Class[]{String.class}, "test_vehicle");
@@ -823,6 +877,9 @@ public class MCH_GunnerEngagementTest {
         Object weapon = f.call(turret, "getFirstSeatWeapon", new Class[0]);
         assertEquals(0, f.call(weapon, "getAmmoNum", new Class[0]));
         assertEquals(0, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+        assertEquals(10, f.call(turret, "getRemainingFlarePairs", new Class[0]));
+        assertEquals(20, f.call(turret, "getRemainingChaffPairs", new Class[0]));
+        f.call(turret, "setCountermeasureStateClient", new Class[]{int.class, int.class}, 8, 14);
 
         TestPlayer pilot = TestPlayer.create(f.world);
         pilot.posY = 64;
@@ -835,8 +892,9 @@ public class MCH_GunnerEngagementTest {
         f.call(turret, "initCurrentWeapon", new Class[]{Entity.class}, pilot);
         assertEquals(0, f.call(weapon, "getAmmoNum", new Class[0]));
 
-        pilot.openContainer = (net.minecraft.inventory.Container) f.type("mcheli.aircraft.MCH_AircraftGuiContainer")
+        net.minecraft.inventory.Container resupply = (net.minecraft.inventory.Container) f.type("mcheli.aircraft.MCH_AircraftGuiContainer")
             .getConstructor(EntityPlayer.class, f.type("mcheli.aircraft.MCH_EntityAircraft")).newInstance(pilot, turret);
+        pilot.openContainer = resupply;
         Class<?>[] requestArgs = {EntityPlayer.class, int.class};
         turret.onGround = true;
         f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
@@ -844,19 +902,36 @@ public class MCH_GunnerEngagementTest {
         assertEquals("One item cannot satisfy both recipe entries", 1, pilot.inventory.mainInventory[0].stackSize);
         pilot.inventory.mainInventory[0].stackSize = 2;
         turret.onGround = false;
+        assertFalse((Boolean) f.call(turret, "canPlayerSupplyAmmo", requestArgs, pilot, 0));
+        Field remote = World.class.getField("isRemote");
+        remote.setBoolean(f.world, true);
+        try {
+            assertTrue("The reload button can be used before client ground contact settles",
+                (Boolean) f.call(turret, "canPlayerSupplyAmmo", requestArgs, pilot, 0));
+        } finally {
+            remote.setBoolean(f.world, false);
+        }
         f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
         f.call(turret, "updateSupplyAmmo", new Class[0]);
         assertEquals(2, pilot.inventory.mainInventory[0].stackSize);
 
         f.world.floorY = 63;
+        pilot.inventory.mainInventory[0].stackSize = 8;
         f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
         f.call(turret, "updateSupplyAmmo", new Class[0]);
-        assertNull(pilot.inventory.mainInventory[0]);
         assertEquals(3, f.integer(weapon, "countReloadWait"));
-        assertEquals(8, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+        assertEquals(4, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+        f.call(turret, "updateWeapons", new Class[0]);
+        for (int click = 0; click < 3; ++click) {
+            f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
+            f.call(turret, "updateSupplyAmmo", new Class[0]);
+        }
+        assertEquals("A full weapon cannot consume a pack", 2, pilot.inventory.mainInventory[0].stackSize);
+        assertEquals("Resupply leaves the running timer intact", 2, f.integer(weapon, "countReloadWait"));
+        assertEquals(12, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
         f.world.floorY = Integer.MIN_VALUE;
         f.call(turret, "updateWeapons", new Class[0]);
-        assertEquals(3, f.integer(weapon, "countReloadWait"));
+        assertEquals("Chambering can continue off the ground", 1, f.integer(weapon, "countReloadWait"));
 
         ItemStack packed = new ItemStack(new Item());
         f.call(turret, "setAcDataToItem", new Class[]{ItemStack.class}, packed);
@@ -869,22 +944,63 @@ public class MCH_GunnerEngagementTest {
                 f.call(restored, "getAcDataFromItem", new Class[]{ItemStack.class}, packed);
             } else {
                 f.call(restored, "loadAircraft", new Class[]{NBTTagCompound.class}, saved);
+                assertEquals(8, f.call(restored, "getRemainingFlarePairs", new Class[0]));
+                assertEquals(14, f.call(restored, "getRemainingChaffPairs", new Class[0]));
             }
             Object restoredWeapon = f.call(restored, "getFirstSeatWeapon", new Class[0]);
             assertEquals(0, f.call(restoredWeapon, "getAmmoNum", new Class[0]));
-            assertEquals(8, f.call(restoredWeapon, "getRestAllAmmoNum", new Class[0]));
-            assertEquals(3, f.integer(restoredWeapon, "countReloadWait"));
+            assertEquals(12, f.call(restoredWeapon, "getRestAllAmmoNum", new Class[0]));
+            assertEquals(1, f.integer(restoredWeapon, "countReloadWait"));
+            f.call(restored, "updateWeapons", new Class[0]);
+            assertEquals(1, f.call(restoredWeapon, "getAmmoNum", new Class[0]));
+            assertEquals(11, f.call(restoredWeapon, "getRestAllAmmoNum", new Class[0]));
         }
 
-        turret.riddenByEntity = null;
-        turret.onGround = true;
+        pilot.openContainer = null;
+        f.call(turret, "updateSupplyAmmo", new Class[0]);
+        assertFalse((Boolean) f.call(turret, "isPilotReloading", new Class[0]));
+        f.call(turret, "updateWeapons", new Class[0]);
+        Object shot = f.type("mcheli.weapon.MCH_WeaponParam").newInstance();
+        f.field(shot, "user").set(shot, pilot);
+        f.field(shot, "entity").set(shot, turret);
+        assertTrue((Boolean) f.call(weapon, "use", new Class[]{shot.getClass()}, shot));
+        assertEquals(0, f.call(weapon, "getAmmoNum", new Class[0]));
+        assertEquals(3, f.integer(weapon, "countReloadWait"));
         for (int tick = 0; tick < 3; ++tick) f.call(turret, "updateWeapons", new Class[0]);
-        assertEquals(4, f.call(weapon, "getAmmoNum", new Class[0]));
-        f.call(weapon, "setAmmoNum", new Class[]{int.class}, 2);
-        turret.riddenByEntity = pilot;
-        f.call(turret, "initCurrentWeapon", new Class[]{Entity.class}, pilot);
-        assertEquals(2, f.call(weapon, "getAmmoNum", new Class[0]));
-        assertEquals(4, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+        assertEquals(1, f.call(weapon, "getAmmoNum", new Class[0]));
+        assertEquals(10, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+
+        turret.onGround = true;
+        pilot.openContainer = resupply;
+        f.call(turret, "requestWeaponReload", requestArgs, pilot, 0);
+        f.call(turret, "updateSupplyAmmo", new Class[0]);
+        assertNull(pilot.inventory.mainInventory[0]);
+        assertEquals(1, f.call(weapon, "getAmmoNum", new Class[0]));
+        assertEquals(11, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+        assertEquals(0, f.integer(weapon, "countReloadWait"));
+
+        f.call(turret, "saveAircraft", new Class[]{NBTTagCompound.class}, saved);
+        saved.setIntArray("AcWeaponsReloadWait", new int[]{3});
+        Entity restored = (Entity) f.type(TestVehicle.class.getName()).getConstructor(World.class).newInstance(f.world);
+        f.call(restored, "loadAircraft", new Class[]{NBTTagCompound.class}, saved);
+        Object restoredWeapon = f.call(restored, "getFirstSeatWeapon", new Class[0]);
+        assertEquals(1, f.call(restoredWeapon, "getAmmoNum", new Class[0]));
+        assertEquals(11, f.call(restoredWeapon, "getRestAllAmmoNum", new Class[0]));
+        assertEquals("An old top-off timer must not block a chambered round", 0, f.integer(restoredWeapon, "countReloadWait"));
+
+        pilot.openContainer = null;
+        f.call(turret, "updateSupplyAmmo", new Class[0]);
+        for (int shells = 12; shells > 0; --shells) {
+            assertTrue((Boolean) f.call(weapon, "canUse", new Class[0]));
+            f.field(shot, "result").setBoolean(shot, false);
+            assertTrue((Boolean) f.call(weapon, "use", new Class[]{shot.getClass()}, shot));
+            assertEquals(0, f.call(weapon, "getAmmoNum", new Class[0]));
+            assertEquals(shells > 1 ? 3 : 0, f.integer(weapon, "countReloadWait"));
+            for (int tick = 0; tick < 3; ++tick) f.call(turret, "updateWeapons", new Class[0]);
+        }
+        assertEquals(0, f.call(weapon, "getRestAllAmmoNum", new Class[0]));
+        f.field(shot, "result").setBoolean(shot, false);
+        assertFalse((Boolean) f.call(weapon, "use", new Class[]{shot.getClass()}, shot));
     }
 
     private static final class Fixture {
@@ -1072,8 +1188,13 @@ public class MCH_GunnerEngagementTest {
             @Override public AxisAlignedBB getCollisionBoundingBoxFromPool(World world, int x, int y, int z) { return null; }
         };
         private static final Block WALL = new Block(Material.rock) { };
+        private static final Block SLAB = new Block(Material.rock) {
+            { this.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 0.5F, 1.0F); }
+        };
         int wallZ = Integer.MIN_VALUE;
         int floorY = Integer.MIN_VALUE;
+        int riseZ = Integer.MAX_VALUE;
+        Block rise = AIR;
         int blockQueries;
         boolean chunksLoaded = true;
         boolean blocked;
@@ -1089,7 +1210,11 @@ public class MCH_GunnerEngagementTest {
         @Override protected IChunkProvider createChunkProvider() { return null; }
         @Override protected int func_152379_p() { return 0; }
         @Override public void calculateInitialSkylight() { }
-        @Override public Block getBlock(int x, int y, int z) { ++blockQueries; return z == wallZ || y == floorY ? WALL : AIR; }
+        @Override public Block getBlock(int x, int y, int z) {
+            ++blockQueries;
+            if (z == wallZ || y == floorY) return WALL;
+            return z >= riseZ && y == floorY + 1 ? rise : AIR;
+        }
         @Override public int getBlockMetadata(int x, int y, int z) { return 0; }
         @Override public boolean spawnEntityInWorld(Entity entity) {
             if (rejectProjectileSpawns) return false;

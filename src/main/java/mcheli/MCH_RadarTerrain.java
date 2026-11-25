@@ -11,9 +11,6 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
-import cpw.mods.fml.common.Loader;
-import mcheli.integration.dh.DhRadarTerrainBridge;
-import mcheli.integration.wgmap.WGMapRadarServerBridge;
 
 import java.lang.ref.WeakReference;
 import java.util.Map;
@@ -22,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Server terrain evidence shared by radar presentation and tracking validation. */
 public final class MCH_RadarTerrain {
+    private static final int MAX_TERRAIN_CHECKS = 8192;
+    private static final double BLOCK_EDGE_MARGIN = 1.0E-7D;
     private static final Map<MCH_EntityAircraft, Cache> caches = new WeakHashMap<>();
     private static final Map<Integer, Cache> published = new ConcurrentHashMap<>();
 
@@ -51,7 +50,8 @@ public final class MCH_RadarTerrain {
         final ChunkProviderServer provider = world instanceof WorldServer
                 && world.getChunkProvider() instanceof ChunkProviderServer
                 ? (ChunkProviderServer)world.getChunkProvider() : null;
-        Terrain live = (x, y, z) -> {
+        // Stored LOD and map snapshots cannot verify that these cells are still solid.
+        Terrain terrain = (x, y, z) -> {
             if (y < 0 || y >= height) return 0;
             Chunk chunk = provider == null ? null : (Chunk)provider.loadedChunkHashMap.getValueByKey(
                     ChunkCoordIntPair.chunkXZ2Int(x >> 4, z >> 4));
@@ -59,11 +59,6 @@ public final class MCH_RadarTerrain {
             Block block = chunk.getBlock(x & 15, y, z & 15);
             return block.getMaterial() != Material.leaves && block.isOpaqueCube() ? 1 : 0;
         };
-        Terrain stored = DhRadarTerrainBridge.open(world, ox, oy, oz);
-        if (stored == null && Loader.isModLoaded("wgmap")) {
-            stored = WGMapRadarServerBridge.open(world, ox, oy, oz);
-        }
-        Terrain terrain = combine(live, stored);
         MCH_EntityAircraft aircraft = (MCH_EntityAircraft)target;
         boolean blocked = isBoxBlocked(terrain, ox, oy, oz, target.boundingBox);
         if (blocked && aircraft.extraBoundingBox != null) {
@@ -85,58 +80,72 @@ public final class MCH_RadarTerrain {
         return cache != null && cache.emitter.get() != null && Boolean.TRUE.equals(cache.targets.get(targetId));
     }
 
-    // An exposed top or side must count even when the vehicle's origin is hidden.
+    /** A solid cross-section proves cover for every point on the box, including between sample rays. */
     static boolean isBoxBlocked(Terrain terrain, double ox, double oy, double oz, AxisAlignedBB box) {
-        for (int level = 0; level < 3; level++) {
-            double y = box.minY + (box.maxY - box.minY) * (level == 0 ? 0.01D : level == 1 ? 0.5D : 0.99D);
-            for (int point = 0; point < 5; point++) {
-                double x = box.minX + (box.maxX - box.minX) * (point == 0 ? 0.5D : (point & 1) == 0 ? 0.99D : 0.01D);
-                double z = box.minZ + (box.maxZ - box.minZ) * (point == 0 ? 0.5D : point <= 2 ? 0.01D : 0.99D);
-                if (!isRayBlocked(terrain, ox, oy, oz, x, y, z)) return false;
-            }
-        }
-        return true;
-    }
-
-    /** Voxel traversal avoids vanilla's 200-block ray limit and chunk loading. */
-    static boolean isRayBlocked(Terrain terrain, double ox, double oy, double oz, double tx, double ty, double tz) {
         if (!Double.isFinite(ox) || !Double.isFinite(oy) || !Double.isFinite(oz)
-            || !Double.isFinite(tx) || !Double.isFinite(ty) || !Double.isFinite(tz)) return false;
-        int x = (int)Math.floor(ox), y = (int)Math.floor(oy), z = (int)Math.floor(oz);
-        double dx = tx - ox, dy = ty - oy, dz = tz - oz;
-        int sx = (int)Math.signum(dx), sy = (int)Math.signum(dy), sz = (int)Math.signum(dz);
-        double ax = nextBoundary(ox, x, dx, sx), ay = nextBoundary(oy, y, dy, sy), az = nextBoundary(oz, z, dz, sz);
-        double ix = dx == 0.0D ? Double.POSITIVE_INFINITY : Math.abs(1.0D / dx);
-        double iy = dy == 0.0D ? Double.POSITIVE_INFINITY : Math.abs(1.0D / dy);
-        double iz = dz == 0.0D ? Double.POSITIVE_INFINITY : Math.abs(1.0D / dz);
-        // More than the maximum Manhattan traversal for the existing 4096-block radar range.
-        for (int steps = 0; steps < 8192; steps++) {
-            int state = terrain.blockAt(x, y, z);
-            // Known solid terrain is sufficient evidence even after an unloaded gap.
-            if (state == 1) return true;
-            double next = Math.min(ax, Math.min(ay, az));
-            if (next > 1.0D) return false;
-            if (ax == next) { x += sx; ax += ix; }
-            if (ay == next) { y += sy; ay += iy; }
-            if (az == next) { z += sz; az += iz; }
+            || !Double.isFinite(box.minX) || !Double.isFinite(box.maxX)
+            || !Double.isFinite(box.minY) || !Double.isFinite(box.maxY)
+            || !Double.isFinite(box.minZ) || !Double.isFinite(box.maxZ)) return false;
+        double dx = Math.abs((box.minX + box.maxX) * 0.5D - ox);
+        double dy = Math.abs((box.minY + box.maxY) * 0.5D - oy);
+        double dz = Math.abs((box.minZ + box.maxZ) * 0.5D - oz);
+        if (dx >= dy && dx >= dz) {
+            return hasSolidSlice(terrain, ox, oy, oz, box.minX, box.maxX, box.minY, box.maxY, box.minZ, box.maxZ);
         }
-        return false;
+        if (dy >= dz) {
+            return hasSolidSlice((y, x, z) -> terrain.blockAt(x, y, z), oy, ox, oz,
+                box.minY, box.maxY, box.minX, box.maxX, box.minZ, box.maxZ);
+        }
+        return hasSolidSlice((z, x, y) -> terrain.blockAt(x, y, z), oz, ox, oy,
+            box.minZ, box.maxZ, box.minX, box.maxX, box.minY, box.maxY);
     }
 
-    private static double nextBoundary(double origin, int block, double delta, int step) {
-        return step == 0 ? Double.POSITIVE_INFINITY : (block + (step > 0 ? 1.0D : 0.0D) - origin) / delta;
+    private static boolean hasSolidSlice(Terrain terrain, double ox, double oy, double oz,
+                                         double minX, double maxX, double minY, double maxY, double minZ, double maxZ) {
+        if (minX <= ox && ox <= maxX) return false;
+        int direction = ox < minX ? 1 : -1;
+        double near = (direction > 0 ? minX : maxX) - ox;
+        double far = (direction > 0 ? maxX : minX) - ox;
+        double middle = (near + far) * 0.5D;
+        double centerY = (minY + maxY) * 0.5D - oy;
+        double centerZ = (minZ + maxZ) * 0.5D - oz;
+        int remaining = MAX_TERRAIN_CHECKS;
+        // Skip the emitter's own cell and stop before the bounds. Each plane bisects a block column.
+        for (int x = (int)Math.floor(ox) + direction; ; x += direction) {
+            double offset = x + 0.5D - ox;
+            double nearFraction = offset / near;
+            if (nearFraction >= 1.0D || --remaining < 0) return false;
+            int centerBlockY = (int)Math.floor(oy + centerY * (offset / middle));
+            int centerBlockZ = (int)Math.floor(oz + centerZ * (offset / middle));
+            if (terrain.blockAt(x, centerBlockY, centerBlockZ) != 1) continue;
+
+            double farFraction = offset / far;
+            int y0 = (int)Math.floor(oy + projectOffset(minY - oy, nearFraction, farFraction) - BLOCK_EDGE_MARGIN);
+            int y1 = (int)Math.floor(oy + projectOffset(maxY - oy, farFraction, nearFraction) + BLOCK_EDGE_MARGIN);
+            int z0 = (int)Math.floor(oz + projectOffset(minZ - oz, nearFraction, farFraction) - BLOCK_EDGE_MARGIN);
+            int z1 = (int)Math.floor(oz + projectOffset(maxZ - oz, farFraction, nearFraction) + BLOCK_EDGE_MARGIN);
+            boolean solid = true;
+            for (int y = y0; y <= y1 && solid; y++) {
+                for (int z = z0; z <= z1; z++) {
+                    if (y == centerBlockY && z == centerBlockZ) continue;
+                    if (--remaining < 0) return false;
+                    if (terrain.blockAt(x, y, z) != 1) {
+                        solid = false;
+                        break;
+                    }
+                }
+            }
+            if (solid) return true;
+        }
+    }
+
+    private static double projectOffset(double offset, double negativeFraction, double positiveFraction) {
+        return offset * (offset < 0.0D ? negativeFraction : positiveFraction);
     }
 
     public interface Terrain {
         // 0: clear, 1: opaque solid, 2: missing terrain.
         int blockAt(int x, int y, int z);
-    }
-
-    static Terrain combine(Terrain live, Terrain stored) {
-        return (x, y, z) -> {
-            int state = live.blockAt(x, y, z);
-            return state == 2 && stored != null ? stored.blockAt(x, y, z) : state;
-        };
     }
 
     private static final class Cache {

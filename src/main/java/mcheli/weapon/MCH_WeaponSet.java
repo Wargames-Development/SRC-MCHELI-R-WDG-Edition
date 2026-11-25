@@ -123,6 +123,16 @@ public class MCH_WeaponSet {
         this.setRestAllAmmoNum(this.getRestAllAmmoNum() + this.getInfo().suppliedNum);
     }
 
+    public void restoreAmmoState(int savedAmmo, int savedReserve, int savedReloadWait) {
+        int ammo = Math.max(0, savedAmmo);
+        int total = (int)Math.min((long)this.getAllAmmoNum(), (long)ammo + Math.max(0, savedReserve));
+        this.setAmmoNum(Math.min(ammo, total));
+        this.setRestAllAmmoNum(total - this.getAmmoNum());
+        // Older top-offs could save a reload timer with a round already chambered.
+        this.countReloadWait = this.getAmmoNum() == 0 && this.getRestAllAmmoNum() > 0
+            ? Math.max(0, savedReloadWait) : 0;
+    }
+
     public boolean isInPreparation() {
         return this.countWait < 0 || this.countReloadWait > 0;
     }
@@ -179,10 +189,9 @@ public class MCH_WeaponSet {
     }
 
     public void reload() {
-        MCH_WeaponBase weapon = this.getCurrentWeapon();
-        if (!weapon.worldObj.isRemote && this.countReloadWait == 0
-            && this.getRestAllAmmoNum() > 0 && this.getAmmoNum() < this.getAmmoNumMax()) {
-            this.countReloadWait = Math.max(1, weapon.getReloadCount());
+        if (this.countReloadWait == 0 && this.getAmmoNum() == 0 && this.getRestAllAmmoNum() > 0 && this.getAmmoNumMax() > 0) {
+            MCH_WeaponBase weapon = this.getCurrentWeapon();
+            if (!weapon.worldObj.isRemote) this.countReloadWait = Math.max(1, weapon.getReloadCount());
         }
     }
 
@@ -460,6 +469,7 @@ public class MCH_WeaponSet {
                         this.countWait = crtWpn.interval;
                         if (usesStoredAmmo && !prm.entity.worldObj.isRemote) {
                             this.setAmmoNum(this.getAmmoNum() - prm.roundsFired);
+                            if (this.getAmmoNum() == 0) this.reload();
                         }
 
                         prm.result = true;

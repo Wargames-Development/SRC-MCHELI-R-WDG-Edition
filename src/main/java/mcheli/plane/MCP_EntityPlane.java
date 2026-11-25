@@ -29,6 +29,8 @@ import net.minecraft.world.World;
 import net.minecraft.util.AxisAlignedBB;
 public class MCP_EntityPlane extends MCH_EntityAircraft {
 
+    static final float MAX_TAXI_STEP = 0.5F;
+    private static final double TERRAIN_CONTACT_MARGIN = 1.0E-7D;
     public float soundVolume;
     public MCH_Parts partNozzle;
     public MCH_Parts partWing;
@@ -63,7 +65,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         this.soundVolume = 0.0F;
         this.partNozzle = null;
         this.partWing = null;
-        super.stepHeight = 0.6F;
+        super.stepHeight = MAX_TAXI_STEP;
         this.rotationRotor = 0.0F;
         this.prevRotationRotor = 0.0F;
     }
@@ -274,10 +276,10 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         double dirX = fwd.xCoord / len;
         double dirZ = fwd.zCoord / len;
 
-        // Probe the lower 1-block slice of the main entity box
+        // A surface the plane can step onto is below the obstacle probe.
         AxisAlignedBB baseSlice = AxisAlignedBB.getBoundingBox(
                 super.boundingBox.minX,
-                super.boundingBox.minY + 0.05D,
+                super.boundingBox.minY + Math.min(super.stepHeight, MAX_TAXI_STEP) + TERRAIN_CONTACT_MARGIN,
                 super.boundingBox.minZ,
                 super.boundingBox.maxX,
                 super.boundingBox.minY + 1.05D,
@@ -289,6 +291,41 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
         AxisAlignedBB probe = baseSlice.offset(dirX * forwardOffset, 0.0D, dirZ * forwardOffset);
 
         return !super.worldObj.getCollidingBoundingBoxes(this, probe).isEmpty();
+    }
+
+    @Override
+    public void moveEntity(double x, double y, double z) {
+        // Keep a taxiing plane within half a block of support, including while it settles onto a slab.
+        if ((x != 0.0D || z != 0.0D) && y <= 0.0D && this.getNozzleRotation() <= 0.01F
+                && !this.isInWater() && this.hasTaxiGround(0.0D, 0.0D) && !this.hasTaxiGround(x, z)) {
+            if (x != 0.0D && this.hasTaxiGround(x, 0.0D)) {
+                z = 0.0D;
+                super.motionZ = 0.0D;
+            } else {
+                x = 0.0D;
+                super.motionX = 0.0D;
+                if (z != 0.0D && !this.hasTaxiGround(0.0D, z)) {
+                    z = 0.0D;
+                    super.motionZ = 0.0D;
+                }
+            }
+        }
+
+        float configuredStep = super.stepHeight;
+        super.stepHeight = Math.min(configuredStep, MAX_TAXI_STEP);
+        try {
+            super.moveEntity(x, y, z);
+        } finally {
+            super.stepHeight = configuredStep;
+        }
+    }
+
+    private boolean hasTaxiGround(double x, double z) {
+        AxisAlignedBB box = super.boundingBox;
+        AxisAlignedBB below = AxisAlignedBB.getBoundingBox(box.minX + x,
+            box.minY - MAX_TAXI_STEP - TERRAIN_CONTACT_MARGIN, box.minZ + z,
+            box.maxX + x, box.minY + TERRAIN_CONTACT_MARGIN, box.maxZ + z);
+        return !getCollidingBoundingBoxes(this, below).isEmpty();
     }
 
     public float getYawFactor() {
@@ -963,15 +1000,7 @@ public class MCP_EntityPlane extends MCH_EntityAircraft {
             }
         }
 
-        // 更新飞行器位置
-        // 更新飞行器位置
-        float prevStepHeight = super.stepHeight;
-        if (frontBlocked) {
-            super.stepHeight = 0.0F;
-        }
-
         this.moveEntity(super.motionX, super.motionY, super.motionZ);
-        super.stepHeight = prevStepHeight;
 
         // 更新旋转角度
         this.setRotation(this.getRotYaw(), this.getRotPitch());

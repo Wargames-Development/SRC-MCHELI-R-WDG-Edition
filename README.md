@@ -243,16 +243,16 @@ However, We hope you have some understanding of modding and therefore are giving
 3. Depending on your editor of choice follow one of the below:
 
 * Intellij Idea:
-    1. Generate idea files by running `gradlew idea` in the cmd.
-
-    2. Open the .ipr file in the explorer to intellij Idea.
-
-    3. Select the installed JDK 8 as the Project SDK. The generated project includes
-       Lombok and enables annotation processing for IntelliJ builds.
-
-    In PowerShell, run `.\gradlew.bat setupDecompWorkspace idea` from the project
-    root to perform both setup steps together. If linking the project to Gradle,
-    select the Gradle wrapper and JDK 8 as the Gradle JVM too.
+    1. Run `.\gradlew.bat setupDecompWorkspace idea` from the project root in
+       PowerShell with `JAVA_HOME` pointing to JDK 8. Add `--offline` if the
+       Forge workspace and dependencies are already cached.
+    2. Open the generated `.ipr` in IntelliJ IDEA and select JDK 8 as the Project
+       SDK. The generated project includes Lombok and enables annotation processing.
+    3. Select **Build Mod** in the Run Configurations menu and run it with the
+       Shell Script plugin enabled. The configuration uses the Java 8 wrapper
+       environment and packages a verified jar into `build/libs`. Each successful
+       run increments `modBuildNumber` once. Workspace generation and IntelliJ's
+       **Build Project** command leave the build number as-is.
 
 * Eclipse Users:
     1. Generate eclipse files by running  `gradlew eclipse` in the cmd.

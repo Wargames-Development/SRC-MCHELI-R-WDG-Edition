@@ -33,7 +33,6 @@ public class MCH_AircraftGui extends W_GuiContainer {
     private GuiButton buttonPrev;
     private GuiButton buttonInventory;
     private int currentWeaponId;
-    private int reloadWait;
 
 
     public MCH_AircraftGui(EntityPlayer player, MCH_EntityAircraft ac) {
@@ -67,8 +66,6 @@ public class MCH_AircraftGui extends W_GuiContainer {
         if (this.aircraft != null && this.aircraft.getSizeInventory() > 0) {
             super.buttonList.add(this.buttonInventory);
         }
-
-        this.reloadWait = 10;
     }
 
     public void closeScreen() {
@@ -91,14 +88,7 @@ public class MCH_AircraftGui extends W_GuiContainer {
 
     public void updateScreen() {
         super.updateScreen();
-        if (this.isCountermeasuresPage()) this.buttonReload.enabled = this.canReload(this.thePlayer);
-        if (this.reloadWait > 0) {
-            --this.reloadWait;
-            if (this.reloadWait == 0) {
-                this.buttonReload.enabled = this.canReload(this.thePlayer);
-                this.reloadWait = 20;
-            }
-        }
+        this.buttonReload.enabled = this.canReload(this.thePlayer);
     }
 
     protected void mouseClicked(int p_73864_1_, int p_73864_2_, int p_73864_3_) {
@@ -147,8 +137,6 @@ public class MCH_AircraftGui extends W_GuiContainer {
                         } else {
                             MCH_PacketIndReload.send(this.aircraft, this.currentWeaponId);
                         }
-                        this.reloadWait = 3;
-                        this.buttonReload.enabled = false;
                     }
                     break;
                 case 2:

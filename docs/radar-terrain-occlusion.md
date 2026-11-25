@@ -2,20 +2,25 @@
 
 ## Behavior
 
-Search radar hides vehicle contacts when opaque terrain blocks every sampled
-point on their collision bounds. Checks start just above the emitting vehicle's
-main bounding box, independently of camera position. Fifteen rays sample the
-center and four corners at low, middle, and upper heights of each box. Extra
-vehicle hitboxes are included, so an exposed turret or another body section can
-keep the contact detectable. This is a bounded approximation of full coverage,
-not an exact test against every model triangle.
+Search radar hides a vehicle when loaded opaque blocks form an uninterrupted
+cross-section across the line of sight to its collision bounds. Checks start
+just above the emitter's main bounding box. The server projects the target box
+onto candidate planes along the longest axis of the sightline. A plane counts
+as cover only if every cell in the projected rectangle is opaque. The server
+checks extra hitboxes as well, so an exposed turret or body section can keep
+the contact visible.
 
 Covered contacts are removed from retained search contacts and excluded from
 ACM capture, selection, tracked-contact rendering, and BVR contact visibility.
 Existing radar tracks drop when terrain coverage is reported. Server validation
 also rejects those tracks for radar-dependent firing/relay and stops refreshing
-radar search/lock RWR events through cover. Existing RWR event lifetimes remain
-unchanged. Re-exposed vehicles use the existing scan cadence and detection chance.
+radar search/lock RWR events through cover. Re-exposed full-signature aircraft
+and helicopters acquire on the next eligible air-search sweep and hold through
+the following sweep. Range, scan sector, speed, altitude, team, and
+countermeasure checks still apply. Reduced signatures use probabilistic search
+detection. Supported snapshots supply the target's server-measured altitude
+above ground. If the snapshot and client chunk both lack it, the altitude gate
+waits for a measurement.
 
 This applies to MCHeli vehicles, including aircraft, tanks, and generic vehicles.
 Missiles, infantry, GPS waypoints, legacy living-entity radar, mortar radar, and
@@ -46,20 +51,17 @@ trailer; newer clients accept its absence. Update both client and server to get
 the complete feature. Old clients may still display covered contacts, while an
 updated server rejects covered radar tracks. Old servers provide no terrain mask.
 
-Only already-loaded server chunks are queried. Radar never loads terrain chunks.
-Unknown terrain alone does not hide a vehicle; a known opaque obstruction still
-counts even if another part of the ray crosses unloaded terrain. Consequently,
-a hill entirely in unloaded server chunks cannot provide blocking evidence.
-Opaque full-cube terrain/buildings block radar; water, glass, foliage, stairs,
-and other non-opaque blocks do not. Bounds/model mismatches and tiny exposed
-gaps between sample rays can affect edge cases.
+The terrain check reads already-loaded server chunks. Distant Horizons and
+WGMap currently supply historical terrain, so an unloaded ridge can leave a
+contact visible until its blocks load on the server. A loaded solid slice can
+still prove cover across an unloaded gap. Opaque full cubes count as cover.
+Water, glass, foliage, and stairs leave gaps in the proof. Complex terrain that
+offers cover across several partial slices can also leave a contact visible.
 
-Cache results last at most five server ticks (250 ms at 20 TPS), then travel in
-the existing two-tick active snapshot stream. Network latency adds to this.
-Traversal stops at a confirmed blocker or 8192 visited voxels per ray, allowing
-the existing 4096-block radar range without vanilla's 200-step ray limit. A clear
-sample ends further bounds checks immediately. Large multiplayer radar workloads
-still need live performance validation.
+The server recomputes terrain results every five ticks and sends them in the
+existing two-tick active snapshot stream. Each box check stops at a confirmed
+slice or 8,192 cell checks. Large multiplayer radar workloads still need live
+performance validation.
 
 ## Implement, review, fix, test, verify
 
@@ -92,10 +94,12 @@ the build number remains 170. Existing unrelated working changes were preserved.
    from the radar panel and BVR contact boxes after the short update delay,
    including if it was already selected or tracked. A radar-dependent weapon
    should no longer accept the covered radar track.
-3. Expose the turret/roof above cover, then expose one side around cover. Confirm
-   those positions remain eligible for detection with the usual scan probability.
-4. Move back into clear view and confirm normal reacquisition. Repeat with air
-   radar, ACM acquisition, and more than 200 blocks between radar and cover.
+3. Expose the turret or wing around cover, or open a one-block sightline through
+   the wall. Confirm that the contact reappears on the next eligible sweep.
+4. Fly a non-stealth aircraft near the configured range limit in the scan sector
+   for several sweeps. Check the HUD and cockpit display beyond the client's
+   terrain render distance, then repeat with an unloaded DH-only ridge and a
+   loaded server ridge. Confirm the latter hides the contact while fully covered.
 5. Change seats, switch vehicles, toggle radar power, reconnect, and change
    dimensions. Terrain results must belong to the current radar vehicle only.
 6. Repeat with multiple radar vehicles/crew and observe server tick performance.

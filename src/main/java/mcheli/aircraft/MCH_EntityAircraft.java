@@ -239,7 +239,6 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     private int modeSwitchCooldown;
     private double fuelConsumption;
     private int fuelSuppliedCount;
-    private int supplyAmmoWait;
     private boolean beforeSupplyAmmo;
     private EntityPlayer pendingWeaponReloadPlayer;
     private int pendingWeaponReloadId;
@@ -994,16 +993,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         if (ammoInMag.length > 0 && restAmmo.length > 0) {
             for (int i = 0; i < weaponNum; ++i) {
                 MCH_WeaponSet ws = this.getWeapon(i);
-                int savedInMag = i < ammoInMag.length ? Math.max(0, ammoInMag[i]) : 0;
-                int savedRest = i < restAmmo.length ? Math.max(0, restAmmo[i]) : 0;
-                int total = (int)Math.min((long)ws.getAllAmmoNum(), (long)savedInMag + (long)savedRest);
-                int inMag = Math.min(savedInMag, ws.getAmmoNumMax());
-                if (inMag > total) {
-                    inMag = total;
-                }
-                ws.setAmmoNum(inMag);
-                ws.setRestAllAmmoNum(total - inMag);
-                ws.countReloadWait = i < reloadWait.length ? Math.max(0, reloadWait[i]) : 0;
+                ws.restoreAmmoState(i < ammoInMag.length ? ammoInMag[i] : 0,
+                    i < restAmmo.length ? restAmmo[i] : 0, i < reloadWait.length ? reloadWait[i] : 0);
             }
         } else {
             // Legacy AcWeaponsAmmo stores total ammo, not reserve ammo.
@@ -1632,16 +1623,8 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 int[] reloadWait = nbt.getIntArray("AcWeaponsReloadWait");
                 for (int i = 0; i < this.getWeaponNum(); ++i) {
                     MCH_WeaponSet ws = this.getWeapon(i);
-                    int savedInMag = i < ammoInMag.length ? Math.max(0, ammoInMag[i]) : 0;
-                    int savedRest = i < restAmmo.length ? Math.max(0, restAmmo[i]) : 0;
-                    int total = (int)Math.min((long)ws.getAllAmmoNum(), (long)savedInMag + (long)savedRest);
-                    int inMag = Math.min(savedInMag, ws.getAmmoNumMax());
-                    if (inMag > total) {
-                        inMag = total;
-                    }
-                    ws.setAmmoNum(inMag);
-                    ws.setRestAllAmmoNum(total - inMag);
-                    ws.countReloadWait = i < reloadWait.length ? Math.max(0, reloadWait[i]) : 0;
+                    ws.restoreAmmoState(i < ammoInMag.length ? ammoInMag[i] : 0,
+                        i < restAmmo.length ? restAmmo[i] : 0, i < reloadWait.length ? reloadWait[i] : 0);
                 }
             }
 
@@ -3134,22 +3117,13 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 isReloading = true;
             }
 
-            this.setCommonStatus(2, isReloading);
+            this.setCommonStatus(CMN_ID_RELOADING, isReloading);
             if (!this.isDestroyed() && this.beforeSupplyAmmo && !isReloading) {
                 MCH_PacketNotifyAmmoNum.sendAllAmmoNum(this, (EntityPlayer) null);
             }
 
             this.beforeSupplyAmmo = isReloading;
         }
-
-        if (this.getCommonStatus(2)) {
-            this.supplyAmmoWait = 20;
-        }
-
-        if (this.supplyAmmoWait > 0) {
-            --this.supplyAmmoWait;
-        }
-
     }
 
     public synchronized void requestWeaponReload(EntityPlayer player, int weaponId) {
@@ -3175,12 +3149,10 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
         }
 
         MCH_WeaponSet weapon = this.getWeapon(weaponId);
-        if (!canReloadFromReserve(weapon)) {
-            if (!player.capabilities.isCreativeMode && !useWeaponReloadItems(player, weapon, true)) {
-                return;
-            }
-            weapon.supplyRestAllAmmo();
+        if (!player.capabilities.isCreativeMode && !useWeaponReloadItems(player, weapon, true)) {
+            return;
         }
+        weapon.supplyRestAllAmmo();
         weapon.reload();
         MCH_Achievement.addStat(player, MCH_Achievement.supplyAmmo, 1);
         this.syncWeaponReloadState(weaponId, weapon);
@@ -3246,17 +3218,15 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     public boolean canPlayerSupplyAmmo(EntityPlayer player, int weaponId) {
         if (player == null || player.isDead || player.worldObj != this.worldObj
             || this.getRiddenByEntity() != player || player.getDistanceSqToEntity(this) > 144.0D
-            || weaponId < 0 || weaponId >= this.getWeaponNum() || !this.canReloadWeaponsHere()) {
+            || weaponId < 0 || weaponId >= this.getWeaponNum() || this.isDead || this.isDestroyed()) {
             return false;
         }
+        // Ground contact is authoritative on the server. Client interpolation can put a parked tank above the probe.
+        if (!this.worldObj.isRemote && !this.canReloadWeaponsHere()) return false;
         MCH_WeaponSet weapon = this.getWeapon(weaponId);
-        return weapon.countReloadWait == 0 && (canReloadFromReserve(weapon)
-            || (weapon.getAmmoNum() + weapon.getRestAllAmmoNum() < weapon.getAllAmmoNum()
-                && (player.capabilities.isCreativeMode || useWeaponReloadItems(player, weapon, false))));
-    }
-
-    private static boolean canReloadFromReserve(MCH_WeaponSet weapon) {
-        return weapon.getAmmoNum() < weapon.getAmmoNumMax() && weapon.getRestAllAmmoNum() > 0;
+        return weapon.getInfo().suppliedNum > 0
+            && weapon.getAmmoNum() + weapon.getRestAllAmmoNum() < weapon.getAllAmmoNum()
+            && (player.capabilities.isCreativeMode || useWeaponReloadItems(player, weapon, false));
     }
 
     private static boolean useWeaponReloadItems(EntityPlayer player, MCH_WeaponSet weapon, boolean consume) {
@@ -6128,7 +6098,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
     }
 
     public boolean isPilotReloading() {
-        return this.getCommonStatus(2) || this.supplyAmmoWait > 0;
+        return this.getCommonStatus(CMN_ID_RELOADING);
     }
 
     public int getUsedWeaponStat() {
@@ -6202,6 +6172,7 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                 float yaw = MathHelper.wrapAngleTo180_float(this.getRotYaw());
                 float pitch = MathHelper.wrapAngleTo180_float(this.getRotPitch());
                 int id = 0;
+                boolean canChamber = !this.isDead && !this.isDestroyed();
 
                 for (int wid = 0; wid < this.weapons.length; ++wid) {
                     MCH_WeaponSet w = this.weapons[wid];
@@ -6244,9 +6215,11 @@ public abstract class MCH_EntityAircraft extends W_EntityContainer implements MC
                     }
 
                     boolean wasReloading = w.countReloadWait > 0;
-                    w.update(this, wasReloading && this.canReloadWeaponsHere(), isWpnUsed);
-                    if (!this.worldObj.isRemote && wasReloading && w.countReloadWait == 0) {
-                        this.syncWeaponReloadState(wid, w);
+                    w.update(this, canChamber, isWpnUsed);
+                    if (!this.worldObj.isRemote) {
+                        // Also recover empty chambers with reserve from older saves or supply vehicles.
+                        if (canChamber && !wasReloading) w.reload();
+                        if (wasReloading != (w.countReloadWait > 0)) this.syncWeaponReloadState(wid, w);
                     }
                     if (!this.worldObj.isRemote && w.hasPendingServerUse() && w.canUse()) {
                         MCH_WeaponParam pendingUse = w.consumePendingServerUse(this);

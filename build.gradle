@@ -107,8 +107,9 @@ idea {
     }
     project {
         ipr.withXml {
+            def projectXml = asNode()
             // IDEA needs Lombok on its classpath and annotation processing enabled.
-            def compiler = asNode().component.find { it.@name == 'CompilerConfiguration' }
+            def compiler = projectXml.component.find { it.@name == 'CompilerConfiguration' }
             def processing = compiler.annotationProcessing[0]
             processing.@enabled = 'true'
             def profile = processing.profile.find { it.@default == 'true' }
@@ -118,6 +119,25 @@ idea {
             profile.@enabled = 'true'
             if (profile.processorPath.isEmpty()) {
                 profile.appendNode('processorPath', [useClasspath: 'true'])
+            }
+
+            // The legacy .ipr can invoke the wrapper without an IDE Gradle import or IntelliJ Make.
+            def configurations = projectXml.component.find { it.@name == 'ProjectRunConfigurationManager' }
+            if (configurations == null) {
+                configurations = projectXml.appendNode('component', [name: 'ProjectRunConfigurationManager'])
+            }
+            if (!configurations.configuration.any { it.@name == 'Build Mod' && it.@type == 'ShConfigurationType' }) {
+                def build = configurations.appendNode('configuration', [name: 'Build Mod', type: 'ShConfigurationType'])
+                def commandInterpreter = System.getenv('ComSpec')
+                boolean windows = System.getProperty('os.name').startsWith('Windows')
+                build.appendNode('option', [name: 'SCRIPT_PATH', value: windows ? '$PROJECT_DIR$/gradlew.bat' : '$PROJECT_DIR$/gradlew'])
+                build.appendNode('option', [name: 'SCRIPT_OPTIONS', value: 'build --console=plain'])
+                build.appendNode('option', [name: 'SCRIPT_WORKING_DIRECTORY', value: '$PROJECT_DIR$'])
+                build.appendNode('option', [name: 'INTERPRETER_PATH', value: windows ? (commandInterpreter ?: 'C:/Windows/System32/cmd.exe').replace('\\', '/') : '/bin/sh'])
+                build.appendNode('option', [name: 'INTERPRETER_OPTIONS', value: windows ? '/d /c call' : ''])
+                build.appendNode('option', [name: 'EXECUTE_SCRIPT_FILE', value: 'true'])
+                build.appendNode('option', [name: 'EXECUTE_IN_TERMINAL', value: 'false'])
+                build.appendNode('method', [v: '2'])
             }
         }
     }
