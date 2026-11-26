@@ -45,9 +45,13 @@ public abstract class MCH_Gui extends GuiScreen {
     public abstract void drawGui(EntityPlayer var1, boolean var2);
 
     public void drawScreen(int par1, int par2, float partialTicks) {
-        this.smoothCamPartialTicks = partialTicks;
         W_ScaledResolution scaledresolution = new W_ScaledResolution(super.mc, super.mc.displayWidth, super.mc.displayHeight);
-        scaleFactor = scaledresolution.getScaleFactor();
+        drawOverlay(partialTicks, scaledresolution.getScaleFactor());
+    }
+
+    public void drawOverlay(float partialTicks, int guiScaleFactor) {
+        this.smoothCamPartialTicks = partialTicks;
+        scaleFactor = guiScaleFactor;
         if (!super.mc.gameSettings.hideGUI) {
             super.width = super.mc.displayWidth / scaleFactor;
             super.height = super.mc.displayHeight / scaleFactor;
@@ -115,15 +119,28 @@ public abstract class MCH_Gui extends GuiScreen {
         GL11.glBlendFunc(770, 771);
         W_McClient.MOD_bindTexture("textures/gui/digit.png");
 
+        Tessellator tessellator = Tessellator.instance;
+        boolean drawing = false;
         for (int i = 0; i < s.length(); ++i) {
             char c = s.charAt(i);
-            if (c >= 48 && c <= 57) {
-                this.drawTexturedModalRect(x + interval * i, y, 16 * (c - 48), 0, 16, 16);
+            if (c != '-' && (c < '0' || c > '9')) {
+                continue;
             }
-
-            if (c == 45) {
-                this.drawTexturedModalRect(x + interval * i, y, 160, 0, 16, 16);
+            int glyph = c == '-' ? 10 : c - '0';
+            if (!drawing) {
+                tessellator.startDrawingQuads();
+                drawing = true;
             }
+            int left = x + interval * i;
+            double u = glyph / 16D;
+            double rightU = (glyph + 1) / 16D;
+            tessellator.addVertexWithUV(left, y + 16, super.zLevel, u, 1D / 16D);
+            tessellator.addVertexWithUV(left + 16, y + 16, super.zLevel, rightU, 1D / 16D);
+            tessellator.addVertexWithUV(left + 16, y, super.zLevel, rightU, 0D);
+            tessellator.addVertexWithUV(left, y, super.zLevel, u, 0D);
+        }
+        if (drawing) {
+            tessellator.draw();
         }
 
         GL11.glBlendFunc(srcBlend, dstBlend);

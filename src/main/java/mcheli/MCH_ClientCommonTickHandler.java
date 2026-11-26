@@ -80,6 +80,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import mcheli.network.packets.PacketLockTargetBVR;
@@ -110,6 +111,9 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     public static int lockedSoundCount = 0;
     public static int hitDisplayCountdown;
     public static float hitTotalDamage;
+    private float formattedHitTotalDamage;
+    private Locale hitTotalDamageLocale;
+    private String hitTotalDamageLabel;
     private static int hitTargetID = -1;
     public static int hitTotalDamageClearCountdown;
     public static float hitTotalDamageScale = 2.0f;
@@ -1240,20 +1244,23 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
 
     @SubscribeEvent
     public void onRenderGameOverlayEvent(RenderGameOverlayEvent event) {
-        float partialTicks = event.partialTicks;
-        if (event.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS && mc.thePlayer == null) {
+        if (event.type == RenderGameOverlayEvent.ElementType.CROSSHAIRS && event.isCancelable() && mc.thePlayer == null) {
             event.setCanceled(true);
-            return;
+        } else if (!event.isCancelable() && (event.type == RenderGameOverlayEvent.ElementType.HELMET
+                || event.type == RenderGameOverlayEvent.ElementType.HOTBAR)) {
+            renderHud(event);
         }
+    }
 
-        Minecraft minecraft = Minecraft.getMinecraft();
-        EntityPlayer player = minecraft.thePlayer;
-        ScaledResolution scaledresolution = new ScaledResolution(minecraft, minecraft.displayWidth, minecraft.displayHeight);
+    private void renderHud(RenderGameOverlayEvent event) {
+        float partialTicks = event.partialTicks;
+        EntityPlayer player = this.mc.thePlayer;
+        ScaledResolution scaledresolution = event.resolution;
         int i = scaledresolution.getScaledWidth();
         int j = scaledresolution.getScaledHeight();
 
-        if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HELMET) {
-            Minecraft.getMinecraft().entityRenderer.setupOverlayRendering();
+        if (event.type == RenderGameOverlayEvent.ElementType.HELMET) {
+            this.mc.entityRenderer.setupOverlayRendering();
             // World-space markers can leave lighting enabled; HUD colors must be unlit.
             GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT | GL11.GL_CURRENT_BIT
                     | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
@@ -1291,16 +1298,17 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                 }
 
                 if (this.mc.currentScreen == null || this.mc.currentScreen instanceof GuiChat || this.mc.currentScreen.getClass().toString().contains("GuiDriveableController")) {
+                    int scaleFactor = scaledresolution.getScaleFactor();
                     for (MCH_Gui gui : this.guis) {
-                        if (drawGui(gui, partialTicks))
+                        if (drawGui(gui, partialTicks, scaleFactor))
                             break;
                     }
-                    drawGui(this.gui_Common, partialTicks);
-                    drawGui(this.gui_Wrench, partialTicks);
-                    drawGui(this.gui_EMarker, partialTicks);
+                    drawGui(this.gui_Common, partialTicks, scaleFactor);
+                    drawGui(this.gui_Wrench, partialTicks, scaleFactor);
+                    drawGui(this.gui_EMarker, partialTicks, scaleFactor);
                     if (isDrawScoreboard)
                         MCH_GuiScoreboard.drawList(this.mc, this.mc.fontRenderer, false);
-                    drawGui(this.gui_Title, partialTicks);
+                    drawGui(this.gui_Title, partialTicks, scaleFactor);
                 }
 
                 this.renderVehicleDismountHoldIndicator(i, j, partialTicks);
@@ -1340,18 +1348,24 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
 
         //渲染命中信息
-        if (!event.isCancelable() && event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
+        if (event.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
             drawEconomyGainToast(i, j);
+            Locale formatLocale = Locale.getDefault(Locale.Category.FORMAT);
             if (!hitList.isEmpty() && hitTotalDamage > 0) {
                 int x = (int) (i * 0.6f);
                 int y = (int) (j * 0.4f);
                 mc.fontRenderer.drawString("Recent damage dealt", x, y - 12, 0xffffff, true);
                 GL11.glPushMatrix();
-                String totalText = String.format("-%.1f%% HP", hitTotalDamage);
+                float totalDamage = hitTotalDamage;
+                if (totalDamage != formattedHitTotalDamage || !formatLocale.equals(hitTotalDamageLocale)) {
+                    formattedHitTotalDamage = totalDamage;
+                    hitTotalDamageLocale = formatLocale;
+                    hitTotalDamageLabel = String.format(formatLocale, "-%.1f%% HP", totalDamage);
+                }
                 float scale = Math.min(hitTotalDamageScale,
-                    (i - x - 4.0F) / Math.max(1, mc.fontRenderer.getStringWidth(totalText)));
+                    (i - x - 4.0F) / Math.max(1, mc.fontRenderer.getStringWidth(hitTotalDamageLabel)));
                 GL11.glScalef(scale, scale, scale);
-                mc.fontRenderer.drawString(totalText, (int) (x / scale), (int) (y / scale), 0xffffff, true);
+                mc.fontRenderer.drawString(hitTotalDamageLabel, (int) (x / scale), (int) (y / scale), 0xffffff, true);
                 GL11.glPopMatrix();
             }
             int baseX = (int) (i * 0.6f);
@@ -1362,7 +1376,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
                     float alpha = Math.max(0.0f, 1.0f - pos * 0.15f);
                     int a = ((int) (alpha * 255)) << 24;
                     int color = a | 0x00FFFFFF;
-                    String display = message.hitDamageType == 2 ? message.hitDisplay : String.format("-%.1f%% HP  %s", message.hitDamage, message.hitDisplay);
+                    String display = message.getFormattedDisplay(formatLocale);
                     mc.fontRenderer.drawString(
                         display,
                         baseX,
@@ -1677,10 +1691,35 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
         }
     }
 
+    private boolean drawGui(MCH_Gui gui, float partialTicks, int scaleFactor) {
+        if (!gui.isDrawGui(this.mc.thePlayer)) {
+            return false;
+        }
+        gui.drawOverlay(partialTicks, scaleFactor);
+        return true;
+    }
+
     public static class HitMessage {
         public String hitDisplay;
         public float hitDamage;
         public byte hitDamageType;
+        private float formattedDamage;
+        private String formattedHitDisplay;
+        private String label;
+        private Locale labelLocale;
+
+        private String getFormattedDisplay(Locale locale) {
+            if (hitDamageType == 2) {
+                return hitDisplay;
+            }
+            if (hitDamage != formattedDamage || !hitDisplay.equals(formattedHitDisplay) || !locale.equals(labelLocale)) {
+                formattedDamage = hitDamage;
+                formattedHitDisplay = hitDisplay;
+                labelLocale = locale;
+                label = String.format(locale, "-%.1f%% HP  %s", hitDamage, hitDisplay);
+            }
+            return label;
+        }
     }
 
     public static void startNukeFlashEffect(double x, double y, double z, float explosion, float radiusFactor, int minDurationTick, int maxDurationTick) {
