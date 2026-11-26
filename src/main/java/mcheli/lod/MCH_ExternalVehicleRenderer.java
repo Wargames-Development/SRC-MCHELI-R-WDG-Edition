@@ -9,7 +9,10 @@ import mcheli.plane.*;
 import mcheli.tank.*;
 import mcheli.vehicle.*;
 import mcheli.weapon.MCH_WeaponSet;
+import mcheli.wrapper.W_TextureUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraftforge.client.model.IModelCustom;
@@ -83,10 +86,14 @@ public final class MCH_ExternalVehicleRenderer {
     private interface Detached { }
     public static boolean isVisual(Entity entity) { return entity instanceof Detached || entity!=null && entity==visualSource; }
     public static final class Context implements AutoCloseable {
+        private static final String[] TEXTURE_DIRECTORIES={"helicopters","planes","tanks","vehicles"};
         private final World world;
         private final MCH_VehicleVisualTrack track=new MCH_VehicleVisualTrack();
         private final MCH_VehicleVisualTrack.Sample sample=new MCH_VehicleVisualTrack.Sample();
         private MCH_AircraftInfo definition;
+        private String skinName;
+        private int skinKind;
+        private ResourceLocation skin;
         private MCH_EntityAircraft actor;
         private MCH_EntityAircraft tracked;
         private float trackedPartial;
@@ -134,6 +141,12 @@ public final class MCH_ExternalVehicleRenderer {
             // Match the legacy unified pass: the real tracked model already owns its
             // interpolation, rotor/blade phases and wheel/gear state. Never simulate it here.
             if(tracked!=null) return true;
+            MCH_VehicleVisualSnapshot pose=sample.appearance;
+            if(skinKind!=pose.kind || !pose.texture.equals(skinName)) {
+                skinKind=pose.kind;skinName=pose.texture;
+                skin=new ResourceLocation("mcheli","textures/"+TEXTURE_DIRECTORIES[skinKind-1]+"/"+skinName+".png");
+            }
+            if(!W_TextureUtil.textureReady(Minecraft.getMinecraft().getTextureManager(),skin)) { invalidate();return false; }
             first=sample.first.decodedParts();last=sample.last.decodedParts();current=sample.appearance.decodedParts();
             if(first==null || last==null || current==null) { invalidate();return false; }
             if(actor==null || actor.getEntityId()!=sample.appearance.entityId) {

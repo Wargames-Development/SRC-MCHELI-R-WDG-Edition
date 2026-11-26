@@ -94,7 +94,7 @@ public abstract class MCH_HudItem extends Gui {
         return getExpression(s).evalLong();
     }
 
-    private static Expression getExpression(String formula) {
+    static Expression getExpression(String formula) {
         Expression expression = expressionCache.get(formula);
         if (expression == null) {
             expression = ExpRuleFactory.getDefaultRule().parse(formula);

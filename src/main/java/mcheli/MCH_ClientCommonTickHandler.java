@@ -911,6 +911,7 @@ public class MCH_ClientCommonTickHandler extends W_TickHandler {
     }
 
     public void onRenderTickPre(float partialTicks) {
+        if (super.mc != null) W_TextureUtil.uploadReady(super.mc);
         if (camera instanceof MCH_3rdCamera) {
             ((MCH_3rdCamera) camera).endRenderFrame();
         }

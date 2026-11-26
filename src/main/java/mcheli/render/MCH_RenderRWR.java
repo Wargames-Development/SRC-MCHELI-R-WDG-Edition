@@ -755,6 +755,7 @@ public class MCH_RenderRWR {
 
 
     private void drawRWRCircle(double x, double y, ScaledResolution sc, ResourceLocation rwr, int size) {
+        if (!W_TextureUtil.textureReady(Minecraft.getMinecraft().getTextureManager(), rwr)) return;
         prepareRenderState();
         Minecraft.getMinecraft().renderEngine.bindTexture(rwr);
         Tessellator tess = Tessellator.instance;

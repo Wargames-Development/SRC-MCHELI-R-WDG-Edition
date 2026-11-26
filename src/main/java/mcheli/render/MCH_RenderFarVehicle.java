@@ -41,6 +41,7 @@ import net.minecraft.client.renderer.culling.Frustrum;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
@@ -393,6 +394,8 @@ public class MCH_RenderFarVehicle {
                     pose.report("OUTSIDE_FRUSTUM", entry.getKey().intValue());
                     continue;
                 }
+                if (!W_TextureUtil.textureReady(mc.getTextureManager(),
+                        pose.texture != null ? pose.texture : definition.texture)) continue;
                 RenderCandidate candidate;
                 if (candidateCount == candidates.size()) {
                     candidate = new RenderCandidate();
@@ -525,16 +528,16 @@ public class MCH_RenderFarVehicle {
         for (int i = 0; i < 24 && preloadContacts.hasNext(); i++) {
             MCH_EntityInfo contact = preloadContacts.next();
             if (contact.destroyed || !withinVehicleRenderDistance(contact.posX - mc.renderViewEntity.posX,
-                    contact.posY - mc.renderViewEntity.posY, contact.posZ - mc.renderViewEntity.posZ, range)
-                    || mc.theWorld.getEntityByID(contact.entityId) instanceof MCH_EntityAircraft) continue;
-            RenderDefinition definition = resolveDefinition(contact);
-            if (definition == null || manager.getTexture(definition.texture) != null) continue;
-            int previous = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
-            try {
-                W_TextureUtil.preload(manager, definition.texture);
-            } finally {
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, previous);
-            }
+                    contact.posY - mc.renderViewEntity.posY, contact.posZ - mc.renderViewEntity.posZ, range)) continue;
+            Entity entity = mc.theWorld.getEntityByID(contact.entityId);
+            MCH_EntityAircraft aircraft = entity instanceof MCH_EntityAircraft ? (MCH_EntityAircraft) entity : null;
+            RenderDefinition definition = aircraft != null && aircraft.getAcInfo() != null
+                    ? resolveDefinition(aircraft) : resolveDefinition(contact);
+            if (definition == null) continue;
+            String textureName = aircraft != null ? aircraft.getTextureName() : null;
+            ResourceLocation texture = textureName == null || textureName.isEmpty() || textureName.equals(definition.info.name)
+                    ? definition.texture : new ResourceLocation("mcheli", "textures/" + definition.directory + "/" + textureName + ".png");
+            if (W_TextureUtil.preload(manager, texture)) continue;
             return;
         }
     }
@@ -700,7 +703,7 @@ public class MCH_RenderFarVehicle {
             GL11.glEnable(GL11.GL_NORMALIZE);
             GL11.glShadeModel(definition.info.smoothShading && MCH_Config.SmoothShading.prmBool
                 ? GL11.GL_SMOOTH : GL11.GL_FLAT);
-            boolean thermalVision = !MCH_FMURThermal.isAvailable() && MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION
+            boolean thermalVision = MCH_Camera.currentCameraMode == MCH_Camera.MODE_THERMALVISION && !MCH_FMURThermal.isAvailable()
                 && (localAircraft == null || MCH_EntityAircraft.getAircraft_RiddenOrControl(mc.thePlayer) != localAircraft);
             if (thermalVision) {
                 // Match the normal aircraft thermal marker so the post-process maps the whole LOD to white.

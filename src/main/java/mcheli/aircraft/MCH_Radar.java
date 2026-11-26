@@ -1,16 +1,19 @@
 package mcheli.aircraft;
 
 import mcheli.MCH_Vector2;
-import mcheli.wrapper.W_WorldFunc;
+import net.minecraft.block.Block;
+import net.minecraft.command.IEntitySelector;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MCH_Radar {
+    private static final IEntitySelector LIVING_TARGETS = entity -> entity instanceof EntityLiving;
 
     private World worldObj;
     private ArrayList entityList = new ArrayList();
@@ -37,40 +40,32 @@ public class MCH_Radar {
     public void updateXZ(Entity centerEntity, int range) {
         if (this.worldObj.isRemote) {
             this.clear();
-            List list = centerEntity.worldObj.getEntitiesWithinAABBExcludingEntity(centerEntity, centerEntity.boundingBox.expand((double) range, (double) range, (double) range));
+            List list = centerEntity.worldObj.getEntitiesWithinAABBExcludingEntity(centerEntity,
+                    centerEntity.boundingBox.expand(range, range, range), LIVING_TARGETS);
 
             for (int i = 0; i < list.size(); ++i) {
-                Entity entity = (Entity) list.get(i);
-                if (entity instanceof EntityLiving) {
-                    double x = entity.posX - centerEntity.posX;
-                    double z = entity.posZ - centerEntity.posZ;
-                    if (x * x + z * z < (double) (range * range)) {
-                        int y = 1 + (int) entity.posY;
-                        if (y < 0) {
-                            y = 1;
-                        }
-
-                        int blockCnt;
-                        for (blockCnt = 0; y < 200; ++y) {
-                            if (W_WorldFunc.getBlockId(this.worldObj, (int) entity.posX, y, (int) entity.posZ) != 0) {
-                                ++blockCnt;
-                                if (blockCnt >= 5) {
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (blockCnt < 5) {
-                            if (entity instanceof EntityMob) {
-                                this.enemyList.add(new MCH_Vector2(x, z));
-                            } else {
-                                this.entityList.add(new MCH_Vector2(x, z));
-                            }
-                        }
-                    }
+                EntityLiving entity = (EntityLiving) list.get(i);
+                double x = entity.posX - centerEntity.posX;
+                double z = entity.posZ - centerEntity.posZ;
+                if (x * x + z * z < (double) (range * range) && !hasOverheadCover(entity)) {
+                    (entity instanceof EntityMob ? this.enemyList : this.entityList).add(new MCH_Vector2(x, z));
                 }
             }
-
         }
+    }
+
+    private boolean hasOverheadCover(EntityLiving entity) {
+        int x = (int) entity.posX;
+        int z = (int) entity.posZ;
+        int y = 1 + (int) entity.posY;
+        if (y < 0) y = 1;
+        if (y >= 200 || x < -30000000 || x >= 30000000 || z < -30000000 || z >= 30000000) return false;
+        // The whole vertical probe stays in one chunk. Keep the legacy Y bounds and block-ID test.
+        Chunk chunk = worldObj.getChunkFromChunkCoords(x >> 4, z >> 4);
+        int covered = 0;
+        for (; y < 200; ++y) {
+            if (Block.getIdFromBlock(chunk.getBlock(x & 15, y, z & 15)) != 0 && ++covered == 5) return true;
+        }
+        return false;
     }
 }

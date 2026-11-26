@@ -35,15 +35,21 @@ public class MCH_HudItemTexture extends MCH_HudItem {
     }
 
     void preloadTexture(TextureManager manager) {
-        if (W_TextureUtil.preload(manager, this.texture)) {
-            W_TextureUtil.getTextureInfo(this.texture);
+        W_TextureUtil.preload(manager, this.texture);
+        for (String formula : new String[] { left, top, width, height, uLeft, vTop, uWidth, vHeight, rot }) {
+            try {
+                getExpression(formula);
+            } catch (RuntimeException invalidFormula) {
+                // The regular HUD path reports the source file and line when it uses the formula.
+            }
         }
     }
 
     public void execute() {
+        W_TextureUtil.TextureParam size = W_TextureUtil.getTextureInfo(this.texture);
+        if (size == null) return;
         GL11.glEnable(3042);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        W_TextureUtil.TextureParam size = W_TextureUtil.getTextureInfo(this.texture);
         this.drawTexture(this.texture, MCH_HudItem.centerX + calc(this.left), MCH_HudItem.centerY + calc(this.top), calc(this.width), calc(this.height), calc(this.uLeft), calc(this.vTop), calc(this.uWidth), calc(this.vHeight), (float) calc(this.rot), size.width > 0 ? size.width : 256, size.height > 0 ? size.height : 256);
     }
 }

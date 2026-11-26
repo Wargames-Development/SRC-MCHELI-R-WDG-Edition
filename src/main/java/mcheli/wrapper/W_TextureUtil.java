@@ -10,10 +10,7 @@
 package mcheli.wrapper;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.ITextureObject;
-import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
@@ -22,6 +19,7 @@ import java.util.Map;
 
 public class W_TextureUtil {
     private static final W_TextureUtil instance = new W_TextureUtil();
+    private static final ClientTextureWarmup WARMUP = new ClientTextureWarmup("MCHR texture decoder");
     private static final Map<ResourceLocation, TextureParam> DIMENSIONS = new HashMap<>();
 
     private W_TextureUtil() {
@@ -35,7 +33,9 @@ public class W_TextureUtil {
     public static TextureParam getTextureInfo(ResourceLocation texture) {
         TextureParam info = DIMENSIONS.get(texture);
         if (info == null) {
-            Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+            TextureManager manager = Minecraft.getMinecraft().getTextureManager();
+            if (!WARMUP.request(manager, texture, true)) return null;
+            manager.bindTexture(texture);
             info = readBoundTextureInfo();
             DIMENSIONS.put(texture, info);
         }
@@ -50,14 +50,20 @@ public class W_TextureUtil {
     }
 
     public static boolean preload(TextureManager manager, ResourceLocation texture) {
-        ITextureObject loaded = manager.getTexture(texture);
-        // Forge retains its missing-texture entry across reloads. Retry it when packs change.
-        return loaded != null && loaded != TextureUtil.missingTexture
-                || manager.loadTexture(texture, new SimpleTexture(texture));
+        return WARMUP.request(manager, texture, false);
+    }
+
+    public static boolean textureReady(TextureManager manager, ResourceLocation texture) {
+        return WARMUP.request(manager, texture, true);
+    }
+
+    public static void uploadReady(Minecraft mc) {
+        WARMUP.uploadReady(mc);
     }
 
     public static void clearTextureInfo() {
         DIMENSIONS.clear();
+        WARMUP.reset();
     }
 
     public class TextureParam {
