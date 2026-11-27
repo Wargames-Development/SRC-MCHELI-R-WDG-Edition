@@ -20,6 +20,9 @@ import java.util.List;
 public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
 
     public boolean thermalHot;
+    private float lightSampleTime = Float.NaN;
+    private int sampledLight;
+    private int queuedLight = -1;
     private static final ResourceLocation SMOKE_TEXTURE = new ResourceLocation(MCH_MOD.DOMAIN, "textures/particles/smoke.png");
     private static final List<MCH_EntityParticleSmoke> queued = new ArrayList<MCH_EntityParticleSmoke>();
     private static float rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ;
@@ -57,8 +60,10 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
                 tessellator.setNormal(0.0F, 1.0F, 0.0F);
                 started = true;
             }
+            int light = smoke.queuedLight;
+            smoke.queuedLight = -1;
             smoke.appendBillboard(tessellator, partialTicks, rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ,
-                viewX, viewY, viewZ, false, legacyThermal);
+                viewX, viewY, viewZ, false, legacyThermal, light);
         }
         if (started) tessellator.draw();
     }
@@ -132,14 +137,14 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
 
     public void effectWind() {
         if (super.isEffectedWind) {
-            boolean range = true;
             List list = super.worldObj.getEntitiesWithinAABB(MCH_EntityAircraft.class, this.getBoundingBox().expand(15.0D, 15.0D, 15.0D));
 
-            for (Object o : list) {
-                MCH_EntityAircraft ac = (MCH_EntityAircraft) o;
-                if (ac.getThrottle() > 0.10000000149011612D) {
+            for (int i = 0; i < list.size(); ++i) {
+                MCH_EntityAircraft ac = (MCH_EntityAircraft) list.get(i);
+                double throttle = ac.getThrottle();
+                if (throttle > 0.10000000149011612D) {
                     float dist = this.getDistanceToEntity(ac);
-                    double vel = (23.0D - (double) dist) * 0.009999999776482582D * ac.getThrottle();
+                    double vel = (23.0D - (double) dist) * 0.009999999776482582D * throttle;
                     double mx = ac.posX - super.posX;
                     double mz = ac.posZ - super.posZ;
                     super.motionX -= mx * vel;
@@ -155,17 +160,26 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
     }
 
     @SideOnly(Side.CLIENT)
-    public int getBrightnessForRender(float p_70070_1_) {
+    public int getBrightnessForRender(float partialTicks) {
         double y = super.posY;
         super.posY += 3000.0D;
-        int i = super.getBrightnessForRender(p_70070_1_);
-        super.posY = y;
-        return i;
+        try {
+            int light = super.getBrightnessForRender(partialTicks);
+            this.sampledLight = light;
+            this.lightSampleTime = partialTicks;
+            return light;
+        } finally {
+            super.posY = y;
+        }
     }
 
     @Override
     public void renderParticle(Tessellator tessellator, float partialTicks, float rotX, float rotZ, float rotYZ, float rotXY, float rotXZ) {
         if (!MCH_FMURThermal.isParticlePass()) {
+            // The layer-3 renderer has already sampled the light for this draw callback.
+            this.queuedLight = this.getClass() == MCH_EntityParticleSmoke.class && this.lightSampleTime == partialTicks
+                ? this.sampledLight : -1;
+            this.lightSampleTime = Float.NaN;
             // Vanilla renders layer-3 particles before the far-vehicle LOD pass.
             if (queued.isEmpty()) {
                 rotationX = rotX;
@@ -190,7 +204,7 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
             tessellator.startDrawingQuads();
             tessellator.setNormal(0.0F, 1.0F, 0.0F);
             appendBillboard(tessellator, partialTicks, rotX, rotZ, rotYZ, rotXY, rotXZ,
-                EntityFX.interpPosX, EntityFX.interpPosY, EntityFX.interpPosZ, true, legacyThermal);
+                EntityFX.interpPosX, EntityFX.interpPosY, EntityFX.interpPosZ, true, legacyThermal, -1);
             tessellator.draw();
         } finally {
             GL11.glDepthMask(true);
@@ -224,7 +238,7 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
 
     private void appendBillboard(Tessellator tessellator, float partialTicks, float rotX, float rotZ, float rotYZ,
                                  float rotXY, float rotXZ, double cameraX, double cameraY, double cameraZ,
-                                 boolean thermalPass, boolean legacyThermal) {
+                                 boolean thermalPass, boolean legacyThermal, int sampledLight) {
         if (legacyThermal) {
             tessellator.setColorRGBA_F(1.0F, 0.0F, 1.0F, 1.0F);
             tessellator.setBrightness(0xF000F0);
@@ -235,7 +249,7 @@ public class MCH_EntityParticleSmoke extends MCH_EntityParticleBase {
                 float life = Math.min(1F, (super.particleAge + partialTicks) / Math.max(1F, super.particleMaxAge));
                 tessellator.setBrightness(0xF00000 | (241 + Math.round(14F * (0.9F - 0.5F * life))));
             } else {
-                tessellator.setBrightness(this.getBrightnessForRender(partialTicks));
+                tessellator.setBrightness(sampledLight >= 0 ? sampledLight : this.getBrightnessForRender(partialTicks));
             }
         }
         float leftU = super.particleTextureIndexX / 8.0F;

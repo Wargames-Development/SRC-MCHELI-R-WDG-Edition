@@ -133,6 +133,10 @@ Use the lightest command that meaningfully validates the change.
   because it catches compilation errors without performing the entire packaging
   pipeline.
 - Run `./gradlew test` when relevant tests exist or were added.
+- After validation, run the production packaging task for every mod changed
+  during the task, including mods in sibling repositories. Verify that each
+  production jar is present in its repository's `build/libs` directory and
+  link it in the completion report. Report any packaging blocker.
 - `build`, `assemble`, `jar`, `reobf`, client/server launch tasks, or other
   project tasks may be run when they provide useful validation or the user asks
   for them.

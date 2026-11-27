@@ -61,18 +61,15 @@ public abstract class MCH_EntityParticleBase extends W_EntityFX {
         } else {
             super.worldObj.theProfiler.startSection("move");
             super.ySize *= 0.4F;
-            double d3 = super.posX;
-            double d4 = super.posY;
-            double d5 = super.posZ;
             double d6 = par1;
             double d7 = par3;
             double d8 = par5;
-            AxisAlignedBB axisalignedbb = super.boundingBox.copy();
-            boolean flag = false;
-            List list = super.worldObj.getCollidingBoundingBoxes(this, super.boundingBox.addCoord(par1, par3, par5));
+            List<AxisAlignedBB> collisions = super.worldObj.getCollidingBoundingBoxes(
+                this, super.boundingBox.addCoord(par1, par3, par5));
+            int collisionCount = collisions.size();
 
-            for (int flag1 = 0; flag1 < list.size(); ++flag1) {
-                par3 = ((AxisAlignedBB) list.get(flag1)).calculateYOffset(super.boundingBox, par3);
+            for (int i = 0; i < collisionCount; ++i) {
+                par3 = collisions.get(i).calculateYOffset(super.boundingBox, par3);
             }
 
             super.boundingBox.offset(0.0D, par3, 0.0D);
@@ -82,16 +79,8 @@ public abstract class MCH_EntityParticleBase extends W_EntityFX {
                 par1 = 0.0D;
             }
 
-            boolean var10000;
-            if (!super.onGround && (d7 == par3 || d7 >= 0.0D)) {
-                var10000 = false;
-            } else {
-                var10000 = true;
-            }
-
-            int j;
-            for (j = 0; j < list.size(); ++j) {
-                par1 = ((AxisAlignedBB) list.get(j)).calculateXOffset(super.boundingBox, par1);
+            for (int i = 0; i < collisionCount; ++i) {
+                par1 = collisions.get(i).calculateXOffset(super.boundingBox, par1);
             }
 
             super.boundingBox.offset(par1, 0.0D, 0.0D);
@@ -101,8 +90,8 @@ public abstract class MCH_EntityParticleBase extends W_EntityFX {
                 par1 = 0.0D;
             }
 
-            for (j = 0; j < list.size(); ++j) {
-                par5 = ((AxisAlignedBB) list.get(j)).calculateZOffset(super.boundingBox, par5);
+            for (int i = 0; i < collisionCount; ++i) {
+                par5 = collisions.get(i).calculateZOffset(super.boundingBox, par5);
             }
 
             super.boundingBox.offset(0.0D, 0.0D, par5);
@@ -133,10 +122,6 @@ public abstract class MCH_EntityParticleBase extends W_EntityFX {
             if (d8 != par5) {
                 super.motionZ = 0.0D;
             }
-
-            double var35 = super.posX - d3;
-            var35 = super.posY - d4;
-            var35 = super.posZ - d5;
 
             try {
                 this.doBlockCollisions();
