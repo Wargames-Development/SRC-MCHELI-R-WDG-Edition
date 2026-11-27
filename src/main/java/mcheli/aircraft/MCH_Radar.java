@@ -62,8 +62,9 @@ public class MCH_Radar {
         if (y >= 200 || x < -30000000 || x >= 30000000 || z < -30000000 || z >= 30000000) return false;
         // The whole vertical probe stays in one chunk. Keep the legacy Y bounds and block-ID test.
         Chunk chunk = worldObj.getChunkFromChunkCoords(x >> 4, z >> 4);
+        int limit = chunk.getClass() == Chunk.class ? Math.min(200, chunk.getTopFilledSegment() + 16) : 200;
         int covered = 0;
-        for (; y < 200; ++y) {
+        for (; y < limit; ++y) {
             if (Block.getIdFromBlock(chunk.getBlock(x & 15, y, z & 15)) != 0 && ++covered == 5) return true;
         }
         return false;

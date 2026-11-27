@@ -364,6 +364,7 @@ public class MCH_ClientEventHook extends W_ClientEventHook {
             return;
         }
         MCH_ClientCommonTickHandler.cleanupClientState("world_unload");
+        mcheli.weapon.MCH_LaserStateStore.clearClientStates();
         MCH_RadarDisplayTextureManager.clear();
         MCH_RWRDisplayTextureManager.clear();
         MCH_EntityInfoClientTracker.resetTracker();

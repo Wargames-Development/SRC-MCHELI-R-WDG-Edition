@@ -41,6 +41,24 @@ public class MCH_LaserStateWorldTest {
         assertNotNull(MCH_LaserStateStore.getServerState(OWNER, 2));
     }
 
+    @Test public void clientExpiryUsesCurrentTtlAndHandlesRefreshAndWorldUnload() {
+        int handheld = MCH_LaserStateStore.SOURCE_HANDHELD;
+        int aircraft = MCH_LaserStateStore.SOURCE_AIRCRAFT;
+        MCH_LaserStateStore.upsertClientState(OWNER, handheld, 0, 0, 0, true, 4, 100);
+        MCH_LaserStateStore.upsertClientState(OWNER, aircraft, 0, 0, 0, true, 4, 102);
+        MCH_LaserStateStore.expireClientStates(140, 40);
+        assertNotNull(MCH_LaserStateStore.getClientState(OWNER, handheld));
+        MCH_LaserStateStore.updateClientStateForNetwork(OWNER, handheld, 0, 0, 0, true, 140, 2);
+        MCH_LaserStateStore.expireClientStates(140, 20);
+        assertNull(MCH_LaserStateStore.getClientState(OWNER, aircraft));
+        assertNotNull(MCH_LaserStateStore.getClientState(OWNER, handheld));
+        MCH_LaserStateStore.clearClientStates();
+        MCH_LaserStateStore.upsertClientState(OWNER, handheld, 0, 0, 0, true, 1, 5);
+        assertEquals(1, MCH_LaserStateStore.getClientState(OWNER, handheld).sequence);
+        MCH_LaserStateStore.expireClientStates(46, 40);
+        assertNull(MCH_LaserStateStore.getClientState(OWNER, handheld));
+    }
+
     private static final class ClockWorld extends World {
         long tick;
         ClockWorld() {

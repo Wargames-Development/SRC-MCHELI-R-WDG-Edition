@@ -1104,16 +1104,16 @@ public class MCH_RenderFarVehicle {
 
         MCH_AircraftInfo info = null;
         String directory = null;
-        if (isVehicleClass(className, MCH_EntityHeli.class, ".helicopter.")) {
+        if (isVehicleClass(className, "mcheli.helicopter.MCH_EntityHeli", ".helicopter.")) {
             info = MCH_HeliInfoManager.get(entityName);
             directory = "helicopters";
-        } else if (isVehicleClass(className, MCP_EntityPlane.class, ".plane.")) {
+        } else if (isVehicleClass(className, "mcheli.plane.MCP_EntityPlane", ".plane.")) {
             info = MCP_PlaneInfoManager.get(entityName);
             directory = "planes";
-        } else if (isVehicleClass(className, MCH_EntityTank.class, ".tank.")) {
+        } else if (isVehicleClass(className, "mcheli.tank.MCH_EntityTank", ".tank.")) {
             info = MCH_TankInfoManager.get(entityName);
             directory = "tanks";
-        } else if (isVehicleClass(className, MCH_EntityVehicle.class, ".vehicle.")) {
+        } else if (isVehicleClass(className, "mcheli.vehicle.MCH_EntityVehicle", ".vehicle.")) {
             info = MCH_VehicleInfoManager.get(entityName);
             directory = "vehicles";
         }
@@ -1237,15 +1237,15 @@ public class MCH_RenderFarVehicle {
         return angle;
     }
 
-    private static boolean isVehicleClass(String className, Class<?> baseClass, String packageSegment) {
-        return className.equals(baseClass.getName()) || className.contains(packageSegment);
+    private static boolean isVehicleClass(String className, String baseClass, String packageSegment) {
+        return className.equals(baseClass) || className.contains(packageSegment);
     }
 
     private static boolean isSupportedVehicleClass(String className) {
-        return isVehicleClass(className, MCH_EntityHeli.class, ".helicopter.")
-            || isVehicleClass(className, MCP_EntityPlane.class, ".plane.")
-            || isVehicleClass(className, MCH_EntityTank.class, ".tank.")
-            || isVehicleClass(className, MCH_EntityVehicle.class, ".vehicle.");
+        return isVehicleClass(className, "mcheli.helicopter.MCH_EntityHeli", ".helicopter.")
+            || isVehicleClass(className, "mcheli.plane.MCP_EntityPlane", ".plane.")
+            || isVehicleClass(className, "mcheli.tank.MCH_EntityTank", ".tank.")
+            || isVehicleClass(className, "mcheli.vehicle.MCH_EntityVehicle", ".vehicle.");
     }
 
     private static final class RenderDefinition {

@@ -627,6 +627,9 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
     }
 
     public void init() {
+        // Run LaunchWrapper's sound class transformations during client loading.
+        preloadSoundClass(MCH_SoundUpdater.class);
+        preloadSoundClass(W_Sound.class);
         MinecraftForge.EVENT_BUS.register(new MCH_ParticlesUtil());
         MinecraftForge.EVENT_BUS.register(new MCH_ClientEventHook());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderBVRLockBox());
@@ -641,6 +644,14 @@ public class MCH_ClientProxy extends MCH_CommonProxy {
         MinecraftForge.EVENT_BUS.register(new MCH_RenderCCIP());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderLeadCircle());
         MinecraftForge.EVENT_BUS.register(new MCH_RenderIRSeeker());
+    }
+
+    private static void preloadSoundClass(Class<?> type) {
+        try {
+            Class.forName(type.getName(), true, type.getClassLoader());
+        } catch (ClassNotFoundException impossible) {
+            throw new AssertionError(impossible);
+        }
     }
 
     public void setCreativeDigDelay(int n) {

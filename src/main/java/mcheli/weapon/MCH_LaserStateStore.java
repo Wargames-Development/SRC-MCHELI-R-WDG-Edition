@@ -34,6 +34,7 @@ public final class MCH_LaserStateStore {
 
     private static final Map<Long, LaserState> SERVER_STATES = new HashMap<Long, LaserState>();
     private static final Map<Long, LaserState> CLIENT_STATES = new HashMap<Long, LaserState>();
+    private static long oldestClientUpdate = Long.MAX_VALUE;
 
     private MCH_LaserStateStore() {
     }
@@ -114,6 +115,7 @@ public final class MCH_LaserStateStore {
         st.sequence = sequence;
         st.lastUpdateTick = worldTick;
         CLIENT_STATES.put(key, st);
+        oldestClientUpdate = Math.min(oldestClientUpdate, worldTick);
     }
 
     /**
@@ -145,6 +147,7 @@ public final class MCH_LaserStateStore {
         state.z = z;
         state.active = active;
         state.lastUpdateTick = worldTick;
+        oldestClientUpdate = Math.min(oldestClientUpdate, worldTick);
 
         if (!transition && !activeUpdateDue) {
             return NO_NETWORK_UPDATE;
@@ -186,14 +189,26 @@ public final class MCH_LaserStateStore {
 
     public static synchronized void expireClientStates(long worldTick, int ttlTicks) {
         int ttl = Math.max(1, ttlTicks);
-        Iterator<Map.Entry<Long, LaserState>> it = CLIENT_STATES.entrySet().iterator();
+        // Replacing the oldest state may leave this bound conservative until the next scan.
+        long age = worldTick - oldestClientUpdate;
+        if (CLIENT_STATES.isEmpty() || (worldTick >= oldestClientUpdate && age >= 0 && age <= ttl)) {
+            return;
+        }
+        oldestClientUpdate = Long.MAX_VALUE;
+        Iterator<LaserState> it = CLIENT_STATES.values().iterator();
         while (it.hasNext()) {
-            Map.Entry<Long, LaserState> e = it.next();
-            LaserState st = e.getValue();
-            if (st == null || worldTick - st.lastUpdateTick > ttl) {
+            LaserState st = it.next();
+            if (worldTick - st.lastUpdateTick > ttl) {
                 it.remove();
+            } else {
+                oldestClientUpdate = Math.min(oldestClientUpdate, st.lastUpdateTick);
             }
         }
+    }
+
+    public static synchronized void clearClientStates() {
+        CLIENT_STATES.clear();
+        oldestClientUpdate = Long.MAX_VALUE;
     }
 
     public static synchronized void clearOwner(int ownerId) {
